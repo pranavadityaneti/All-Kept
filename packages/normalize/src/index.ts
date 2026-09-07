@@ -1,0 +1,287 @@
+// packages/normalize/src/index.ts
+// Pure URL/text normalisation. NO imports. Shared verbatim with supabase/functions/_shared/normalize.ts.
+
+export const PLATFORMS = [
+  "instagram", "youtube", "x", "facebook", "tiktok", "reddit",
+  "threads", "linkedin", "pinterest", "web", "note",
+] as const;
+export type Platform = (typeof PLATFORMS)[number];
+
+export const KINDS = ["short_video", "video", "post", "image", "article", "text"] as const;
+export type Kind = (typeof KINDS)[number];
+
+export interface NormalizedLink {
+  platform: Platform;
+  kind: Kind;
+  /** Deduplication key. null for notes and for short links that still need expansion. */
+  canonicalUrl: string | null;
+  /** Platform-native id (shortcode, video id, status id) or a text hash for notes. */
+  externalId: string | null;
+  /** The URL exactly as shared (trimmed), or null for notes. */
+  sourceUrl: string | null;
+  /** The shared text, when text was shared (with or without a URL). */
+  text: string | null;
+  /** true when the server must follow redirects before the link can be canonicalised. */
+  needsExpansion: boolean;
+}
+
+export interface NormalizeInput {
+  url?: string | null;
+  text?: string | null;
+}
+
+const TRACKING_PARAMS = new Set([
+  "fbclid", "gclid", "dclid", "msclkid", "yclid", "twclid", "ttclid", "igshid", "igsh",
+  "mc_cid", "mc_eid", "ref", "ref_src", "ref_url", "_ga", "_gl", "mibextid", "rdid", "s", "t",
+  "si", "feature", "sender_device", "is_from_webapp", "xmt", "nic_v3", "share_id", "utm_id",
+]);
+
+function isTracking(key: string): boolean {
+  return key.startsWith("utm_") || TRACKING_PARAMS.has(key);
+}
+
+const URL_RE = /https?:\/\/[^\s<>"'`]+/i;
+
+export function extractFirstUrl(text: string): string | null {
+  const m = URL_RE.exec(text);
+  if (!m) return null;
+  let u = m[0];
+  while (u.length > 0 && ".,;:!?'\"".includes(u[u.length - 1]!)) u = u.slice(0, -1);
+  while (u.endsWith(")") && (u.match(/\(/g)?.length ?? 0) < (u.match(/\)/g)?.length ?? 0)) u = u.slice(0, -1);
+  return u;
+}
+
+/** 64-bit FNV-1a as 16 lowercase hex chars. Stable across runtimes. */
+export function fnv1a64(input: string): string {
+  let hash = 0xcbf29ce484222325n;
+  const prime = 0x100000001b3n;
+  const mask = 0xffffffffffffffffn;
+  for (const b of new TextEncoder().encode(input)) {
+    hash ^= BigInt(b);
+    hash = (hash * prime) & mask;
+  }
+  return hash.toString(16).padStart(16, "0");
+}
+
+function parseHttpUrl(raw: string): URL | null {
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    if (raw.length > 4096) return null;
+    return u;
+  } catch {
+    return null;
+  }
+}
+
+function bareHost(u: URL): string {
+  return u.hostname.toLowerCase().replace(/^www\./, "");
+}
+
+export function detectPlatform(hostname: string): Exclude<Platform, "note"> {
+  const h = hostname.toLowerCase().replace(/^www\./, "");
+  const is = (root: string) => h === root || h.endsWith("." + root);
+  if (is("instagram.com")) return "instagram";
+  if (is("youtube.com") || h === "youtu.be") return "youtube";
+  if (is("x.com") || is("twitter.com") || h === "t.co") return "x";
+  if (is("facebook.com") || h === "fb.watch" || h === "fb.com") return "facebook";
+  if (is("tiktok.com")) return "tiktok";
+  if (is("reddit.com") || h === "redd.it") return "reddit";
+  if (is("threads.net") || is("threads.com")) return "threads";
+  if (is("linkedin.com") || h === "lnkd.in") return "linkedin";
+  if (is("pinterest.com") || /^pinterest\.[a-z.]+$/.test(h) || h === "pin.it") return "pinterest";
+  return "web";
+}
+
+type Partial3 = { kind: Kind; canonicalUrl: string | null; externalId: string | null; needsExpansion?: boolean };
+
+const expand = (kind: Kind = "post"): Partial3 => ({ kind, canonicalUrl: null, externalId: null, needsExpansion: true });
+const segs = (u: URL) => u.pathname.split("/").filter(Boolean);
+const trimSlash = (p: string) => (p.length > 1 && p.endsWith("/") ? p.slice(0, -1) : p);
+const pathOnly = (base: string, u: URL, kind: Kind = "post"): Partial3 => ({
+  kind, canonicalUrl: base + trimSlash(u.pathname), externalId: null,
+});
+const CODE = /^[A-Za-z0-9_-]+$/;
+const DIGITS = /^\d+$/;
+
+function instagram(u: URL): Partial3 {
+  const s = segs(u);
+  if (s[0] === "share") return expand();
+  for (let i = 0; i < s.length - 1; i++) {
+    const t = s[i]; const code = s[i + 1];
+    if ((t === "p" || t === "reel" || t === "reels" || t === "tv") && code && CODE.test(code)) {
+      const type = t === "reels" ? "reel" : t;
+      const kind: Kind = type === "reel" ? "short_video" : type === "tv" ? "video" : "post";
+      return { kind, canonicalUrl: `https://www.instagram.com/${type}/${code}/`, externalId: code };
+    }
+  }
+  if (s[0] === "stories" && s[1] && s[2]) {
+    return { kind: "post", canonicalUrl: `https://www.instagram.com/stories/${s[1]}/${s[2]}/`, externalId: s[2] };
+  }
+  return pathOnly("https://www.instagram.com", u);
+}
+
+const YT_ID = /^[A-Za-z0-9_-]{6,}$/;
+function youtube(u: URL): Partial3 {
+  const s = segs(u);
+  const video = (id: string): Partial3 => ({ kind: "video", canonicalUrl: `https://www.youtube.com/watch?v=${id}`, externalId: id });
+  if (bareHost(u) === "youtu.be" && s[0] && YT_ID.test(s[0])) return video(s[0]);
+  if (s[0] === "shorts" && s[1] && YT_ID.test(s[1])) {
+    return { kind: "short_video", canonicalUrl: `https://www.youtube.com/shorts/${s[1]}`, externalId: s[1] };
+  }
+  if ((s[0] === "live" || s[0] === "embed" || s[0] === "v") && s[1] && YT_ID.test(s[1])) return video(s[1]);
+  const v = u.searchParams.get("v");
+  const list = u.searchParams.get("list");
+  if (s[0] === "watch" && v && YT_ID.test(v)) return video(v);
+  if ((s[0] === "playlist" || (s[0] === "watch" && !v)) && list && CODE.test(list)) {
+    return { kind: "post", canonicalUrl: `https://www.youtube.com/playlist?list=${list}`, externalId: list };
+  }
+  return pathOnly("https://www.youtube.com", u);
+}
+
+function x(u: URL): Partial3 {
+  const s = segs(u);
+  if (bareHost(u) === "t.co") return expand();
+  if (s[0] && s[1] === "status" && s[2] && DIGITS.test(s[2])) {
+    return { kind: "post", canonicalUrl: `https://x.com/${s[0]}/status/${s[2]}`, externalId: s[2] };
+  }
+  if (s[0] === "i" && s[1] === "web" && s[2] === "status" && s[3] && DIGITS.test(s[3])) {
+    return { kind: "post", canonicalUrl: `https://x.com/i/web/status/${s[3]}`, externalId: s[3] };
+  }
+  return pathOnly("https://x.com", u);
+}
+
+function facebook(u: URL): Partial3 {
+  const s = segs(u);
+  const h = bareHost(u);
+  const base = "https://www.facebook.com";
+  if (h === "fb.watch" || s[0] === "share") return expand();
+  if (s[0] === "reel" && s[1] && DIGITS.test(s[1])) {
+    return { kind: "short_video", canonicalUrl: `${base}/reel/${s[1]}`, externalId: s[1] };
+  }
+  const v = u.searchParams.get("v");
+  if (s[0] === "watch" && v && DIGITS.test(v)) return { kind: "video", canonicalUrl: `${base}/watch/?v=${v}`, externalId: v };
+  const fbid = u.searchParams.get("fbid");
+  if ((s[0] === "photo" || s[0] === "photo.php") && fbid && DIGITS.test(fbid)) {
+    return { kind: "image", canonicalUrl: `${base}/photo/?fbid=${fbid}`, externalId: fbid };
+  }
+  if (s[0] === "permalink.php") {
+    const story = u.searchParams.get("story_fbid"); const id = u.searchParams.get("id");
+    if (story && id) return { kind: "post", canonicalUrl: `${base}/permalink.php?story_fbid=${story}&id=${id}`, externalId: story };
+  }
+  if (s[0] === "groups" && s[1] && s[2] === "posts" && s[3] && DIGITS.test(s[3])) {
+    return { kind: "post", canonicalUrl: `${base}/groups/${s[1]}/posts/${s[3]}`, externalId: s[3] };
+  }
+  if (s[0] && (s[1] === "posts" || s[1] === "videos") && s[2] && DIGITS.test(s[2])) {
+    const kind: Kind = s[1] === "videos" ? "video" : "post";
+    return { kind, canonicalUrl: `${base}/${s[0]}/${s[1]}/${s[2]}`, externalId: s[2] };
+  }
+  return pathOnly(base, u);
+}
+
+function tiktok(u: URL): Partial3 {
+  const s = segs(u);
+  const h = bareHost(u);
+  if (h === "vm.tiktok.com" || h === "vt.tiktok.com" || s[0] === "t") return expand("short_video");
+  if (s[0]?.startsWith("@") && (s[1] === "video" || s[1] === "photo") && s[2] && DIGITS.test(s[2])) {
+    const kind: Kind = s[1] === "video" ? "short_video" : "image";
+    return { kind, canonicalUrl: `https://www.tiktok.com/${s[0]}/${s[1]}/${s[2]}`, externalId: s[2] };
+  }
+  return pathOnly("https://www.tiktok.com", u);
+}
+
+function reddit(u: URL): Partial3 {
+  const s = segs(u);
+  const base = "https://www.reddit.com";
+  if (bareHost(u) === "redd.it") return expand();
+  if (s[0] === "r" && s[1] && s[2] === "s") return expand();
+  if (s[0] === "r" && s[1] && s[2] === "comments" && s[3] && CODE.test(s[3])) {
+    return { kind: "post", canonicalUrl: `${base}/r/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
+  }
+  if (s[0] === "user" && s[1] && s[2] === "comments" && s[3] && CODE.test(s[3])) {
+    return { kind: "post", canonicalUrl: `${base}/user/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
+  }
+  if (s[0] === "comments" && s[1] && CODE.test(s[1])) {
+    return { kind: "post", canonicalUrl: `${base}/comments/${s[1]}/`, externalId: s[1] };
+  }
+  return pathOnly(base, u);
+}
+
+function threads(u: URL): Partial3 {
+  const s = segs(u);
+  if (s[0]?.startsWith("@") && s[1] === "post" && s[2] && CODE.test(s[2])) {
+    return { kind: "post", canonicalUrl: `https://www.threads.com/${s[0]}/post/${s[2]}`, externalId: s[2] };
+  }
+  return pathOnly("https://www.threads.com", u);
+}
+
+function linkedin(u: URL): Partial3 {
+  const s = segs(u);
+  const base = "https://www.linkedin.com";
+  if (bareHost(u) === "lnkd.in") return expand();
+  if (s[0] === "posts" && s[1]) {
+    const m = /activity-(\d+)/.exec(s[1]);
+    return { kind: "post", canonicalUrl: `${base}/posts/${s[1]}`, externalId: m?.[1] ?? null };
+  }
+  if (s[0] === "feed" && s[1] === "update" && s[2]) {
+    const m = /urn:li:activity:(\d+)/.exec(s[2]);
+    return { kind: "post", canonicalUrl: `${base}/feed/update/${s[2]}/`, externalId: m?.[1] ?? null };
+  }
+  return pathOnly(base, u);
+}
+
+function pinterest(u: URL): Partial3 {
+  const s = segs(u);
+  if (bareHost(u) === "pin.it") return expand("image");
+  if (s[0] === "pin" && s[1] && DIGITS.test(s[1])) {
+    return { kind: "image", canonicalUrl: `https://www.pinterest.com/pin/${s[1]}/`, externalId: s[1] };
+  }
+  return pathOnly("https://www.pinterest.com", u);
+}
+
+function web(u: URL): Partial3 {
+  const out = new URL(u.toString());
+  out.hostname = out.hostname.toLowerCase();
+  out.hash = "";
+  if ((out.protocol === "https:" && out.port === "443") || (out.protocol === "http:" && out.port === "80")) out.port = "";
+  const kept: [string, string][] = [];
+  out.searchParams.forEach((value, key) => { if (!isTracking(key)) kept.push([key, value]); });
+  kept.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  out.search = "";
+  for (const [k, v] of kept) out.searchParams.append(k, v);
+  out.pathname = trimSlash(out.pathname);
+  return { kind: "article", canonicalUrl: out.toString(), externalId: null };
+}
+
+const HANDLERS: Record<Exclude<Platform, "note">, (u: URL) => Partial3> = {
+  instagram, youtube, x, facebook, tiktok, reddit, threads, linkedin, pinterest, web,
+};
+
+function note(text: string | null): NormalizedLink {
+  const t = text?.trim() ? text.trim() : null;
+  return {
+    platform: "note", kind: "text", canonicalUrl: null,
+    externalId: t ? fnv1a64(t) : null, sourceUrl: null, text: t, needsExpansion: false,
+  };
+}
+
+export function normalize(input: NormalizeInput): NormalizedLink {
+  const rawUrl = input.url?.trim() || null;
+  const rawText = input.text?.trim() || null;
+  let sourceUrl: string | null = null;
+  let text: string | null = rawText;
+  if (rawUrl && parseHttpUrl(rawUrl)) {
+    sourceUrl = rawUrl;
+  } else if (rawUrl) {
+    text = text ?? rawUrl; // a non-http "url" is just text the user shared
+  }
+  if (!sourceUrl && text) sourceUrl = extractFirstUrl(text);
+  const u = sourceUrl ? parseHttpUrl(sourceUrl) : null;
+  if (!u) return note(text);
+  const platform = detectPlatform(u.hostname);
+  const p = HANDLERS[platform](u);
+  return {
+    platform, kind: p.kind, canonicalUrl: p.canonicalUrl, externalId: p.externalId,
+    sourceUrl, text, needsExpansion: p.needsExpansion === true,
+  };
+}
