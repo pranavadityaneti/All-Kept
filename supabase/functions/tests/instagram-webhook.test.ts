@@ -1,5 +1,5 @@
 import { assertEquals, assert } from "jsr:@std/assert@1";
-import { handleVerification, verifySignature, extractEvents, signBody } from "../instagram-webhook/handler.ts";
+import { handleVerification, verifySignature, extractEvents, signBody, describeShape } from "../instagram-webhook/handler.ts";
 
 const SECRET = "test-app-secret";
 const VERIFY = "test-verify-token";
@@ -175,7 +175,7 @@ Deno.test("handle: a poisoned batch falls back to per-row storage and records th
   // batch, then 3 single rows, then 1 error marker for the poisoned row
   assertEquals(s.calls.length, 5);
   const marker = s.calls[4]![0]!;
-  assertEquals(marker.event_id, "mid.deleted");
+  assertEquals(marker.event_id, "mid.deleted:unstorable");
   assertEquals(marker.store_error, "22P05 bad value");
   assertEquals(marker.raw_body, null);
 });
@@ -196,4 +196,25 @@ Deno.test("NUL bytes are stripped from payload, ids and raw body; huge mids are 
   assertEquals(rows[0]!.raw_body, "rawbody");
   assert(rows[0]!.event_id.length <= 512, String(rows[0]!.event_id.length));
   assertEquals(stripNul({ a: ["x\u0000", { b: "\u0000" }], n: 1 }), { a: ["x", { b: "" }], n: 1 });
+});
+
+import { truncateSafe } from "../instagram-webhook/handler.ts";
+
+Deno.test("stripNul also replaces lone surrogates so Postgres never rejects the text", () => {
+  assertEquals(stripNul("a\ud800b"), "a�b");
+  assertEquals(stripNul("a\udc00b"), "a�b");
+  assertEquals(stripNul("ok 😀 pair kept"), "ok 😀 pair kept");
+  assertEquals(stripNul({ t: "x\u0000\ud800" }), { t: "x�" });
+});
+
+Deno.test("truncateSafe never splits a surrogate pair", () => {
+  assertEquals(truncateSafe("ab😀", 3), "ab");
+  assertEquals(truncateSafe("ab😀", 4), "ab😀");
+  assertEquals(truncateSafe("abc", 10), "abc");
+  assertEquals(truncateSafe("abcdef", 4), "abcd");
+});
+
+Deno.test("describeShape bounds the object field", () => {
+  const shape = describeShape({ object: "x".repeat(500), entry: [] });
+  assertEquals((shape.object as string).length, 50);
 });

@@ -58,9 +58,11 @@ type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === "string" ? v : typeof v === "number" ? String(v) : null);
 
-/** Postgres text and jsonb reject NUL; remove it everywhere so a row can always be stored. */
+const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
+
+/** Postgres text and jsonb reject NUL and lone surrogates; fix both everywhere so a row can always be stored. */
 export function stripNul<T>(value: T): T {
-  if (typeof value === "string") return value.replaceAll("\u0000", "") as T;
+  if (typeof value === "string") return value.replaceAll("\u0000", "").replace(LONE_SURROGATE, "�") as T;
   if (Array.isArray(value)) return value.map((v) => stripNul(v)) as T;
   if (isObj(value)) {
     const out: Obj = {};
@@ -68,6 +70,15 @@ export function stripNul<T>(value: T): T {
     return out as T;
   }
   return value;
+}
+
+/** Truncate to at most `max` UTF-16 units without orphaning a high surrogate. */
+export function truncateSafe(s: string, max: number): string {
+  if (s.length <= max) return s;
+  let end = max;
+  const c = s.charCodeAt(end - 1);
+  if (c >= 0xd800 && c <= 0xdbff) end--;
+  return s.slice(0, end);
 }
 
 const MIN_MS = Date.UTC(2000, 0, 1); // plausible event time window; anything else is garbage, stored as null
@@ -92,7 +103,7 @@ const MAX_RAW = 20_000;
 /** One row per `messaging` element. Keyed by a trimmed non-empty message.mid when present, else `${entry.id}:${timestamp}:${index}:${fnv1a32(payload)}`. Timestamps outside 2000–2100 are stored as null. NUL bytes are stripped; keys are bounded. */
 export function extractEvents(body: unknown, rawText: string): EventRow[] {
   if (!isObj(body) || body["object"] !== "instagram" || !Array.isArray(body["entry"])) return [];
-  const rawBody = stripNul(rawText).slice(0, MAX_RAW);
+  const rawBody = truncateSafe(stripNul(rawText), MAX_RAW);
   const rows: EventRow[] = [];
   for (const entryIn of body["entry"]) {
     if (!isObj(entryIn) || !Array.isArray(entryIn["messaging"])) continue;
@@ -124,7 +135,7 @@ export function extractEvents(body: unknown, rawText: string): EventRow[] {
 
 /** A row for any signed payload we could not parse into messaging events, so the spike never loses a shape. */
 export function unparsedRow(rawText: string): EventRow {
-  const rawBody = stripNul(rawText).slice(0, MAX_RAW);
+  const rawBody = truncateSafe(stripNul(rawText), MAX_RAW);
   return {
     source_kind: "instagram", event_id: `unparsed:${fnv1a32(rawBody)}`, entry_id: null, sender_id: null, recipient_id: null,
     event_time: null, payload: { unparsed: true }, raw_body: rawBody, store_error: null,
@@ -135,7 +146,7 @@ export function unparsedRow(rawText: string): EventRow {
 export function describeShape(body: unknown): Record<string, unknown> {
   if (!isObj(body)) return { type: body === null ? "null" : typeof body };
   const entries = Array.isArray(body["entry"]) ? body["entry"] : [];
-  return { object: body["object"] ?? null, entries: entries.length, entryKeys: entries.slice(0, 3).map((e) => (isObj(e) ? Object.keys(e) : typeof e)) };
+  return { object: typeof body["object"] === "string" ? body["object"].slice(0, 50) : null, entries: entries.length, entryKeys: entries.slice(0, 3).map((e) => (isObj(e) ? Object.keys(e) : typeof e)) };
 }
 
 export interface StoreResult { error: string | null }
@@ -191,7 +202,7 @@ export async function handle(req: Request, deps: HandleDeps): Promise<Response> 
   const markers: EventRow[] = [];
   for (const row of rows) {
     const one = await deps.store([row]);
-    if (one.error) markers.push({ ...row, payload: { unstorable: true }, raw_body: null, store_error: one.error.slice(0, 500) });
+    if (one.error) markers.push({ ...row, event_id: `${row.event_id}:unstorable`, payload: { unstorable: true }, raw_body: null, store_error: truncateSafe(stripNul(one.error), 500) });
   }
   for (const marker of markers) {
     const res = await deps.store([marker]);
