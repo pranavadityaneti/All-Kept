@@ -37,19 +37,49 @@ const TRACKING_PARAMS = new Set([
   "mibextid", "rdid", "vero_id", "oly_anon_id", "oly_enc_id",
 ]);
 
+/** Share-tracking keys each platform appends to its own links. Applied only to that platform's fallback URLs. */
+const SHARE_KEYS: Record<Exclude<Platform, "note" | "web">, readonly string[]> = {
+  instagram: ["igsh", "igshid"],
+  youtube: ["si", "feature"],
+  x: ["s", "t", "ref_src"],
+  facebook: ["sfnsn", "mibextid", "rdid", "refid", "share_url"],
+  tiktok: ["is_from_webapp", "sender_device", "share_id", "_t", "_r"],
+  reddit: ["share_id", "rdt", "ref", "ref_source"],
+  threads: ["xmt"],
+  linkedin: ["trk", "trackingId", "lipi", "licu", "rcm", "original_referer"],
+  pinterest: ["nic_v3", "invite_code", "sender"],
+};
+
 function isTracking(key: string): boolean {
   return key.startsWith("utm_") || TRACKING_PARAMS.has(key);
 }
 
 const URL_RE = /https?:\/\/[^\s<>"'`]+/i;
 
+const MAX_TEXT_SCAN_CHARS = 20_000;
+
 export function extractFirstUrl(text: string): string | null {
-  const m = URL_RE.exec(text);
+  const m = URL_RE.exec(text.length > MAX_TEXT_SCAN_CHARS ? text.slice(0, MAX_TEXT_SCAN_CHARS) : text);
   if (!m) return null;
-  let u = m[0];
-  while (u.length > 0 && ".,;:!?'\"".includes(u[u.length - 1]!)) u = u.slice(0, -1);
-  while (u.endsWith(")") && (u.match(/\(/g)?.length ?? 0) < (u.match(/\)/g)?.length ?? 0)) u = u.slice(0, -1);
-  return u;
+  const u = m[0];
+  let open = 0;
+  let close = 0;
+  for (const ch of u) {
+    if (ch === "(") open++;
+    else if (ch === ")") close++;
+  }
+  // Trim trailing punctuation and unbalanced ")" by moving an index; never re-slice per character.
+  let end = u.length;
+  for (;;) {
+    const before = end;
+    while (end > 0 && ".,;:!?'\"".includes(u[end - 1]!)) end--;
+    while (end > 0 && close > open && u[end - 1] === ")") {
+      end--;
+      close--;
+    }
+    if (end === before) break;
+  }
+  return u.slice(0, end);
 }
 
 /** 64-bit FNV-1a as 16 lowercase hex chars. Stable across runtimes. */
@@ -70,6 +100,8 @@ function parseHttpUrl(raw: string): URL | null {
   try {
     const u = new URL(s);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    u.username = "";
+    u.password = "";
     return u;
   } catch {
     return null;
@@ -102,9 +134,9 @@ const segs = (u: URL) => u.pathname.split("/").filter(Boolean);
 const trimSlash = (p: string) => (p.length > 1 && p.endsWith("/") ? p.slice(0, -1) : p);
 
 /** Query string with tracking keys removed and the rest sorted; "" when nothing remains. */
-function cleanQuery(u: URL): string {
+function cleanQuery(u: URL, extra: readonly string[] = []): string {
   const kept: [string, string][] = [];
-  u.searchParams.forEach((value, key) => { if (!isTracking(key)) kept.push([key, value]); });
+  u.searchParams.forEach((value, key) => { if (!isTracking(key) && !extra.includes(key)) kept.push([key, value]); });
   kept.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   const q = new URLSearchParams();
   for (const [k, v] of kept) q.append(k, v);
@@ -112,8 +144,8 @@ function cleanQuery(u: URL): string {
   return out ? `?${out}` : "";
 }
 
-const pathOnly = (base: string, u: URL, kind: Kind = "post"): Partial3 => ({
-  kind, canonicalUrl: base + trimSlash(u.pathname) + cleanQuery(u), externalId: null,
+const pathOnly = (base: string, u: URL, platform: keyof typeof SHARE_KEYS, kind: Kind = "post"): Partial3 => ({
+  kind, canonicalUrl: base + trimSlash(u.pathname) + cleanQuery(u, SHARE_KEYS[platform]), externalId: null,
 });
 const CODE = /^[A-Za-z0-9_-]+$/;
 const DIGITS = /^\d+$/;
@@ -132,12 +164,10 @@ function instagram(u: URL): Partial3 {
   if (s[0] === "stories" && s[1] && s[2]) {
     return { kind: "post", canonicalUrl: `https://www.instagram.com/stories/${s[1]}/${s[2]}/`, externalId: s[2] };
   }
-  return pathOnly("https://www.instagram.com", u);
+  return pathOnly("https://www.instagram.com", u, "instagram");
 }
 
 const YT_ID = /^[A-Za-z0-9_-]{6,}$/;
-/** YouTube's own share keys. Platform-local, not in TRACKING_PARAMS, because ordinary sites use `si` and `feature` functionally. */
-const YT_SHARE_PARAMS = ["si", "feature"];
 function youtube(u: URL): Partial3 {
   const s = segs(u);
   const video = (id: string): Partial3 => ({ kind: "video", canonicalUrl: `https://www.youtube.com/watch?v=${id}`, externalId: id });
@@ -152,9 +182,7 @@ function youtube(u: URL): Partial3 {
   if ((s[0] === "playlist" || (s[0] === "watch" && !v)) && list && CODE.test(list)) {
     return { kind: "post", canonicalUrl: `https://www.youtube.com/playlist?list=${list}`, externalId: list };
   }
-  const clean = new URL(u.toString());
-  for (const k of YT_SHARE_PARAMS) clean.searchParams.delete(k);
-  return pathOnly("https://www.youtube.com", clean);
+  return pathOnly("https://www.youtube.com", u, "youtube");
 }
 
 function x(u: URL): Partial3 {
@@ -166,7 +194,7 @@ function x(u: URL): Partial3 {
   if (s[0] === "i" && s[1] === "web" && s[2] === "status" && s[3] && DIGITS.test(s[3])) {
     return { kind: "post", canonicalUrl: `https://x.com/i/web/status/${s[3]}`, externalId: s[3] };
   }
-  return pathOnly("https://x.com", u);
+  return pathOnly("https://x.com", u, "x");
 }
 
 function facebook(u: URL): Partial3 {
@@ -194,7 +222,7 @@ function facebook(u: URL): Partial3 {
     const kind: Kind = s[1] === "videos" ? "video" : "post";
     return { kind, canonicalUrl: `${base}/${s[0]}/${s[1]}/${s[2]}`, externalId: s[2] };
   }
-  return pathOnly(base, u);
+  return pathOnly(base, u, "facebook");
 }
 
 function tiktok(u: URL): Partial3 {
@@ -205,7 +233,7 @@ function tiktok(u: URL): Partial3 {
     const kind: Kind = s[1] === "video" ? "short_video" : "image";
     return { kind, canonicalUrl: `https://www.tiktok.com/${s[0]}/${s[1]}/${s[2]}`, externalId: s[2] };
   }
-  return pathOnly("https://www.tiktok.com", u);
+  return pathOnly("https://www.tiktok.com", u, "tiktok");
 }
 
 function reddit(u: URL): Partial3 {
@@ -222,7 +250,7 @@ function reddit(u: URL): Partial3 {
   if (s[0] === "comments" && s[1] && CODE.test(s[1])) {
     return { kind: "post", canonicalUrl: `${base}/comments/${s[1]}/`, externalId: s[1] };
   }
-  return pathOnly(base, u);
+  return pathOnly(base, u, "reddit");
 }
 
 function threads(u: URL): Partial3 {
@@ -230,7 +258,7 @@ function threads(u: URL): Partial3 {
   if (s[0]?.startsWith("@") && s[1] === "post" && s[2] && CODE.test(s[2])) {
     return { kind: "post", canonicalUrl: `https://www.threads.com/${s[0]}/post/${s[2]}`, externalId: s[2] };
   }
-  return pathOnly("https://www.threads.com", u);
+  return pathOnly("https://www.threads.com", u, "threads");
 }
 
 function linkedin(u: URL): Partial3 {
@@ -245,7 +273,7 @@ function linkedin(u: URL): Partial3 {
     const m = /urn:li:activity:(\d+)/.exec(s[2]);
     return { kind: "post", canonicalUrl: `${base}/feed/update/${s[2]}/`, externalId: m?.[1] ?? null };
   }
-  return pathOnly(base, u);
+  return pathOnly(base, u, "linkedin");
 }
 
 function pinterest(u: URL): Partial3 {
@@ -254,7 +282,7 @@ function pinterest(u: URL): Partial3 {
   if (s[0] === "pin" && s[1] && DIGITS.test(s[1])) {
     return { kind: "image", canonicalUrl: `https://www.pinterest.com/pin/${s[1]}/`, externalId: s[1] };
   }
-  return pathOnly("https://www.pinterest.com", u);
+  return pathOnly("https://www.pinterest.com", u, "pinterest");
 }
 
 function web(u: URL): Partial3 {
@@ -291,6 +319,7 @@ export function normalize(input: NormalizeInput): NormalizedLink {
   }
   if (!sourceUrl && text) sourceUrl = extractFirstUrl(text);
   const u = sourceUrl ? parseHttpUrl(sourceUrl) : null;
+  sourceUrl = u ? u.toString() : null;
   if (!u) return note(text);
   const platform = detectPlatform(u.hostname);
   const p = HANDLERS[platform](u);

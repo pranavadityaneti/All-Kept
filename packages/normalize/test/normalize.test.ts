@@ -97,6 +97,26 @@ const rows: Row[] = [
     expect: { platform: "youtube", kind: "post", canonicalUrl: "https://www.youtube.com/watch?v=abcde" } },
   { name: "unrecognised instagram url keeps its cleaned query", url: "https://www.instagram.com/explore/tags/food/?hl=en&igsh=abc",
     expect: { platform: "instagram", kind: "post", canonicalUrl: "https://www.instagram.com/explore/tags/food?hl=en" } },
+  { name: "unrecognised x url drops x share keys", url: "https://x.com/naval?s=20&t=abc&ref_src=twsrc",
+    expect: { platform: "x", canonicalUrl: "https://x.com/naval" } },
+  { name: "unrecognised tiktok url drops tiktok share keys", url: "https://www.tiktok.com/@scout2015?is_from_webapp=1&sender_device=pc&_t=8abc&_r=1",
+    expect: { platform: "tiktok", canonicalUrl: "https://www.tiktok.com/@scout2015" } },
+  { name: "unrecognised threads url drops xmt", url: "https://www.threads.net/@zuck?xmt=AQGz",
+    expect: { platform: "threads", canonicalUrl: "https://www.threads.com/@zuck" } },
+  { name: "unrecognised pinterest url drops share keys", url: "https://in.pinterest.com/mypins/?nic_v3=1&invite_code=x&sender=9",
+    expect: { platform: "pinterest", canonicalUrl: "https://www.pinterest.com/mypins" } },
+  { name: "unrecognised reddit url drops share keys", url: "https://www.reddit.com/r/india/?share_id=abc&rdt=123&ref=share&ref_source=link",
+    expect: { platform: "reddit", canonicalUrl: "https://www.reddit.com/r/india" } },
+  { name: "unrecognised linkedin url drops tracking keys", url: "https://www.linkedin.com/in/someone/?trk=public_profile&lipi=abc&original_referer=x",
+    expect: { platform: "linkedin", canonicalUrl: "https://www.linkedin.com/in/someone" } },
+  { name: "unrecognised facebook url drops share keys", url: "https://www.facebook.com/nasa?sfnsn=wiwspmo&mibextid=abc&refid=12",
+    expect: { platform: "facebook", canonicalUrl: "https://www.facebook.com/nasa" } },
+  { name: "unrecognised youtube url keeps functional keys but drops si and feature", url: "https://www.youtube.com/results?search_query=lemon+pasta&si=x&feature=share",
+    expect: { platform: "youtube", canonicalUrl: "https://www.youtube.com/results?search_query=lemon+pasta" } },
+  { name: "credentials are stripped from web canonical and source", url: "https://user:pw@example.com/page?a=1",
+    expect: { platform: "web", canonicalUrl: "https://example.com/page?a=1", sourceUrl: "https://example.com/page?a=1" } },
+  { name: "credentials are stripped from platform source urls too", url: "https://user:pw@youtu.be/dQw4w9WgXcQ",
+    expect: { platform: "youtube", sourceUrl: "https://youtu.be/dQw4w9WgXcQ" } },
   // Text handling
   { name: "text containing a url", text: "check this out https://youtu.be/dQw4w9WgXcQ so good",
     expect: { platform: "youtube", canonicalUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", text: "check this out https://youtu.be/dQw4w9WgXcQ so good" } },
@@ -137,6 +157,11 @@ describe("normalize", () => {
     const out = normalize({ url: "https://example.com/" + "a".repeat(5000), text: null });
     expect(out.platform).toBe("note");
   });
+
+  it("only scans the first 20000 characters of text for a url", () => {
+    const out = normalize({ url: null, text: "x".repeat(20_001) + " https://late.example.com/" });
+    expect(out.platform).toBe("note");
+  });
 });
 
 describe("extractFirstUrl", () => {
@@ -148,6 +173,15 @@ describe("extractFirstUrl", () => {
   });
   it("returns null when none", () => {
     expect(extractFirstUrl("no links here")).toBeNull();
+  });
+  it("trims many unbalanced trailing parens in linear time", () => {
+    const junk = ")".repeat(200_000);
+    const started = Date.now();
+    expect(extractFirstUrl(`see https://a.com/x${junk}`)).toBe("https://a.com/x");
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+  it("keeps balanced parens", () => {
+    expect(extractFirstUrl("wiki https://en.wikipedia.org/wiki/Foo_(bar) ok")).toBe("https://en.wikipedia.org/wiki/Foo_(bar)");
   });
 });
 
