@@ -73,12 +73,30 @@ Deno.test("extractEvents turns each messaging entry into a row keyed by mid", ()
   assertEquals(rows[2]!.event_id, "mid.echo");
 });
 
-Deno.test("extractEvents keys events without a mid deterministically and ignores other objects", () => {
-  const noMid = { object: "instagram", entry: [{ id: "e1", time: 1, messaging: [{ sender: { id: "s" }, recipient: { id: "r" }, timestamp: 42, reaction: { mid: "m1", action: "react" } }] }] };
-  const rows = extractEvents(noMid);
-  assertEquals(rows.length, 1);
-  assertEquals(rows[0]!.event_id, "e1:42:0");
+Deno.test("extractEvents keys mid-less events by entry, time, index and a payload hash; ignores other objects", () => {
+  const ev = (ts: number, extra: Record<string, unknown>) => ({ sender: { id: "s" }, recipient: { id: "r" }, timestamp: ts, ...extra });
+  const a = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [ev(42, { reaction: { mid: "m1", action: "react" } })] }] });
+  const b = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [ev(42, { reaction: { mid: "m2", action: "react" } })] }] });
+  assertEquals(a.length, 1);
+  assert(/^e1:42:0:[0-9a-f]{8}$/.test(a[0]!.event_id), a[0]!.event_id);
+  assert(a[0]!.event_id !== b[0]!.event_id, "different payloads must not share a synthetic key");
   assertEquals(extractEvents({ object: "page", entry: [] }).length, 0);
   assertEquals(extractEvents({ object: "instagram" }).length, 0);
   assertEquals(extractEvents(null).length, 0);
+});
+
+Deno.test("extractEvents never throws on bad timestamps and stores null event_time", () => {
+  for (const ts of [1e20, 8640000000000001, -8640000000000001, Number.MAX_SAFE_INTEGER]) {
+    const rows = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [{ sender: { id: "s" }, recipient: { id: "r" }, timestamp: ts, message: { mid: `m-${ts}` } }] }] });
+    assertEquals(rows.length, 1);
+    assertEquals(rows[0]!.event_time, null);
+    assertEquals(rows[0]!.event_id, `m-${ts}`);
+  }
+  const ok = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [{ sender: { id: "s" }, recipient: { id: "r" }, timestamp: 1757300000123, message: { mid: "m" } }] }] });
+  assertEquals(ok[0]!.event_time, "2025-09-08T02:53:20.123Z");
+});
+
+Deno.test("an empty mid is treated as absent", () => {
+  const rows = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [{ sender: { id: "s" }, recipient: { id: "r" }, timestamp: 5, message: { mid: "", text: "hi" } }] }] });
+  assert(rows[0]!.event_id.startsWith("e1:5:0:"), rows[0]!.event_id);
 });

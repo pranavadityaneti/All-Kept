@@ -24,19 +24,25 @@ Deno.serve(async (req) => {
   }
 
   let body: unknown = null;
-  try { body = JSON.parse(raw); } catch { body = null; }
-  const rows = extractEvents(body);
+  let notJson = false;
+  try { body = JSON.parse(raw); } catch { notJson = true; }
+  const rows = notJson ? [] : extractEvents(body);
   if (rows.length === 0) {
-    console.log("instagram-webhook: no messaging events in payload", raw.slice(0, 300));
+    console.log(notJson ? "instagram-webhook: body is not JSON" : "instagram-webhook: no messaging events in payload", raw.slice(0, 2000));
     return new Response("EVENT_RECEIVED", { status: 200 });
   }
 
-  const db = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error } = await db.from("message_events").upsert(rows, { onConflict: "source_kind,event_id", ignoreDuplicates: true });
-  if (error) {
-    console.error("instagram-webhook: insert failed", error);
-    return new Response("storage error", { status: 500 }); // non-2xx makes Meta retry, which is what we want
+  try {
+    const db = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
+    const { error } = await db.from("message_events").upsert(rows, { onConflict: "source_kind,event_id", ignoreDuplicates: true });
+    if (error) {
+      console.error("instagram-webhook: insert failed", error);
+      return new Response("storage error", { status: 500 }); // non-2xx makes Meta retry, which is what we want
+    }
+    console.log(`instagram-webhook: stored ${rows.length} event(s)`, rows.map((r) => r.event_id));
+    return new Response("EVENT_RECEIVED", { status: 200 });
+  } catch (e) {
+    console.error("instagram-webhook: unexpected failure", e);
+    return new Response("internal error", { status: 500 });
   }
-  console.log(`instagram-webhook: stored ${rows.length} event(s)`, rows.map((r) => r.event_id));
-  return new Response("EVENT_RECEIVED", { status: 200 });
 });
