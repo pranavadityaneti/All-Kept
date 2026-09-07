@@ -10,12 +10,14 @@
     "test": "npm run test --workspaces --if-present",
     "sync:shared": "node scripts/sync-shared.mjs",
     "test:functions": "deno test --allow-env --allow-net --allow-read supabase/functions/tests/",
-    "supabase": "supabase"
+    "supabase": "supabase",
+    "events": "node scripts/dump-events.mjs"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "supabase": "^2.117.0"
   }
 }
