@@ -1,12 +1,21 @@
 {
   "name": "allkept-monorepo",
   "private": true,
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "sync:shared": "node scripts/sync-shared.mjs",
-    "test:functions": "deno test --allow-env --allow-net --allow-read supabase/functions/tests/"
+    "test:functions": "deno test --allow-env --allow-net --allow-read supabase/functions/tests/",
+    "supabase": "supabase"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "supabase": "^2.117.0"
+  }
 }
