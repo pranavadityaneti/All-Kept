@@ -30,10 +30,11 @@ export interface NormalizeInput {
   text?: string | null;
 }
 
+/** Cross-site tracking identifiers only. Platform handlers strip their own keys; `si`, `s`, `t`, `ref` are NOT here because ordinary sites use them. */
 const TRACKING_PARAMS = new Set([
-  "fbclid", "gclid", "dclid", "msclkid", "yclid", "twclid", "ttclid", "igshid", "igsh",
-  "mc_cid", "mc_eid", "ref", "ref_src", "ref_url", "_ga", "_gl", "mibextid", "rdid", "s", "t",
-  "si", "feature", "sender_device", "is_from_webapp", "xmt", "nic_v3", "share_id", "utm_id",
+  "fbclid", "gclid", "dclid", "gbraid", "wbraid", "msclkid", "yclid", "twclid", "ttclid",
+  "igshid", "igsh", "mc_cid", "mc_eid", "_ga", "_gl", "_hsenc", "_hsmi", "mkt_tok", "srsltid",
+  "mibextid", "rdid", "vero_id", "oly_anon_id", "oly_enc_id",
 ]);
 
 function isTracking(key: string): boolean {
@@ -64,10 +65,11 @@ export function fnv1a64(input: string): string {
 }
 
 function parseHttpUrl(raw: string): URL | null {
+  const s = raw.trim();
+  if (s.length === 0 || s.length > 4096) return null;
   try {
-    const u = new URL(raw.trim());
+    const u = new URL(s);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    if (raw.length > 4096) return null;
     return u;
   } catch {
     return null;
@@ -98,8 +100,20 @@ type Partial3 = { kind: Kind; canonicalUrl: string | null; externalId: string | 
 const expand = (kind: Kind = "post"): Partial3 => ({ kind, canonicalUrl: null, externalId: null, needsExpansion: true });
 const segs = (u: URL) => u.pathname.split("/").filter(Boolean);
 const trimSlash = (p: string) => (p.length > 1 && p.endsWith("/") ? p.slice(0, -1) : p);
+
+/** Query string with tracking keys removed and the rest sorted; "" when nothing remains. */
+function cleanQuery(u: URL): string {
+  const kept: [string, string][] = [];
+  u.searchParams.forEach((value, key) => { if (!isTracking(key)) kept.push([key, value]); });
+  kept.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  const q = new URLSearchParams();
+  for (const [k, v] of kept) q.append(k, v);
+  const out = q.toString();
+  return out ? `?${out}` : "";
+}
+
 const pathOnly = (base: string, u: URL, kind: Kind = "post"): Partial3 => ({
-  kind, canonicalUrl: base + trimSlash(u.pathname), externalId: null,
+  kind, canonicalUrl: base + trimSlash(u.pathname) + cleanQuery(u), externalId: null,
 });
 const CODE = /^[A-Za-z0-9_-]+$/;
 const DIGITS = /^\d+$/;
@@ -122,6 +136,8 @@ function instagram(u: URL): Partial3 {
 }
 
 const YT_ID = /^[A-Za-z0-9_-]{6,}$/;
+/** YouTube's own share keys. Platform-local, not in TRACKING_PARAMS, because ordinary sites use `si` and `feature` functionally. */
+const YT_SHARE_PARAMS = ["si", "feature"];
 function youtube(u: URL): Partial3 {
   const s = segs(u);
   const video = (id: string): Partial3 => ({ kind: "video", canonicalUrl: `https://www.youtube.com/watch?v=${id}`, externalId: id });
@@ -136,7 +152,9 @@ function youtube(u: URL): Partial3 {
   if ((s[0] === "playlist" || (s[0] === "watch" && !v)) && list && CODE.test(list)) {
     return { kind: "post", canonicalUrl: `https://www.youtube.com/playlist?list=${list}`, externalId: list };
   }
-  return pathOnly("https://www.youtube.com", u);
+  const clean = new URL(u.toString());
+  for (const k of YT_SHARE_PARAMS) clean.searchParams.delete(k);
+  return pathOnly("https://www.youtube.com", clean);
 }
 
 function x(u: URL): Partial3 {
@@ -244,13 +262,9 @@ function web(u: URL): Partial3 {
   out.hostname = out.hostname.toLowerCase();
   out.hash = "";
   if ((out.protocol === "https:" && out.port === "443") || (out.protocol === "http:" && out.port === "80")) out.port = "";
-  const kept: [string, string][] = [];
-  out.searchParams.forEach((value, key) => { if (!isTracking(key)) kept.push([key, value]); });
-  kept.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   out.search = "";
-  for (const [k, v] of kept) out.searchParams.append(k, v);
   out.pathname = trimSlash(out.pathname);
-  return { kind: "article", canonicalUrl: out.toString(), externalId: null };
+  return { kind: "article", canonicalUrl: out.toString() + cleanQuery(u), externalId: null };
 }
 
 const HANDLERS: Record<Exclude<Platform, "note">, (u: URL) => Partial3> = {

@@ -87,6 +87,16 @@ const rows: Row[] = [
     expect: { platform: "web", canonicalUrl: "https://example.com/a/b" } },
   { name: "web sorts remaining query keys", url: "https://example.com/p?b=2&a=1",
     expect: { platform: "web", canonicalUrl: "https://example.com/p?a=1&b=2" } },
+  { name: "web keeps functional short keys like s and t", url: "https://example.com/search?s=laptop&t=3",
+    expect: { platform: "web", canonicalUrl: "https://example.com/search?s=laptop&t=3" } },
+  { name: "web strips only unambiguous tracking keys", url: "https://shop.example.com/item?gclid=abc&srsltid=def&_hsenc=x&color=red",
+    expect: { platform: "web", canonicalUrl: "https://shop.example.com/item?color=red" } },
+  { name: "web keeps ref (functional on many sites)", url: "https://example.com/page?ref=producthunt",
+    expect: { platform: "web", canonicalUrl: "https://example.com/page?ref=producthunt" } },
+  { name: "unrecognised youtube url keeps its cleaned query", url: "https://www.youtube.com/watch?v=abcde&si=xyz",
+    expect: { platform: "youtube", kind: "post", canonicalUrl: "https://www.youtube.com/watch?v=abcde" } },
+  { name: "unrecognised instagram url keeps its cleaned query", url: "https://www.instagram.com/explore/tags/food/?hl=en&igsh=abc",
+    expect: { platform: "instagram", kind: "post", canonicalUrl: "https://www.instagram.com/explore/tags/food?hl=en" } },
   // Text handling
   { name: "text containing a url", text: "check this out https://youtu.be/dQw4w9WgXcQ so good",
     expect: { platform: "youtube", canonicalUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", text: "check this out https://youtu.be/dQw4w9WgXcQ so good" } },
@@ -121,6 +131,11 @@ describe("normalize", () => {
     const out = normalize({ url: null, text: "   " });
     expect(out.platform).toBe("note");
     expect(out.text).toBeNull();
+  });
+
+  it("treats an over-long url as text without throwing", () => {
+    const out = normalize({ url: "https://example.com/" + "a".repeat(5000), text: null });
+    expect(out.platform).toBe("note");
   });
 });
 
