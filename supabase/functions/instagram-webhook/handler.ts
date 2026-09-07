@@ -53,9 +53,10 @@ type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === "string" ? v : typeof v === "number" ? String(v) : null);
 
-const MAX_ABS_MS = 8.64e15; // largest |ms| Date can represent
+const MIN_MS = Date.UTC(2000, 0, 1); // plausible event time window; anything else is garbage, stored as null
+const MAX_MS = Date.UTC(2100, 0, 1);
 const validMs = (v: unknown): number | null =>
-  typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= MAX_ABS_MS ? v : null;
+  typeof v === "number" && Number.isFinite(v) && v >= MIN_MS && v <= MAX_MS ? v : null;
 
 /** 32-bit FNV-1a as 8 hex chars; makes synthetic keys unique per payload. */
 function fnv1a32(s: string): string {
@@ -67,7 +68,7 @@ function fnv1a32(s: string): string {
   return h.toString(16).padStart(8, "0");
 }
 
-/** One row per `messaging` element. Keyed by message.mid when present, else `${entry.id}:${timestamp}:${index}`. */
+/** One row per `messaging` element. Keyed by a trimmed non-empty message.mid when present, else `${entry.id}:${timestamp}:${index}:${fnv1a32(payload)}`. Timestamps outside 2000–2100 are stored as null. */
 export function extractEvents(body: unknown): EventRow[] {
   if (!isObj(body) || body["object"] !== "instagram" || !Array.isArray(body["entry"])) return [];
   const rows: EventRow[] = [];
@@ -77,9 +78,13 @@ export function extractEvents(body: unknown): EventRow[] {
     entry["messaging"].forEach((m, index) => {
       if (!isObj(m)) return;
       const message = isObj(m["message"]) ? m["message"] : null;
-      const mid = message ? str(message["mid"]) : null;
-      const ts = validMs(m["timestamp"]);
-      const key = mid && mid.length > 0 ? mid : `${entryId ?? "?"}:${ts ?? "?"}:${index}:${fnv1a32(JSON.stringify(m))}`;
+      const mid = (message ? str(message["mid"]) : null)?.trim() || null;
+      const rawTs = m["timestamp"];
+      const ts = validMs(rawTs);
+      // The key uses the timestamp as sent (bounded to finite numbers so event_id can never grow unbounded);
+      // the 2000-2100 window only governs what lands in event_time.
+      const keyTs = typeof rawTs === "number" && Number.isFinite(rawTs) ? rawTs : "?";
+      const key = mid ?? `${entryId ?? "?"}:${keyTs}:${index}:${fnv1a32(JSON.stringify(m))}`;
       rows.push({
         source_kind: "instagram",
         event_id: key,

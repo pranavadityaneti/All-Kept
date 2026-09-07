@@ -86,7 +86,7 @@ Deno.test("extractEvents keys mid-less events by entry, time, index and a payloa
 });
 
 Deno.test("extractEvents never throws on bad timestamps and stores null event_time", () => {
-  for (const ts of [1e20, 8640000000000001, -8640000000000001, Number.MAX_SAFE_INTEGER]) {
+  for (const ts of [1e20, 8640000000000001, -8640000000000001, Number.MAX_SAFE_INTEGER, 1e15, 4102444800001, 946684799999, -1, 0]) {
     const rows = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [{ sender: { id: "s" }, recipient: { id: "r" }, timestamp: ts, message: { mid: `m-${ts}` } }] }] });
     assertEquals(rows.length, 1);
     assertEquals(rows[0]!.event_time, null);
@@ -98,5 +98,10 @@ Deno.test("extractEvents never throws on bad timestamps and stores null event_ti
 
 Deno.test("an empty mid is treated as absent", () => {
   const rows = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [{ sender: { id: "s" }, recipient: { id: "r" }, timestamp: 5, message: { mid: "", text: "hi" } }] }] });
+  assert(rows[0]!.event_id.startsWith("e1:5:0:"), rows[0]!.event_id);
+});
+
+Deno.test("a whitespace-only mid is treated as absent", () => {
+  const rows = extractEvents({ object: "instagram", entry: [{ id: "e1", time: 1, messaging: [{ sender: { id: "s" }, recipient: { id: "r" }, timestamp: 5, message: { mid: "   ", text: "hi" } }] }] });
   assert(rows[0]!.event_id.startsWith("e1:5:0:"), rows[0]!.event_id);
 });

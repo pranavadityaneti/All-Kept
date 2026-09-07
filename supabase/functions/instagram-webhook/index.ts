@@ -7,7 +7,7 @@ function env(name: string): string {
   return v;
 }
 
-Deno.serve(async (req) => {
+async function handle(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
   if (req.method === "GET") {
@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
   try { body = JSON.parse(raw); } catch { notJson = true; }
   const rows = notJson ? [] : extractEvents(body);
   if (rows.length === 0) {
-    console.log(notJson ? "instagram-webhook: body is not JSON" : "instagram-webhook: no messaging events in payload", raw.slice(0, 2000));
+    console.log(notJson ? "instagram-webhook: body is not JSON" : "instagram-webhook: no messaging events in payload", raw.slice(0, 1000));
     return new Response("EVENT_RECEIVED", { status: 200 });
   }
 
@@ -41,6 +41,15 @@ Deno.serve(async (req) => {
     }
     console.log(`instagram-webhook: stored ${rows.length} event(s)`, rows.map((r) => r.event_id));
     return new Response("EVENT_RECEIVED", { status: 200 });
+  } catch (e) {
+    console.error("instagram-webhook: unexpected failure", e);
+    return new Response("internal error", { status: 500 });
+  }
+}
+
+Deno.serve(async (req) => {
+  try {
+    return await handle(req);
   } catch (e) {
     console.error("instagram-webhook: unexpected failure", e);
     return new Response("internal error", { status: 500 });
