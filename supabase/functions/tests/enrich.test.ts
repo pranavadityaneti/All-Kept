@@ -144,3 +144,12 @@ Deno.test("parseOpenGraph keeps apostrophes inside double-quoted content and rea
   const og = parseOpenGraph(`<meta property="og:title" content="Don't stop" /><meta property='og:description' content='He said "hi"' />`);
   assertEquals([og.title, og.description], ["Don't stop", 'He said "hi"']);
 });
+
+Deno.test("instagram: a page without link-preview tags (login wall) is logged and adds nothing", async () => {
+  const logged: string[] = [];
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response("<html><head><title>Login</title></head></html>") }));
+  d.log = (m) => { logged.push(m); };
+  const r = await enrich(base(), d);
+  assertEquals([r.status, r.patch.author_name, (r.patch.media_meta as Record<string, unknown>)["link_preview"]], ["ready", undefined, undefined]);
+  assertEquals(logged, ["enrich: link-preview tags absent"]);
+});

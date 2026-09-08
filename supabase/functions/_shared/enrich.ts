@@ -204,11 +204,13 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
             deps.log("enrich: link-preview fallback unavailable", { item: item.id, platform });
           } else {
             const ig = platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
-            if (missingAuthor && (ig.authorName ?? page.og.author)) patch.author_name = ig.authorName ?? page.og.author;
-            if (ig.authorHandle && !patch.author_handle) patch.author_handle = ig.authorHandle;
-            if (missingThumb && page.og.image) patch.thumbnail_url_remote = page.og.image;
-            if (!item.text && !patch.text && (ig.caption ?? page.og.description)) patch.text = ig.caption ?? page.og.description;
-            patch.media_meta = { ...patch.media_meta, link_preview: true };
+            let learned = false;
+            if (missingAuthor && (ig.authorName ?? page.og.author)) { patch.author_name = ig.authorName ?? page.og.author; learned = true; }
+            if (ig.authorHandle && !patch.author_handle) { patch.author_handle = ig.authorHandle; learned = true; }
+            if (missingThumb && page.og.image) { patch.thumbnail_url_remote = page.og.image; learned = true; }
+            if (!item.text && !patch.text && (ig.caption ?? page.og.description)) { patch.text = ig.caption ?? page.og.description; learned = true; }
+            if (learned) patch.media_meta = { ...patch.media_meta, link_preview: true };
+            else deps.log("enrich: link-preview tags absent", { item: item.id, platform }); // e.g. a login wall served in place of the post
           }
         }
       } else {
