@@ -1,0 +1,63 @@
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { LibraryItem } from "../lib/library";
+import { radius, space, type, usePalette } from "../lib/theme";
+
+const PLATFORM_LABEL: Record<string, string> = {
+  instagram: "Instagram", youtube: "YouTube", x: "X", facebook: "Facebook", tiktok: "TikTok",
+  reddit: "Reddit", threads: "Threads", linkedin: "LinkedIn", pinterest: "Pinterest", web: "Web", note: "Note",
+};
+
+/** One line that says what the card is, whatever the item has. */
+export function cardTitle(item: LibraryItem): string {
+  const first = (s: string) => s.split("\n").map((l) => l.trim()).find((l) => l.length > 0) ?? "";
+  return item.title?.trim() || first(item.text ?? "") || item.authorName?.trim() || PLATFORM_LABEL[item.platform] || "Saved";
+}
+
+/** What the card says while the pipeline is still working, or when it could not finish. */
+export function statusNote(item: LibraryItem): string | null {
+  if (item.status === "pending" || item.status === "failed") return "Sorting…";
+  if (item.status === "no_link") return "No link";
+  if (item.status === "preview_unavailable") return "No preview";
+  return null;
+}
+
+export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thumbnail?: string; onPress: () => void }) {
+  const p = usePalette();
+  const note = statusNote(item);
+  const category = item.category ?? "Sorting";
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${cardTitle(item)}, ${category}, ${PLATFORM_LABEL[item.platform] ?? item.platform}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, { backgroundColor: p.surface, borderColor: p.border, opacity: pressed ? 0.85 : 1 }]}
+    >
+      <View style={[styles.thumb, { backgroundColor: p.surfaceAlt }]}>
+        {thumbnail ? (
+          <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} accessibilityIgnoresInvertColors />
+        ) : (
+          <Text style={[type.label, styles.placeholder, { color: p.inkMuted }]}>{PLATFORM_LABEL[item.platform] ?? item.platform}</Text>
+        )}
+        {note && (
+          <View style={[styles.badge, { backgroundColor: p.surface, borderColor: p.border }]}>
+            <Text style={[type.label, { color: p.inkMuted }]}>{note}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.body}>
+        <Text numberOfLines={2} style={[type.body, { color: p.ink }]}>{cardTitle(item)}</Text>
+        <Text numberOfLines={1} style={[type.label, { color: item.category ? p.accent : p.inkMuted }]}>{category}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, overflow: "hidden" },
+  thumb: { aspectRatio: 1, alignItems: "center", justifyContent: "center" },
+  placeholder: { textTransform: "uppercase", letterSpacing: 1 },
+  badge: { position: "absolute", left: space.sm, top: space.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill, paddingHorizontal: space.sm, paddingVertical: 2 },
+  body: { padding: space.md, gap: space.xs },
+});

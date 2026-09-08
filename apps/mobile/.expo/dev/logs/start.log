@@ -27,3 +27,4 @@
 {"_e":"metro:bundling:done","_t":1788866836312,"id":"3","total":1,"ms":22.220917}
 {"_e":"metro:bundling:started","_t":1788867616227,"id":"4","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
 {"_e":"metro:bundling:done","_t":1788867616277,"id":"4","total":1,"ms":50.532916}
+{"_e":"metro:server_log","_t":1788868545126,"level":"error","data":["[timeout] connection terminated with Device for app='%s' on device='%s' after not responding for %s seconds.","host.exp.Exponent","iPhone 17 Pro","60"]}
