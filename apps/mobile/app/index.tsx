@@ -32,7 +32,10 @@ export default function Library() {
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Text style={[type.title, { color: p.ink }]}>Allkept</Text>
-        {items.length > 0 && <Button label="Search" variant="secondary" onPress={() => router.push("/search")} />}
+        <View style={styles.headerActions}>
+          {items.length > 0 && <Button label="Search" variant="secondary" onPress={() => router.push("/search")} />}
+          <Button label="Settings" variant="secondary" onPress={() => router.push("/settings")} />
+        </View>
       </View>
 
       <FilterBar facets={facets.data} filters={filters} onToggle={toggle} onClear={clear} />
@@ -92,6 +95,7 @@ export default function Library() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: space.sm },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md },
   list: { padding: space.lg },
   cell: { flex: 1 },
