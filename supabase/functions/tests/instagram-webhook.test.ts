@@ -113,7 +113,7 @@ class FakeStore {
   failWhen: (rows: EventRow[]) => string | null = () => null;
   store = async (rows: EventRow[]): Promise<StoreResult> => { this.calls.push(rows); return { error: this.failWhen(rows) }; };
 }
-const deps = (s: FakeStore, extra: Partial<Parameters<typeof handle>[1]> = {}) => ({ verifyToken: VERIFY, appSecret: SECRET, store: s.store, log: () => {}, ...extra });
+const deps = (s: FakeStore, extra: Partial<Parameters<typeof handle>[1]> = {}) => ({ verifyToken: VERIFY, appSecrets: [SECRET], store: s.store, log: () => {}, ...extra });
 const signed = async (body: string, extraHeaders: Record<string, string> = {}) =>
   new Request("https://x.test/functions/v1/instagram-webhook", { method: "POST", body, headers: { "content-type": "application/json", "x-hub-signature-256": await signBody(body, SECRET), ...extraHeaders } });
 
@@ -222,10 +222,19 @@ Deno.test("describeShape bounds the object field", () => {
 
 Deno.test("handle: GET works and POST fails closed when the app secret is not configured", async () => {
   const s = new FakeStore();
-  const d = deps(s, { appSecret: "" });
+  const d = deps(s, { appSecrets: ["", ""] });
   const ok = await handle(new Request(`https://x.test/f?hub.mode=subscribe&hub.verify_token=${VERIFY}&hub.challenge=9`), d);
   assertEquals([ok.status, await ok.text()], [200, "9"]);
   const post = await handle(await signed(JSON.stringify(sample)), d);
   assertEquals(post.status, 500);
   assertEquals(s.calls.length, 0);
+});
+
+Deno.test("handle: a signature made with the second configured secret is accepted", async () => {
+  const s = new FakeStore();
+  const body = JSON.stringify(sample);
+  const req = new Request("https://x.test/f", { method: "POST", body, headers: { "x-hub-signature-256": await signBody(body, "second-secret") } });
+  const r = await handle(req, deps(s, { appSecrets: [SECRET, "second-secret"] }));
+  assertEquals(r.status, 200);
+  assertEquals(s.calls.length, 1);
 });

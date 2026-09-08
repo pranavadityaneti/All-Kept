@@ -152,7 +152,8 @@ export function describeShape(body: unknown): Record<string, unknown> {
 export interface StoreResult { error: string | null }
 export interface HandleDeps {
   verifyToken: string;
-  appSecret: string;
+  /** Every secret Meta might sign with (the Meta app secret and the Instagram app secret); a signature matching any one is accepted. */
+  appSecrets: string[];
   store(rows: EventRow[]): Promise<StoreResult>;
   maxBodyBytes?: number;
   log?: (message: string, meta?: Record<string, unknown>) => void;
@@ -168,8 +169,9 @@ export async function handle(req: Request, deps: HandleDeps): Promise<Response> 
     return new Response(r.body, { status: r.status, headers: { "content-type": "text/plain" } });
   }
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
-  if (deps.appSecret.length === 0) {
-    log("instagram-webhook: META_APP_SECRET is not set; refusing POST"); // fail closed, loudly
+  const secrets = deps.appSecrets.filter((x) => x.length > 0);
+  if (secrets.length === 0) {
+    log("instagram-webhook: no app secret configured; refusing POST"); // fail closed, loudly
     return new Response("not configured", { status: 500 });
   }
 
@@ -179,7 +181,11 @@ export async function handle(req: Request, deps: HandleDeps): Promise<Response> 
   const bytes = new Uint8Array(await req.arrayBuffer());
   if (bytes.byteLength > max) return new Response("payload too large", { status: 413 });
 
-  if (!(await verifySignature(bytes, req.headers.get("x-hub-signature-256"), deps.appSecret))) {
+  let signed = false;
+  for (const secret of secrets) {
+    if (await verifySignature(bytes, req.headers.get("x-hub-signature-256"), secret)) { signed = true; break; }
+  }
+  if (!signed) {
     log("instagram-webhook: bad signature", { bytes: bytes.byteLength });
     return new Response("invalid signature", { status: 401 });
   }
