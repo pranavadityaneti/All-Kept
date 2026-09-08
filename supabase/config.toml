@@ -423,3 +423,8 @@ entrypoint = "./functions/instagram-webhook/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/site/index.ts"
+
+[functions.link-instagram]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/link-instagram/index.ts"

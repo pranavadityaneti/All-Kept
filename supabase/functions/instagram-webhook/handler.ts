@@ -158,6 +158,8 @@ export interface HandleDeps {
   store(rows: EventRow[]): Promise<StoreResult>;
   maxBodyBytes?: number;
   log?: (message: string, meta?: Record<string, unknown>) => void;
+  /** Called with the rows that were stored (new or already known), after the response can be sent. */
+  onStored?: (rows: EventRow[]) => Promise<void> | void;
 }
 
 const DEFAULT_MAX_BODY = 1_000_000;
@@ -204,6 +206,7 @@ export async function handle(req: Request, deps: HandleDeps): Promise<Response> 
   const batch = await deps.store(rows);
   if (!batch.error) {
     log(`instagram-webhook: stored ${rows.length} event(s)`, { event_ids: rows.slice(0, 20).map((r) => r.event_id) });
+    if (deps.onStored) await deps.onStored(rows);
     return new Response("EVENT_RECEIVED", { status: 200 });
   }
 
@@ -220,5 +223,7 @@ export async function handle(req: Request, deps: HandleDeps): Promise<Response> 
     if (res.error) log("instagram-webhook: could not store the error marker", { event_id: marker.event_id, error: res.error.slice(0, 300) });
   }
   if (markers.length === rows.length) return new Response("storage error", { status: 500 }); // nothing stored at all: let Meta retry
+  const storedIds = new Set(markers.map((m) => m.event_id.replace(/:unstorable$/, "")));
+  if (deps.onStored) await deps.onStored(rows.filter((r) => !storedIds.has(r.event_id)));
   return new Response("EVENT_RECEIVED", { status: 200 });
 }
