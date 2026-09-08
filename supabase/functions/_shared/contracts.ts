@@ -46,6 +46,12 @@ export interface CaptureInput {
   snapshotUrl?: string;
   /** True when the platform gave no link back to the original (Instagram post shares). */
   noLink?: boolean;
+  /** Overrides used when there is no URL to normalise (Instagram post shares): platform, kind and the platform's own id. */
+  platform?: Platform;
+  kind?: Kind;
+  externalId?: string;
+  /** Title when the door knows it (YouTube video title). Captions go in `caption`. */
+  title?: string;
 }
 
 export interface CaptureResult {
