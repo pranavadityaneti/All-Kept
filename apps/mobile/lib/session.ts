@@ -45,5 +45,13 @@ export function useSession(): SessionState & { retry: () => void } {
     return () => { sub.remove(); supabase.auth.stopAutoRefresh(); };
   }, []);
 
+  useEffect(() => {
+    // Realtime enforces RLS with the session token, so hand it over as soon as there is one.
+    if (state.status !== "ready") return;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) supabase.realtime.setAuth(data.session.access_token);
+    });
+  }, [state]);
+
   return { ...state, retry: () => setAttempt((a) => a + 1) };
 }
