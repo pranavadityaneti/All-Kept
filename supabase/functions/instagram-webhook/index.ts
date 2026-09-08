@@ -6,7 +6,7 @@ import { capture } from "../_shared/capture.ts";
 import { captureDeps } from "../_shared/capture-db.ts";
 import { instagramClient } from "../_shared/instagram.ts";
 import { runPipeline } from "../_shared/pipeline.ts";
-import { anthropicDeps } from "../_shared/anthropic.ts";
+import { classifierFromEnv } from "../_shared/classifiers.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
@@ -81,8 +81,7 @@ Deno.serve(async (req) => {
       async waitForCategory(itemId) {
         // Enrich and classify right now, inside the webhook's background task; the reply carries the result.
         try {
-          const key = Deno.env.get("ANTHROPIC_API_KEY");
-          return await runPipeline(db, itemId, { fetch, classifier: key ? anthropicDeps(key) : null, log });
+          return await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, log });
         } catch (e) {
           log("instagram: pipeline failed", { item: itemId, error: String(e).slice(0, 200) });
           return null;

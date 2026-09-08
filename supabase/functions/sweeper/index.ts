@@ -1,7 +1,7 @@
 // Retries enrichment and classification for items that are due. Called by pg_cron every 5 minutes with a shared secret.
 import { adminClient, env } from "../_shared/supabase.ts";
 import { runPipeline } from "../_shared/pipeline.ts";
-import { anthropicDeps } from "../_shared/anthropic.ts";
+import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { json } from "../_shared/http.ts";
 
 const BATCH = 50;
@@ -12,8 +12,8 @@ Deno.serve(async (req) => {
   if (!secret || secret !== env("INTERNAL_SECRET")) return new Response("forbidden", { status: 403 });
   try {
     const db = adminClient();
-    const key = Deno.env.get("ANTHROPIC_API_KEY");
-    const deps = { fetch, classifier: key ? anthropicDeps(key) : null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
+    const choice = classifierFromEnv();
+    const deps = { fetch, classifier: choice?.deps ?? null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
     const nowIso = new Date().toISOString();
     const twoMinAgo = new Date(Date.now() - 120_000).toISOString();
     // 1. Items still to enrich: pending or failed with a due retry, older than 2 minutes (the webhook path handles fresh ones).
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     for (const id of ids) {
       try { await runPipeline(db, id, deps); ok++; } catch (e) { failed++; console.error("sweeper: item failed", { id, error: String(e).slice(0, 200) }); }
     }
-    return json({ due: (due ?? []).length, unclassified: (unclassified ?? []).length, processed: ok, failed, classifier: !!key });
+    return json({ due: (due ?? []).length, unclassified: (unclassified ?? []).length, processed: ok, failed, classifier: choice?.model ?? null });
   } catch (e) {
     console.error("sweeper failed", e);
     return new Response("internal error", { status: 500 });

@@ -1,4 +1,4 @@
-// Classification: one Claude call per item, structured output. Pure; the model call is injected.
+// Classification: one model call per item, structured output. Pure; the model call is injected (see classifiers.ts).
 import { ACTIONABILITY, CATEGORIES, ENTITY_TYPES } from "./contracts.ts";
 import type { Actionability, Category, EntityType, ItemAiOutput } from "./contracts.ts";
 
@@ -14,7 +14,7 @@ export interface ClassifyInput {
   note: string | null;
 }
 
-export interface ModelUsage { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number }
+export interface ModelUsage { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number; reasoning_tokens?: number }
 
 export interface ModelResult {
   output: unknown;               // parsed JSON from the model, validated here

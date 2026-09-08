@@ -1,21 +1,32 @@
 // Runs enrichment and classification for one item against the database. Used by the webhook (right after capture), the poller and the sweeper.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { enrich, type EnrichableItem } from "./enrich.ts";
-import { classify, PROMPT_VERSION, type ClassifyDeps } from "./classify.ts";
+import { classify, PROMPT_VERSION, type ClassifyDeps, type ModelUsage } from "./classify.ts";
 
 export interface PipelineDeps {
   fetch: typeof fetch;
-  /** null until an Anthropic key is configured: enrichment still runs, classification waits for the sweeper. */
+  /** null until a model key is configured (see classifiers.ts): enrichment still runs, classification waits for the sweeper. */
   classifier: ClassifyDeps | null;
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
 const MAX_THUMB_BYTES = 2_000_000;
-const PRICE_PER_MTOK = { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 }; // claude-opus-5 list prices, USD
 
-function costUsd(u: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number } | null): number | null {
+/** USD per million tokens, list prices. Keys match the model id or its prefix (vendors append dates). Checked against both vendors' pricing pages on 8 Sep 2026. */
+export const PRICES_PER_MTOK: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
+  "claude-opus-5": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+  "gpt-5.6-sol": { input: 4, output: 20, cacheRead: 0.4, cacheWrite: 0 },
+  "gpt-5.6-terra": { input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0 },
+  "gpt-5.6-luna": { input: 0.2, output: 1.2, cacheRead: 0.02, cacheWrite: 0 },
+};
+
+/** Cost of one call, or null when usage is missing or the model is not in the table (no guessing). */
+export function costUsd(model: string, u: ModelUsage | null): number | null {
   if (!u) return null;
-  const usd = (u.input_tokens * PRICE_PER_MTOK.input + u.output_tokens * PRICE_PER_MTOK.output + (u.cache_read_input_tokens ?? 0) * PRICE_PER_MTOK.cacheRead + (u.cache_creation_input_tokens ?? 0) * PRICE_PER_MTOK.cacheWrite) / 1_000_000;
+  const key = Object.keys(PRICES_PER_MTOK).find((k) => model === k || model.startsWith(k + "-"));
+  if (!key) return null;
+  const p = PRICES_PER_MTOK[key]!;
+  const usd = (u.input_tokens * p.input + u.output_tokens * p.output + (u.cache_read_input_tokens ?? 0) * p.cacheRead + (u.cache_creation_input_tokens ?? 0) * p.cacheWrite) / 1_000_000;
   return Math.round(usd * 1e6) / 1e6;
 }
 
@@ -70,7 +81,7 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
 
   const c = await classify({ platform: it.platform, kind: it.kind, url: it.canonical_url ?? it.source_url, title: it.title, text: it.text, author: it.author_name, note: it.note }, deps.classifier);
   const row: Record<string, unknown> = c.output
-    ? { item_id: itemId, user_id: it.user_id, ...c.output, model: c.model, prompt_version: PROMPT_VERSION, usage: { ...(c.usage ?? {}), cost_usd: costUsd(c.usage) }, ai_error: null }
+    ? { item_id: itemId, user_id: it.user_id, ...c.output, model: c.model, prompt_version: PROMPT_VERSION, usage: { ...(c.usage ?? {}), cost_usd: costUsd(c.model, c.usage) }, ai_error: null }
     : { item_id: itemId, user_id: it.user_id, model: c.model, prompt_version: PROMPT_VERSION, usage: c.usage, ai_error: c.error };
   const { error: e3 } = await db.from("item_ai").upsert(row, { onConflict: "item_id" });
   if (e3) throw e3;
