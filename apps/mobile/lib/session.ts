@@ -46,11 +46,16 @@ export function useSession(): SessionState & { retry: () => void } {
   }, []);
 
   useEffect(() => {
-    // Realtime enforces RLS with the session token, so hand it over as soon as there is one.
+    // Realtime enforces row-level security with the session token, so hand it over now and again
+    // after every refresh: a socket left holding an expired token stops receiving rows.
     if (state.status !== "ready") return;
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session) supabase.realtime.setAuth(data.session.access_token);
     });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) supabase.realtime.setAuth(session.access_token);
+    });
+    return () => sub.subscription.unsubscribe();
   }, [state]);
 
   return { ...state, retry: () => setAttempt((a) => a + 1) };

@@ -9,15 +9,12 @@ import { Card } from "../../components/Card";
 import { Chip } from "../../components/Chip";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../../lib/item";
 import { track, useTrackOnce } from "../../lib/metrics";
+import { platformLabel } from "../../lib/platforms";
 import { useSession } from "../../lib/session";
 import { shareItem } from "../../lib/share";
 import { useThumbnails } from "../../lib/thumbnails";
 import { radius, space, type, usePalette } from "../../lib/theme";
 
-const PLATFORM_LABEL: Record<string, string> = {
-  instagram: "Instagram", youtube: "YouTube", x: "X", facebook: "Facebook", tiktok: "TikTok",
-  reddit: "Reddit", threads: "Threads", linkedin: "LinkedIn", pinterest: "Pinterest", web: "Web", note: "Note",
-};
 
 const savedOn = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
@@ -49,7 +46,7 @@ export default function ItemScreen() {
 
   const url = openableUrl(detail);
   const noteValue = note ?? detail.note ?? "";
-  const heading = detail.title?.trim() || detail.text?.split("\n").find((l) => l.trim()) || PLATFORM_LABEL[detail.platform] || "Saved";
+  const heading = detail.title?.trim() || detail.text?.split("\n").find((l) => l.trim()) || platformLabel(detail.platform) || "Saved";
 
   const confirmDelete = () => {
     Alert.alert("Delete this save?", "It goes from your library for good. The original stays where it is.", [
@@ -73,7 +70,7 @@ export default function ItemScreen() {
 
         <View style={styles.row}>
           <Chip label={detail.category ?? "Sorting"} selected={!!detail.category} onPress={() => setPicking((v) => !v)} />
-          <Chip label={PLATFORM_LABEL[detail.platform] ?? detail.platform} />
+          <Chip label={platformLabel(detail.platform)} />
           <Text style={[type.label, { color: p.inkMuted }]}>{savedOn(detail.lastSavedAt)}</Text>
         </View>
 
@@ -111,7 +108,7 @@ export default function ItemScreen() {
 
         <View style={styles.actions}>
           {url ? (
-            <Button label={`Open in ${PLATFORM_LABEL[detail.platform] ?? "the app"}`} onPress={() => { track(userId, "open_original", { platform: detail.platform }); void Linking.openURL(url); }} />
+            <Button label={`Open in ${platformLabel(detail.platform)}`} onPress={() => { track(userId, "open_original", { platform: detail.platform }); void Linking.openURL(url); }} />
           ) : null}
           <Button
             label="Share"

@@ -6,3 +6,11 @@
 {"_e":"metro:instantiate","_t":1788866591247,"atlas":false,"workers":7,"host":null,"port":null}
 {"_e":"metro:bundling:started","_t":1788866591422,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
 {"_e":"metro:bundling:done","_t":1788866597144,"id":"1","total":1207,"ms":5721.990417}
+{"_e":"root:init","_t":1788884405053,"format":"v0-jsonl","version":"57.0.22"}
+{"_e":"env:mode","_t":1788884405189,"nodeEnv":"production","babelEnv":"production","mode":"production"}
+{"_e":"env:load","_t":1788884405190,"mode":"production","files":["../../../.env"],"env":{"EXPO_PUBLIC_SUPABASE_ANON_KEY":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1cmJtY3FvcXllaGJwb3FwbGNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3OTcxNDMsImV4cCI6MjEwNDM3MzE0M30.EDC3Ope5ViEIQAVmsQvbqvlX4OmPmbpH9wU_ZCgDIiE","EXPO_PUBLIC_SUPABASE_URL":"https://yurbmcqoqyehbpoqplcr.supabase.co"}}
+{"_e":"devserver:start","_t":1788884405245,"mode":"production","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":true}
+{"_e":"metro:config","_t":1788884405531,"serverRoot":"../../../../..","projectRoot":"../../..","exporting":true,"flags":{"autolinkingModuleResolution":true,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1788884405564,"atlas":false,"workers":7,"host":null,"port":null}
+{"_e":"metro:bundling:started","_t":1788884405896,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo-router/entry.js"}
+{"_e":"metro:bundling:done","_t":1788884409416,"id":"1","total":1317,"ms":3519.844125}

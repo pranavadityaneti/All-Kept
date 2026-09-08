@@ -30,7 +30,7 @@ export default function Library() {
 
   const items: LibraryItem[] = library.data?.pages.flatMap((page) => page.items) ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
-  const busy = library.isPending || (!loaded && ready);
+  const busy = library.isPending || linked.isPending || (!loaded && ready);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
@@ -72,6 +72,12 @@ export default function Library() {
               </Card>
             ) : busy ? (
               <Text style={[type.body, { color: p.inkMuted }]}>Loading your library…</Text>
+            ) : library.isError ? (
+              <Card>
+                <Text style={[type.heading, { color: p.bad }]}>Could not load your library</Text>
+                <Text style={[type.body, { color: p.inkMuted }]}>{library.error instanceof Error ? library.error.message : "Something went wrong."}</Text>
+                <Button label="Try again" onPress={() => { void library.refetch(); }} />
+              </Card>
             ) : !linked.data ? (
               <Card>
                 <Text style={[type.heading, { color: p.ink }]}>Start with Instagram</Text>

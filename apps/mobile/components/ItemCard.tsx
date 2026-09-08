@@ -1,17 +1,14 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { platformLabel } from "../lib/platforms";
 import type { LibraryItem } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
 
-const PLATFORM_LABEL: Record<string, string> = {
-  instagram: "Instagram", youtube: "YouTube", x: "X", facebook: "Facebook", tiktok: "TikTok",
-  reddit: "Reddit", threads: "Threads", linkedin: "LinkedIn", pinterest: "Pinterest", web: "Web", note: "Note",
-};
 
 /** One line that says what the card is, whatever the item has. */
 export function cardTitle(item: LibraryItem): string {
   const first = (s: string) => s.split("\n").map((l) => l.trim()).find((l) => l.length > 0) ?? "";
-  return item.title?.trim() || first(item.text ?? "") || item.authorName?.trim() || PLATFORM_LABEL[item.platform] || "Saved";
+  return item.title?.trim() || first(item.text ?? "") || item.authorName?.trim() || platformLabel(item.platform) || "Saved";
 }
 
 /** What the card says while the pipeline is still working, or when it could not finish. */
@@ -30,7 +27,7 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${cardTitle(item)}, ${category}, ${PLATFORM_LABEL[item.platform] ?? item.platform}`}
+      accessibilityLabel={`${cardTitle(item)}, ${category}, ${platformLabel(item.platform)}`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, { backgroundColor: p.surface, borderColor: p.border, opacity: pressed ? 0.85 : 1 }]}
     >
@@ -38,7 +35,7 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
         {thumbnail ? (
           <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} accessibilityIgnoresInvertColors />
         ) : (
-          <Text style={[type.label, styles.placeholder, { color: p.inkMuted }]}>{PLATFORM_LABEL[item.platform] ?? item.platform}</Text>
+          <Text style={[type.label, styles.placeholder, { color: p.inkMuted }]}>{platformLabel(item.platform)}</Text>
         )}
         {note && (
           <View style={[styles.badge, { backgroundColor: p.surface, borderColor: p.border }]}>
