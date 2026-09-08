@@ -38,7 +38,8 @@ const pages: Record<string, string> = {
 };
 
 Deno.serve((req) => {
-  const path = new URL(req.url).pathname.replace(/^\/functions\/v1\/site/, "").replace(/\/+$/, "") || "/privacy";
+  const last = new URL(req.url).pathname.replace(/\/+$/, "").split("/").pop() ?? "";
+  const path = last === "site" || last === "" ? "/privacy" : `/${last}`; // the runtime may strip the /functions/v1 prefix; only the last segment matters
   const html = pages[path] ?? pages["/privacy"];
   return new Response(html, { status: pages[path] ? 200 : 404, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=300" } });
 });
