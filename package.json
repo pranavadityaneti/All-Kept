@@ -22,5 +22,10 @@
   },
   "dependencies": {
     "expo-splash-screen": "~57.0.8"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3"
   }
 }

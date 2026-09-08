@@ -7,6 +7,7 @@ import { Screen } from "../components/Screen";
 import { useDeleteAccount } from "../lib/account";
 import { useSession } from "../lib/session";
 import { useLinkedSource, useSetReplies } from "../lib/sources";
+import { useOtaUpdates } from "../lib/updates";
 import { space, type, usePalette } from "../lib/theme";
 
 const PRIVACY = "https://pranavadityaneti.github.io/All-Kept/privacy.html";
@@ -21,6 +22,7 @@ export default function Settings() {
   const linked = useLinkedSource(ready);
   const setReplies = useSetReplies(linked.data);
   const remove = useDeleteAccount();
+  const updates = useOtaUpdates();
 
   const confirmDelete = () => {
     Alert.alert(
@@ -83,10 +85,36 @@ export default function Settings() {
         <Button label="Delete account and everything in it" variant="secondary" busy={remove.isPending} onPress={confirmDelete} />
       </Card>
 
+      <Card>
+        <Text style={[type.heading, { color: p.ink }]}>App version</Text>
+        <Text style={[type.body, { color: p.inkMuted }]}>
+          {Constants.expoConfig?.version ?? "0.1.0"}
+          {updates.channel ? ` · ${updates.channel}` : ""}
+          {updates.updateId ? ` · ${updates.updateId.slice(0, 8)}` : " · built in"}
+        </Text>
+        {updates.pending ? (
+          <>
+            <Text style={[type.body, { color: p.good }]}>A new version is downloaded and ready.</Text>
+            <Button label="Restart to update" onPress={updates.applyNow} />
+          </>
+        ) : (
+          <Button
+            label={updates.checking ? "Checking…" : "Check for updates"}
+            variant="secondary"
+            busy={updates.checking}
+            onPress={() => {
+              void updates.checkNow().then((found) => {
+                if (!found) Alert.alert("Up to date", "You are running the newest version.");
+              });
+            }}
+          />
+        )}
+        {updates.error && <Text style={[type.label, { color: p.bad }]}>{updates.error}</Text>}
+      </Card>
+
       <View style={styles.links}>
         <Text accessibilityRole="link" style={[type.label, { color: p.accent }]} onPress={() => { void Linking.openURL(PRIVACY); }}>Privacy</Text>
         <Text accessibilityRole="link" style={[type.label, { color: p.accent }]} onPress={() => { void Linking.openURL(TERMS); }}>Terms</Text>
-        <Text style={[type.label, { color: p.inkMuted }]}>Allkept {Constants.expoConfig?.version ?? ""}</Text>
       </View>
     </Screen>
   );

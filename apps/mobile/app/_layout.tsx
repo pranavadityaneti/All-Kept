@@ -4,8 +4,9 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme } from "react-native";
+import { useColorScheme, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useOtaUpdates } from "../lib/updates";
 import { usePalette } from "../lib/theme";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -22,6 +23,11 @@ const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: "all
 export default function RootLayout() {
   const p = usePalette();
   const scheme = useColorScheme();
+  const updates = useOtaUpdates();
+
+  // A plain ground for the moment the launch check takes; the splash screen is still on top of it.
+  if (!updates.ready) return <View style={{ flex: 1, backgroundColor: p.bg }} />;
+
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 7 * DAY }}>
       <SafeAreaProvider>

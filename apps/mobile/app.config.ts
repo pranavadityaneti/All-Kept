@@ -16,8 +16,15 @@ const config: ExpoConfig = {
   },
   // The EAS project Pranav created on 8 Sep 2026. Builds and over-the-air updates resolve through it.
   extra: { eas: { projectId: "55c2d8b3-2f30-462b-b052-2a685de0aa54" } },
-  updates: { url: "https://u.expo.dev/55c2d8b3-2f30-462b-b052-2a685de0aa54" },
-  runtimeVersion: { policy: "appVersion" },
+  updates: {
+    url: "https://u.expo.dev/55c2d8b3-2f30-462b-b052-2a685de0aa54",
+    // The app does its own checking (see lib/updates.ts) so it can apply an update on this launch
+    // rather than the next one; leaving the automatic check on would download everything twice.
+    checkAutomatically: "ON_ERROR_RECOVERY",
+  },
+  // Fingerprint, not app version: an update is offered only to builds whose native side matches,
+  // so a JavaScript-only change ships over the air and a change that needs new native code does not.
+  runtimeVersion: { policy: "fingerprint" },
   plugins: [
     "expo-router",
     "expo-secure-store",
