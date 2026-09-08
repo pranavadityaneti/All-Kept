@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { enrich, parseOpenGraph, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { decodeEntities, enrich, parseInstagramOpenGraph, parseOpenGraph, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -86,4 +86,61 @@ Deno.test("instagram tokenless oEmbed (html only): author is parsed from the emb
   const html = '<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DcVMQIIMa5-/"><div><a href="https://www.instagram.com/reel/DcVMQIIMa5-/">A post shared by David Senra (@davidsenra)</a></div></blockquote>';
   const r = await enrich(base({ text: null }), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": () => Response.json({ version: "1.0", provider_name: "Instagram", type: "rich", width: 658, html }) })));
   assertEquals([r.status, r.patch.author_name, r.patch.author_handle, r.patch.thumbnail_url_remote], ["ready", "David Senra", "davidsenra", undefined]);
+});
+
+// Shape of Instagram's real reel page tags on 8 Sep 2026 (entities and signed CDN url as served).
+const IG_PAGE = `<html><head><title>Instagram</title>
+<meta property="og:title" content="David Senra on Instagram: &quot;Travis Kalanick on the little details that helped Uber beat Lyft: &#x201c;I needed to subsidize rides&#x201d;&quot;" />
+<meta property="og:image" content="https://scontent.cdninstagram.com/v/t51.82787-15/784075060_n.jpg?stp=cmp1_dst-jpg_e35_s640x640&amp;_nc_ht=x" />
+<meta property="og:description" content="5,115 likes, 78 comments - davidsenra on August 21, 2026: &quot;Travis Kalanick on the little details&quot;" />
+<meta name="twitter:title" content="David Senra (&#064;davidsenra) &#x2022; Instagram reel" />
+</head></html>`;
+const TOKENLESS_OEMBED = () => Response.json({ version: "1.0", provider_name: "Instagram", provider_url: "https://www.instagram.com/", type: "rich", width: 658, html: '<blockquote class="instagram-media"><a href="https://www.instagram.com/reel/DcVMQIIMa5-/">View this post on Instagram</a></blockquote>' });
+
+Deno.test("instagram tokenless oEmbed: author, handle and thumbnail come from the permalink's link-preview tags", async () => {
+  const snaps: string[] = [];
+  const r = await enrich(base(), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response(IG_PAGE, { headers: { "content-type": "text/html" } }) }), snaps));
+  assertEquals([r.status, r.patch.author_name, r.patch.author_handle], ["ready", "David Senra", "davidsenra"]);
+  assertEquals(r.patch.thumbnail_url_remote, "https://scontent.cdninstagram.com/v/t51.82787-15/784075060_n.jpg?stp=cmp1_dst-jpg_e35_s640x640&_nc_ht=x");
+  assertEquals(snaps, [r.patch.thumbnail_url_remote]);
+  assertEquals(r.patch.text, undefined); // the caption Meta sent with the DM stays
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["link_preview"], true);
+});
+
+Deno.test("instagram tokenless oEmbed: the caption is taken from the page only when the item has none", async () => {
+  const r = await enrich(base({ text: null }), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response(IG_PAGE) })));
+  assertEquals(r.patch.text, "Travis Kalanick on the little details that helped Uber beat Lyft: \u201cI needed to subsidize rides\u201d");
+});
+
+Deno.test("instagram: a failing link-preview fetch leaves the item ready with what oEmbed gave", async () => {
+  const logged: string[] = [];
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response("", { status: 429 }) }));
+  d.log = (m) => { logged.push(m); };
+  const r = await enrich(base(), d);
+  assertEquals([r.status, r.patch.author_name, r.patch.thumbnail_url_remote, r.retryAfterMs], ["ready", undefined, undefined, undefined]);
+  assertEquals(logged, ["enrich: link-preview fallback unavailable"]);
+});
+
+Deno.test("oEmbed that already names the author and thumbnail never touches the page", async () => {
+  const seen: string[] = [];
+  await enrich(base(), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": () => Response.json({ author_name: "davidsenra", thumbnail_url: "https://cdn/t.jpg" }) }, seen)));
+  assertEquals(seen.length, 1);
+});
+
+Deno.test("parseInstagramOpenGraph reads name, handle and caption from the page tags", () => {
+  assertEquals(parseInstagramOpenGraph(IG_PAGE), { authorName: "David Senra", authorHandle: "davidsenra", caption: "Travis Kalanick on the little details that helped Uber beat Lyft: \u201cI needed to subsidize rides\u201d" });
+  const noTwitter = IG_PAGE.replace(/<meta name="twitter:title"[^>]*>/, "");
+  assertEquals(parseInstagramOpenGraph(noTwitter).authorHandle, "davidsenra"); // from og:description
+  assertEquals(parseInstagramOpenGraph("<html></html>"), {});
+});
+
+Deno.test("decodeEntities handles named, decimal and hex entities and leaves invalid ones alone", () => {
+  assertEquals(decodeEntities("a &amp; b &#064; &#x2022; &quot;q&quot; &apos;s&apos; &nbsp;"), "a & b @ \u2022 \"q\" 's'  ");
+  assertEquals(decodeEntities("&#xD800; &#0; &bogus; &#99999999;"), "&#xD800; &#0; &bogus; &#99999999;");
+  assertEquals(decodeEntities("&#128512;"), "\u{1F600}");
+});
+
+Deno.test("parseOpenGraph keeps apostrophes inside double-quoted content and reads single-quoted content", () => {
+  const og = parseOpenGraph(`<meta property="og:title" content="Don't stop" /><meta property='og:description' content='He said "hi"' />`);
+  assertEquals([og.title, og.description], ["Don't stop", 'He said "hi"']);
 });

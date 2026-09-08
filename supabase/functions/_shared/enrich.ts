@@ -67,16 +67,29 @@ async function fetchWithTimeout(f: typeof fetch, url: string, init: RequestInit 
   finally { clearTimeout(t); }
 }
 
-const stripTags = (html: string) => html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+
+/** Decodes named and numeric (decimal or hex) HTML entities; unknown or invalid ones are left as written. */
+export function decodeEntities(s: string): string {
+  return s.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (whole, body: string) => {
+    if (body[0] !== "#") return NAMED_ENTITIES[body.toLowerCase()] ?? whole;
+    const code = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+    if (!Number.isFinite(code) || code <= 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return whole;
+    return String.fromCodePoint(code);
+  });
+}
+
+const stripTags = (html: string) => decodeEntities(html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")).trim();
 
 /** Reads Open Graph / Twitter Card / title tags from an HTML document. */
-export function parseOpenGraph(html: string): { title?: string; description?: string; image?: string; siteName?: string; author?: string } {
+export function parseOpenGraph(html: string): { title?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string } {
   const head = html.slice(0, 200_000);
   const meta = (names: string[]): string | undefined => {
     for (const n of names) {
-      const re = new RegExp(`<meta[^>]+(?:property|name)=["']${n}["'][^>]*content=["']([^"']*)["']|<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${n}["']`, "i");
+      const value = `content=(?:"([^"]*)"|'([^']*)')`;
+      const re = new RegExp(`<meta[^>]+(?:property|name)=["']${n}["'][^>]*?${value}|<meta[^>]+?${value}[^>]*(?:property|name)=["']${n}["']`, "i");
       const m = re.exec(head);
-      const v = (m?.[1] ?? m?.[2])?.trim();
+      const v = (m?.[1] ?? m?.[2] ?? m?.[3] ?? m?.[4])?.trim();
       if (v) return stripTags(v);
     }
     return undefined;
@@ -84,11 +97,41 @@ export function parseOpenGraph(html: string): { title?: string; description?: st
   const titleTag = /<title[^>]*>([^<]*)<\/title>/i.exec(head)?.[1]?.trim();
   const out: ReturnType<typeof parseOpenGraph> = {};
   const title = meta(["og:title", "twitter:title"]) ?? titleTag; if (title) out.title = title;
+  const twitterTitle = meta(["twitter:title"]); if (twitterTitle) out.twitterTitle = twitterTitle;
   const description = meta(["og:description", "twitter:description", "description"]); if (description) out.description = description;
   const image = meta(["og:image", "twitter:image"]); if (image) out.image = image;
   const siteName = meta(["og:site_name"]); if (siteName) out.siteName = siteName;
   const author = meta(["author", "article:author"]); if (author) out.author = author;
   return out;
+}
+
+/**
+ * Instagram's link-preview tags carry what tokenless oEmbed withholds:
+ *   twitter:title  "Name (@handle) • Instagram reel"      og:title  "Name on Instagram: "caption""
+ *   og:description "1,234 likes, 5 comments - handle on August 21, 2026: "caption""
+ */
+export function parseInstagramOpenGraph(html: string): { authorName?: string; authorHandle?: string; caption?: string } {
+  const og = parseOpenGraph(html);
+  const out: ReturnType<typeof parseInstagramOpenGraph> = {};
+  const card = /^(.+?)\s*\(@([A-Za-z0-9._]+)\)\s*•/.exec(og.twitterTitle ?? "");
+  if (card) { out.authorName = card[1]!.trim(); out.authorHandle = card[2]!; }
+  const titled = /^(.+?) on Instagram: "([\s\S]*)"$/.exec(og.title ?? "");
+  if (titled) { out.authorName ??= titled[1]!.trim(); out.caption = titled[2]!.trim(); }
+  const described = /^[\d,.]+\s+likes?, [\d,.]+\s+comments? - ([A-Za-z0-9._]+) on /.exec(og.description ?? "");
+  if (described) out.authorHandle ??= described[1]!;
+  return out;
+}
+
+/** Fetches a page and reads its link-preview tags. Best effort: any failure returns null. */
+async function fetchOpenGraph(f: typeof fetch, url: string): Promise<{ html: string; og: ReturnType<typeof parseOpenGraph> } | null> {
+  try {
+    const res = await fetchWithTimeout(f, url, { headers: { accept: "text/html, */*;q=0.5" } });
+    if (classifyHttp(res.status) !== "ok") return null;
+    const html = (await res.text()).slice(0, MAX_HTML);
+    return { html, og: parseOpenGraph(html) };
+  } catch {
+    return null;
+  }
 }
 
 function classifyHttp(status: number): "unavailable" | "retry" | "ok" {
@@ -151,6 +194,23 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         if (s("thumbnail_url") && !item.thumbnail_url_remote) patch.thumbnail_url_remote = s("thumbnail_url");
         if (platform === "x" && s("html") && !item.text) patch.text = stripTags(s("html")!);
         patch.media_meta = { oembed: { provider: s("provider_name"), type: s("type"), width: j["thumbnail_width"], height: j["thumbnail_height"] } };
+        // Providers may answer 200 without author or thumbnail (Meta does so without an approved app token).
+        // The permalink's own link-preview tags are the fallback; a failure here never costs the item its card.
+        const missingAuthor = !(patch.author_name ?? item.author_name);
+        const missingThumb = !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
+        if ((missingAuthor || missingThumb) && /^https?:\/\//.test(target)) {
+          const page = await fetchOpenGraph(deps.fetch, target);
+          if (!page) {
+            deps.log("enrich: link-preview fallback unavailable", { item: item.id, platform });
+          } else {
+            const ig = platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
+            if (missingAuthor && (ig.authorName ?? page.og.author)) patch.author_name = ig.authorName ?? page.og.author;
+            if (ig.authorHandle && !patch.author_handle) patch.author_handle = ig.authorHandle;
+            if (missingThumb && page.og.image) patch.thumbnail_url_remote = page.og.image;
+            if (!item.text && !patch.text && (ig.caption ?? page.og.description)) patch.text = ig.caption ?? page.og.description;
+            patch.media_meta = { ...patch.media_meta, link_preview: true };
+          }
+        }
       } else {
         const html = (await res.text()).slice(0, MAX_HTML);
         const og = parseOpenGraph(html);
