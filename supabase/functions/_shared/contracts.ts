@@ -107,3 +107,8 @@ export const LINK_CODE_LENGTH = 6;
 
 /** POST /delete-account (JWT): what was forgotten. */
 export interface DeleteAccountResponse { deleted: true; thumbnails: number; events: number; replies: number; items: number; sources: number }
+
+/** POST /reprocess-item (JWT): enrich and classify one item the caller owns, now rather than at the next sweep. */
+export interface ReprocessItemRequest { itemId: string }
+export interface ReprocessItemResponse { status: ItemStatus; category: string | null }
+

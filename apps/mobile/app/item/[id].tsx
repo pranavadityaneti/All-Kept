@@ -1,23 +1,192 @@
+import { CATEGORIES } from "@allkept/contracts";
+import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Text } from "react-native";
+import { useState } from "react";
+import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
-import { Screen } from "../../components/Screen";
-import { type, usePalette } from "../../lib/theme";
+import { Chip } from "../../components/Chip";
+import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../../lib/item";
+import { useSession } from "../../lib/session";
+import { shareItem } from "../../lib/share";
+import { useThumbnails } from "../../lib/thumbnails";
+import { radius, space, type, usePalette } from "../../lib/theme";
 
-/** Placeholder until the item screen is built; keeps a tap from dead-ending. */
-export default function Item() {
+const PLATFORM_LABEL: Record<string, string> = {
+  instagram: "Instagram", youtube: "YouTube", x: "X", facebook: "Facebook", tiktok: "TikTok",
+  reddit: "Reddit", threads: "Threads", linkedin: "LinkedIn", pinterest: "Pinterest", web: "Web", note: "Note",
+};
+
+const savedOn = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+
+export default function ItemScreen() {
   const p = usePalette();
   const router = useRouter();
+  const session = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const item = useItem(id ?? "");
+  const detail = item.data;
+
+  const thumbnails = useThumbnails([detail?.thumbnailPath ?? null]);
+  const thumbnail = detail?.thumbnailPath ? thumbnails[detail.thumbnailPath] : undefined;
+
+  const setCategory = useSetCategory(id ?? "", session.status === "ready" ? session.userId : null);
+  const setNote = useSetNote(id ?? "");
+  const remove = useDeleteItem(id ?? "", detail?.thumbnailPath ?? null);
+  const attach = useAttachLink(id ?? "");
+
+  const [picking, setPicking] = useState(false);
+  const [note, setNoteText] = useState<string | null>(null);
+  const [link, setLink] = useState("");
+  const [attachError, setAttachError] = useState<string | null>(null);
+
+  if (item.isPending) return <Centered text="Loading…" />;
+  if (!detail) return <Centered text="This item is no longer in your library." onBack={() => router.back()} />;
+
+  const url = openableUrl(detail);
+  const noteValue = note ?? detail.note ?? "";
+  const heading = detail.title?.trim() || detail.text?.split("\n").find((l) => l.trim()) || PLATFORM_LABEL[detail.platform] || "Saved";
+
+  const confirmDelete = () => {
+    Alert.alert("Delete this save?", "It goes from your library for good. The original stays where it is.", [
+      { text: "Keep", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => remove.mutate(undefined, { onSuccess: () => router.back() }) },
+    ]);
+  };
+
   return (
-    <Screen>
-      <Text style={[type.title, { color: p.ink }]}>Saved item</Text>
-      <Card>
-        <Text style={[type.body, { color: p.inkMuted }]}>Opening the original, sharing and category correction come next.</Text>
-        <Text style={[type.label, { color: p.inkMuted }]}>{id}</Text>
-      </Card>
-      <Button label="Back" variant="secondary" onPress={() => router.back()} />
-    </Screen>
+    <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.headerRow}>
+          <Button label="Back" variant="secondary" onPress={() => router.back()} />
+        </View>
+
+        {thumbnail && (
+          <Image source={{ uri: thumbnail }} style={[styles.hero, { backgroundColor: p.surfaceAlt }]} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
+        )}
+
+        <Text style={[type.title, { color: p.ink }]}>{heading}</Text>
+
+        <View style={styles.row}>
+          <Chip label={detail.category ?? "Sorting"} selected={!!detail.category} onPress={() => setPicking((v) => !v)} />
+          <Chip label={PLATFORM_LABEL[detail.platform] ?? detail.platform} />
+          <Text style={[type.label, { color: p.inkMuted }]}>{savedOn(detail.lastSavedAt)}</Text>
+        </View>
+
+        {picking && (
+          <Card>
+            <Text style={[type.heading, { color: p.ink }]}>Put this under</Text>
+            <View style={styles.wrap}>
+              {CATEGORIES.map((c) => (
+                <Chip
+                  key={c}
+                  label={c}
+                  selected={detail.category === c}
+                  onPress={() => setCategory.mutate(c, { onSuccess: () => setPicking(false) })}
+                />
+              ))}
+            </View>
+            {setCategory.isError && <Text style={[type.label, { color: p.bad }]}>Could not save that. Try again.</Text>}
+          </Card>
+        )}
+
+        {detail.authorName && <Text style={[type.body, { color: p.inkMuted }]}>{detail.authorName}{detail.authorHandle ? ` · @${detail.authorHandle}` : ""}</Text>}
+
+        {detail.summary && (
+          <Card>
+            <Text style={[type.body, { color: p.ink }]}>{detail.summary}</Text>
+            {detail.tags.length > 0 && <Text style={[type.label, { color: p.inkMuted }]}>{detail.tags.join(" · ")}</Text>}
+          </Card>
+        )}
+
+        {detail.text && (
+          <Card>
+            <Text style={[type.body, { color: p.ink }]}>{detail.text}</Text>
+          </Card>
+        )}
+
+        <View style={styles.actions}>
+          {url ? (
+            <Button label={`Open in ${PLATFORM_LABEL[detail.platform] ?? "the app"}`} onPress={() => { void Linking.openURL(url); }} />
+          ) : null}
+          <Button
+            label="Share"
+            variant="secondary"
+            onPress={() => { void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); }}
+          />
+        </View>
+
+        {detail.status === "no_link" && (
+          <Card>
+            <Text style={[type.heading, { color: p.ink }]}>Add the post's link</Text>
+            <Text style={[type.body, { color: p.inkMuted }]}>Instagram does not send the link for a plain post. Paste it here and the preview fills in.</Text>
+            <TextInput
+              accessibilityLabel="Paste the post's link"
+              value={link}
+              onChangeText={(t) => { setLink(t); setAttachError(null); }}
+              placeholder="https://www.instagram.com/p/…"
+              placeholderTextColor={p.inkMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              inputMode="url"
+              style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
+            />
+            <Button
+              label="Attach link"
+              busy={attach.isPending}
+              disabled={link.trim().length === 0}
+              onPress={() =>
+                attach.mutate(link, {
+                  onSuccess: () => { setLink(""); setAttachError(null); },
+                  onError: (e) => setAttachError(e instanceof DuplicateLinkError ? "You have already saved that link. You can delete this card." : e instanceof Error ? e.message : "Could not attach that link."),
+                })
+              }
+            />
+            {attachError && <Text style={[type.label, { color: p.bad }]}>{attachError}</Text>}
+          </Card>
+        )}
+
+        <Card>
+          <Text style={[type.heading, { color: p.ink }]}>Your note</Text>
+          <TextInput
+            accessibilityLabel="Your note about this save"
+            value={noteValue}
+            onChangeText={setNoteText}
+            onBlur={() => { if (note !== null && note !== (detail.note ?? "")) setNote.mutate(note); }}
+            placeholder="Why you saved it…"
+            placeholderTextColor={p.inkMuted}
+            multiline
+            style={[styles.input, styles.noteInput, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
+          />
+          {setNote.isError && <Text style={[type.label, { color: p.bad }]}>Could not save your note.</Text>}
+        </Card>
+
+        <Button label="Delete this save" variant="secondary" busy={remove.isPending} onPress={confirmDelete} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+function Centered({ text, onBack }: { text: string; onBack?: () => void }) {
+  const p = usePalette();
+  return (
+    <SafeAreaView style={[styles.safe, styles.centered, { backgroundColor: p.bg }]}>
+      <Text style={[type.body, { color: p.inkMuted }]}>{text}</Text>
+      {onBack && <Button label="Back" variant="secondary" onPress={onBack} />}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  centered: { alignItems: "center", justifyContent: "center", gap: space.lg, padding: space.lg },
+  scroll: { padding: space.lg, gap: space.lg },
+  headerRow: { flexDirection: "row" },
+  hero: { width: "100%", aspectRatio: 1, borderRadius: radius.lg },
+  row: { flexDirection: "row", alignItems: "center", gap: space.sm, flexWrap: "wrap" },
+  wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  actions: { gap: space.md },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.md, minHeight: 48 },
+  noteInput: { minHeight: 88, textAlignVertical: "top" },
+});

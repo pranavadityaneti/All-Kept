@@ -438,3 +438,8 @@ entrypoint = "./functions/sweeper/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/delete-account/index.ts"
+
+[functions.reprocess-item]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/reprocess-item/index.ts"
