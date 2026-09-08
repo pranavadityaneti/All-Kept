@@ -81,3 +81,9 @@ Deno.test("notes are simply ready", async () => {
   const r = await enrich(base({ platform: "note", kind: "text", canonical_url: null, source_url: null, external_id: "abc", text: "buy the lamp" }), deps(fakeFetch({})));
   assertEquals(r.status, "ready");
 });
+
+Deno.test("instagram tokenless oEmbed (html only): author is parsed from the embed markup", async () => {
+  const html = '<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DcVMQIIMa5-/"><div><a href="https://www.instagram.com/reel/DcVMQIIMa5-/">A post shared by David Senra (@davidsenra)</a></div></blockquote>';
+  const r = await enrich(base({ text: null }), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": () => Response.json({ version: "1.0", provider_name: "Instagram", type: "rich", width: 658, html }) })));
+  assertEquals([r.status, r.patch.author_name, r.patch.author_handle, r.patch.thumbnail_url_remote], ["ready", "David Senra", "davidsenra", undefined]);
+});

@@ -143,6 +143,11 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         else if (title && !item.title) patch.title = title;
         if (s("author_name") && !item.author_name) patch.author_name = s("author_name");
         if (s("author_url")) patch.author_handle = s("author_url");
+        // Tokenless Meta oEmbed returns only the embed HTML; the author is named inside it ("A post shared by Name (@handle)").
+        if (!patch.author_name && !item.author_name && s("html")) {
+          const shared = /A post shared by ([^<(]+?)\s*\(@([A-Za-z0-9._]+)\)/.exec(s("html")!);
+          if (shared) { patch.author_name = stripTags(shared[1]!).trim(); patch.author_handle = shared[2]!; }
+        }
         if (s("thumbnail_url") && !item.thumbnail_url_remote) patch.thumbnail_url_remote = s("thumbnail_url");
         if (platform === "x" && s("html") && !item.text) patch.text = stripTags(s("html")!);
         patch.media_meta = { oembed: { provider: s("provider_name"), type: s("type"), width: j["thumbnail_width"], height: j["thumbnail_height"] } };
