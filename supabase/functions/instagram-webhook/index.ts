@@ -5,6 +5,8 @@ import { processEvent, type LinkedSource, type ProcessDeps } from "./process.ts"
 import { capture } from "../_shared/capture.ts";
 import { captureDeps } from "../_shared/capture-db.ts";
 import { instagramClient } from "../_shared/instagram.ts";
+import { runPipeline } from "../_shared/pipeline.ts";
+import { anthropicDeps } from "../_shared/anthropic.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
@@ -76,15 +78,15 @@ Deno.serve(async (req) => {
         await db.from("replies").update(sent.ok ? { sent_at: new Date().toISOString() } : { error: sent.error }).eq("id", row.id);
         if (!sent.ok) log("instagram: reply failed", { kind: meta.kind, error: sent.error });
       },
-      async waitForCategory(itemId, timeoutMs) {
-        const deadline = Date.now() + timeoutMs;
-        while (Date.now() < deadline) {
-          const { data } = await db.from("item_ai").select("category, user_category").eq("item_id", itemId).maybeSingle();
-          const c = (data?.user_category ?? data?.category) as string | null | undefined;
-          if (c) return c;
-          await new Promise((r) => setTimeout(r, 1000));
+      async waitForCategory(itemId) {
+        // Enrich and classify right now, inside the webhook's background task; the reply carries the result.
+        try {
+          const key = Deno.env.get("ANTHROPIC_API_KEY");
+          return await runPipeline(db, itemId, { fetch, classifier: key ? anthropicDeps(key) : null, log });
+        } catch (e) {
+          log("instagram: pipeline failed", { item: itemId, error: String(e).slice(0, 200) });
+          return null;
         }
-        return null;
       },
       log,
     };
