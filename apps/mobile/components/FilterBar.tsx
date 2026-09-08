@@ -17,7 +17,7 @@ export function FilterBar({ facets, filters, onToggle, onClear }: {
   if (platforms.length + categories.length === 0) return null;
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bar} contentContainerStyle={styles.row}>
       {active && <Chip label="Clear" onPress={onClear} />}
       {platforms.length > 1 && platforms.map((f) => (
         <Chip key={`p-${f.value}`} label={`${FILTER_LABEL[f.value] ?? f.value} ${f.n}`} selected={filters.platforms.includes(f.value)} onPress={() => onToggle("platforms", f.value)} />
@@ -31,6 +31,8 @@ export function FilterBar({ facets, filters, onToggle, onClear }: {
 }
 
 const styles = StyleSheet.create({
+  // A horizontal ScrollView inside a column stretches to fill the space unless it is told not to.
+  bar: { flexGrow: 0, flexShrink: 0 },
   row: { gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.xs, alignItems: "center" },
   divider: { width: StyleSheet.hairlineWidth, height: 20, backgroundColor: "#8888", marginHorizontal: space.xs },
 });

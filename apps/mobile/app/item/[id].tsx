@@ -34,7 +34,8 @@ export default function ItemScreen() {
   const setCategory = useSetCategory(id ?? "", userId);
   const setNote = useSetNote(id ?? "");
   const remove = useDeleteItem(id ?? "", detail?.thumbnailPath ?? null);
-  const attach = useAttachLink(id ?? "");
+  // A post Instagram sent without a link can only be fixed by an Instagram link.
+  const attach = useAttachLink(id ?? "", detail?.status === "no_link" && detail.platform === "instagram" ? "instagram" : undefined);
 
   const [picking, setPicking] = useState(false);
   const [note, setNoteText] = useState<string | null>(null);
@@ -100,7 +101,8 @@ export default function ItemScreen() {
           </Card>
         )}
 
-        {detail.text && (
+        {/* The heading is already the caption's first line; repeating a one-line caption below it says nothing. */}
+        {detail.text && detail.text.trim() !== heading.trim() && (
           <Card>
             <Text style={[type.body, { color: p.ink }]}>{detail.text}</Text>
           </Card>
@@ -117,10 +119,15 @@ export default function ItemScreen() {
           />
         </View>
 
-        {detail.status === "no_link" && (
+        {/* Also offered after a failed attempt, so a wrong link can be replaced instead of stranding the save. */}
+        {(detail.status === "no_link" || detail.status === "failed") && (
           <Card>
-            <Text style={[type.heading, { color: p.ink }]}>Add the post's link</Text>
-            <Text style={[type.body, { color: p.inkMuted }]}>Instagram does not send the link for a plain post. Paste it here and the preview fills in.</Text>
+            <Text style={[type.heading, { color: p.ink }]}>{detail.status === "failed" ? "That link did not work" : "Add the post's link"}</Text>
+            <Text style={[type.body, { color: p.inkMuted }]}>
+              {detail.status === "failed"
+                ? "We could not read anything at that address. Paste the link again, in full."
+                : "Instagram does not send the link for a plain post. Paste it here and the preview fills in."}
+            </Text>
             <TextInput
               accessibilityLabel="Paste the post's link"
               value={link}

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { normalize } from "@allkept/normalize";
 import type { ReprocessItemResponse } from "@allkept/contracts";
+import { parseAttachedLink } from "./attach-link";
 import { supabase } from "./supabase";
 
 export interface ItemDetail {
@@ -114,17 +114,11 @@ export class DuplicateLinkError extends Error {
   constructor() { super("You have already saved that link."); }
 }
 
-/**
- * Attaches the real link to a post Instagram sent without one, then asks the server to fetch the
- * preview immediately. The identity columns are rewritten, so the unique index can reject a link
- * that is already in the library.
- */
-export function useAttachLink(id: string) {
+export function useAttachLink(id: string, expectPlatform?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (pasted: string): Promise<ReprocessItemResponse> => {
-      const link = normalize({ url: pasted.trim() });
-      if (link.platform === "note" || !link.sourceUrl) throw new Error("That does not look like a link.");
+      const link = parseAttachedLink(pasted, expectPlatform);
       const { error } = await supabase
         .from("items")
         .update({
