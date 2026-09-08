@@ -4,10 +4,11 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useColorScheme, View } from "react-native";
+import { StyleSheet, Text, useColorScheme, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useOtaUpdates } from "../lib/updates";
-import { usePalette } from "../lib/theme";
+import { configError } from "../lib/supabase";
+import { space, type, usePalette } from "../lib/theme";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -28,6 +29,16 @@ export default function RootLayout() {
   // A plain ground for the moment the launch check takes; the splash screen is still on top of it.
   if (!updates.ready) return <View style={{ flex: 1, backgroundColor: p.bg }} />;
 
+  if (configError) {
+    return (
+      <View style={[styles.centered, { backgroundColor: p.bg }]}>
+        <Text style={[type.title, { color: p.ink }]}>Allkept</Text>
+        <Text style={[type.body, styles.message, { color: p.inkMuted }]}>{configError}</Text>
+        <Text style={[type.label, styles.message, { color: p.inkMuted }]}>Please report this build; a new one is needed.</Text>
+      </View>
+    );
+  }
+
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 7 * DAY }}>
       <SafeAreaProvider>
@@ -37,3 +48,8 @@ export default function RootLayout() {
     </PersistQueryClientProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: space.md, padding: space.xl },
+  message: { textAlign: "center" },
+});
