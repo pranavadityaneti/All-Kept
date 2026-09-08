@@ -14,6 +14,10 @@ const config: ExpoConfig = {
     package: "app.allkept.mobile",
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#1F6F8B" },
   },
+  // The EAS project Pranav created on 8 Sep 2026. Builds and over-the-air updates resolve through it.
+  extra: { eas: { projectId: "55c2d8b3-2f30-462b-b052-2a685de0aa54" } },
+  updates: { url: "https://u.expo.dev/55c2d8b3-2f30-462b-b052-2a685de0aa54" },
+  runtimeVersion: { policy: "appVersion" },
   plugins: [
     "expo-router",
     "expo-secure-store",
