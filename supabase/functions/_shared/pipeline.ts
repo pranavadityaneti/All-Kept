@@ -69,7 +69,7 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
   if (!deps.classifier) return null;
 
   const c = await classify({ platform: it.platform, kind: it.kind, url: it.canonical_url ?? it.source_url, title: it.title, text: it.text, author: it.author_name, note: it.note }, deps.classifier);
-  const row = c.output
+  const row: Record<string, unknown> = c.output
     ? { item_id: itemId, user_id: it.user_id, ...c.output, model: c.model, prompt_version: PROMPT_VERSION, usage: { ...(c.usage ?? {}), cost_usd: costUsd(c.usage) }, ai_error: null }
     : { item_id: itemId, user_id: it.user_id, model: c.model, prompt_version: PROMPT_VERSION, usage: c.usage, ai_error: c.error };
   const { error: e3 } = await db.from("item_ai").upsert(row, { onConflict: "item_id" });
