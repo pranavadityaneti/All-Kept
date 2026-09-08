@@ -112,7 +112,8 @@ export function extractEvents(body: unknown, rawText: string): EventRow[] {
     (entry["messaging"] as unknown[]).forEach((m, index) => {
       if (!isObj(m)) return;
       const message = isObj(m["message"]) ? m["message"] : null;
-      const mid = (message ? str(message["mid"]) : null)?.trim() || null;
+      const midRaw = (message ? str(message["mid"]) : null)?.trim() || null;
+      const mid = midRaw && message?.["is_deleted"] === true ? `${midRaw}:deleted` : midRaw; // an unsend reuses the mid; keep both rows
       const rawTs = m["timestamp"];
       const ts = validMs(rawTs);
       const keyTs = typeof rawTs === "number" && Number.isFinite(rawTs) ? rawTs : "?";

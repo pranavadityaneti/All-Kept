@@ -69,7 +69,7 @@ Deno.test("extractEvents turns each messaging entry into a row keyed by mid", ()
   assertEquals(rows[0]!.entry_id, "17841400000000000");
   assertEquals(rows[0]!.event_time, new Date(1757300000123).toISOString());
   assertEquals((rows[0]!.payload as { message: { attachments: unknown[] } }).message.attachments.length, 1);
-  assertEquals(rows[1]!.event_id, "mid.deleted");
+  assertEquals(rows[1]!.event_id, "mid.deleted:deleted"); // unsend of a message keeps a distinct key
   assertEquals(rows[2]!.event_id, "mid.echo");
 });
 
@@ -169,13 +169,13 @@ Deno.test("handle: payloads with no messaging events are stored as one unparsed 
 
 Deno.test("handle: a poisoned batch falls back to per-row storage and records the failure", async () => {
   const s = new FakeStore();
-  s.failWhen = (rows) => (rows.length > 1 ? "23514 batch rejected" : rows[0]!.event_id === "mid.deleted" && !rows[0]!.store_error ? "22P05 bad value" : null);
+  s.failWhen = (rows) => (rows.length > 1 ? "23514 batch rejected" : rows[0]!.event_id === "mid.deleted:deleted" && !rows[0]!.store_error ? "22P05 bad value" : null);
   const r = await handle(await signed(JSON.stringify(sample)), deps(s));
   assertEquals(r.status, 200);
   // batch, then 3 single rows, then 1 error marker for the poisoned row
   assertEquals(s.calls.length, 5);
   const marker = s.calls[4]![0]!;
-  assertEquals(marker.event_id, "mid.deleted:unstorable");
+  assertEquals(marker.event_id, "mid.deleted:deleted:unstorable");
   assertEquals(marker.store_error, "22P05 bad value");
   assertEquals(marker.raw_body, null);
 });
