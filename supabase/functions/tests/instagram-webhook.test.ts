@@ -218,3 +218,14 @@ Deno.test("describeShape bounds the object field", () => {
   const shape = describeShape({ object: "x".repeat(500), entry: [] });
   assertEquals((shape.object as string).length, 50);
 });
+
+
+Deno.test("handle: GET works and POST fails closed when the app secret is not configured", async () => {
+  const s = new FakeStore();
+  const d = deps(s, { appSecret: "" });
+  const ok = await handle(new Request(`https://x.test/f?hub.mode=subscribe&hub.verify_token=${VERIFY}&hub.challenge=9`), d);
+  assertEquals([ok.status, await ok.text()], [200, "9"]);
+  const post = await handle(await signed(JSON.stringify(sample)), d);
+  assertEquals(post.status, 500);
+  assertEquals(s.calls.length, 0);
+});

@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const db = createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
     return await handle(req, {
       verifyToken: env("META_VERIFY_TOKEN"),
-      appSecret: env("META_APP_SECRET"),
+      appSecret: Deno.env.get("META_APP_SECRET") ?? "", // optional at boot so the GET handshake works before Meta secrets exist
       async store(rows: EventRow[]) {
         const { error } = await db.from("message_events").upsert(rows, { onConflict: "source_kind,event_id", ignoreDuplicates: true });
         return { error: error ? `${error.code ?? ""} ${error.message}`.trim() : null };

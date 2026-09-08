@@ -168,6 +168,10 @@ export async function handle(req: Request, deps: HandleDeps): Promise<Response> 
     return new Response(r.body, { status: r.status, headers: { "content-type": "text/plain" } });
   }
   if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
+  if (deps.appSecret.length === 0) {
+    log("instagram-webhook: META_APP_SECRET is not set; refusing POST"); // fail closed, loudly
+    return new Response("not configured", { status: 500 });
+  }
 
   const max = deps.maxBodyBytes ?? DEFAULT_MAX_BODY;
   const declared = Number(req.headers.get("content-length") ?? "0");
