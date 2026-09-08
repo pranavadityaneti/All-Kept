@@ -4,6 +4,7 @@
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.14",
     "npm:@supabase/supabase-js@2": "2.116.0",
+    "npm:@supabase/supabase-js@^2.45.0": "2.116.0",
     "npm:@types/node@24": "24.13.3",
     "npm:supabase@^2.117.0": "2.117.0",
     "npm:typescript@^5.6.0": "5.9.3",
@@ -725,6 +726,14 @@
       ]
     },
     "members": {
+      "packages/contracts": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@types/node@24",
+            "npm:typescript@^5.6.0"
+          ]
+        }
+      },
       "packages/normalize": {
         "packageJson": {
           "dependencies": [
