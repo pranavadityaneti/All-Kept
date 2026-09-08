@@ -9,7 +9,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "sync:shared": "node scripts/sync-shared.mjs",
-    "test:functions": "deno test --allow-env --allow-net --allow-read supabase/functions/tests/",
+    "test:functions": "bash scripts/test-functions.sh",
     "supabase": "supabase",
     "events": "node scripts/dump-events.mjs"
   },
