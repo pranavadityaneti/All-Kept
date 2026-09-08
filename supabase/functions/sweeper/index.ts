@@ -1,6 +1,6 @@
 // Retries enrichment and classification for items that are due. Called by pg_cron every 5 minutes with a shared secret.
 import { adminClient, env } from "../_shared/supabase.ts";
-import { runPipeline } from "../_shared/pipeline.ts";
+import { MAX_SNAPSHOT_ATTEMPTS, runPipeline } from "../_shared/pipeline.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { json } from "../_shared/http.ts";
 
@@ -22,12 +22,16 @@ Deno.serve(async (req) => {
     // 2. Items enriched but never classified (for example captured before the key existed).
     const { data: unclassified, error: e2 } = await db.rpc("items_without_ai", { lim: BATCH });
     if (e2) throw e2;
-    const ids = [...new Set([...(due ?? []).map((r) => r.id as string), ...((unclassified ?? []) as { id: string }[]).map((r) => r.id)])];
+    // 3. Cards whose remote image was not stored (too large, timeout, CDN error): retry while the signed link is fresh, a bounded number of times.
+    const dayAgo = new Date(Date.now() - 24 * 3_600_000).toISOString();
+    const { data: noThumb, error: e3 } = await db.from("items").select("id").in("status", ["ready", "no_link"]).is("thumbnail_path", null).not("thumbnail_url_remote", "is", null).lt("enrich_attempts", MAX_SNAPSHOT_ATTEMPTS).gt("created_at", dayAgo).lt("created_at", twoMinAgo).limit(BATCH);
+    if (e3) throw e3;
+    const ids = [...new Set([...(due ?? []).map((r) => r.id as string), ...((unclassified ?? []) as { id: string }[]).map((r) => r.id), ...(noThumb ?? []).map((r) => r.id as string)])];
     let ok = 0, failed = 0;
     for (const id of ids) {
       try { await runPipeline(db, id, deps); ok++; } catch (e) { failed++; console.error("sweeper: item failed", { id, error: String(e).slice(0, 200) }); }
     }
-    return json({ due: (due ?? []).length, unclassified: (unclassified ?? []).length, processed: ok, failed, classifier: choice?.model ?? null });
+    return json({ due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, processed: ok, failed, classifier: choice?.model ?? null });
   } catch (e) {
     console.error("sweeper failed", e);
     return new Response("internal error", { status: 500 });

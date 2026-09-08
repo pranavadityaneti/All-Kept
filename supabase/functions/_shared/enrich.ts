@@ -37,7 +37,7 @@ export interface EnrichResult {
 
 export interface EnrichDeps {
   fetch: typeof fetch;
-  /** Stores the image at `url` as the item's thumbnail; returns the storage path or null. */
+  /** Stores the image at `url` as the item's thumbnail and returns the storage path; throws with a short reason when nothing was stored. */
   snapshot(userId: string, itemId: string, url: string): Promise<string | null>;
   log(message: string, meta?: Record<string, unknown>): void;
 }
@@ -235,7 +235,9 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       const path = await deps.snapshot(item.user_id, item.id, thumbUrl);
       if (path) patch.thumbnail_path = path;
     } catch (e) {
-      deps.log("enrich: snapshot failed", { item: item.id, error: String(e).slice(0, 200) });
+      const reason = (e instanceof Error ? e.message : String(e)).slice(0, 200);
+      deps.log("enrich: snapshot failed", { item: item.id, reason });
+      patch.media_meta = { ...(patch.media_meta ?? {}), snapshot_error: reason }; // the sweeper retries while the remote link is fresh
     }
   }
 

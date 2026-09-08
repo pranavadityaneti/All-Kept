@@ -10,7 +10,10 @@ export interface PipelineDeps {
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
-const MAX_THUMB_BYTES = 2_000_000;
+/** Instagram serves post images up to about 3 MB; larger sources are skipped with a reason rather than stored. */
+export const MAX_STORED_THUMB_BYTES = 4_000_000;
+/** How many times an item's remote thumbnail is fetched before we stop trying (the first try counts). */
+export const MAX_SNAPSHOT_ATTEMPTS = 4;
 
 /** USD per million tokens, list prices. Keys match the model id or its prefix (vendors append dates). Checked against both vendors' pricing pages on 8 Sep 2026. */
 export const PRICES_PER_MTOK: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
@@ -30,33 +33,56 @@ export function costUsd(model: string, u: ModelUsage | null): number | null {
   return Math.round(usd * 1e6) / 1e6;
 }
 
-async function snapshotTo(db: SupabaseClient, fetchImpl: typeof fetch, userId: string, itemId: string, url: string): Promise<string | null> {
+/** Stores the image at `url` as the item's thumbnail and returns the storage path. Throws with a short reason whenever nothing was stored. */
+export async function snapshotTo(db: SupabaseClient, fetchImpl: typeof fetch, userId: string, itemId: string, url: string): Promise<string> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8_000);
   try {
     const res = await fetchImpl(url, { signal: ctrl.signal, headers: { "user-agent": "Mozilla/5.0 (compatible; AllkeptBot/0.1)" } });
-    if (!res.ok) return null;
+    if (!res.ok) throw new Error(`http ${res.status}`);
     const type = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0]!.trim();
-    if (!type.startsWith("image/")) return null;
+    if (!type.startsWith("image/")) throw new Error(`not an image: ${type.slice(0, 40)}`);
+    const declared = Number(res.headers.get("content-length") ?? 0);
+    if (declared > MAX_STORED_THUMB_BYTES) throw new Error(`too large: ${declared} bytes`);
     const bytes = new Uint8Array(await res.arrayBuffer());
-    if (bytes.byteLength === 0 || bytes.byteLength > MAX_THUMB_BYTES) return null;
+    if (bytes.byteLength === 0) throw new Error("empty body");
+    if (bytes.byteLength > MAX_STORED_THUMB_BYTES) throw new Error(`too large: ${bytes.byteLength} bytes`);
     const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : type === "image/heic" ? "heic" : "jpg";
     const path = `${userId}/${itemId}.${ext}`;
     const { error } = await db.storage.from("thumbs").upload(path, bytes, { contentType: type, upsert: true });
-    return error ? null : path;
+    if (error) throw new Error(`upload: ${String(error.message ?? error).slice(0, 120)}`);
+    return path;
   } finally {
     clearTimeout(t);
   }
 }
 
+const reasonOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 200);
+
 /** Enriches (if pending/failed/no_link without thumbnail) and classifies (if not yet classified). Returns the category when known. */
 export async function runPipeline(db: SupabaseClient, itemId: string, deps: PipelineDeps): Promise<string | null> {
-  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts").eq("id", itemId).maybeSingle();
+  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta").eq("id", itemId).maybeSingle();
   if (error) throw error;
   if (!item) return null;
-  const it = item as EnrichableItem & { note: string | null };
+  const it = item as EnrichableItem & { note: string | null; media_meta: Record<string, unknown> | null };
 
-  const needsEnrich = it.status === "pending" || it.status === "failed" || (it.status === "no_link" && !it.thumbnail_path && !!it.thumbnail_url_remote);
+  const needsEnrich = it.status === "pending" || it.status === "failed";
+  // A card whose remote image was not stored yet (first try for no-link posts, or a failed fetch) gets a bounded number of further tries.
+  const needsSnapshot = !needsEnrich && (it.status === "ready" || it.status === "no_link") && !it.thumbnail_path && !!it.thumbnail_url_remote && it.enrich_attempts < MAX_SNAPSHOT_ATTEMPTS;
+  if (needsSnapshot) {
+    const meta: Record<string, unknown> = { ...(it.media_meta ?? {}) };
+    let path: string | null = null;
+    try {
+      path = await snapshotTo(db, deps.fetch, it.user_id, it.id, it.thumbnail_url_remote!);
+      delete meta["snapshot_error"];
+    } catch (e) {
+      meta["snapshot_error"] = reasonOf(e);
+      deps.log("pipeline: snapshot failed", { item: itemId, attempt: it.enrich_attempts + 1, reason: meta["snapshot_error"] });
+    }
+    const { error: e4 } = await db.from("items").update({ ...(path ? { thumbnail_path: path } : {}), enrich_attempts: it.enrich_attempts + 1, media_meta: meta }).eq("id", itemId);
+    if (e4) throw e4;
+    if (path) it.thumbnail_path = path;
+  }
   if (needsEnrich) {
     const r = await enrich(it, { fetch: deps.fetch, snapshot: (u, i, url) => snapshotTo(db, deps.fetch, u, i, url), log: deps.log });
     const patch: Record<string, unknown> = { ...r.patch, status: r.status, enrich_attempts: it.enrich_attempts + 1, next_attempt_at: null };

@@ -153,3 +153,14 @@ Deno.test("instagram: a page without link-preview tags (login wall) is logged an
   assertEquals([r.status, r.patch.author_name, (r.patch.media_meta as Record<string, unknown>)["link_preview"]], ["ready", undefined, undefined]);
   assertEquals(logged, ["enrich: link-preview tags absent"]);
 });
+
+Deno.test("a failed snapshot is recorded on the item for the sweeper to retry, and the card stays ready", async () => {
+  const logged: string[] = [];
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response(IG_PAGE) }));
+  d.snapshot = async () => { throw new Error("too large: 2113627 bytes"); };
+  d.log = (m) => { logged.push(m); };
+  const r = await enrich(base(), d);
+  assertEquals([r.status, r.patch.thumbnail_path, r.patch.author_name], ["ready", undefined, "David Senra"]);
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["snapshot_error"], "too large: 2113627 bytes");
+  assertEquals(logged, ["enrich: snapshot failed"]);
+});
