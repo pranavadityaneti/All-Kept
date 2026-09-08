@@ -8,9 +8,17 @@ const config: ExpoConfig = {
   version: "0.1.0",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
+  icon: "./assets/icon.png",
   ios: { bundleIdentifier: "app.allkept.mobile", supportsTablet: false },
-  android: { package: "app.allkept.mobile" },
-  plugins: ["expo-router", "expo-secure-store"],
+  android: {
+    package: "app.allkept.mobile",
+    adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#1F6F8B" },
+  },
+  plugins: [
+    "expo-router",
+    "expo-secure-store",
+    ["expo-splash-screen", { image: "./assets/splash-icon.png", imageWidth: 200, backgroundColor: "#1F6F8B", dark: { backgroundColor: "#0F1417" } }],
+  ],
 };
 
 export default config;

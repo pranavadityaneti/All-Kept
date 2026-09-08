@@ -7,6 +7,7 @@ import { Button } from "../components/Button";
 import { ItemCard } from "../components/ItemCard";
 import { useFilters } from "../lib/filters";
 import { useSearch, type LibraryItem } from "../lib/library";
+import { track } from "../lib/metrics";
 import { useSession } from "../lib/session";
 import { useThumbnails } from "../lib/thumbnails";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -29,6 +30,12 @@ export default function Search() {
   const items: LibraryItem[] = results.data ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const searched = term.trim().length > 0;
+  const userId = session.status === "ready" ? session.userId : null;
+
+  useEffect(() => {
+    if (!searched || results.isPending || results.isError) return;
+    track(userId, "search", { length: term.trim().length, results: items.length });
+  }, [term, searched, results.isPending, results.isError, items.length, userId]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>

@@ -7,6 +7,7 @@ import { Card } from "../../components/Card";
 import { Screen } from "../../components/Screen";
 import { startInstagramLink } from "../../lib/api";
 import { formatCountdown, secondsLeft } from "../../lib/countdown";
+import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
 import { space, type, usePalette } from "../../lib/theme";
@@ -27,16 +28,25 @@ export default function ConnectInstagram() {
   const [code, setCode] = useState<CodeState>({ status: "loading" });
   const [copied, setCopied] = useState(false);
   const [left, setLeft] = useState(0);
+  const userId = ready ? session.userId : null;
 
   const requestCode = useCallback(() => {
     setCode({ status: "loading" });
     setCopied(false);
     startInstagramLink()
-      .then((r) => { setCode({ status: "ready", code: r.code, expiresAt: r.expiresAt }); setLeft(secondsLeft(r.expiresAt)); })
+      .then((r) => { setCode({ status: "ready", code: r.code, expiresAt: r.expiresAt }); setLeft(secondsLeft(r.expiresAt)); track(userId, "link_started"); })
       .catch((e: unknown) => setCode({ status: "error", message: e instanceof Error ? e.message : String(e) }));
-  }, []);
+  }, [userId]);
 
   const requested = useRef(false);
+  const linkedReported = useRef(false);
+
+  useEffect(() => {
+    if (linked.data && !linkedReported.current) {
+      linkedReported.current = true;
+      track(userId, "link_completed");
+    }
+  }, [linked.data, userId]);
   useEffect(() => {
     // Once per visit. The linked query settles from undefined to null, and a second request would
     // replace the code on the server while the person is holding the first one.

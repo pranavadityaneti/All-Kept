@@ -8,6 +8,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Chip } from "../../components/Chip";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../../lib/item";
+import { track, useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { shareItem } from "../../lib/share";
 import { useThumbnails } from "../../lib/thumbnails";
@@ -31,7 +32,9 @@ export default function ItemScreen() {
   const thumbnails = useThumbnails([detail?.thumbnailPath ?? null]);
   const thumbnail = detail?.thumbnailPath ? thumbnails[detail.thumbnailPath] : undefined;
 
-  const setCategory = useSetCategory(id ?? "", session.status === "ready" ? session.userId : null);
+  const userId = session.status === "ready" ? session.userId : null;
+  useTrackOnce(userId, "item_open");
+  const setCategory = useSetCategory(id ?? "", userId);
   const setNote = useSetNote(id ?? "");
   const remove = useDeleteItem(id ?? "", detail?.thumbnailPath ?? null);
   const attach = useAttachLink(id ?? "");
@@ -51,7 +54,7 @@ export default function ItemScreen() {
   const confirmDelete = () => {
     Alert.alert("Delete this save?", "It goes from your library for good. The original stays where it is.", [
       { text: "Keep", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => remove.mutate(undefined, { onSuccess: () => router.back() }) },
+      { text: "Delete", style: "destructive", onPress: () => remove.mutate(undefined, { onSuccess: () => { track(userId, "item_deleted", { status: detail.status }); router.back(); } }) },
     ]);
   };
 
@@ -83,7 +86,7 @@ export default function ItemScreen() {
                   key={c}
                   label={c}
                   selected={detail.category === c}
-                  onPress={() => setCategory.mutate(c, { onSuccess: () => setPicking(false) })}
+                  onPress={() => setCategory.mutate(c, { onSuccess: () => { setPicking(false); track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }); } })}
                 />
               ))}
             </View>
@@ -108,12 +111,12 @@ export default function ItemScreen() {
 
         <View style={styles.actions}>
           {url ? (
-            <Button label={`Open in ${PLATFORM_LABEL[detail.platform] ?? "the app"}`} onPress={() => { void Linking.openURL(url); }} />
+            <Button label={`Open in ${PLATFORM_LABEL[detail.platform] ?? "the app"}`} onPress={() => { track(userId, "open_original", { platform: detail.platform }); void Linking.openURL(url); }} />
           ) : null}
           <Button
             label="Share"
             variant="secondary"
-            onPress={() => { void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); }}
+            onPress={() => { track(userId, "share_out", { hasLink: !!url }); void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); }}
           />
         </View>
 
@@ -138,7 +141,7 @@ export default function ItemScreen() {
               disabled={link.trim().length === 0}
               onPress={() =>
                 attach.mutate(link, {
-                  onSuccess: () => { setLink(""); setAttachError(null); },
+                  onSuccess: (r) => { setLink(""); setAttachError(null); track(userId, "paste_link", { status: r.status }); },
                   onError: (e) => setAttachError(e instanceof DuplicateLinkError ? "You have already saved that link. You can delete this card." : e instanceof Error ? e.message : "Could not attach that link."),
                 })
               }
@@ -153,7 +156,7 @@ export default function ItemScreen() {
             accessibilityLabel="Your note about this save"
             value={noteValue}
             onChangeText={setNoteText}
-            onBlur={() => { if (note !== null && note !== (detail.note ?? "")) setNote.mutate(note); }}
+            onBlur={() => { if (note !== null && note !== (detail.note ?? "")) setNote.mutate(note, { onSuccess: () => track(userId, "note_saved", { length: note.trim().length }) }); }}
             placeholder="Why you saved it…"
             placeholderTextColor={p.inkMuted}
             multiline

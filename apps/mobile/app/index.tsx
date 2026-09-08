@@ -8,6 +8,7 @@ import { FilterBar } from "../components/FilterBar";
 import { ItemCard } from "../components/ItemCard";
 import { useFilters } from "../lib/filters";
 import { useFacets, useLibrary, useLibraryRealtime, type LibraryItem } from "../lib/library";
+import { useTrackOnce } from "../lib/metrics";
 import { useSession } from "../lib/session";
 import { useLinkedSource } from "../lib/sources";
 import { useThumbnails } from "../lib/thumbnails";
@@ -23,6 +24,9 @@ export default function Library() {
   const library = useLibrary(filters, ready && loaded);
   const facets = useFacets(ready);
   useLibraryRealtime(ready);
+  const userId = ready ? session.userId : null;
+  useTrackOnce(userId, "app_open");
+  useTrackOnce(userId, "library_view");
 
   const items: LibraryItem[] = library.data?.pages.flatMap((page) => page.items) ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
