@@ -104,3 +104,6 @@ export const LIMITS = {
 /** Link codes avoid look-alike characters (0/O, 1/I). */
 export const LINK_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const LINK_CODE_LENGTH = 6;
+
+/** POST /delete-account (JWT): what was forgotten. */
+export interface DeleteAccountResponse { deleted: true; thumbnails: number; events: number; replies: number; items: number; sources: number }

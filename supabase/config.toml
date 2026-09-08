@@ -433,3 +433,8 @@ entrypoint = "./functions/link-instagram/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/sweeper/index.ts"
+
+[functions.delete-account]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/delete-account/index.ts"
