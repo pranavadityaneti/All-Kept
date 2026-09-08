@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { decodeEntities, enrich, parseInstagramOpenGraph, parseOpenGraph, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { decodeEntities, enrich, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -163,4 +163,36 @@ Deno.test("a failed snapshot is recorded on the item for the sweeper to retry, a
   assertEquals([r.status, r.patch.thumbnail_path, r.patch.author_name], ["ready", undefined, "David Senra"]);
   assertEquals((r.patch.media_meta as Record<string, unknown>)["snapshot_error"], "too large: 2113627 bytes");
   assertEquals(logged, ["enrich: snapshot failed"]);
+});
+
+/** A page whose head carries the tags, followed by a body that must never be pulled. */
+const hugePage = (head: string) => {
+  let pulls = 0;
+  return new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulls++;
+      if (pulls === 1) { controller.enqueue(new TextEncoder().encode(head + "<!-- " + "x".repeat(300_000) + " -->")); return; }
+      throw new Error("the rest of the page was read");
+    },
+  });
+};
+
+Deno.test("readHead stops after the byte cap and closes the stream; a cut multibyte character is replaced, not thrown", async () => {
+  const text = await readHead(new Response(hugePage("<meta property=\"og:title\" content=\"Head\">")), 1_000);
+  assertEquals(text.length, 1_000);
+  assert(text.startsWith("<meta property=\"og:title\" content=\"Head\">"));
+  const cut = await readHead(new Response(new TextEncoder().encode("ab\u{1F600}")), 3);
+  assertEquals([cut.length, cut.startsWith("ab")], [3, true]);
+  assertEquals(await readHead(new Response(null), 10), "");
+});
+
+Deno.test("instagram: the link-preview fallback reads only the head of a 650 KB page", async () => {
+  const r = await enrich(base(), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response(hugePage(IG_PAGE)) })));
+  assertEquals([r.status, r.patch.author_name, r.patch.author_handle], ["ready", "David Senra", "davidsenra"]);
+});
+
+Deno.test("web page: Open Graph reading is capped the same way", async () => {
+  const html = `<meta property="og:title" content="Capped" /><meta property="og:description" content="Still parsed" />`;
+  const r = await enrich(base({ platform: "web", kind: "article", canonical_url: "https://site/huge", text: null }), deps(fakeFetch({ "https://site/huge": () => new Response(hugePage(html), { headers: { "content-type": "text/html" } }) })));
+  assertEquals([r.status, r.patch.title, r.patch.text], ["ready", "Capped", "Still parsed"]);
 });

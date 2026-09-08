@@ -51,7 +51,8 @@ const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
 const CODE_RE = new RegExp(`^[A-Z2-9]{${LINK_CODE_LENGTH}}$`);
 const HOUR = 3_600_000;
 const REPLY_WINDOW_MS = 23 * HOUR;
-const CATEGORY_WAIT_MS = 8_000;
+/** How long the confirmation waits for the sort. Reels take 8 to 11 s (preview page, image, model); past this the reply says "sorting" and the library still gets the category. */
+export const CATEGORY_WAIT_MS = 20_000;
 
 export const REPLY_TEXT = {
   linked: (username: string | null) => `Linked${username ? ` as @${username}` : ""}. Send me any post, reel or link and I'll keep it.`,

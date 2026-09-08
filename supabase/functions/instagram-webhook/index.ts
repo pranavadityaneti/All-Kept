@@ -7,6 +7,7 @@ import { captureDeps } from "../_shared/capture-db.ts";
 import { instagramClient } from "../_shared/instagram.ts";
 import { runPipeline } from "../_shared/pipeline.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
+import { TIMED_OUT, within } from "../_shared/timing.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
@@ -78,14 +79,15 @@ Deno.serve(async (req) => {
         await db.from("replies").update(sent.ok ? { sent_at: new Date().toISOString() } : { error: sent.error }).eq("id", row.id);
         if (!sent.ok) log("instagram: reply failed", { kind: meta.kind, error: sent.error });
       },
-      async waitForCategory(itemId) {
-        // Enrich and classify right now, inside the webhook's background task; the reply carries the result.
-        try {
-          return await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, log });
-        } catch (e) {
-          log("instagram: pipeline failed", { item: itemId, error: String(e).slice(0, 200) });
-          return null;
-        }
+      async waitForCategory(itemId, timeoutMs) {
+        // Enrich and classify right now; the reply carries the category if it lands within the wait. Past the wait the work
+        // continues (kept alive for the runtime) and the sweeper covers anything that still slips through.
+        const work = runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, log })
+          .catch((e) => { log("instagram: pipeline failed", { item: itemId, error: String(e).slice(0, 200) }); return null; });
+        if (typeof EdgeRuntime !== "undefined" && EdgeRuntime) EdgeRuntime.waitUntil(work);
+        const result = await within(work, timeoutMs);
+        if (result === TIMED_OUT) { log("instagram: category not ready within wait", { item: itemId, timeoutMs }); return null; }
+        return result;
       },
       log,
     };

@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { processEvent, REPLY_TEXT, type ProcessDeps, type LinkedSource, type ReplyMeta } from "../instagram-webhook/process.ts";
+import { CATEGORY_WAIT_MS, processEvent, REPLY_TEXT, type ProcessDeps, type LinkedSource, type ReplyMeta } from "../instagram-webhook/process.ts";
 import type { EventRow } from "../instagram-webhook/handler.ts";
 import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
 
@@ -44,7 +44,8 @@ class Fake implements ProcessDeps {
   async deleteItemByEvent(_u: string, id: string) { this.deleted.push(id); return true; }
   async recentReply(_i: string, kind: string) { return this.recent.has(kind); }
   async sendReply(_i: string, text: string, meta: ReplyMeta) { this.replies.push({ text, meta }); }
-  async waitForCategory() { return this.category; }
+  waited: number[] = [];
+  async waitForCategory(_itemId: string, timeoutMs: number) { this.waited.push(timeoutMs); return this.category; }
   log() {}
 }
 
@@ -58,6 +59,7 @@ Deno.test("a reel is captured with its permalink and caption, then confirmed wit
   assertEquals(f.captures[0]!.savedAt, "2026-09-08T09:20:53.587Z");
   assertEquals(f.replies[0]!.text, "Saved · Travel & places");
   assertEquals(f.replies[0]!.meta.kind, "confirm");
+  assertEquals([f.waited, CATEGORY_WAIT_MS], [[20_000], 20_000]); // the sort gets a real wait, not the old 8 s
   assertEquals(f.replies[0]!.meta.notAfter.toISOString(), "2026-09-09T08:20:53.587Z");
 });
 

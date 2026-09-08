@@ -43,7 +43,8 @@ export interface EnrichDeps {
 }
 
 const TIMEOUT_MS = 8_000;
-const MAX_HTML = 1_000_000;
+/** Link-preview tags live in <head>; Instagram's sit within the first 15 KB of a 650 KB page. Reading stops here and the connection is closed. */
+const MAX_HTML_BYTES = 256_000;
 export const RETRY_LADDER_MS = [60_000, 300_000, 1_800_000, 7_200_000, 43_200_000];
 const UA = "Mozilla/5.0 (compatible; AllkeptBot/0.1; +https://allkept.app)";
 
@@ -65,6 +66,33 @@ async function fetchWithTimeout(f: typeof fetch, url: string, init: RequestInit 
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try { return await f(url, { ...init, signal: ctrl.signal, headers: { "user-agent": UA, accept: "application/json, text/html;q=0.9, */*;q=0.5", ...(init.headers ?? {}) } }); }
   finally { clearTimeout(t); }
+}
+
+/** Reads at most `maxBytes` of a response body, then cancels the rest so a large page costs neither time nor memory. */
+export async function readHead(res: Response, maxBytes: number): Promise<string> {
+  if (!res.body) return "";
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+  const buf = new Uint8Array(Math.min(total, maxBytes));
+  let offset = 0;
+  for (const c of chunks) {
+    const take = Math.min(c.byteLength, buf.byteLength - offset);
+    if (take <= 0) break;
+    buf.set(c.subarray(0, take), offset);
+    offset += take;
+  }
+  return new TextDecoder("utf-8", { fatal: false }).decode(buf);
 }
 
 const NAMED_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
@@ -127,7 +155,7 @@ async function fetchOpenGraph(f: typeof fetch, url: string): Promise<{ html: str
   try {
     const res = await fetchWithTimeout(f, url, { headers: { accept: "text/html, */*;q=0.5" } });
     if (classifyHttp(res.status) !== "ok") return null;
-    const html = (await res.text()).slice(0, MAX_HTML);
+    const html = await readHead(res, MAX_HTML_BYTES);
     return { html, og: parseOpenGraph(html) };
   } catch {
     return null;
@@ -214,7 +242,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
           }
         }
       } else {
-        const html = (await res.text()).slice(0, MAX_HTML);
+        const html = await readHead(res, MAX_HTML_BYTES);
         const og = parseOpenGraph(html);
         if (og.title && !item.title) patch.title = og.title;
         if (og.description && !item.text) patch.text = og.description;
