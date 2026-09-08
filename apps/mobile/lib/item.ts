@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReprocessItemResponse } from "@allkept/contracts";
 import { parseAttachedLink } from "./attach-link";
 import { supabase } from "./supabase";
+import { forgetThumbnail } from "./thumbnails";
 
 export interface ItemDetail {
   id: string;
@@ -114,7 +115,7 @@ export class DuplicateLinkError extends Error {
   constructor() { super("You have already saved that link."); }
 }
 
-export function useAttachLink(id: string, expectPlatform?: string) {
+export function useAttachLink(id: string, expectPlatform?: string, thumbnailPath?: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (pasted: string): Promise<ReprocessItemResponse> => {
@@ -133,6 +134,7 @@ export function useAttachLink(id: string, expectPlatform?: string) {
       return data ?? { status: "pending", category: null };
     },
     onSuccess: () => {
+      forgetThumbnail(thumbnailPath); // the picture behind this path has just been replaced
       void queryClient.invalidateQueries({ queryKey: ["item", id] });
       void queryClient.invalidateQueries({ queryKey: ["library"] });
       void queryClient.invalidateQueries({ queryKey: ["facets"] });

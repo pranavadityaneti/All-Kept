@@ -16,6 +16,14 @@ function cached(paths: string[]): Record<string, string> {
   return out;
 }
 
+/**
+ * Forgets a cached signature so the next render fetches a fresh one. The pipeline replaces a
+ * thumbnail at the same storage path, and an unchanged URL would keep showing the old picture.
+ */
+export function forgetThumbnail(path: string | null | undefined): void {
+  if (path) cache.delete(path);
+}
+
 /** Signed URLs for private thumbnails, fetched in batches and reused until they expire. */
 export function useThumbnails(paths: (string | null)[]): Record<string, string> {
   const wanted = [...new Set(paths.filter((p): p is string => !!p))];

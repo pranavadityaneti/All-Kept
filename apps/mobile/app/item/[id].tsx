@@ -35,7 +35,7 @@ export default function ItemScreen() {
   const setNote = useSetNote(id ?? "");
   const remove = useDeleteItem(id ?? "", detail?.thumbnailPath ?? null);
   // A post Instagram sent without a link can only be fixed by an Instagram link.
-  const attach = useAttachLink(id ?? "", detail?.status === "no_link" && detail.platform === "instagram" ? "instagram" : undefined);
+  const attach = useAttachLink(id ?? "", detail?.status === "no_link" && detail.platform === "instagram" ? "instagram" : undefined, detail?.thumbnailPath ?? null);
 
   const [picking, setPicking] = useState(false);
   const [note, setNoteText] = useState<string | null>(null);
