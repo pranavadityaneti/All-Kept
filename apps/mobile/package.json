@@ -9,12 +9,12 @@
     "android": "expo start --android",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "ota:preview": "eas update --branch preview --message",
-    "ota:production": "eas update --branch production --message",
+    "ota:preview": "npx --yes eas-cli@latest update --branch preview --message",
+    "ota:production": "npx --yes eas-cli@latest update --branch production --message",
     "doctor": "npx expo-doctor",
-    "build:ios": "eas build --profile testflight --platform ios",
-    "build:android": "eas build --profile preview --platform android",
-    "submit:ios": "eas submit --profile production --platform ios --latest"
+    "build:ios": "npx --yes eas-cli@latest build --profile testflight --platform ios",
+    "build:android": "npx --yes eas-cli@latest build --profile preview --platform android",
+    "submit:ios": "npx --yes eas-cli@latest submit --profile production --platform ios --latest"
   },
   "dependencies": {
     "@allkept/contracts": "*",
