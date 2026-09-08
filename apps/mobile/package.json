@@ -11,7 +11,10 @@
     "test": "vitest run",
     "ota:preview": "eas update --branch preview --message",
     "ota:production": "eas update --branch production --message",
-    "doctor": "npx expo-doctor"
+    "doctor": "npx expo-doctor",
+    "build:ios": "eas build --profile testflight --platform ios",
+    "build:android": "eas build --profile preview --platform android",
+    "submit:ios": "eas submit --profile production --platform ios --latest"
   },
   "dependencies": {
     "@allkept/contracts": "*",
@@ -40,6 +43,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.4",
+    "eas-cli": "^16.0.0",
     "typescript": "~6.0.3",
     "vitest": "^3.2.0"
   }
