@@ -13,7 +13,20 @@ const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
 export const configError: string | null =
   url && anonKey ? null : "This build was made without its server settings, so it cannot reach your library.";
 
+/**
+ * Where the session is kept. The client would otherwise derive this from the address, so moving the
+ * project to a custom domain later would look like a different key and sign everyone out, taking
+ * anonymous libraries with it. Pinned to the project, which never changes.
+ */
+const SESSION_KEY = "sb-yurbmcqoqyehbpoqplcr-auth-token";
+
 /** One client for the app. The session lives in the device keychain, split into chunks (see storage.ts). */
 export const supabase = createClient(url || "https://unconfigured.invalid", anonKey || "unconfigured", {
-  auth: { storage: chunkedSecureStore, persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+  auth: {
+    storage: chunkedSecureStore,
+    storageKey: SESSION_KEY,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+  },
 });
