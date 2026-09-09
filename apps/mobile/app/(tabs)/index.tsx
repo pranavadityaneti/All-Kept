@@ -151,6 +151,6 @@ const styles = StyleSheet.create({
   rail: { marginHorizontal: -space.lg },
   railInner: { paddingHorizontal: space.lg, gap: space.md },
   railCard: { width: 156 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: space.md },
-  cell: { flexBasis: "47.5%", flexGrow: 1 },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: space.md },
+  cell: { width: "31.5%" },
 });

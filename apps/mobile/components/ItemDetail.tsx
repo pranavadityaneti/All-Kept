@@ -9,6 +9,7 @@ import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { DEFAULT_ASPECT, embedFit, embedUrl, fitBox, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote, useRetrySorting } from "../lib/item";
+import { categoryDisplayName } from "../lib/category-names";
 import { track, useTrackOnce } from "../lib/metrics";
 import { canRetrySorting, categoryLabel } from "../lib/sorting";
 import { openLink } from "../lib/open";
@@ -213,7 +214,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             <Text style={[type.label, { color: p.inkMuted }]}>Put this under</Text>
             <View style={styles.wrap}>
               {CATEGORIES.map((c) => (
-                <Chip key={c} label={c} selected={detail.category === c} onPress={() => setCategory.mutate(c, { onSuccess: () => track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }) })} />
+                <Chip key={c} label={categoryDisplayName(c)} selected={detail.category === c} onPress={() => setCategory.mutate(c, { onSuccess: () => track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }) })} />
               ))}
             </View>
 
