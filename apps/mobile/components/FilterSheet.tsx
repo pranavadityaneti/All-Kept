@@ -7,6 +7,7 @@ import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { categoryStyle, tint } from "../lib/categories";
+import { categoryDisplayName } from "../lib/category-names";
 import { FLAG_ICON, SHAPE_ICON, filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
 import { countFilters, type Facets, type Filters } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -105,6 +106,7 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
                     <Option
                       key={o.value}
                       option={o}
+                      displayLabel={categoryDisplayName(o.value)}
                       hue={hue}
                       onPress={() => onToggle("categories", o.value)}
                       mark={<Ionicons name={icon as never} size={15} color={hue} />}
@@ -160,9 +162,10 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** One option. Its hue, when it has one, colours the chosen state; the tick says so without colour. */
-function Option({ option, mark, hue, onPress }: { option: FilterOption; mark: ReactNode; hue?: string; onPress: () => void }) {
+function Option({ option, displayLabel, mark, hue, onPress }: { option: FilterOption; displayLabel?: string; mark: ReactNode; hue?: string; onPress: () => void }) {
   const p = usePalette();
   const { label, n, selected } = option;
+  const visibleLabel = displayLabel ?? label;
   const face = selected
     ? { backgroundColor: hue ? tint(hue, 0.14) : p.accentSoft, borderColor: hue ? tint(hue, 0.5) : p.accent }
     : { backgroundColor: p.surfaceAlt, borderColor: p.border };
@@ -171,12 +174,12 @@ function Option({ option, mark, hue, onPress }: { option: FilterOption; mark: Re
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
-      accessibilityLabel={`${label}, ${n} ${n === 1 ? "save" : "saves"}`}
+      accessibilityLabel={`${visibleLabel}, ${n} ${n === 1 ? "save" : "saves"}`}
       onPress={onPress}
       style={({ pressed }) => [styles.option, face, pressed && styles.pressed]}
     >
       {mark}
-      <Text style={[type.label, { color: selected ? p.ink : p.inkMuted }]} numberOfLines={1}>{label}</Text>
+      <Text style={[type.label, { color: selected ? p.ink : p.inkMuted }]} numberOfLines={1}>{visibleLabel}</Text>
       <Text style={[type.label, { color: p.inkMuted }]}>{n}</Text>
       {selected && <Icon name="check" size={14} color={hue ?? p.accent} />}
     </Pressable>

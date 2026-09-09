@@ -12,8 +12,8 @@ export type ClientOs = "ios" | "android";
 
 export const CATEGORIES = [
   "Food & recipes", "Fitness & health", "Travel & places", "Learning & how-to", "Tech & tools",
-  "Money & career", "Design & inspiration", "Fashion & shopping", "Entertainment", "Humour & memes",
-  "Quotes & motivation", "News & opinion", "People & personal", "Other",
+  "Money & career", "Design & inspiration", "Style & fashion", "Beauty & self-care", "Home & living",
+  "Entertainment", "Humour & memes", "News & opinion", "Life & relationships", "Other",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
