@@ -4,7 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, useColorScheme, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useOtaUpdates } from "../lib/updates";
 import { configError } from "../lib/supabase";
@@ -23,7 +23,6 @@ const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: "all
 
 export default function RootLayout() {
   const p = usePalette();
-  const scheme = useColorScheme();
   const updates = useOtaUpdates();
 
   // A plain ground for the moment the launch check takes; the splash screen is still on top of it.
@@ -42,7 +41,8 @@ export default function RootLayout() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 7 * DAY }}>
       <SafeAreaProvider>
-        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        {/* The app is dark whatever the device is set to. */}
+        <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: p.bg } }} />
       </SafeAreaProvider>
     </PersistQueryClientProvider>

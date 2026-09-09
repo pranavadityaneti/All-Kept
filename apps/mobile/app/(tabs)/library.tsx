@@ -2,17 +2,17 @@ import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
-import { FilterBar } from "../components/FilterBar";
-import { ItemCard } from "../components/ItemCard";
-import { useFilters } from "../lib/filters";
-import { useFacets, useLibrary, useLibraryRealtime, type LibraryItem } from "../lib/library";
-import { useTrackOnce } from "../lib/metrics";
-import { useSession } from "../lib/session";
-import { useLinkedSource } from "../lib/sources";
-import { useThumbnails } from "../lib/thumbnails";
-import { space, type, usePalette } from "../lib/theme";
+import { Button } from "../../components/Button";
+import { Card } from "../../components/Card";
+import { FilterBar } from "../../components/FilterBar";
+import { ItemCard } from "../../components/ItemCard";
+import { useFilters } from "../../lib/filters";
+import { useFacets, useLibrary, useLibraryRealtime, type LibraryItem } from "../../lib/library";
+import { useTrackOnce } from "../../lib/metrics";
+import { useSession } from "../../lib/session";
+import { useLinkedSource } from "../../lib/sources";
+import { useThumbnails } from "../../lib/thumbnails";
+import { space, type, usePalette } from "../../lib/theme";
 
 export default function Library() {
   const p = usePalette();

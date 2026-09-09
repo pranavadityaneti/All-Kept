@@ -1,14 +1,14 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { Alert, Linking, StyleSheet, Switch, Text, View } from "react-native";
-import { Button } from "../components/Button";
-import { Card } from "../components/Card";
-import { Screen } from "../components/Screen";
-import { useDeleteAccount } from "../lib/account";
-import { useSession } from "../lib/session";
-import { useLinkedSource, useSetReplies } from "../lib/sources";
-import { useOtaUpdates } from "../lib/updates";
-import { space, type, usePalette } from "../lib/theme";
+import { Button } from "../../components/Button";
+import { Card } from "../../components/Card";
+import { Screen } from "../../components/Screen";
+import { useDeleteAccount } from "../../lib/account";
+import { useSession } from "../../lib/session";
+import { useLinkedSource, useSetReplies } from "../../lib/sources";
+import { useOtaUpdates } from "../../lib/updates";
+import { space, type, usePalette } from "../../lib/theme";
 
 const PRIVACY = "https://pranavadityaneti.github.io/All-Kept/privacy.html";
 const TERMS = "https://pranavadityaneti.github.io/All-Kept/terms.html";

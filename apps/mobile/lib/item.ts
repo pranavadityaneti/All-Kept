@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReprocessItemResponse } from "@allkept/contracts";
 import { parseAttachedLink } from "./attach-link";
+import { invalidateLibrary } from "./library";
 import { supabase } from "./supabase";
 import { forgetThumbnail } from "./thumbnails";
 
@@ -73,8 +74,7 @@ function useItemMutation<T>(id: string, run: (input: T) => Promise<void>) {
     mutationFn: run,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["item", id] });
-      void queryClient.invalidateQueries({ queryKey: ["library"] });
-      void queryClient.invalidateQueries({ queryKey: ["facets"] });
+      invalidateLibrary(queryClient);
     },
   });
 }
@@ -105,8 +105,7 @@ export function useDeleteItem(id: string, thumbnailPath: string | null) {
       if (thumbnailPath) await supabase.storage.from("thumbs").remove([thumbnailPath]).catch(() => undefined);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["library"] });
-      void queryClient.invalidateQueries({ queryKey: ["facets"] });
+      invalidateLibrary(queryClient);
     },
   });
 }
@@ -136,8 +135,7 @@ export function useAttachLink(id: string, expectPlatform?: string, thumbnailPath
     onSuccess: () => {
       forgetThumbnail(thumbnailPath); // the picture behind this path has just been replaced
       void queryClient.invalidateQueries({ queryKey: ["item", id] });
-      void queryClient.invalidateQueries({ queryKey: ["library"] });
-      void queryClient.invalidateQueries({ queryKey: ["facets"] });
+      invalidateLibrary(queryClient);
     },
   });
 }

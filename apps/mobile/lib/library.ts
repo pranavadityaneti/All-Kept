@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "./supabase";
 
@@ -80,6 +80,13 @@ export function useSearch(q: string, filters: Filters, enabled: boolean) {
   });
 }
 
+/** Every list that shows saves. One place, so a change to a save can never refresh some of them and miss others. */
+export const LIBRARY_KEYS = [["library"], ["facets"], ["recent-saves"]] as const;
+
+export function invalidateLibrary(queryClient: QueryClient): void {
+  for (const key of LIBRARY_KEYS) void queryClient.invalidateQueries({ queryKey: key });
+}
+
 export interface Facets { platforms: { value: string; n: number }[]; categories: { value: string; n: number }[] }
 
 export function useFacets(enabled: boolean) {
@@ -101,10 +108,7 @@ export function useLibraryRealtime(enabled: boolean) {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!enabled) return;
-    const refresh = () => {
-      void queryClient.invalidateQueries({ queryKey: ["library"] });
-      void queryClient.invalidateQueries({ queryKey: ["facets"] });
-    };
+    const refresh = () => invalidateLibrary(queryClient);
     const channel = supabase
       .channel("library")
       .on("postgres_changes", { event: "*", schema: "public", table: "items" }, refresh)
