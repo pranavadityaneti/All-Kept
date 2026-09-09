@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import type { SaveLinkResponse } from "@allkept/contracts";
@@ -11,6 +11,13 @@ import { radius, space, type, usePalette } from "../lib/theme";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Said = { tone: "good" | "bad"; text: string } | null;
+
+/**
+ * How long an outcome stays on screen. It used to stay until the app was closed, which left "Saved."
+ * sitting under the field long after the save it referred to. A failure is given longer because it
+ * is the one the person still has to do something about.
+ */
+const CLEARS_AFTER_MS = { good: 3_000, bad: 6_000 } as const;
 
 /** What the server actually did, said plainly. A save is never claimed before it has happened. */
 function outcome(r: SaveLinkResponse): string {
@@ -28,6 +35,15 @@ export function SaveLinkField() {
   const [busy, setBusy] = useState(false);
   const [said, setSaid] = useState<Said>(null);
   const running = useRef(false);
+
+  // Keyed on the message itself, so a second outcome restarts the clock instead of inheriting what
+  // was left of the first one's. Cleared on unmount: the screen can be left while this is counting.
+  useEffect(() => {
+    if (!said) return;
+    const t = setTimeout(() => setSaid(null), CLEARS_AFTER_MS[said.tone]);
+    return () => clearTimeout(t);
+  }, [said]);
+
   const attempt = useRef<{ text: string; id: string } | null>(null);
 
   const save = async () => {

@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { IconButton } from "../../components/IconButton";
 import { SearchOverlay } from "../../components/SearchOverlay";
-import { Wordmark } from "../../components/Wordmark";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { Card } from "../../components/Card";
 import { FilterBar } from "../../components/FilterBar";
 import { FilterSheet } from "../../components/FilterSheet";
@@ -60,10 +60,9 @@ export default function Library() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
-      <View style={styles.header}>
-        <Wordmark />
+      <ScreenHeader>
         {(items.length > 0 || hasFilters) && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
-      </View>
+      </ScreenHeader>
 
       <FilterBar facets={facets.data} filters={filters} matches={matches} onOpen={() => setFiltering(true)} onRemove={toggle} onClear={clear} />
 
@@ -148,7 +147,6 @@ export default function Library() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md },
   list: { padding: space.lg, paddingBottom: TAB_BAR_CLEARANCE },
   cell: { flex: 1 },
   cellLeft: { paddingRight: space.sm },

@@ -10,7 +10,7 @@ import { CategoryTile } from "../../components/CategoryTile";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
-import { Wordmark } from "../../components/Wordmark";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
 import { useRecentSaves } from "../../lib/home";
 import { useFacets, type LibraryItem } from "../../lib/library";
@@ -53,17 +53,15 @@ export default function Home() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
+      <ScreenHeader>
+        <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />
+        <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />
+      </ScreenHeader>
+
       <ScrollView
         contentContainerStyle={styles.page}
         refreshControl={<RefreshControl refreshing={pulled} onRefresh={onRefresh} tintColor={p.inkMuted} />}
       >
-        <View style={styles.header}>
-          <Wordmark />
-          <View style={styles.headerActions}>
-            <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />
-            <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />
-          </View>
-        </View>
 
 
         {session.status === "error" && (
@@ -134,9 +132,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  page: { padding: space.lg, gap: space.xl, paddingBottom: TAB_BAR_CLEARANCE },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  page: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.xl, paddingBottom: TAB_BAR_CLEARANCE },
   section: { gap: space.md },
   rail: { marginHorizontal: -space.lg },
   railInner: { paddingHorizontal: space.lg, gap: space.md },

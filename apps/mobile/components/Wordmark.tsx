@@ -20,7 +20,7 @@ const RATIO = { light: shapeOf(LIGHT), dark: shapeOf(DARK) };
  * The height is deliberately not set at the call sites: the mark should be the same size on every
  * screen it appears on, and three screens each passing their own number is how that drifts apart.
  */
-export function Wordmark({ height = 32 }: { height?: number }) {
+export function Wordmark({ height = 36 }: { height?: number }) {
   const p = usePalette();
   const dark = p.blur === "dark";
   return (

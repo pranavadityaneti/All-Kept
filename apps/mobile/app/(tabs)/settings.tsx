@@ -7,7 +7,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { Icon } from "../../components/Icon";
 import { SettingsGroup, SettingsRow } from "../../components/SettingsRow";
-import { Wordmark } from "../../components/Wordmark";
 import { useDeleteAccount } from "../../lib/account";
 import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/google";
 import { useProfile, useAvatar } from "../../lib/profile";
@@ -65,7 +64,6 @@ export default function Settings() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.page}>
-        <Wordmark />
         <Text style={[type.title, { color: p.ink }]}>Settings</Text>
 
         <View style={[styles.account, { backgroundColor: p.surface, borderColor: p.border }]}>
@@ -174,7 +172,7 @@ export default function Settings() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  page: { padding: space.lg, gap: space.lg, paddingBottom: TAB_BAR_CLEARANCE },
+  page: { paddingHorizontal: space.lg, paddingTop: space.sm, gap: space.lg, paddingBottom: TAB_BAR_CLEARANCE },
   account: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth },
   avatar: { overflow: "hidden", width: 48, height: 48, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   accountText: { flex: 1, gap: 2 },
