@@ -1,5 +1,251 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Allkept · Allkept</title>
-<style>body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1b2229}h1{font-size:28px}h2{font-size:20px;margin-top:28px}small{color:#5f6b75}</style></head>
-<body><h1>Allkept</h1><p>Allkept keeps everything you save on Instagram and YouTube in one searchable place. Test phase.</p>
-<ul><li><a href="privacy.html">Privacy Policy</a></li><li><a href="terms.html">Terms of Service</a></li><li><a href="delete.html">Delete your data</a></li></ul><p><small>Allkept · last updated 8 September 2026 · test-phase version of this page.</small></p></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allkept — everything you saved, in one place</title>
+<meta name="description" content="Allkept collects what you save on Instagram, YouTube and the web into one library you can actually search.">
+<meta property="og:title" content="Allkept">
+<meta property="og:description" content="Everything you saved, in one place you can actually search.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700&display=swap">
+<style>
+  /* Committed to a light ground on purpose: this is a product page, and the phone in it has to read
+     as a bright object sitting on a surface. Every colour is painted rather than inherited. */
+  :root{
+    --bg:#F6F7FA; --surface:#FFFFFF; --surface-alt:#EEF0F6; --line:#DFE3EC;
+    --ink:#14161C; --muted:#5F6675; --accent:#6D46F2; --accent-soft:#EDE8FF; --hot:#E4762A;
+    --shell:#1b1d24;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:400 16px/1.6 "Schibsted Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding:0 28px}
+
+  nav{display:flex; align-items:center; justify-content:space-between; padding:26px 0}
+  .mark{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.02em; font-size:18px}
+  .mark img{width:26px; height:26px; border-radius:7px; display:block}
+  nav .links{display:flex; gap:22px; font-size:14px}
+  nav a{color:var(--muted); text-decoration:none}
+  nav a:hover{color:var(--ink)}
+
+  /* The reference opens on a small coloured blot above the headline. */
+  .blot{width:44px; height:26px; margin:46px 0 26px;
+    background:radial-gradient(60% 90% at 40% 45%, #ff4d4d 0%, #e0323b 55%, rgba(224,50,59,0) 78%);
+    filter:blur(.3px)}
+
+  h1{
+    margin:0; font-weight:700; letter-spacing:-.035em; line-height:1.02;
+    font-size:clamp(34px, 6.6vw, 76px); text-wrap:balance; max-width:15ch;
+  }
+  h1 .q{color:var(--accent)}
+  h1 .q::before{content:"("} h1 .q::after{content:")"}
+
+  .meta{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:48px; margin:56px 0 8px; align-items:start}
+  .lede{max-width:46ch; color:var(--muted); font-size:15px; line-height:1.7; margin:0}
+  .facts{display:grid; grid-template-columns:1fr 1fr; gap:26px 34px}
+  .fact .k{font-size:12.5px; color:var(--muted); margin-bottom:5px}
+  .fact .v{font-size:15px; font-weight:500}
+  .fact .v .u{color:var(--muted); font-weight:400}
+
+  /* Stage and device. The phone is a real element, not an image, so it stays sharp at any size. */
+  .stage{position:relative; margin:26px 0 0; padding:56px 0 130px; display:flex; justify-content:center;
+    perspective:1700px; perspective-origin:52% 42%}
+  /* The shelf the phone leans on, as in the reference: a pale form catching light from the left. */
+  .shelf{position:absolute; left:50%; bottom:0; width:min(880px,104%); height:190px; transform:translateX(-52%);
+    border-radius:120px 120px 34px 34px;
+    background:linear-gradient(178deg,#ffffff 0%,#f2f3f7 48%,#e6e8ef 100%);
+    box-shadow:0 -1px 0 rgba(255,255,255,.9) inset, 0 26px 50px rgba(20,22,28,.07)}
+  .stage::after{content:""; position:absolute; z-index:1; left:50%; bottom:96px; width:min(660px,88%); height:140px;
+    transform:translateX(-46%); border-radius:50%;
+    background:radial-gradient(closest-side, rgba(20,22,28,.20), rgba(20,22,28,0) 72%); filter:blur(2px)}
+  .phone{
+    position:relative; z-index:2; width:360px; height:736px; border-radius:52px; padding:11px;
+    background:linear-gradient(148deg,#3a3d47 0%,#15171d 34%,#2a2d36 62%,#0e1015 100%);
+    box-shadow:0 2px 3px rgba(0,0,0,.5) inset, -34px 48px 90px rgba(20,22,28,.30), -8px 14px 26px rgba(20,22,28,.16);
+    transform:rotateY(-19deg) rotateX(6deg) rotateZ(-3deg) translateZ(0);
+    transform-style:preserve-3d;
+  }
+  .screen{position:relative; width:100%; height:100%; border-radius:42px; overflow:hidden;
+    background:var(--bg); display:flex; flex-direction:column}
+  .notch{position:absolute; top:9px; left:50%; transform:translateX(-50%); width:104px; height:28px;
+    background:#0b0d11; border-radius:16px; z-index:4}
+  .glare{position:absolute; inset:0; border-radius:42px; z-index:5; pointer-events:none;
+    background:linear-gradient(118deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.05) 26%, rgba(255,255,255,0) 46%)}
+
+  /* A faithful miniature of the app's own home screen. */
+  .status{display:flex; justify-content:space-between; align-items:center; padding:15px 22px 6px; font-size:11.5px; font-weight:500}
+  .status .right{display:flex; gap:5px; align-items:center; color:var(--ink)}
+  .bars{display:flex; gap:1.5px; align-items:flex-end}
+  .bars i{display:block; width:2.5px; background:var(--ink); border-radius:1px}
+  .bars i:nth-child(1){height:4px} .bars i:nth-child(2){height:6px} .bars i:nth-child(3){height:8px} .bars i:nth-child(4){height:10px}
+  .batt{width:20px; height:10px; border:1.2px solid var(--ink); border-radius:3px; position:relative; opacity:.85}
+  .batt::after{content:""; position:absolute; inset:1.6px; width:62%; background:var(--ink); border-radius:1px}
+
+  .app{flex:1; padding:6px 18px 0; overflow:hidden}
+  .apphead{display:flex; align-items:center; justify-content:space-between; margin:8px 0 16px}
+  .apphead .logo{display:flex; align-items:center; gap:7px; font-weight:700; font-size:16px; letter-spacing:-.02em}
+  .apphead .logo img{width:19px; height:19px; border-radius:5px}
+  .icons{display:flex; gap:8px}
+  .ico{width:31px; height:31px; border-radius:50%; background:var(--surface-alt); border:1px solid var(--line);
+    display:grid; place-items:center}
+  .ico svg{width:15px; height:15px; stroke:var(--muted); fill:none; stroke-width:1.9}
+  .cta{display:block; text-align:center; padding:11px; border-radius:12px; background:var(--surface-alt);
+    border:1px solid var(--line); font-size:13px; font-weight:500; margin-bottom:18px}
+  .sect{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px}
+  .sect h4{margin:0; font-size:14.5px; font-weight:700; letter-spacing:-.01em}
+  .sect span{font-size:11.5px; color:var(--accent); font-weight:500}
+  .rail{display:flex; gap:10px; margin-bottom:18px}
+  .card{flex:1; border-radius:13px; overflow:hidden; background:var(--surface); border:1px solid var(--line)}
+  .card .art{height:82px}
+  .card .t{padding:7px 8px 9px; font-size:10.5px; line-height:1.35; font-weight:500}
+  .card .t small{display:block; color:var(--muted); font-weight:400; font-size:9.5px; margin-top:2px}
+  .a1{background:linear-gradient(140deg,#6D46F2,#b39bff)}
+  .a2{background:linear-gradient(140deg,#E4762A,#ffc38a)}
+  .tiles{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+  .tile{border-radius:13px; border:1px solid var(--line); background:var(--surface); padding:9px; display:flex; gap:8px; align-items:center}
+  .swatch{width:29px; height:29px; border-radius:8px; background:var(--accent-soft); flex:none}
+  .tile b{display:block; font-size:10.5px; font-weight:600}
+  .tile small{font-size:9.5px; color:var(--muted)}
+  .tabbar{position:absolute; left:50%; bottom:15px; transform:translateX(-50%);
+    display:flex; gap:22px; padding:9px 20px; border-radius:999px;
+    background:rgba(255,255,255,.86); border:1px solid var(--line); box-shadow:0 8px 22px rgba(20,22,28,.12);
+    backdrop-filter:blur(8px); z-index:3}
+  .tab{width:19px; height:19px; display:grid; place-items:center}
+  .tab svg{width:17px; height:17px; stroke:var(--muted); fill:none; stroke-width:1.9}
+  .tab.on svg{stroke:var(--accent)}
+
+  .works{display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    padding:26px 0 70px; border-top:1px solid var(--line)}
+  .works .k{font-size:12.5px; color:var(--muted)}
+  .chips{display:flex; gap:10px; flex-wrap:wrap}
+  .chip{display:flex; align-items:center; gap:7px; padding:8px 13px; border-radius:999px;
+    background:var(--surface); border:1px solid var(--line); font-size:13px; font-weight:500}
+  .chip svg{width:15px; height:15px}
+  .chip.soon{color:var(--muted); background:transparent}
+
+  footer{border-top:1px solid var(--line); padding:26px 0 44px; display:flex; justify-content:space-between;
+    gap:16px; flex-wrap:wrap; font-size:13px; color:var(--muted)}
+  footer a{color:var(--muted)}
+  footer .l{display:flex; gap:18px; flex-wrap:wrap}
+
+  @media (max-width:860px){
+    .meta{grid-template-columns:1fr; gap:30px}
+    .stage{perspective:1100px; padding:34px 0 70px}
+    .phone{transform:rotateY(-13deg) rotateX(4deg) rotateZ(-2deg) scale(.78)}
+    .shelf{height:140px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="mark"><img src="icon.png" alt="">Allkept</div>
+    <div class="links">
+      <a href="testers.html">Join the test</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+    </div>
+  </nav>
+
+  <div class="blot"></div>
+
+  <h1>Everything you <span class="q">save</span>, in one place you can actually <span class="q">search</span>.</h1>
+
+  <div class="meta">
+    <p class="lede">
+      You save a reel, a video, a link, and then you never find it again. Allkept collects what you
+      save across the apps you already use, sorts it for you, and lets you search the whole lot by
+      what was in it, not where it came from.
+    </p>
+    <div class="facts">
+      <div class="fact"><div class="k">Product</div><div class="v"><span class="u">_</span> Allkept</div></div>
+      <div class="fact"><div class="k">Category</div><div class="v"><span class="u">_</span> iOS &amp; Android / Saves</div></div>
+      <div class="fact"><div class="k">Built by</div><div class="v">Ideaye</div></div>
+      <div class="fact"><div class="k">Status</div><div class="v"><span class="u">_</span> In testing, 2026</div></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="shelf"></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="notch"></div>
+        <div class="status">
+          <span>9:41</span>
+          <span class="right">
+            <span class="bars"><i></i><i></i><i></i><i></i></span>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5a16 16 0 0 1 20 0"/><path d="M5 12a11 11 0 0 1 14 0"/><path d="M8.5 15.5a6 6 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+            <span class="batt"></span>
+          </span>
+        </div>
+
+        <div class="app">
+          <div class="apphead">
+            <div class="logo"><img src="icon.png" alt="">Allkept</div>
+            <div class="icons">
+              <span class="ico"><svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+              <span class="ico"><svg viewBox="0 0 24 24" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+            </div>
+          </div>
+
+          <span class="cta">Save a link</span>
+
+          <div class="sect"><h4>Recent saves</h4><span>See all</span></div>
+          <div class="rail">
+            <div class="card"><div class="art a1"></div><div class="t">10 Figma agent skills worth saving<small>Instagram · Learning</small></div></div>
+            <div class="card"><div class="art a2"></div><div class="t">What happens after nuclear war<small>YouTube · Science</small></div></div>
+          </div>
+
+          <div class="sect"><h4>Categories</h4><span>See all</span></div>
+          <div class="tiles">
+            <div class="tile"><span class="swatch"></span><span><b>Tech &amp; tools</b><small>24 saved</small></span></div>
+            <div class="tile"><span class="swatch"></span><span><b>Food &amp; recipes</b><small>11 saved</small></span></div>
+            <div class="tile"><span class="swatch"></span><span><b>Travel &amp; places</b><small>9 saved</small></span></div>
+            <div class="tile"><span class="swatch"></span><span><b>Design</b><small>7 saved</small></span></div>
+            <div class="tile"><span class="swatch"></span><span><b>Fitness</b><small>6 saved</small></span></div>
+            <div class="tile"><span class="swatch"></span><span><b>Business</b><small>5 saved</small></span></div>
+          </div>
+        </div>
+
+        <div class="tabbar">
+          <span class="tab on"><svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg></span>
+          <span class="tab"><svg viewBox="0 0 24 24" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/></svg></span>
+          <span class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.2 5.2l1.7 1.7M17.1 17.1l1.7 1.7M18.8 5.2l-1.7 1.7M6.9 17.1l-1.7 1.7"/></svg></span>
+        </div>
+        <div class="glare"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="works">
+    <span class="k">Works with</span>
+    <div class="chips">
+      <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="#E4405F" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1.1" fill="#E4405F" stroke="none"/></svg>Instagram</span>
+      <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="#FF0033" stroke-width="1.9"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.5 9.5v5l4.2-2.5z" fill="#FF0033" stroke="none"/></svg>YouTube</span>
+      <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="#5F6675" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>Any link</span>
+      <span class="chip soon">Reddit, X · soon</span>
+    </div>
+  </div>
+
+  <footer>
+    <span>Allkept · a product by Ideaye</span>
+    <span class="l">
+      <a href="testers.html">Join the test</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="delete.html">Delete your data</a>
+    </span>
+  </footer>
+
+</div>
+</body>
+</html>
