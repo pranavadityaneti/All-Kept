@@ -9,7 +9,7 @@ import { IconButton } from "./IconButton";
 import { categoryStyle, tint } from "../lib/categories";
 import { filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
 import type { Facets, Filters } from "../lib/library";
-import { platformIcon } from "../lib/platforms";
+import { PlatformLogo } from "./PlatformLogo";
 import { radius, space, type, usePalette } from "../lib/theme";
 
 const IN_MS = 200, OUT_MS = 140;
@@ -87,7 +87,7 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
                     key={o.value}
                     option={o}
                     onPress={() => onToggle("platforms", o.value)}
-                    mark={<Icon name={platformIcon(o.value)} size={15} color={o.selected ? p.ink : p.inkMuted} />}
+                    mark={<PlatformLogo platform={o.value} size={16} />}
                   />
                 ))}
               </Group>
