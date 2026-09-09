@@ -1,3 +1,4 @@
+import { categoryDisplayName } from "./category-names";
 import { FILTER_LABEL } from "./platforms";
 import { FILTER_GROUPS, type Facets, type Filters } from "./filter-groups";
 
@@ -43,12 +44,20 @@ export const FLAG_ICON: Record<string, string> = {
 export interface FilterOption { value: string; label: string; n: number; selected: boolean }
 export interface ActiveFilter { group: FilterGroup; value: string; label: string }
 
-/** How a value reads on screen. A category is already a phrase; the rest are stored as keys. */
+/**
+ * How a value reads on screen, decided in one place.
+ *
+ * A category is stored as the long phrase the classifier works in — "Style & fashion" — and shown
+ * as the short one. The sheet used to shorten it itself, through a displayLabel prop, which left
+ * the bar's token chips and the "nothing under these filters" line still printing the long form: a
+ * filter you had just set from a button reading "Style" then described itself as "Style & fashion".
+ * Naming it here means every one of those reads the same, and a new surface gets it for free.
+ */
 export function filterLabel(group: FilterGroup, value: string): string {
   if (group === "platforms") return FILTER_LABEL[value] ?? value;
   if (group === "shapes") return SHAPE_LABEL[value] ?? value;
   if (group === "flags") return FLAG_LABEL[value] ?? value;
-  return value;
+  return categoryDisplayName(value);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeFilters, exactMatches, filterOptions, matchesLabel } from "../lib/filter-options";
+import { activeFilters, exactMatches, filterLabel, filterOptions, matchesLabel } from "../lib/filter-options";
 import type { Facets, Filters } from "../lib/filter-groups";
 
 const facets: Facets = {
@@ -15,9 +15,12 @@ const facets: Facets = {
 const none: Filters = { platforms: [], categories: [], shapes: [], flags: [] };
 
 describe("filter options", () => {
-  it("names platforms the short way and leaves a category as it is", () => {
+  it("shows the short name for a category, while the long one stays the stored value", () => {
     expect(filterOptions("platforms", facets, none).map((o) => o.label)).toEqual(["Instagram", "YouTube"]);
-    expect(filterOptions("categories", facets, none).map((o) => o.label)).toEqual(["Food & recipes", "Money & career"]);
+    // The classifier works in "Money & career"; a person reads "Career". The value is untouched, so
+    // the filter still matches — only what is drawn changes.
+    expect(filterOptions("categories", facets, none).map((o) => o.label)).toEqual(["Food", "Career"]);
+    expect(filterOptions("categories", facets, none).map((o) => o.value)).toEqual(["Food & recipes", "Money & career"]);
   });
 
   it("keeps a chosen value the counts no longer mention, so it can still be switched off", () => {
@@ -36,7 +39,7 @@ describe("filter options", () => {
   it("lists what is switched on across both groups", () => {
     expect(activeFilters({ ...none, platforms: ["youtube"], categories: ["Money & career"] })).toEqual([
       { group: "platforms", value: "youtube", label: "YouTube" },
-      { group: "categories", value: "Money & career", label: "Money & career" },
+      { group: "categories", value: "Money & career", label: "Career" },
     ]);
   });
 });
@@ -73,7 +76,7 @@ describe("how many saves the filters match", () => {
   it("gathers what is switched on across every group, not just the first two", () => {
     const all: Filters = { platforms: ["youtube"], categories: ["Money & career"], shapes: ["vertical"], flags: ["needs_attention"] };
     expect(activeFilters(all).map((f) => `${f.group}:${f.label}`)).toEqual([
-      "platforms:YouTube", "categories:Money & career", "shapes:Reels & Shorts", "flags:Needs attention",
+      "platforms:YouTube", "categories:Career", "shapes:Reels & Shorts", "flags:Needs attention",
     ]);
   });
 
@@ -90,5 +93,21 @@ describe("how many saves the filters match", () => {
     const options = filterOptions("shapes", facets, stale);
     // Otherwise it is a filter with nothing on screen to switch it off, and the library reads empty.
     expect(options.find((o) => o.value === "note")).toEqual({ value: "note", label: "Notes", n: 0, selected: true });
+  });
+});
+
+describe("one name everywhere", () => {
+  it("gives the bar, the tokens and the sheet the same words", () => {
+    // The bug this replaced: the sheet shortened the label itself, so a filter set from a button
+    // reading "Style" then described itself as "Style & fashion" on the bar beside it.
+    expect(filterLabel("categories", "Style & fashion")).toBe("Style");
+    expect(filterOptions("categories", { ...facets, categories: [{ value: "Style & fashion", n: 3 }] }, none)[0]!.label).toBe("Style");
+    expect(activeFilters({ ...none, categories: ["Style & fashion"] })[0]!.label).toBe("Style");
+  });
+
+  it("still shows a category it has no short name for, rather than nothing", () => {
+    // Facets emit synthetic values like these; an unknown one must read as itself.
+    expect(filterLabel("categories", "Needs attention")).toBe("Needs attention");
+    expect(filterLabel("categories", "Sorting")).toBe("Sorting");
   });
 });
