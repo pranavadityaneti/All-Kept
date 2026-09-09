@@ -1,10 +1,10 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
 import { radius, space, type, usePalette } from "../lib/theme";
 
-export function Button({ label, onPress, variant = "primary", busy = false, disabled = false }: {
-  label: string; onPress: () => void; variant?: "primary" | "secondary"; busy?: boolean; disabled?: boolean;
+export function Button({ label, onPress, variant = "primary", busy = false, disabled = false, light = false }: {
+  label: string; onPress: () => void; variant?: "primary" | "secondary"; busy?: boolean; disabled?: boolean; light?: boolean;
 }) {
-  const p = usePalette();
+  const p = usePalette(light ? "light" : undefined);
   const primary = variant === "primary";
   const off = disabled || busy;
   return (

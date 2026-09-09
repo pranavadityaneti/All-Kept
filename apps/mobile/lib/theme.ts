@@ -73,11 +73,11 @@ export function useThemeChoice(): { choice: ThemeChoice; setChoice: (c: ThemeCho
   return { choice: current, setChoice };
 }
 
-export function usePalette(): Palette {
+export function usePalette(forced?: "light" | "dark"): Palette {
   const system = useColorScheme();
   const { choice: current } = useThemeChoice();
   return useMemo(() => {
-    const resolved = current === "system" ? (system === "dark" ? "dark" : "light") : current;
+    const resolved = forced ?? (current === "system" ? (system === "dark" ? "dark" : "light") : current);
     return resolved === "dark" ? dark : light;
-  }, [current, system]);
+  }, [current, forced, system]);
 }

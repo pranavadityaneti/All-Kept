@@ -1,3 +1,5 @@
+import { brandForPlatform, type Brand } from "../../../packages/platform-assets/catalog";
+import { PlatformLogo } from "./PlatformLogo";
 import { Ionicons } from "@expo/vector-icons";
 import type { ColorValue, StyleProp, TextStyle } from "react-native";
 
@@ -22,26 +24,13 @@ const NAMES = {
   down: "chevron-down",
   back: "arrow-back",
   download: "cloud-download-outline",
-  // Platform logos, so a save can offer to open where it came from. Ionicons ships these, which
-  // keeps brand artwork out of the repository.
-  instagram: "logo-instagram",
-  youtube: "logo-youtube",
-  x: "logo-x",
-  facebook: "logo-facebook",
-  tiktok: "logo-tiktok",
-  slack: "logo-slack",
-  whatsapp: "logo-whatsapp",
-  google: "logo-google",
-  reddit: "logo-reddit",
-  threads: "logo-threads",
-  linkedin: "logo-linkedin",
-  pinterest: "logo-pinterest",
   web: "globe-outline",
   note: "document-text-outline",
 } as const;
 
-export type IconName = keyof typeof NAMES;
+export type IconName = keyof typeof NAMES | Brand;
 
 export function Icon({ name, size = 22, color, style }: { name: IconName; size?: number; color: ColorValue; style?: StyleProp<TextStyle> }) {
-  return <Ionicons name={NAMES[name]} size={size} color={color as string} style={style} />;
+  if (brandForPlatform(name)) return <PlatformLogo platform={name} size={size} style={style} />;
+  return <Ionicons name={NAMES[name as keyof typeof NAMES]} size={size} color={color as string} style={style} />;
 }

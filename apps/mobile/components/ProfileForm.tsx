@@ -15,7 +15,7 @@ import { type, usePalette } from "../lib/theme";
 interface Draft { name: string; gender: string; genderCustom: string; phone: string; photoUri: string | null; uploadedPath: string | null }
 export const profileDraftKey = (userId: string) => `allkept.profile-draft.${userId}`;
 export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { profile: Profile; suggestedName: string; onboarding: boolean; onSaved: () => void }) {
-  const p = usePalette(), client = useQueryClient();
+  const p = usePalette(onboarding ? "light" : undefined), client = useQueryClient();
   const [form, setForm] = useState<Draft>({ name: profile.display_name ?? suggestedName, gender: profile.gender ?? "", genderCustom: profile.gender_custom ?? "", phone: profile.phone ?? "", photoUri: null, uploadedPath: null });
   const [loaded, setLoaded] = useState(!onboarding), [stage, setStage] = useState<"photo" | "uploading" | "saving" | "done" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +106,7 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
       </View>
       <View style={styles.field}>
         <Text style={[styles.label, { color: p.inkMuted }]}>Gender</Text>
-        <GenderField value={form.gender} disabled={busy || !loaded} onChange={(gender) => change({ gender })} />
+        <GenderField value={form.gender} disabled={busy || !loaded} onChange={(gender) => change({ gender })} light={onboarding} />
         {form.gender === "self_describe" && <TextInput accessibilityLabel="Describe your gender" value={form.genderCustom} placeholder="In your words" placeholderTextColor={p.inkMuted} onChangeText={(genderCustom) => change({ genderCustom })} editable={!busy && loaded} maxLength={80} style={inputStyle} />}
       </View>
       <View style={styles.field}>
@@ -117,7 +117,7 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
     <View style={styles.submit}>
       {error && <Text accessibilityRole="alert" style={[type.body, styles.message, { color: p.bad }]}>{error}</Text>}
       {(stage === "uploading" || stage === "saving") && <Text accessibilityLiveRegion="polite" style={[styles.photoLabel, styles.message, { color: p.inkMuted }]}>{stage === "uploading" ? "Uploading photo…" : "Saving…"}</Text>}
-      <ConfirmButton label={onboarding ? "Save and continue" : "Save changes"} disabled={busy || !loaded} onConfirm={submit} onComplete={complete} />
+      <ConfirmButton label={onboarding ? "Save and continue" : "Save changes"} disabled={busy || !loaded} onConfirm={submit} onComplete={complete} light={onboarding} />
     </View>
   </View>;
 }

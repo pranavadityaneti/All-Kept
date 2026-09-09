@@ -11,7 +11,7 @@ import { useSession } from "../lib/session";
 import { type, usePalette } from "../lib/theme";
 
 export default function Welcome() {
-  const p = usePalette(), session = useSession();
+  const p = usePalette("light"), session = useSession();
   const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
   const [backup, setBackup] = useState(false);
   useEffect(() => { void hasGuestLibrary().then(setBackup).catch(() => undefined); }, []);
@@ -29,27 +29,26 @@ export default function Welcome() {
       ]);
     } else setError(result.message);
   };
-  return <SafeAreaView style={styles.safe}>
-    <StatusBar style="light" />
+  return <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
+    <StatusBar style="dark" />
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
       <View style={styles.brand}>
-        <View collapsable={false} style={[StyleSheet.absoluteFill, { backgroundColor: "#0E0F14" }]} />
-        <View collapsable={false} style={{ mixBlendMode: "lighten" }}><Image source={require("../assets/brand/lockup-dark.png")} style={styles.logo} contentFit="contain" accessibilityLabel="Allkept" /></View>
+        <Image source={require("../assets/Home_All Kept_Logo.png")} style={styles.logo} contentFit="contain" accessibilityLabel="Allkept" />
       </View>
       <View style={styles.story}>
         <WelcomeIllustration />
         <View style={styles.copy}>
-          <Text accessibilityRole="header" style={styles.headline}>All your saves.{"\n"}One place.</Text>
+          <Text accessibilityRole="header" style={[styles.headline, { color: p.ink }]}>All your saves.{"\n"}One place.</Text>
         </View>
       </View>
       <View style={styles.actions}>
       {session.status === "loading" ? <ActivityIndicator color={p.accent} /> : <>
-        {session.status === "ready" && session.anonymous && <Text style={[styles.guest, { color: "#98A0B4" }]}>Your existing saves stay with you.</Text>}
-        <Pressable accessibilityRole="button" accessibilityLabel="Continue with Google" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { void signIn(); }} style={({ pressed }) => [styles.google, { backgroundColor: "#7653E8", opacity: busy ? 0.65 : pressed ? 0.85 : 1 }]}>
+        {session.status === "ready" && session.anonymous && <Text style={[styles.guest, { color: p.inkMuted }]}>Your existing saves stay with you.</Text>}
+        <Pressable accessibilityRole="button" accessibilityLabel="Continue with Google" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { void signIn(); }} style={({ pressed }) => [styles.google, { backgroundColor: p.accent, opacity: busy ? 0.65 : pressed ? 0.85 : 1 }]}>
           {busy ? <ActivityIndicator color={p.accentInk} /> : <><Icon name="google" size={18} color={p.accentInk} /><Text style={[styles.googleLabel, { color: p.accentInk }]}>Continue with Google</Text></>}
         </Pressable>
-        {session.status === "error" && <Button label="Retry connection" variant="secondary" onPress={session.retry} />}
-        {backup && session.status !== "ready" && <Button label="Restore this phone’s previous library" variant="secondary" disabled={busy} onPress={() => { setBusy(true); void restoreGuestLibrary().catch((e: Error) => setError(e.message)).finally(() => setBusy(false)); }} />}
+        {session.status === "error" && <Button label="Retry connection" variant="secondary" light onPress={session.retry} />}
+        {backup && session.status !== "ready" && <Button label="Restore this phone’s previous library" variant="secondary" light disabled={busy} onPress={() => { setBusy(true); void restoreGuestLibrary().catch((e: Error) => setError(e.message)).finally(() => setBusy(false)); }} />}
       </>}
       {error && <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{error}</Text>}
       </View>
@@ -58,14 +57,13 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#0E0F14", isolation: "isolate" },
+  safe: { flex: 1, isolation: "isolate" },
   page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 28, alignItems: "center" },
-  // Lighten compositing drops the darker baked-in plate against our dark canvas.
   brand: { alignItems: "center" },
-  logo: { width: 174, height: 130 },
+  logo: { width: 154, height: 62 },
   story: { flex: 1, justifyContent: "center", width: "100%", maxWidth: 460, paddingBottom: 28 },
   copy: { alignItems: "center", marginTop: 12 },
-  headline: { color: "#F3F4F8", fontSize: 36, lineHeight: 43, fontWeight: "600", letterSpacing: -1.2, textAlign: "center" },
+  headline: { fontSize: 36, lineHeight: 43, fontWeight: "600", letterSpacing: -1.2, textAlign: "center" },
   actions: { width: "100%", maxWidth: 360, alignItems: "center", gap: 18 },
   guest: { fontSize: 12, lineHeight: 17, textAlign: "center" },
   google: { minHeight: 48, maxWidth: "100%", paddingHorizontal: 24, paddingVertical: 13, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },

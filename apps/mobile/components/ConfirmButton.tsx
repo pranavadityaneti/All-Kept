@@ -6,10 +6,10 @@ import { usePalette } from "../lib/theme";
 import { useReducedMotion } from "../lib/motion";
 
 /** An accessible, reusable submit action. Success is shown only after confirmation. */
-export function ConfirmButton({ label, disabled, onConfirm, onComplete }: {
-  label: string; disabled?: boolean; onConfirm: () => Promise<boolean>; onComplete: () => void;
+export function ConfirmButton({ label, disabled, onConfirm, onComplete, light = false }: {
+  label: string; disabled?: boolean; onConfirm: () => Promise<boolean>; onComplete: () => void; light?: boolean;
 }) {
-  const p = usePalette(), reduced = useReducedMotion();
+  const p = usePalette(light ? "light" : undefined), reduced = useReducedMotion();
   const [state, setState] = useState<"idle" | "working" | "done">("idle");
   const scale = useRef(new Animated.Value(1)).current;
   const halo = useRef(new Animated.Value(0)).current;

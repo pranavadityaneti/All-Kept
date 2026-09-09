@@ -6,8 +6,8 @@ import { useReducedMotion } from "../lib/motion";
 import { usePalette } from "../lib/theme";
 import { Icon } from "./Icon";
 
-export function GenderField({ value, disabled, onChange }: { value: string; disabled: boolean; onChange: (value: string) => void }) {
-  const p = usePalette(), insets = useSafeAreaInsets(), reduced = useReducedMotion();
+export function GenderField({ value, disabled, onChange, light = false }: { value: string; disabled: boolean; onChange: (value: string) => void; light?: boolean }) {
+  const p = usePalette(light ? "light" : undefined), insets = useSafeAreaInsets(), reduced = useReducedMotion();
   const [open, setOpen] = useState(false);
   const label = GENDERS.find((g) => g.value === value)?.label;
   return <>
