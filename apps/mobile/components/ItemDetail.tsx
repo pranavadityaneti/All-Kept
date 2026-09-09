@@ -3,9 +3,9 @@ import { Image } from "expo-image";
 import { useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Button } from "./Button";
-import { Card } from "./Card";
 import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
+import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { embedUrl, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../lib/item";
@@ -19,8 +19,14 @@ import { radius, space, type, usePalette } from "../lib/theme";
 
 const savedOn = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
-/** One save, filling the width it is given. Several of these sit side by side when swiping. */
-export function ItemDetail({ id, width, onBack }: { id: string; width: number; onBack: () => void }) {
+/**
+ * One save, filling the screen it is given.
+ *
+ * The page itself does not scroll. Saves are paged through vertically, the way reels are, and a
+ * scrolling page would spend the whole gesture arguing with the pager about who owns a drag. So the
+ * caption, tags, note and category live in a sheet instead, one tap away.
+ */
+export function ItemDetail({ id, width, height, onBack }: { id: string; width: number; height: number; onBack: () => void }) {
   const p = usePalette();
   const session = useSession();
   const { height: screenHeight } = useWindowDimensions();
@@ -42,20 +48,26 @@ export function ItemDetail({ id, width, onBack }: { id: string; width: number; o
   const [fullHeight, setFullHeight] = useState<number | null>(null);
   const [fullScreen, setFullScreen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [picking, setPicking] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const [footerHeight, setFooterHeight] = useState(150);
   const [note, setNoteText] = useState<string | null>(null);
   const [link, setLink] = useState("");
   const [attachError, setAttachError] = useState<string | null>(null);
 
-  if (item.isPending) return <Centered width={width} text="Loading…" />;
-  if (!detail) return <Centered width={width} text="This item is no longer in your library." onBack={onBack} />;
+  if (item.isPending) return <Centered width={width} height={height} text="Loading…" />;
+  if (!detail) return <Centered width={width} height={height} text="This item is no longer in your library." onBack={onBack} />;
 
   const url = openableUrl(detail);
   const embed = embedUrl(detail);
   const heading = detail.title?.trim() || detail.text?.split("\n").find((l) => l.trim()) || platformLabel(detail.platform);
   const noteValue = note ?? detail.note ?? "";
-  const hasMore = Boolean(detail.summary || detail.tags.length > 0 || (detail.text && detail.text.trim() !== heading.trim()) || noteValue);
+  const needsLink = detail.status === "no_link" || detail.status === "failed";
+
+  // Whatever the header and footer leave. The embed is capped to it rather than shrunk to fit:
+  // an Instagram card carries its picture at the top and its own chrome underneath, so trimming
+  // the bottom loses the chrome and keeps the thing you came to watch.
+  const mediaMax = Math.max(160, height - footerHeight - 56 - space.lg * 2);
+  const naturalHeight = playerHeight ?? initialHeight(detail.platform, playerWidth);
 
   const confirmDelete = () =>
     Alert.alert("Delete this save?", "It goes from your library for good. The original stays where it is.", [
@@ -63,118 +75,129 @@ export function ItemDetail({ id, width, onBack }: { id: string; width: number; o
       { text: "Delete", style: "destructive", onPress: () => remove.mutate(undefined, { onSuccess: () => { track(userId, "item_deleted", { status: detail.status }); onBack(); } }) },
     ]);
 
-  return (
-    <View style={{ width }}>
-      {/* Locked to vertical, so a sideways swipe belongs to the pager rather than this scroll view. */}
-      <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false} directionalLockEnabled>
-        <View style={styles.headerRow}>
-          <IconButton name="chevron" label="Back" onPress={onBack} style={styles.back} />
-          <View style={styles.headerActions}>
-            {embed && <IconButton name="open" label="Full screen" onPress={() => setFullScreen(true)} />}
-            <IconButton
-              name="share"
-              label="Share"
-              onPress={() => { track(userId, "share_out", { hasLink: !!url }); void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); }}
-            />
-          </View>
-        </View>
+  const saveNote = () => {
+    if (note !== null && note !== (detail.note ?? "")) setNote.mutate(note, { onSuccess: () => track(userId, "note_saved", { length: note.trim().length }) });
+  };
 
+  return (
+    <View style={{ width, height }}>
+      <View style={styles.headerRow}>
+        <IconButton name="chevron" label="Back" onPress={onBack} style={styles.back} />
+        <View style={styles.headerActions}>
+          {embed && <IconButton name="open" label="Full screen" onPress={() => setFullScreen(true)} />}
+          <IconButton
+            name="share"
+            label="Share"
+            onPress={() => { track(userId, "share_out", { hasLink: !!url }); void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); }}
+          />
+        </View>
+      </View>
+
+      <View style={styles.media}>
         {embed ? (
-          <EmbedPlayer url={embed} width={playerWidth} height={playerHeight ?? initialHeight(detail.platform, playerWidth)} onHeight={setPlayerHeight} />
+          <EmbedPlayer url={embed} width={playerWidth} height={Math.min(naturalHeight, mediaMax)} onHeight={setPlayerHeight} />
         ) : thumbnail ? (
           <Pressable accessibilityRole="imagebutton" accessibilityLabel="View picture full screen" onPress={() => setZoomed(true)}>
-            <Image source={{ uri: thumbnail }} style={[styles.hero, { backgroundColor: p.surfaceAlt }]} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
+            <Image source={{ uri: thumbnail }} style={[styles.hero, { width: playerWidth, height: Math.min(playerWidth, mediaMax), backgroundColor: p.surfaceAlt }]} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
           </Pressable>
-        ) : null}
+        ) : (
+          <View style={[styles.blank, { width: playerWidth, maxHeight: mediaMax, backgroundColor: p.surfaceAlt }]}>
+            <Icon name={platformIcon(detail.platform)} size={36} color={p.inkMuted} />
+            <Text style={[type.label, { color: p.inkMuted }]}>{needsLink ? "No link yet" : "Nothing to play"}</Text>
+          </View>
+        )}
+      </View>
 
-        <Text numberOfLines={2} style={[type.heading, { color: p.ink }]}>{heading}</Text>
-
-        <View style={styles.row}>
-          <Chip label={detail.category ?? "Sorting"} selected={!!detail.category} onPress={() => setPicking((v) => !v)} />
-          <Text style={[type.label, { color: p.inkMuted }]} numberOfLines={1}>
-            {detail.authorName ?? platformLabel(detail.platform)} · {savedOn(detail.lastSavedAt)}
+      <View style={styles.footer} onLayout={(e) => setFooterHeight(Math.round(e.nativeEvent.layout.height))}>
+        {/* The caption is one line here and the rest is a tap away, the way Instagram hides it. */}
+        <Pressable accessibilityRole="button" accessibilityLabel="Details for this save" onPress={() => setSheet(true)}>
+          <Text numberOfLines={2} style={[type.heading, { color: p.ink }]}>{heading}</Text>
+          <Text style={[type.label, styles.meta, { color: p.inkMuted }]} numberOfLines={1}>
+            {detail.authorName ?? platformLabel(detail.platform)} · {savedOn(detail.lastSavedAt)} · more
           </Text>
-        </View>
+        </Pressable>
 
-        {picking && (
-          <Card>
-            <Text style={[type.heading, { color: p.ink }]}>Put this under</Text>
+        <View style={styles.actions}>
+          <View style={styles.actionsLeft}>
+            <Chip label={detail.category ?? "Sorting"} selected={!!detail.category} onPress={() => setSheet(true)} />
+            {url && (
+              <IconButton
+                name={platformIcon(detail.platform)}
+                label={`Open in ${platformLabel(detail.platform)}`}
+                size={44}
+                onPress={() => { track(userId, "open_original", { platform: detail.platform }); void openLink(url); }}
+              />
+            )}
+          </View>
+          {/* At the far side, because next to the button you tap often it is one mis-tap away. */}
+          <IconButton name="trash" label="Delete this save" size={44} tone="danger" disabled={remove.isPending} onPress={confirmDelete} />
+        </View>
+      </View>
+
+      <Modal visible={sheet} animationType="slide" onRequestClose={() => { saveNote(); setSheet(false); }} presentationStyle="pageSheet">
+        <View style={[styles.sheet, { backgroundColor: p.bg }]}>
+          <View style={styles.sheetBar}>
+            <Text style={[type.section, { color: p.ink }]}>Details</Text>
+            <IconButton name="close" label="Close" onPress={() => { saveNote(); setSheet(false); }} />
+          </View>
+          <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+            <Text style={[type.heading, { color: p.ink }]}>{heading}</Text>
+
+            {needsLink && (
+              <View style={[styles.block, { backgroundColor: p.surface, borderColor: p.border }]}>
+                <Text style={[type.heading, { color: p.ink }]}>{detail.status === "failed" ? "That link did not work" : "Add the post's link"}</Text>
+                <Text style={[type.body, { color: p.inkMuted }]}>
+                  {detail.status === "failed" ? "We could not read anything at that address. Paste the link again, in full." : "Instagram does not send the link for a plain post. Paste it here and it plays in place."}
+                </Text>
+                <TextInput
+                  accessibilityLabel="Paste the post's link"
+                  value={link}
+                  onChangeText={(t) => { setLink(t); setAttachError(null); }}
+                  placeholder="https://www.instagram.com/p/…"
+                  placeholderTextColor={p.inkMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  inputMode="url"
+                  style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
+                />
+                <Button
+                  label="Attach link"
+                  busy={attach.isPending}
+                  disabled={link.trim().length === 0}
+                  onPress={() => attach.mutate(link, {
+                    onSuccess: (r) => { setLink(""); setAttachError(null); setSheet(false); track(userId, "paste_link", { status: r.status }); },
+                    onError: (e) => setAttachError(e instanceof DuplicateLinkError ? "You have already saved that link. You can delete this card." : e instanceof Error ? e.message : "Could not attach that link."),
+                  })}
+                />
+                {attachError && <Text style={[type.label, { color: p.bad }]}>{attachError}</Text>}
+              </View>
+            )}
+
+            <Text style={[type.label, { color: p.inkMuted }]}>Put this under</Text>
             <View style={styles.wrap}>
               {CATEGORIES.map((c) => (
-                <Chip key={c} label={c} selected={detail.category === c} onPress={() => setCategory.mutate(c, { onSuccess: () => { setPicking(false); track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }); } })} />
+                <Chip key={c} label={c} selected={detail.category === c} onPress={() => setCategory.mutate(c, { onSuccess: () => track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }) })} />
               ))}
             </View>
-          </Card>
-        )}
 
-        {hasMore && (
-          <Pressable accessibilityRole="button" onPress={() => setExpanded((v) => !v)} hitSlop={8}>
-            <Text style={[type.label, { color: p.accent }]}>{expanded ? "Less" : "More"}</Text>
-          </Pressable>
-        )}
-
-        {expanded && (
-          <View style={styles.details}>
             {detail.summary && <Text style={[type.body, { color: p.inkMuted }]}>{detail.summary}</Text>}
             {detail.tags.length > 0 && <Text style={[type.label, { color: p.inkMuted }]}>{detail.tags.join(" · ")}</Text>}
             {detail.text && detail.text.trim() !== heading.trim() && <Text style={[type.body, { color: p.ink }]}>{detail.text}</Text>}
+
+            <Text style={[type.label, { color: p.inkMuted }]}>Your note</Text>
             <TextInput
               accessibilityLabel="Your note about this save"
               value={noteValue}
               onChangeText={setNoteText}
-              onBlur={() => { if (note !== null && note !== (detail.note ?? "")) setNote.mutate(note, { onSuccess: () => track(userId, "note_saved", { length: note.trim().length }) }); }}
+              onBlur={saveNote}
               placeholder="Your note…"
               placeholderTextColor={p.inkMuted}
               multiline
               style={[styles.input, styles.noteInput, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
             />
-          </View>
-        )}
-
-        {(detail.status === "no_link" || detail.status === "failed") && (
-          <Card>
-            <Text style={[type.heading, { color: p.ink }]}>{detail.status === "failed" ? "That link did not work" : "Add the post's link"}</Text>
-            <Text style={[type.body, { color: p.inkMuted }]}>
-              {detail.status === "failed" ? "We could not read anything at that address. Paste the link again, in full." : "Instagram does not send the link for a plain post. Paste it here and it plays in place."}
-            </Text>
-            <TextInput
-              accessibilityLabel="Paste the post's link"
-              value={link}
-              onChangeText={(t) => { setLink(t); setAttachError(null); }}
-              placeholder="https://www.instagram.com/p/…"
-              placeholderTextColor={p.inkMuted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              inputMode="url"
-              style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
-            />
-            <Button
-              label="Attach link"
-              busy={attach.isPending}
-              disabled={link.trim().length === 0}
-              onPress={() => attach.mutate(link, {
-                onSuccess: (r) => { setLink(""); setAttachError(null); track(userId, "paste_link", { status: r.status }); },
-                onError: (e) => setAttachError(e instanceof DuplicateLinkError ? "You have already saved that link. You can delete this card." : e instanceof Error ? e.message : "Could not attach that link."),
-              })}
-            />
-            {attachError && <Text style={[type.label, { color: p.bad }]}>{attachError}</Text>}
-          </Card>
-        )}
-
-        {/* The two ends of what you can do with a save. Delete sits at the far side rather than
-            beside the thing you tap often, because the two are one mis-tap apart otherwise. */}
-        <View style={styles.actions}>
-          {url ? (
-            <IconButton
-              name={platformIcon(detail.platform)}
-              label={`Open in ${platformLabel(detail.platform)}`}
-              size={48}
-              onPress={() => { track(userId, "open_original", { platform: detail.platform }); void openLink(url); }}
-            />
-          ) : <View />}
-          <IconButton name="trash" label="Delete this save" size={48} tone="danger" disabled={remove.isPending} onPress={confirmDelete} />
+          </ScrollView>
         </View>
-      </ScrollView>
+      </Modal>
 
       <Modal visible={fullScreen} animationType="slide" onRequestClose={() => setFullScreen(false)} statusBarTranslucent>
         <View style={[styles.full, { backgroundColor: "#000" }]}>
@@ -198,10 +221,10 @@ export function ItemDetail({ id, width, onBack }: { id: string; width: number; o
   );
 }
 
-function Centered({ width, text, onBack }: { width: number; text: string; onBack?: () => void }) {
+function Centered({ width, height, text, onBack }: { width: number; height: number; text: string; onBack?: () => void }) {
   const p = usePalette();
   return (
-    <View style={[styles.centered, { width, backgroundColor: p.bg }]}>
+    <View style={[styles.centered, { width, height, backgroundColor: p.bg }]}>
       <Text style={[type.body, { color: p.inkMuted }]}>{text}</Text>
       {onBack && <Button label="Back" variant="secondary" onPress={onBack} />}
     </View>
@@ -209,18 +232,24 @@ function Centered({ width, text, onBack }: { width: number; text: string; onBack
 }
 
 const styles = StyleSheet.create({
-  page: { padding: space.lg, gap: space.md, paddingBottom: space.xxl * 2 },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: space.lg, padding: space.lg },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  centered: { alignItems: "center", justifyContent: "center", gap: space.lg, padding: space.lg },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.lg, height: 56 },
   headerActions: { flexDirection: "row", gap: space.sm },
   back: { transform: [{ rotate: "180deg" }] },
-  hero: { width: "100%", aspectRatio: 1, borderRadius: radius.lg },
-  row: { flexDirection: "row", alignItems: "center", gap: space.sm, flexWrap: "wrap" },
+  media: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: space.lg },
+  hero: { borderRadius: radius.lg },
+  blank: { aspectRatio: 1.6, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", gap: space.sm },
+  footer: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.lg, gap: space.md },
+  meta: { marginTop: 2 },
+  actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  actionsLeft: { flexDirection: "row", alignItems: "center", gap: space.sm, flexShrink: 1 },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
-  details: { gap: space.md },
-  actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: space.md },
+  block: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, padding: space.lg, gap: space.sm },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.md, minHeight: 48 },
   noteInput: { minHeight: 88, textAlignVertical: "top" },
+  sheet: { flex: 1 },
+  sheetBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: space.lg },
+  sheetBody: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2, gap: space.md },
   full: { flex: 1 },
   fullBar: { position: "absolute", top: space.xxl + space.lg, right: space.lg, zIndex: 2 },
   fullScroll: { flexGrow: 1, justifyContent: "center" },
