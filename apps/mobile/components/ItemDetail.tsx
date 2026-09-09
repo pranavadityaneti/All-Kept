@@ -101,7 +101,9 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           <EmbedPlayer url={embed} width={playerWidth} height={Math.min(naturalHeight, mediaMax)} onHeight={setPlayerHeight} interactive active={active && !fullScreen} />
         ) : thumbnail ? (
           <Pressable accessibilityRole="imagebutton" accessibilityLabel="View picture full screen" onPress={() => setZoomed(true)}>
-            <Image source={{ uri: thumbnail }} style={[styles.hero, { width: playerWidth, height: Math.min(playerWidth, mediaMax), backgroundColor: p.surfaceAlt }]} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
+            {/* Contained, not cropped. This is the whole picture Instagram sent and there is no second
+                copy of it anywhere, so cutting a square out of it loses the part that was cut. */}
+            <Image source={{ uri: thumbnail }} style={[styles.hero, { width: playerWidth, height: mediaMax }]} contentFit="contain" transition={150} accessibilityIgnoresInvertColors />
           </Pressable>
         ) : (
           <View style={[styles.blank, { width: playerWidth, maxHeight: mediaMax, backgroundColor: p.surfaceAlt }]}>
