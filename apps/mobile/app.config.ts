@@ -12,6 +12,14 @@ const config: ExpoConfig = {
   ios: {
     bundleIdentifier: "app.allkept.mobile",
     supportsTablet: false,
+    // EAS syncs the App ID's capabilities to match this file on every build. Neither of these was
+    // declared, so it tried to switch Sign in with Apple back *off* — Apple refuses that while a
+    // Services ID is grouped with the bundle, the patch is atomic, and enabling push failed with
+    // it. Declared here, the config says what the app actually uses and the sync agrees with
+    // reality. usesAppleSignIn is true even though sign-in goes through the browser rather than
+    // the native sheet: the capability belongs to the App ID, and turning it off breaks the
+    // Services ID the browser flow depends on.
+    usesAppleSignIn: true,
     // The app uses only standard HTTPS, which is exempt. Declaring it here saves answering the
     // encryption question by hand in App Store Connect for every single build.
     infoPlist: { ITSAppUsesNonExemptEncryption: false },
