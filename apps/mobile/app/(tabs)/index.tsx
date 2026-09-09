@@ -1,4 +1,3 @@
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -7,6 +6,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { IconButton } from "../../components/IconButton";
 import { ItemCard } from "../../components/ItemCard";
+import { CategoryTile } from "../../components/CategoryTile";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
@@ -41,11 +41,6 @@ export default function Home() {
   const [shown, setShown] = useState(CATEGORIES_SHOWN);
   const [searching, setSearching] = useState(false);
 
-  // A category tile borrows the newest picture saved under it.
-  const pictureFor = (category: string) => {
-    const match = items.find((i) => categoryLabel(i) === category && i.thumbnailPath);
-    return match?.thumbnailPath ? thumbnails[match.thumbnailPath] : undefined;
-  };
 
   // Only a pull the person actually made turns this indicator on. Binding it to isRefetching held it
   // open for every background refetch, and realtime causes plenty, which left a spinner stuck at the
@@ -116,30 +111,11 @@ export default function Home() {
               onAction={() => setShown(categories.length)}
             />
             <View style={styles.grid}>
-              {categories.slice(0, shown).map((c) => {
-                const picture = pictureFor(c.value);
-                return (
-                  <Pressable
-                    key={c.value}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${c.value}, ${c.n} saved`}
-                    onPress={() => router.push({ pathname: "/library", params: { category: c.value } })}
-                    style={({ pressed }) => [styles.tile, { backgroundColor: p.surface, borderColor: p.border, opacity: pressed ? 0.85 : 1 }]}
-                  >
-                    <View style={[styles.tileArt, { backgroundColor: p.accentSoft }]}>
-                      {picture ? (
-                        <Image source={{ uri: picture }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors />
-                      ) : (
-                        <Text style={[type.section, { color: p.accent }]}>{c.value.slice(0, 1)}</Text>
-                      )}
-                    </View>
-                    <View style={styles.tileText}>
-                      <Text numberOfLines={2} style={[type.body, { color: p.ink }]}>{c.value}</Text>
-                      <Text style={[type.label, { color: p.inkMuted }]}>{c.n}</Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {categories.slice(0, shown).map((c) => (
+                <View key={c.value} style={styles.cell}>
+                  <CategoryTile name={c.value} count={c.n} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
+                </View>
+              ))}
             </View>
           </View>
         )}
@@ -166,7 +142,5 @@ const styles = StyleSheet.create({
   railInner: { paddingHorizontal: space.lg, gap: space.md },
   railCard: { width: 156 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: space.md },
-  tile: { flexBasis: "47%", flexGrow: 1, flexDirection: "row", alignItems: "center", gap: space.md, padding: space.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg },
-  tileArt: { width: 48, height: 48, borderRadius: radius.md, alignItems: "center", justifyContent: "center", overflow: "hidden" },
-  tileText: { flex: 1, gap: 2 },
+  cell: { flexBasis: "47.5%", flexGrow: 1 },
 });
