@@ -7,4 +7,7 @@ if [ -f supabase/.env.admin ]; then
 else
   echo "supabase/.env.admin missing: integration tests will be skipped" >&2
 fi
-deno test --allow-env --allow-net --allow-read supabase/functions/tests/
+# --node-modules-dir=none: resolve npm: specifiers from Deno's own cache. Without it this fails on
+# _shared/anthropic.ts, and the obvious escape (=auto) rewrites node_modules and breaks the next
+# build's fingerprint. See ERRORS.md.
+deno test --node-modules-dir=none --allow-env --allow-net --allow-read supabase/functions/tests/

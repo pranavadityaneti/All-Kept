@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   try {
     const db = adminClient();
     const choice = classifierFromEnv();
-    const deps = { fetch, classifier: choice?.deps ?? null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
+    const deps = { fetch, classifier: choice?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
     const nowIso = new Date().toISOString();
     const twoMinAgo = new Date(Date.now() - 120_000).toISOString();
     // 1. Items still to enrich: pending or failed with a due retry, older than 2 minutes (the webhook path handles fresh ones).

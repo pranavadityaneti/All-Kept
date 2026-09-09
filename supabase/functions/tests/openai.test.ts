@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
 import { normaliseUsage, openaiDeps, OUTPUT_SCHEMA } from "../_shared/openai.ts";
-import { classifierFromEnv } from "../_shared/classifiers.ts";
+import { BULK_MODEL, classifierFromEnv } from "../_shared/classifiers.ts";
 import { costUsd, PRICES_PER_MTOK } from "../_shared/pipeline.ts";
 import { SYSTEM_PROMPT } from "../_shared/classify.ts";
 
@@ -83,4 +83,22 @@ Deno.test("classifierFromEnv: OpenAI key wins, CLASSIFIER_MODEL names its model,
   const claude = classifierFromEnv(env({ OPENAI_API_KEY: "  ", ANTHROPIC_API_KEY: "sk-ant" }));
   assertEquals([claude?.vendor, claude?.model], ["anthropic", "claude-opus-5"]);
   assertEquals(classifierFromEnv(env({})), null);
+});
+
+Deno.test("classifierFromEnv: an imported back catalogue takes the cheaper tier, and it is priced", () => {
+  const env = (vars: Record<string, string>) => (n: string) => vars[n];
+  const key = { OPENAI_API_KEY: "sk-a" };
+
+  // Same key, two tiers.
+  assertEquals(classifierFromEnv(env(key), { bulk: true })?.model, BULK_MODEL);
+  assertEquals(classifierFromEnv(env(key))?.model, "gpt-5.6-sol");
+
+  // The bulk tier has its own override, and the everyday one does not leak into it.
+  assertEquals(classifierFromEnv(env({ ...key, CLASSIFIER_MODEL: "gpt-5.6-luna" }), { bulk: true })?.model, BULK_MODEL);
+  assertEquals(classifierFromEnv(env({ ...key, CLASSIFIER_MODEL_BULK: "gpt-5.6-luna" }), { bulk: true })?.model, "gpt-5.6-luna");
+  assertEquals(classifierFromEnv(env({ ...key, CLASSIFIER_MODEL_BULK: "gpt-5.6-luna" }))?.model, "gpt-5.6-sol");
+
+  // A model with no price would be billed as free and quietly hide what an import costs.
+  assert(Object.keys(PRICES_PER_MTOK).includes(BULK_MODEL));
+  assert(PRICES_PER_MTOK[BULK_MODEL]!.input < PRICES_PER_MTOK["gpt-5.6-sol"]!.input);
 });

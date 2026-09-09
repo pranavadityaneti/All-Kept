@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       async waitForCategory(itemId, timeoutMs) {
         // Enrich and classify right now; the reply carries the category if it lands within the wait. Past the wait the work
         // continues (kept alive for the runtime) and the sweeper covers anything that still slips through.
-        const work = runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, log })
+        const work = runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log })
           .catch((e) => { log("instagram: pipeline failed", { item: itemId, error: String(e).slice(0, 200) }); return null; });
         if (typeof EdgeRuntime !== "undefined" && EdgeRuntime) EdgeRuntime.waitUntil(work);
         const result = await within(work, timeoutMs);

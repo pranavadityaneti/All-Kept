@@ -7,6 +7,8 @@ export interface PipelineDeps {
   fetch: typeof fetch;
   /** null until a model key is configured (see classifiers.ts): enrichment still runs, classification waits for the sweeper. */
   classifier: ClassifyDeps | null;
+  /** The cheaper tier for an imported back catalogue. Falls back to `classifier` when absent. */
+  bulkClassifier?: ClassifyDeps | null;
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
@@ -61,10 +63,10 @@ const reasonOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).sl
 
 /** Enriches (if pending/failed/no_link without thumbnail) and classifies (if not yet classified). Returns the category when known. */
 export async function runPipeline(db: SupabaseClient, itemId: string, deps: PipelineDeps): Promise<string | null> {
-  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta").eq("id", itemId).maybeSingle();
+  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta, captured_via").eq("id", itemId).maybeSingle();
   if (error) throw error;
   if (!item) return null;
-  const it = item as EnrichableItem & { note: string | null; media_meta: Record<string, unknown> | null };
+  const it = item as EnrichableItem & { note: string | null; media_meta: Record<string, unknown> | null; captured_via: string };
 
   const needsEnrich = it.status === "pending" || it.status === "failed";
   // A card whose remote image was not stored yet (first try for no-link posts, or a failed fetch) gets a bounded number of further tries.
@@ -103,9 +105,11 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
 
   const { data: ai } = await db.from("item_ai").select("category, user_category").eq("item_id", itemId).maybeSingle();
   if (ai) return (ai.user_category ?? ai.category) as string | null;
-  if (!deps.classifier) return null;
+  // A whole back catalogue is worth classifying, but not at the everyday price.
+  const classifier = it.captured_via === "import" ? (deps.bulkClassifier ?? deps.classifier) : deps.classifier;
+  if (!classifier) return null;
 
-  const c = await classify({ platform: it.platform, kind: it.kind, url: it.canonical_url ?? it.source_url, title: it.title, text: it.text, author: it.author_name, note: it.note }, deps.classifier);
+  const c = await classify({ platform: it.platform, kind: it.kind, url: it.canonical_url ?? it.source_url, title: it.title, text: it.text, author: it.author_name, note: it.note }, classifier);
   const row: Record<string, unknown> = c.output
     ? { item_id: itemId, user_id: it.user_id, ...c.output, model: c.model, prompt_version: PROMPT_VERSION, usage: { ...(c.usage ?? {}), cost_usd: costUsd(c.model, c.usage) }, ai_error: null }
     : { item_id: itemId, user_id: it.user_id, model: c.model, prompt_version: PROMPT_VERSION, usage: c.usage, ai_error: c.error };

@@ -5,10 +5,20 @@ import { DEFAULT_MODEL as OPENAI_MODEL, openaiDeps } from "./openai.ts";
 
 export interface ClassifierChoice { vendor: "openai" | "anthropic"; model: string; deps: ClassifyDeps }
 
-export function classifierFromEnv(get: (name: string) => string | undefined = (n) => Deno.env.get(n)): ClassifierChoice | null {
+/**
+ * The cheaper tier, for a back catalogue arriving all at once. Half the price of the everyday model
+ * (see PRICES_PER_MTOK), which matters when someone imports four years of saves in one go.
+ */
+export const BULK_MODEL = "gpt-5.6-terra";
+
+export function classifierFromEnv(
+  get: (name: string) => string | undefined = (n) => Deno.env.get(n),
+  { bulk = false }: { bulk?: boolean } = {},
+): ClassifierChoice | null {
   const openaiKey = get("OPENAI_API_KEY")?.trim();
   if (openaiKey) {
-    const model = get("CLASSIFIER_MODEL")?.trim() || OPENAI_MODEL;
+    const named = bulk ? get("CLASSIFIER_MODEL_BULK")?.trim() : get("CLASSIFIER_MODEL")?.trim();
+    const model = named || (bulk ? BULK_MODEL : OPENAI_MODEL);
     return { vendor: "openai", model, deps: openaiDeps(openaiKey, model) };
   }
   const anthropicKey = get("ANTHROPIC_API_KEY")?.trim();

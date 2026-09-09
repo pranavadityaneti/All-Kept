@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     if (!owned) return apiError("not_found", "no such item");
 
     const log = (message: string, meta?: Record<string, unknown>) => console.log(message, meta ?? {});
-    const category = await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, log });
+    const category = await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log });
 
     const { data: after } = await db.from("items").select("status").eq("id", itemId).maybeSingle();
     const body2: ReprocessItemResponse = { status: (after?.status ?? "pending") as ReprocessItemResponse["status"], category };

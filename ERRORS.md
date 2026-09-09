@@ -18,6 +18,11 @@ build no longer matches anything.
 global cache and never writes into `node_modules`. It is now `npm run check:functions` so nobody has
 to remember the flag. When the layout has already been rewritten: `rm -rf node_modules && npm ci`.
 
+**The quieter half of the same bug.** `scripts/test-functions.sh` had no flag at all, so
+`npm run test:functions` had been failing outright on the same import — all 83 function tests were
+being skipped by anyone who trusted the script. Same flag, same fix. A tool that refuses to run is
+easier to miss than a test that fails.
+
 **What did not work.** `--node-modules-dir=auto`. It type-checks perfectly and breaks the next build,
 which is the worst possible combination: the damage is invisible until a build is already running.
 
