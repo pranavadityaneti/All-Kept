@@ -9,7 +9,6 @@ import { IconButton } from "./IconButton";
 import { categoryStyle, tint } from "../lib/categories";
 import { filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
 import type { Facets, Filters } from "../lib/library";
-import { PlatformLogo } from "./PlatformLogo";
 import { radius, space, type, usePalette } from "../lib/theme";
 
 const IN_MS = 200, OUT_MS = 140;
@@ -50,7 +49,6 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
 
   if (!mounted) return null;
 
-  const platforms = filterOptions("platforms", facets, filters);
   const categories = filterOptions("categories", facets, filters);
   const active = filters.platforms.length + filters.categories.length;
   const empty = active > 0 && !matches.pending && matches.n === 0;
@@ -76,21 +74,11 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
           </View>
 
           <ScrollView style={styles.scroll} contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-            {platforms.length === 0 && categories.length === 0 && (
-              <Text style={[type.body, { color: p.inkMuted }]}>Nothing to filter yet. Save something and its platform and category appear here.</Text>
-            )}
-
-            {platforms.length > 0 && (
-              <Group title="Where it came from">
-                {platforms.map((o) => (
-                  <Option
-                    key={o.value}
-                    option={o}
-                    onPress={() => onToggle("platforms", o.value)}
-                    mark={<PlatformLogo platform={o.value} size={16} />}
-                  />
-                ))}
-              </Group>
+            {/* Platforms are not listed here any more: they are pills on the bar itself, where they
+                are one tap rather than three. Listing them in both places would let the same filter
+                be switched on in two ways and read as two different controls. */}
+            {categories.length === 0 && (
+              <Text style={[type.body, { color: p.inkMuted }]}>Nothing to filter yet. Save something and its category appears here.</Text>
             )}
 
             {categories.length > 0 && (

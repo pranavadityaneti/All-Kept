@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Icon } from "./Icon";
+import { PlatformPills } from "./PlatformPills";
 import { activeFilters, matchesLabel, type FilterGroup, type Matches } from "../lib/filter-options";
 import type { Facets, Filters } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -25,7 +26,11 @@ export function FilterBar({ facets, filters, matches, onOpen, onRemove, onClear 
   const options = (facets?.platforms.length ?? 0) + (facets?.categories.length ?? 0);
   if (options === 0 && active.length === 0) return null;
 
+  // Platforms are pills of their own now, so repeating them as tokens would say the same thing twice.
+  const tokens = active.filter((f) => f.group !== "platforms");
+
   return (
+    <View style={styles.wrap}>
     <View style={styles.bar}>
       <Pressable
         accessibilityRole="button"
@@ -44,10 +49,18 @@ export function FilterBar({ facets, filters, matches, onOpen, onRemove, onClear 
         <Icon name="down" size={13} color={p.inkMuted} />
       </Pressable>
 
-      {active.length > 0 && (
-        <>
+      <PlatformPills
+        options={facets?.platforms}
+        selected={filters.platforms}
+        onToggle={(v) => onRemove("platforms", v)}
+        inset={false}
+      />
+    </View>
+
+    {active.length > 0 && (
+      <View style={styles.bar}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tokens} contentContainerStyle={styles.tokensInner}>
-            {active.map((f) => (
+            {tokens.map((f) => (
               <Pressable
                 key={`${f.group}-${f.value}`}
                 accessibilityRole="button"
@@ -70,13 +83,14 @@ export function FilterBar({ facets, filters, matches, onOpen, onRemove, onClear 
           </ScrollView>
 
           <Text style={[type.label, { color: p.inkMuted }]} numberOfLines={1}>{matchesLabel(matches)}</Text>
-        </>
-      )}
+      </View>
+    )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: { gap: space.xs },
   bar: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.xs },
   open: { flexDirection: "row", alignItems: "center", gap: space.xs + 2, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: space.xs + 2, minHeight: 36 },
   badge: { minWidth: 18, height: 18, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },

@@ -10,6 +10,8 @@ import { CategoryTile } from "../../components/CategoryTile";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
+import { PlatformPills } from "../../components/PlatformPills";
+import { FILTER_LABEL } from "../../lib/platforms";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
 import { useRecentSaves } from "../../lib/home";
@@ -30,7 +32,11 @@ export default function Home() {
   const session = useSession();
   const ready = session.status === "ready";
   const linked = useLinkedSource(ready);
-  const recent = useRecentSaves(ready);
+  // Home's own narrowing, deliberately not shared with Library: filtering a glance should not quietly
+  // change what the other tab shows when you get there.
+  const [onlyFrom, setOnlyFrom] = useState<string[]>([]);
+  const toggleFrom = (v: string) => setOnlyFrom((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));
+  const recent = useRecentSaves(ready, onlyFrom);
   const facets = useFacets(ready);
   useTrackOnce(ready ? session.userId : null, "app_open");
   useTrackOnce(ready ? session.userId : null, "library_view");
@@ -81,9 +87,17 @@ export default function Home() {
         )}
 
         <View style={styles.section}>
+          <PlatformPills options={facets.data?.platforms} selected={onlyFrom} onToggle={toggleFrom} showCounts={false} inset={false} />
           <SectionHeader title="Recent saves" actionLabel={items.length > 0 ? "See all" : undefined} onAction={() => router.push("/library")} />
           {recent.isPending ? (
             <Text style={[type.body, { color: p.inkMuted }]}>Loading…</Text>
+          ) : items.length === 0 && onlyFrom.length > 0 ? (
+            // An empty row because of a pill is not an empty library, and telling someone to go and
+            // save their first reel when they have thirty is the kind of thing that reads as broken.
+            <Card>
+              <Text style={[type.body, { color: p.inkMuted }]}>Nothing recent from {onlyFrom.map((v) => FILTER_LABEL[v] ?? v).join(" or ")}.</Text>
+              <Button label="Show all" variant="secondary" onPress={() => setOnlyFrom([])} />
+            </Card>
           ) : items.length === 0 ? (
             <Card>
               <Text style={[type.body, { color: p.inkMuted }]}>Nothing saved yet. In Instagram, tap the paper plane under a reel and send it to @allkeptapp.</Text>
