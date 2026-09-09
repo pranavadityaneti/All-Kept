@@ -11,7 +11,7 @@ import { SearchField } from "../../components/SearchField";
 import { SectionHeader } from "../../components/SectionHeader";
 import { Wordmark } from "../../components/Wordmark";
 import { useRecentSaves } from "../../lib/home";
-import { useFacets, useLibraryRealtime, type LibraryItem } from "../../lib/library";
+import { useFacets, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
@@ -28,7 +28,6 @@ export default function Home() {
   const linked = useLinkedSource(ready);
   const recent = useRecentSaves(ready);
   const facets = useFacets(ready);
-  useLibraryRealtime(ready);
   useTrackOnce(ready ? session.userId : null, "app_open");
   useTrackOnce(ready ? session.userId : null, "library_view");
 

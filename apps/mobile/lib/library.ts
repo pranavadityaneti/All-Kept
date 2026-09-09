@@ -1,5 +1,4 @@
-import { useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useInfiniteQuery, useQuery, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export interface LibraryItem {
@@ -101,19 +100,4 @@ export function useFacets(enabled: boolean) {
       return { platforms: pick("platform"), categories: pick("category") };
     },
   });
-}
-
-/** Saves arrive while the app is open, and sorting finishes a few seconds after that, so watch both tables. */
-export function useLibraryRealtime(enabled: boolean) {
-  const queryClient = useQueryClient();
-  useEffect(() => {
-    if (!enabled) return;
-    const refresh = () => invalidateLibrary(queryClient);
-    const channel = supabase
-      .channel("library")
-      .on("postgres_changes", { event: "*", schema: "public", table: "items" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "item_ai" }, refresh)
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [enabled, queryClient]);
 }

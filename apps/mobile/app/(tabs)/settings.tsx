@@ -45,10 +45,7 @@ export default function Settings() {
 
   return (
     <Screen>
-      <View style={styles.headerRow}>
-        <Text style={[type.title, { color: p.ink }]}>Settings</Text>
-        <Button label="Done" variant="secondary" onPress={() => router.back()} />
-      </View>
+      <Text style={[type.title, { color: p.ink }]}>Settings</Text>
 
       <Card>
         <Text style={[type.heading, { color: p.ink }]}>Instagram</Text>
@@ -121,7 +118,6 @@ export default function Settings() {
 }
 
 const styles = StyleSheet.create({
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
   switchRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   switchLabel: { flex: 1 },
   links: { flexDirection: "row", alignItems: "center", gap: space.lg, paddingTop: space.sm },

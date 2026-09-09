@@ -7,7 +7,7 @@ import { Card } from "../../components/Card";
 import { FilterBar } from "../../components/FilterBar";
 import { ItemCard } from "../../components/ItemCard";
 import { useFilters } from "../../lib/filters";
-import { useFacets, useLibrary, useLibraryRealtime, type LibraryItem } from "../../lib/library";
+import { useFacets, useLibrary, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
@@ -23,7 +23,6 @@ export default function Library() {
   const { filters, loaded, toggle, clear, hasFilters } = useFilters();
   const library = useLibrary(filters, ready && loaded);
   const facets = useFacets(ready);
-  useLibraryRealtime(ready);
   const userId = ready ? session.userId : null;
   useTrackOnce(userId, "app_open");
   useTrackOnce(userId, "library_view");
@@ -36,10 +35,7 @@ export default function Library() {
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Text style={[type.title, { color: p.ink }]}>Allkept</Text>
-        <View style={styles.headerActions}>
-          {items.length > 0 && <Button label="Search" variant="secondary" onPress={() => router.push("/search")} />}
-          <Button label="Settings" variant="secondary" onPress={() => router.push("/settings")} />
-        </View>
+        {items.length > 0 && <Button label="Search" variant="secondary" onPress={() => router.push("/search")} />}
       </View>
 
       <FilterBar facets={facets.data} filters={filters} onToggle={toggle} onClear={clear} />
@@ -105,7 +101,6 @@ export default function Library() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: space.sm },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md },
   list: { padding: space.lg },
   cell: { flex: 1 },

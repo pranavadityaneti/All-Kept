@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { supabase } from "./supabase";
 
 export interface LinkedSource { id: string; handle: string | null; since: string; status: string; repliesEnabled: boolean }
@@ -26,24 +25,12 @@ async function fetchLinkedSource(): Promise<LinkedSource | null> {
  * fallback for when the realtime socket cannot connect, so the screen still moves on by itself.
  */
 export function useLinkedSource(enabled: boolean) {
-  const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: KEY,
     queryFn: fetchLinkedSource,
     enabled,
     refetchInterval: (q) => (q.state.data ? false : 5_000),
   });
-
-  useEffect(() => {
-    if (!enabled) return;
-    const channel = supabase
-      .channel("connected-sources")
-      .on("postgres_changes", { event: "*", schema: "public", table: "connected_sources" }, () => {
-        void queryClient.invalidateQueries({ queryKey: KEY });
-      })
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [enabled, queryClient]);
 
   return query;
 }

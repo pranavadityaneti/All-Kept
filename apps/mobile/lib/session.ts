@@ -7,11 +7,24 @@ export type SessionState =
   | { status: "ready"; userId: string; anonymous: boolean }
   | { status: "error"; message: string; anonymousDisabled: boolean };
 
+let bootstrap: Promise<SessionState> | null = null;
+
+/** Shared across every screen, so several mounting together cannot create several accounts. */
+export function ensureSession(): Promise<SessionState> {
+  bootstrap ??= startSession();
+  return bootstrap;
+}
+
+/** Drops the memoised attempt so "Try again" really tries again. */
+export function forgetSession(): void {
+  bootstrap = null;
+}
+
 /**
  * Phase 0 identity: an anonymous account created on first launch and kept in the keychain.
  * A later Google sign-in links to this same user, so nothing saved now is orphaned.
  */
-export async function ensureSession(): Promise<SessionState> {
+async function startSession(): Promise<SessionState> {
   const existing = await supabase.auth.getSession();
   if (existing.error) return { status: "error", message: existing.error.message, anonymousDisabled: false };
   const session = existing.data.session;
@@ -58,5 +71,5 @@ export function useSession(): SessionState & { retry: () => void } {
     return () => sub.subscription.unsubscribe();
   }, [state]);
 
-  return { ...state, retry: () => setAttempt((a) => a + 1) };
+  return { ...state, retry: () => { forgetSession(); setAttempt((a) => a + 1); } };
 }
