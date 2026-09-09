@@ -1,18 +1,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NO_FILTERS, type Filters } from "./library";
 
 const KEY = "allkept.filters";
 
-/** The chosen chips, remembered between launches. A stored value that no longer parses is ignored. */
+/** The chosen filters, remembered between launches. A stored value that no longer parses is ignored. */
 export function useFilters() {
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [loaded, setLoaded] = useState(false);
+  // A choice made while the stored one is still being read is the newer of the two. Without this the
+  // read lands second and wins, which quietly threw away a category the screen had just been opened on.
+  const chosen = useRef(false);
 
   useEffect(() => {
     void AsyncStorage.getItem(KEY)
       .then((raw) => {
-        if (!raw) return;
+        if (!raw || chosen.current) return;
         const parsed: unknown = JSON.parse(raw);
         if (parsed && typeof parsed === "object") {
           const p = parsed as Partial<Filters>;
@@ -26,21 +29,26 @@ export function useFilters() {
       .finally(() => setLoaded(true));
   }, []);
 
-  const update = useCallback((next: Filters) => {
-    setFilters(next);
+  const remember = useCallback((next: Filters) => {
+    chosen.current = true;
     void AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
   }, []);
+
+  const set = useCallback((next: Filters) => {
+    setFilters(next);
+    remember(next);
+  }, [remember]);
 
   const toggle = useCallback((group: keyof Filters, value: string) => {
     setFilters((current) => {
       const list = current[group];
       const next: Filters = { ...current, [group]: list.includes(value) ? list.filter((v) => v !== value) : [...list, value] };
-      void AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+      remember(next);
       return next;
     });
-  }, []);
+  }, [remember]);
 
-  const clear = useCallback(() => update(NO_FILTERS), [update]);
+  const clear = useCallback(() => set(NO_FILTERS), [set]);
 
-  return { filters, loaded, toggle, clear, hasFilters: filters.platforms.length + filters.categories.length > 0 };
+  return { filters, loaded, set, toggle, clear, hasFilters: filters.platforms.length + filters.categories.length > 0 };
 }

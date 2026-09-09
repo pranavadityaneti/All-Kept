@@ -6,7 +6,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { IconButton } from "../components/IconButton";
 import { ItemCard } from "../components/ItemCard";
 import { FilterBar } from "../components/FilterBar";
+import { FilterSheet } from "../components/FilterSheet";
 import { Button } from "../components/Button";
+import type { FilterGroup, Matches } from "../lib/filter-options";
 import { useSearch, useFacets, NO_FILTERS, type Filters, type LibraryItem } from "../lib/library";
 import { track } from "../lib/metrics";
 import { useSession } from "../lib/session";
@@ -19,9 +21,12 @@ export default function Search() {
   const router = useRouter();
   const session = useSession();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [filtering, setFiltering] = useState(false);
   const facets = useFacets(session.status === "ready");
   const [text, setText] = useState("");
   const [term, setTerm] = useState("");
+  const toggle = (group: FilterGroup, value: string) =>
+    setFilters((current) => ({ ...current, [group]: current[group].includes(value) ? current[group].filter((v) => v !== value) : [...current[group], value] }));
 
   // One query per pause in typing, not per keystroke.
   useEffect(() => {
@@ -34,6 +39,9 @@ export default function Search() {
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const searched = term.trim().length > 0;
   const userId = session.status === "ready" ? session.userId : null;
+  // The facet counts know nothing about the word being searched for, so here the results are the
+  // only count there is, and it is a floor while there are more pages behind it.
+  const matches: Matches = { n: items.length, more: results.hasNextPage, pending: results.isPending };
 
   useEffect(() => {
     if (!searched || results.isPending || results.isError) return;
@@ -58,9 +66,24 @@ export default function Search() {
         <IconButton name="close" label="Close search" onPress={() => router.back()} />
       </View>
 
-      <FilterBar facets={facets.data} filters={filters}
-        onToggle={(group, value) => setFilters((current) => ({ ...current, [group]: current[group].includes(value) ? current[group].filter((v) => v !== value) : [...current[group], value] }))}
+      {searched && (
+        <FilterBar
+          facets={facets.data}
+          filters={filters}
+          matches={matches}
+          onOpen={() => setFiltering(true)}
+          onRemove={toggle}
+          onClear={() => setFilters(NO_FILTERS)}
+        />
+      )}
+      <FilterSheet
+        visible={filtering}
+        facets={facets.data}
+        filters={filters}
+        matches={matches}
+        onToggle={toggle}
         onClear={() => setFilters(NO_FILTERS)}
+        onClose={() => setFiltering(false)}
       />
       <FlashList
         data={items}

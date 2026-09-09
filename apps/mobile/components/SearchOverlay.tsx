@@ -5,9 +5,11 @@ import { Animated, Easing, Modal, Pressable, StyleSheet, Text, TextInput, View }
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { FilterBar } from "./FilterBar";
+import { FilterSheet } from "./FilterSheet";
 import { IconButton } from "./IconButton";
 import { ItemCard } from "./ItemCard";
 import { setCollection } from "../lib/collection";
+import type { FilterGroup, Matches } from "../lib/filter-options";
 import { useFacets, useSearch, NO_FILTERS, type Filters, type LibraryItem } from "../lib/library";
 import { track } from "../lib/metrics";
 import { useThumbnails } from "../lib/thumbnails";
@@ -35,6 +37,9 @@ export function SearchOverlay({ visible, enabled, userId, onClose, onOpenItem }:
   const [text, setText] = useState("");
   const [term, setTerm] = useState("");
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [filtering, setFiltering] = useState(false);
+  const toggle = (group: FilterGroup, value: string) =>
+    setFilters((c) => ({ ...c, [group]: c[group].includes(value) ? c[group].filter((v) => v !== value) : [...c[group], value] }));
 
   useEffect(() => {
     if (visible) {
@@ -49,7 +54,7 @@ export function SearchOverlay({ visible, enabled, userId, onClose, onOpenItem }:
   // Clearing on the way out rather than on the way in, so the closing frames do not flash an empty box.
   useEffect(() => {
     if (mounted || visible) return;
-    setText(""); setTerm(""); setFilters(NO_FILTERS);
+    setText(""); setTerm(""); setFilters(NO_FILTERS); setFiltering(false);
   }, [mounted, visible]);
 
   // One query per pause in typing, not per keystroke.
@@ -63,6 +68,9 @@ export function SearchOverlay({ visible, enabled, userId, onClose, onOpenItem }:
   const items: LibraryItem[] = [...new Map((results.data?.pages.flatMap((page) => page.items) ?? []).map((i) => [i.id, i])).values()];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const searched = term.trim().length > 0;
+  // The facet counts know nothing about the word being searched for, so here the results are the
+  // only count there is, and it is a floor while there are more pages behind it.
+  const matches: Matches = { n: items.length, more: results.hasNextPage, pending: results.isPending };
 
   useEffect(() => {
     if (!searched || results.isPending || results.isError) return;
@@ -106,7 +114,9 @@ export function SearchOverlay({ visible, enabled, userId, onClose, onOpenItem }:
             <FilterBar
               facets={facets.data}
               filters={filters}
-              onToggle={(group, value) => setFilters((c) => ({ ...c, [group]: c[group].includes(value) ? c[group].filter((v) => v !== value) : [...c[group], value] }))}
+              matches={matches}
+              onOpen={() => setFiltering(true)}
+              onRemove={toggle}
               onClear={() => setFilters(NO_FILTERS)}
             />
           )}
@@ -152,6 +162,16 @@ export function SearchOverlay({ visible, enabled, userId, onClose, onOpenItem }:
           />
         </Animated.View>
       </SafeAreaView>
+
+      <FilterSheet
+        visible={filtering}
+        facets={facets.data}
+        filters={filters}
+        matches={matches}
+        onToggle={toggle}
+        onClear={() => setFilters(NO_FILTERS)}
+        onClose={() => setFiltering(false)}
+      />
     </Modal>
   );
 }

@@ -8,7 +8,9 @@ import { IconButton } from "../../components/IconButton";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { Card } from "../../components/Card";
 import { FilterBar } from "../../components/FilterBar";
+import { FilterSheet } from "../../components/FilterSheet";
 import { ItemCard } from "../../components/ItemCard";
+import { activeFilters, exactMatches, type Matches } from "../../lib/filter-options";
 import { useFilters } from "../../lib/filters";
 import { useFacets, useLibrary, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
@@ -25,16 +27,17 @@ export default function Library() {
   const session = useSession();
   const ready = session.status === "ready";
   const linked = useLinkedSource(ready);
-  const { filters, loaded, toggle, clear, hasFilters } = useFilters();
+  const { filters, loaded, set, toggle, clear, hasFilters } = useFilters();
   const params = useLocalSearchParams<{ category?: string }>();
   const applied = useRef<string | null>(null);
   useEffect(() => {
-    // Arriving from a category tile: show that category, once.
+    // Arriving from a category tile: show exactly what the tile counted, once. It waits for the stored
+    // filters, because the read that is already in flight lands afterwards and would put them back.
     const wanted = params.category;
-    if (!wanted || applied.current === wanted) return;
+    if (!loaded || !wanted || applied.current === wanted) return;
     applied.current = wanted;
-    if (!filters.categories.includes(wanted)) toggle("categories", wanted);
-  }, [params.category, filters.categories, toggle]);
+    set({ platforms: [], categories: [wanted] });
+  }, [loaded, params.category, set]);
   const library = useLibrary(filters, ready && loaded);
   const facets = useFacets(ready);
   const userId = ready ? session.userId : null;
@@ -44,16 +47,24 @@ export default function Library() {
   const items: LibraryItem[] = library.data?.pages.flatMap((page) => page.items) ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const [searching, setSearching] = useState(false);
+  const [filtering, setFiltering] = useState(false);
   const busy = library.isPending || linked.isPending || (!loaded && ready);
+
+  // The counts answer a selection within one group on their own. Across two groups they cannot, and
+  // then the only honest number is what the pages already loaded hold, said as a floor.
+  const exact = exactMatches(facets.data, filters);
+  const matches: Matches = exact === null
+    ? { n: items.length, more: library.hasNextPage, pending: library.isPending }
+    : { n: exact, more: false, pending: false };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Text style={[type.title, { color: p.ink }]}>Allkept</Text>
-        {items.length > 0 && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
+        {(items.length > 0 || hasFilters) && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
       </View>
 
-      <FilterBar facets={facets.data} filters={filters} onToggle={toggle} onClear={clear} />
+      <FilterBar facets={facets.data} filters={filters} matches={matches} onOpen={() => setFiltering(true)} onRemove={toggle} onClear={clear} />
 
       <FlashList
         data={items}
@@ -98,6 +109,8 @@ export default function Library() {
             ) : hasFilters ? (
               <Card>
                 <Text style={[type.heading, { color: p.ink }]}>Nothing under these filters</Text>
+                <Text style={[type.body, { color: p.inkMuted }]}>{activeFilters(filters).map((f) => f.label).join(" · ")}</Text>
+                <Button label="Change filters" onPress={() => setFiltering(true)} />
                 <Button label="Clear filters" variant="secondary" onPress={clear} />
               </Card>
             ) : (
@@ -109,6 +122,16 @@ export default function Library() {
           </View>
         }
         ListFooterComponent={library.isFetchingNextPage ? <Text style={[type.label, styles.footer, { color: p.inkMuted }]}>Loading more…</Text> : null}
+      />
+
+      <FilterSheet
+        visible={filtering}
+        facets={facets.data}
+        filters={filters}
+        matches={matches}
+        onToggle={toggle}
+        onClear={clear}
+        onClose={() => setFiltering(false)}
       />
 
       <SearchOverlay
