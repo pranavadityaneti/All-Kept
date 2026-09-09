@@ -9,6 +9,7 @@ import { saveLink } from "@allkept/normalize";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
 import { incomingLink } from "../lib/incoming-share";
+import { resolveForSave } from "../lib/resolve-link";
 import { invalidateLibrary } from "../lib/library";
 import { useSession } from "../lib/session";
 import { supabase } from "../lib/supabase";
@@ -58,7 +59,9 @@ export default function SaveLink() {
     running.current = true;
     setBusy(true);
     setError(null);
-    const value = text.trim();
+    // Resolved here rather than on the server: a phone is an ordinary client, and some sites refuse
+    // to follow their own share links for anything running in a datacentre.
+    const value = await resolveForSave(text);
     if (attempt.current?.text !== value) attempt.current = { text: value, id: `${Date.now()}-${Math.random().toString(36).slice(2)}` };
     try {
       const { data, error: failure } = await supabase.functions.invoke<SaveLinkResponse>("save-link", {
