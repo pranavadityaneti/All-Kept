@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/internal@^1.0.12": "1.0.14",
+    "jsr:@zip-js/zip-js@2.7.62": "2.7.62",
     "npm:@anthropic-ai/sdk@*": "0.124.0",
     "npm:@expo/vector-icons@^15.0.2": "15.1.1_expo-font@57.0.3__expo@57.0.21__react@19.2.3__react-native@0.86.3___@types+react@19.2.18___react@19.2.3___@babel+core@7.29.7___@react-native+metro-config@0.87.1____@babel+core@7.29.7__@expo+dom-webview@57.0.1__@expo+metro-runtime@57.0.15__react-dom@19.2.8___react@19.2.3__react-native-webview@13.16.1___react@19.2.3___react-native@0.86.3____@types+react@19.2.18____react@19.2.3____@babel+core@7.29.7____@react-native+metro-config@0.87.1_____@babel+core@7.29.7_react@19.2.3_react-native@0.86.3__@types+react@19.2.18__react@19.2.3__@babel+core@7.29.7__@react-native+metro-config@0.87.1___@babel+core@7.29.7_react-native-webview@13.16.1__react@19.2.3__react-native@0.86.3___@types+react@19.2.18___react@19.2.3___@babel+core@7.29.7___@react-native+metro-config@0.87.1____@babel+core@7.29.7",
     "npm:@react-native-async-storage/async-storage@2.2.0": "2.2.0_react-native@0.86.3__@types+react@19.2.18__react@19.2.3__@babel+core@7.29.7__@react-native+metro-config@0.87.1___@babel+core@7.29.7_@babel+core@7.29.7_@react-native+metro-config@0.87.1__@babel+core@7.29.7_@types+react@19.2.18_react@19.2.3",
@@ -51,6 +52,9 @@
     },
     "@std/internal@1.0.14": {
       "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    },
+    "@zip-js/zip-js@2.7.62": {
+      "integrity": "11cbe0746fa1e52e6e0a601c89ba97365f16e38a07f139b9d9914f988aec9081"
     }
   },
   "npm": {

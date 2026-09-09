@@ -328,3 +328,5 @@ export function normalize(input: NormalizeInput): NormalizedLink {
     sourceUrl, text, needsExpansion: p.needsExpansion === true,
   };
 }
+
+export * from "./saved-export.js";

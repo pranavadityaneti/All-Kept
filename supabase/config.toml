@@ -443,3 +443,8 @@ entrypoint = "./functions/delete-account/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/reprocess-item/index.ts"
+
+[functions.import-saves]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/import-saves/index.ts"
