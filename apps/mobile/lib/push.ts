@@ -6,6 +6,7 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { useEffect } from "react";
 import { Linking, Platform } from "react-native";
 import { supabase } from "./supabase";
 
@@ -108,3 +109,24 @@ export async function unregisterPush(): Promise<void> {
 
 /** The only way back from a refused permission is the OS's own settings. */
 export const openSystemSettings = (): void => { void Linking.openSettings(); };
+
+/**
+ * Opens the save a notification was about.
+ *
+ * Two ways in, and both matter: a tap while the app is running, and a tap that launched it from
+ * cold. The cold start is the one that is easy to miss — the response has already happened by the
+ * time the listener is attached, so it has to be asked for as well as listened for.
+ */
+export function useNotificationRoute(go: (itemId: string) => void): void {
+  useEffect(() => {
+    let cancelled = false;
+    const open = (response: Notifications.NotificationResponse | null) => {
+      const id = response?.notification.request.content.data?.["itemId"];
+      if (!cancelled && typeof id === "string" && id) go(id);
+    };
+    // The tap that started the app, which has no listener to hear it.
+    void Notifications.getLastNotificationResponseAsync().then(open).catch(() => undefined);
+    const sub = Notifications.addNotificationResponseReceivedListener(open);
+    return () => { cancelled = true; sub.remove(); };
+  }, [go]);
+}

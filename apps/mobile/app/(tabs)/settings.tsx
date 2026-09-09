@@ -14,6 +14,7 @@ import { usePreferences, useSetPreference } from "../../lib/preferences";
 import { useProfile, useAvatar } from "../../lib/profile";
 import { openSystemSettings, pushPermission, registerForPush, unregisterPush } from "../../lib/push";
 import { genderLabel } from "../../lib/profile-fields";
+import { REVIEW_URL, SUPPORT_EMAIL } from "../../lib/feedback";
 import { openLink } from "../../lib/open";
 import { useSession } from "../../lib/session";
 import { useLinkedSource, useSetReplies } from "../../lib/sources";
@@ -227,6 +228,14 @@ export default function Settings() {
 
         <SettingsGroup>
           <SettingsRow icon="library" title="How to save" detail="Send a reel or post to @allkeptapp" onPress={() => router.push("/setup/instagram")} />
+          <SettingsRow
+            icon="share"
+            title="Contact support"
+            detail={SUPPORT_EMAIL}
+            onPress={() => { void openLink(`mailto:${SUPPORT_EMAIL}`); }}
+          />
+          <SettingsRow icon="note" title="Send feedback" detail="Tell us what is broken or missing" onPress={() => router.push("/feedback")} />
+          <SettingsRow icon="check" title="Rate Allkept" onPress={() => { void openLink(REVIEW_URL); }} />
           <SettingsRow icon="open" title="Privacy" onPress={() => { void openLink(PRIVACY); }} />
           <SettingsRow icon="open" title="Terms" onPress={() => { void openLink(TERMS); }} last />
         </SettingsGroup>

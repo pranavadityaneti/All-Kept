@@ -3,6 +3,7 @@ import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { enrich, type EnrichableItem } from "./enrich.ts";
 import { PROMPT_VERSION, type ClassifyDeps, type ModelUsage } from "./classify.ts";
 import { runClassification, type ClassificationClaim } from "./classification-worker.ts";
+import { compose, notify, type PushDeps, type PushReason } from "./push.ts";
 
 export interface PipelineDeps {
   fetch: typeof fetch;
@@ -62,6 +63,63 @@ export async function snapshotTo(db: SupabaseClient, fetchImpl: typeof fetch, us
 
 const reasonOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 200);
 
+/** The database side of sending a push, kept next to the only place that builds it. */
+function pushDeps(db: SupabaseClient, deps: PipelineDeps): PushDeps {
+  return {
+    fetch: deps.fetch,
+    async preferences(userId) {
+      const { data } = await db.from("profiles").select("notify_enabled,notify_sorted,notify_attention").eq("user_id", userId).maybeSingle();
+      const row = data as { notify_enabled: boolean; notify_sorted: boolean; notify_attention: boolean } | null;
+      return row ? { enabled: row.notify_enabled, sorted: row.notify_sorted, attention: row.notify_attention } : null;
+    },
+    async tokens(userId) {
+      const { data } = await db.from("device_push_tokens").select("token,platform").eq("user_id", userId).is("failed_at", null);
+      return (data ?? []) as { token: string; platform: string }[];
+    },
+    async markDead(token, reason) {
+      await db.from("device_push_tokens").update({ failed_at: new Date().toISOString(), fail_reason: reason.slice(0, 120) }).eq("token", token);
+    },
+    log: deps.log,
+  };
+}
+
+/**
+ * Tells the owner their save has settled, once and only once.
+ *
+ * The mark is claimed before anything is sent, by updating push_sent_at where it is still null: the
+ * sweeper runs this same pipeline over the same item again and again, and two workers can be inside
+ * it at the same moment. Claiming first means a send that then fails is silently dropped rather
+ * than retried — which is the right way round. Nobody has ever been annoyed by one notification
+ * they did not get; they are annoyed by the same one four times.
+ *
+ * Never throws. A notification is the least important thing here.
+ */
+async function announce(db: SupabaseClient, deps: PipelineDeps, itemId: string, category: string | null): Promise<void> {
+  try {
+    const { data } = await db.from("items").select("user_id,status,title,push_sent_at").eq("id", itemId).maybeSingle();
+    const row = data as { user_id: string; status: string; title: string | null; push_sent_at: string | null } | null;
+    if (!row || row.push_sent_at) return;
+
+    // Only a settled save is worth a notification. "pending" is still working and "failed" is still
+    // being retried up the ladder — telling someone about either is telling them about nothing.
+    const reason: PushReason | null =
+      row.status === "ready" ? "sorted"
+        : row.status === "no_link" || row.status === "preview_unavailable" ? "attention"
+        : null;
+    if (!reason) return;
+
+    const { data: claimed } = await db.from("items")
+      .update({ push_sent_at: new Date().toISOString() })
+      .eq("id", itemId).is("push_sent_at", null).select("id");
+    if (!claimed || claimed.length === 0) return; // somebody else got there first
+
+    const { title, body } = compose(reason, { title: row.title, category });
+    await notify(row.user_id, reason, { title, body, itemId }, pushDeps(db, deps));
+  } catch (e) {
+    deps.log("pipeline: announce failed", { item: itemId, detail: reasonOf(e) });
+  }
+}
+
 /** Enriches (if pending/failed/no_link without thumbnail) and claims due classification work. Returns the category when known. */
 export async function runPipeline(db: SupabaseClient, itemId: string, deps: PipelineDeps, retryClassification = false): Promise<string | null> {
   const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta, captured_via").eq("id", itemId).maybeSingle();
@@ -118,12 +176,13 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
   const { data: prefRow } = await db.from("profiles").select("ai_sorting_enabled").eq("user_id", it.user_id).maybeSingle();
   if ((prefRow as { ai_sorting_enabled?: boolean } | null)?.ai_sorting_enabled === false) {
     deps.log("pipeline: classification declined by preference", { item: itemId });
+    await announce(db, deps, itemId, null);
     return null;
   }
 
   // A whole back catalogue is worth classifying, but not at the everyday price.
   const classifier = it.captured_via === "import" ? (deps.bulkClassifier ?? deps.classifier) : deps.classifier;
-  return runClassification({
+  const category = await runClassification({
     classifier,
     async claim(retry) {
       const { data, error } = await db.rpc("claim_item_classification", { p_item_id: itemId, p_retry: retry });
@@ -147,4 +206,7 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
       return (data?.user_category ?? data?.category ?? null) as string | null;
     },
   }, retryClassification);
+
+  await announce(db, deps, itemId, category);
+  return category;
 }
