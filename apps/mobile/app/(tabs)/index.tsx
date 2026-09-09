@@ -58,7 +58,7 @@ export default function Home() {
         refreshControl={<RefreshControl refreshing={pulled} onRefresh={onRefresh} tintColor={p.inkMuted} />}
       >
         <View style={styles.header}>
-          <Wordmark height={24} />
+          <Wordmark />
           <View style={styles.headerActions}>
             <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />
             <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />

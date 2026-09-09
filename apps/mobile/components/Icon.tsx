@@ -12,6 +12,7 @@ const NAMES = {
   settings: "settings-outline",
   settingsActive: "settings",
   bell: "notifications-outline",
+  moon: "moon-outline",
   search: "search-outline",
   close: "close",
   chevron: "chevron-forward",

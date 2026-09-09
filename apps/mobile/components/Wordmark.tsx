@@ -14,8 +14,13 @@ const shapeOf = (src: number) => {
 };
 const RATIO = { light: shapeOf(LIGHT), dark: shapeOf(DARK) };
 
-/** The brand mark. An image, so its gradient needs no drawing library. */
-export function Wordmark({ height = 28 }: { height?: number }) {
+/**
+ * The brand mark. An image, so its gradient needs no drawing library.
+ *
+ * The height is deliberately not set at the call sites: the mark should be the same size on every
+ * screen it appears on, and three screens each passing their own number is how that drifts apart.
+ */
+export function Wordmark({ height = 32 }: { height?: number }) {
   const p = usePalette();
   const dark = p.blur === "dark";
   return (

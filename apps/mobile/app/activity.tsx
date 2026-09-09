@@ -1,57 +1,77 @@
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useMemo } from "react";
+import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Icon } from "../components/Icon";
 import { IconButton } from "../components/IconButton";
 import { cardTitle } from "../components/ItemCard";
+import { PlatformLogo } from "../components/PlatformLogo";
+import { describe, groupByDay, when } from "../lib/activity";
 import { useRecentSaves } from "../lib/home";
 import { useSession } from "../lib/session";
-import { space, type, usePalette } from "../lib/theme";
-
-/** What has happened lately, read from the saves themselves: there is nothing else to notify about yet. */
-function describe(status: string, category: string | null): string {
-  if (status === "pending" || status === "failed") return "Saved, still sorting";
-  if (status === "no_link") return category ? `Saved as ${category}, no link yet` : "Saved, no link yet";
-  if (status === "preview_unavailable") return category ? `Saved as ${category}, no preview` : "Saved, no preview";
-  return category ? `Saved as ${category}` : "Saved";
-}
-
-function when(iso: string, now = Date.now()): string {
-  const minutes = Math.max(0, Math.round((now - Date.parse(iso)) / 60000));
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? "yesterday" : `${days} days ago`;
-}
+import { radius, space, type, usePalette } from "../lib/theme";
+import { useThumbnails } from "../lib/thumbnails";
 
 export default function Activity() {
   const p = usePalette();
   const router = useRouter();
   const session = useSession();
   const recent = useRecentSaves(session.status === "ready");
-  const items = recent.data ?? [];
+  const items = useMemo(() => recent.data ?? [], [recent.data]);
+  const sections = useMemo(() => groupByDay(items, new Date()), [items]);
+  const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
+      {/* Back on the left with the name centred, the way a pushed screen is titled everywhere else. */}
       <View style={styles.header}>
-        <Text style={[type.title, { color: p.ink }]}>Activity</Text>
-        <IconButton name="close" label="Close" onPress={() => router.back()} />
+        <IconButton name="back" label="Back" onPress={() => router.back()} />
+        <Text style={[type.heading, styles.headerTitle, { color: p.ink }]}>Notifications</Text>
+        <View style={styles.headerSpacer} />
       </View>
-      <FlatList
-        data={items}
+
+      <SectionList
+        sections={sections}
         keyExtractor={(i) => i.id}
         contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={[styles.rule, { backgroundColor: p.border }]} />}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View style={styles.rowText}>
-              <Text numberOfLines={1} style={[type.body, { color: p.ink }]}>{cardTitle(item)}</Text>
-              <Text style={[type.label, { color: p.inkMuted }]}>{describe(item.status, item.category)}</Text>
-            </View>
-            <Text style={[type.label, { color: p.inkMuted }]}>{when(item.lastSavedAt)}</Text>
+        stickySectionHeadersEnabled={false}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.day}>
+            <View style={[styles.dayRule, { backgroundColor: p.border }]} />
+            <Text style={[type.label, styles.dayLabel, { color: p.inkMuted }]}>{section.title}</Text>
+            <View style={[styles.dayRule, { backgroundColor: p.border }]} />
           </View>
         )}
+        renderItem={({ item }) => {
+          const thumbnail = item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${cardTitle(item)}. ${describe(item.status, item.category)}`}
+              onPress={() => router.push(`/item/${item.id}`)}
+              style={styles.row}
+            >
+              <View style={[styles.thumb, { backgroundColor: p.surfaceAlt }]}>
+                {thumbnail ? (
+                  <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} accessibilityIgnoresInvertColors />
+                ) : (
+                  <Icon name="note" size={18} color={p.inkMuted} />
+                )}
+              </View>
+
+              <View style={styles.rowText}>
+                <Text numberOfLines={1} style={[type.body, styles.rowTitle, { color: p.ink }]}>{cardTitle(item)}</Text>
+                <Text numberOfLines={1} style={[type.label, { color: p.inkMuted }]}>
+                  {describe(item.status, item.category)} · {when(item.lastSavedAt)}
+                </Text>
+              </View>
+
+              {/* Where the reference puts the face that acted, ours puts the place the save came from. */}
+              <PlatformLogo platform={item.platform} size={24} />
+            </Pressable>
+          );
+        }}
         ListEmptyComponent={
           <Text style={[type.body, styles.empty, { color: p.inkMuted }]}>
             {recent.isPending ? "Loading…" : "Nothing has arrived yet. Send a reel to @allkeptapp and it shows up here."}
@@ -64,10 +84,17 @@ export default function Activity() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: space.lg },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.lg, paddingVertical: space.md },
+  headerTitle: { flex: 1, textAlign: "center" },
+  // Balances the back button so the title sits in the true centre rather than pushed off it.
+  headerSpacer: { width: 44 },
   list: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
+  day: { flexDirection: "row", alignItems: "center", gap: space.md, paddingTop: space.xl, paddingBottom: space.sm },
+  dayRule: { flex: 1, height: StyleSheet.hairlineWidth },
+  dayLabel: { letterSpacing: 0.8 },
   row: { flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: space.md },
+  thumb: { width: 48, height: 48, borderRadius: radius.md, overflow: "hidden", alignItems: "center", justifyContent: "center" },
   rowText: { flex: 1, gap: 2 },
-  rule: { height: StyleSheet.hairlineWidth },
+  rowTitle: { fontWeight: "600" },
   empty: { padding: space.lg },
 });

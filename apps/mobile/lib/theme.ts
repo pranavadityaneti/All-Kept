@@ -27,12 +27,19 @@ const dark: Palette = {
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 export const radius = { sm: 6, md: 12, lg: 18, xl: 24, pill: 999 } as const;
+/**
+ * Anchored on Apple's own scale rather than picked by eye: 17pt is the iOS default for body text,
+ * 15pt is secondary, 13pt tertiary. Body sat at 15 — one whole step down, which is why every screen
+ * read smaller than the apps beside it. Instagram sets SF Pro at these same system sizes, so putting
+ * body back on 17 is what closes the gap. The rest lift with it to keep the hierarchy intact.
+ */
 export const type = {
-  title: { fontSize: 26, fontWeight: "700" },
-  section: { fontSize: 19, fontWeight: "700" },
-  heading: { fontSize: 17, fontWeight: "600" },
-  body: { fontSize: 15, fontWeight: "400" },
-  label: { fontSize: 13, fontWeight: "500" },
+  title: { fontSize: 30, fontWeight: "700" },
+  section: { fontSize: 22, fontWeight: "700" },
+  heading: { fontSize: 19, fontWeight: "600" },
+  body: { fontSize: 17, fontWeight: "400" },
+  label: { fontSize: 15, fontWeight: "500" },
+  // The one-time code, which is sized to the box it sits in rather than to the text scale.
   mono: { fontSize: 32, fontWeight: "700", letterSpacing: 6 },
 } as const;
 

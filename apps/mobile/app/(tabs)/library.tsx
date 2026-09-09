@@ -61,7 +61,7 @@ export default function Library() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
-        <Wordmark height={24} />
+        <Wordmark />
         {(items.length > 0 || hasFilters) && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
       </View>
 
