@@ -1,5 +1,6 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { CATEGORY_WAIT_MS, processEvent, REPLY_TEXT, type ProcessDeps, type LinkedSource, type ReplyMeta } from "../instagram-webhook/process.ts";
+import { ATTACH_WINDOW_MS, CATEGORY_WAIT_MS, processEvent, REPLY_TEXT, type ProcessDeps, type LinkedSource, type ReplyMeta } from "../instagram-webhook/process.ts";
+import type { NormalizedLink } from "../_shared/normalize.ts";
 import type { EventRow } from "../instagram-webhook/handler.ts";
 import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
 
@@ -16,6 +17,9 @@ const ev = (message: Record<string, unknown>, ts = 1788859253587): EventRow => (
 const REEL = ev({ mid: "mid-reel", attachments: [{ type: "ig_reel", payload: { url: "https://www.instagram.com/reel/DdAye7JB4B4/", title: "🌋 ANAK KRAKATAU ERUPTS AGAIN", reel_video_id: "17906265141506851" } }] });
 const POST = ev({ mid: "mid-post", attachments: [{ type: "ig_post", payload: { url: "https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=1812&signature=x", title: "n8n AI Agents decoded in 8 slides", ig_post_media_id: "17897654949593778" } }] });
 const LINK = ev({ mid: "mid-link", text: "https://www.youtube.com/watch?v=WfJPBVXPt8k" });
+// What a person sends after being asked for the link: pasted plainly, or with words and tracking around it.
+const PASTED = ev({ mid: "mid-paste", text: "https://www.instagram.com/p/DcVMQIIMa5-/" }, 1788859253587 + 60_000);
+const PASTED_MESSY = ev({ mid: "mid-paste-2", text: "here you go https://www.instagram.com/p/DcVMQIIMa5-/?igsh=abc123" }, 1788859253587 + 90_000);
 const PHOTO = ev({ mid: "mid-photo", attachments: [{ type: "image", payload: { url: "https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=1210" } }] });
 const DELETION = ev({ mid: "mid-reel", is_deleted: true });
 const ECHO = ev({ mid: "mid-echo", is_echo: true, text: "Saved" });
@@ -46,8 +50,75 @@ class Fake implements ProcessDeps {
   async sendReply(_i: string, text: string, meta: ReplyMeta) { this.replies.push({ text, meta }); }
   waited: number[] = [];
   async waitForCategory(_itemId: string, timeoutMs: number) { this.waited.push(timeoutMs); return this.category; }
+  noLinkCard: { id: string } | null = null;
+  asked: Date[] = [];
+  attached: { itemId: string; externalId: string | null; canonicalUrl: string | null }[] = [];
+  attachResult: "attached" | "duplicate" = "attached";
+  async latestNoLink(_u: string, since: Date) { this.asked.push(since); return this.noLinkCard; }
+  async attachLink(itemId: string, _u: string, link: NormalizedLink) { this.attached.push({ itemId, externalId: link.externalId, canonicalUrl: link.canonicalUrl }); return this.attachResult; }
   log() {}
 }
+
+Deno.test("a link pasted after a link-less post completes that card instead of making a second one", async () => {
+  const f = new Fake();
+  f.noLinkCard = { id: "item-nolink" };
+  const out = await processEvent(PASTED, f);
+  assertEquals(out, { action: "attached", itemIds: ["item-nolink"] });
+  assertEquals(f.attached, [{ itemId: "item-nolink", externalId: "DcVMQIIMa5-", canonicalUrl: "https://www.instagram.com/p/DcVMQIIMa5-/" }]);
+  assertEquals(f.captures.length, 0); // no second card
+  assertEquals(f.waited, [CATEGORY_WAIT_MS]); // enriched now, so the reply can carry the sort
+  assertEquals(f.replies[0]!.text, "Attached · Travel & places");
+  assertEquals(f.replies[0]!.meta.itemId, "item-nolink");
+  // Only a card from the last day is taken as the one being answered.
+  assertEquals(f.asked[0]!.toISOString(), new Date(NOW.getTime() - ATTACH_WINDOW_MS).toISOString());
+});
+
+Deno.test("the paste can come with words and tracking around it and still attaches cleanly", async () => {
+  const f = new Fake();
+  f.noLinkCard = { id: "item-nolink" };
+  const out = await processEvent(PASTED_MESSY, f);
+  assertEquals(out.action, "attached");
+  assertEquals(f.attached[0]!.canonicalUrl, "https://www.instagram.com/p/DcVMQIIMa5-/");
+});
+
+Deno.test("without a recent link-less card, a pasted Instagram link is simply a new save", async () => {
+  const f = new Fake();
+  const out = await processEvent(PASTED, f);
+  assertEquals(out.action, "captured");
+  assertEquals(f.attached, []);
+  assertEquals(f.captures[0]!.sharedText, "https://www.instagram.com/p/DcVMQIIMa5-/");
+});
+
+Deno.test("a YouTube link after a link-less card is a new save, not an answer", async () => {
+  const f = new Fake();
+  f.noLinkCard = { id: "item-nolink" };
+  const out = await processEvent(LINK, f);
+  assertEquals(out.action, "captured");
+  assertEquals(f.asked, []); // never even looked for a card
+  assertEquals(f.attached, []);
+});
+
+Deno.test("when the pasted post is already a card of its own, nothing is attached and the usual duplicate reply goes out", async () => {
+  const f = new Fake();
+  f.noLinkCard = { id: "item-nolink" };
+  f.attachResult = "duplicate";
+  f.dedupe = true;
+  const out = await processEvent(PASTED, f);
+  assertEquals(out.action, "captured");
+  assertEquals(f.attached.length, 1); // tried, and the database said no
+  assertEquals(f.captures.length, 1); // then the ordinary path found the existing card
+  assertEquals(f.replies[0]!.text, REPLY_TEXT.alreadySaved);
+});
+
+Deno.test("with replies off, an attached card is left to the sweeper and nothing is sent", async () => {
+  const f = new Fake();
+  f.source = { ...f.source!, repliesEnabled: false };
+  f.noLinkCard = { id: "item-nolink" };
+  const out = await processEvent(PASTED, f);
+  assertEquals(out.action, "attached");
+  assertEquals(f.waited, []);
+  assertEquals(f.replies, []);
+});
 
 Deno.test("a reel is captured with its permalink and caption, then confirmed with the category", async () => {
   const f = new Fake();

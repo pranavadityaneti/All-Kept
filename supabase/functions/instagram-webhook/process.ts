@@ -2,6 +2,7 @@
 import type { EventRow } from "./handler.ts";
 import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
 import { LINK_CODE_LENGTH } from "../_shared/contracts.ts";
+import { normalize, type NormalizedLink } from "../_shared/normalize.ts";
 
 export type ReplyKind = "linked" | "code_rejected" | "unlinked" | "unsupported" | "confirm" | "control";
 
@@ -37,11 +38,15 @@ export interface ProcessDeps {
   sendReply(igsid: string, text: string, meta: ReplyMeta): Promise<void>;
   /** Resolves to the category once classification lands, or null after the timeout. */
   waitForCategory(itemId: string, timeoutMs: number): Promise<string | null>;
+  /** The sender's newest card that arrived without a link, if one is recent enough to be what they are answering. */
+  latestNoLink(userId: string, since: Date): Promise<{ id: string } | null>;
+  /** Gives a link-less card its link. "duplicate" when that post is already a card of its own. */
+  attachLink(itemId: string, userId: string, link: NormalizedLink): Promise<"attached" | "duplicate">;
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
 export interface ProcessOutcome {
-  action: "echo" | "ignored" | "deleted" | "linked" | "code_rejected" | "unlinked" | "control" | "unsupported" | "captured";
+  action: "echo" | "ignored" | "deleted" | "linked" | "code_rejected" | "unlinked" | "control" | "unsupported" | "captured" | "attached";
   itemIds?: string[];
 }
 
@@ -51,6 +56,8 @@ const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
 const CODE_RE = new RegExp(`^[A-Z2-9]{${LINK_CODE_LENGTH}}$`);
 const HOUR = 3_600_000;
 const REPLY_WINDOW_MS = 23 * HOUR;
+/** How long a pasted link is taken as the answer to "paste the link". A day, because people come back to it. */
+export const ATTACH_WINDOW_MS = 24 * HOUR;
 /** How long the confirmation waits for the sort. Reels take 8 to 11 s (preview page, image, model); past this the reply says "sorting" and the library still gets the category. */
 export const CATEGORY_WAIT_MS = 20_000;
 
@@ -65,7 +72,8 @@ export const REPLY_TEXT = {
   alreadySaved: "Already saved.",
   saved: (category: string | null) => (category ? `Saved · ${category}` : "Saved, sorting…"),
   note: "Saved as a note.",
-  noLink: " Instagram doesn't share the post's link with me; paste the link to attach it.",
+  noLink: " Instagram doesn't share the post's link with me; paste the link here and I'll attach it.",
+  attached: (category: string | null) => (category ? `Attached · ${category}` : "Attached, sorting…"),
 } as const;
 
 export async function processEvent(row: EventRow, deps: ProcessDeps): Promise<ProcessOutcome> {
@@ -143,6 +151,22 @@ export async function processEvent(row: EventRow, deps: ProcessDeps): Promise<Pr
     }
   });
   if (inputs.length === 0 && text.length > 0) {
+    // A link pasted after a post that came without one is the answer to our own question, not a new
+    // save. Instagram never puts a post's permalink in a message, only a reel's, so this is the one
+    // way that card ever gets its link; until now the paste made a second card beside the first.
+    const link = normalize({ url: null, text });
+    if (link.platform === "instagram" && link.externalId && link.canonicalUrl) {
+      const card = await deps.latestNoLink(source.userId, new Date(now.getTime() - ATTACH_WINDOW_MS));
+      if (card && (await deps.attachLink(card.id, source.userId, link)) === "attached") {
+        // Enriched now so the reply can carry the sort; with replies off the sweeper gets to it.
+        if (source.repliesEnabled) {
+          const category = await deps.waitForCategory(card.id, CATEGORY_WAIT_MS);
+          await deps.sendReply(igsid, REPLY_TEXT.attached(category), { kind: "confirm", userId: source.userId, sourceId: source.id, itemId: card.id, notAfter });
+        }
+        return { action: "attached", itemIds: [card.id] };
+      }
+      // Already a card of its own: the ordinary path below finds it and says so.
+    }
     inputs.push({ userId: source.userId, sourceId: source.id, sourceKind: "instagram_dm", sourceEventId: mid, savedAt: messageTime.toISOString(), sharedText: text });
   }
 
