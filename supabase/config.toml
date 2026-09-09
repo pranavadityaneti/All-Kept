@@ -468,3 +468,9 @@ entrypoint = "./functions/save-link/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/search-library/index.ts"
+
+[functions.admin-dashboard]
+enabled = true
+# The handler verifies the bearer with auth.getUser and then checks admin membership.
+verify_jwt = false
+entrypoint = "./functions/admin-dashboard/index.ts"
