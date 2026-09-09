@@ -1,8 +1,10 @@
 import { FlashList } from "@shopify/flash-list";
-import { useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
+import { IconButton } from "../../components/IconButton";
 import { Card } from "../../components/Card";
 import { FilterBar } from "../../components/FilterBar";
 import { ItemCard } from "../../components/ItemCard";
@@ -11,8 +13,9 @@ import { useFacets, useLibrary, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
+import { setCollection } from "../../lib/collection";
 import { useThumbnails } from "../../lib/thumbnails";
-import { TAB_BAR_HEIGHT } from "../../components/FloatingTabBar";
+import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { space, type, usePalette } from "../../lib/theme";
 
 export default function Library() {
@@ -22,6 +25,15 @@ export default function Library() {
   const ready = session.status === "ready";
   const linked = useLinkedSource(ready);
   const { filters, loaded, toggle, clear, hasFilters } = useFilters();
+  const params = useLocalSearchParams<{ category?: string }>();
+  const applied = useRef<string | null>(null);
+  useEffect(() => {
+    // Arriving from a category tile: show that category, once.
+    const wanted = params.category;
+    if (!wanted || applied.current === wanted) return;
+    applied.current = wanted;
+    if (!filters.categories.includes(wanted)) toggle("categories", wanted);
+  }, [params.category, filters.categories, toggle]);
   const library = useLibrary(filters, ready && loaded);
   const facets = useFacets(ready);
   const userId = ready ? session.userId : null;
@@ -36,7 +48,7 @@ export default function Library() {
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Text style={[type.title, { color: p.ink }]}>Allkept</Text>
-        {items.length > 0 && <Button label="Search" variant="secondary" onPress={() => router.push("/search")} />}
+        {items.length > 0 && <IconButton name="search" label="Search your saves" onPress={() => router.push("/search")} />}
       </View>
 
       <FilterBar facets={facets.data} filters={filters} onToggle={toggle} onClear={clear} />
@@ -52,7 +64,7 @@ export default function Library() {
         ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
         renderItem={({ item, index }) => (
           <View style={[styles.cell, index % 2 === 0 ? styles.cellLeft : styles.cellRight]}>
-            <ItemCard item={item} thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined} onPress={() => router.push(`/item/${item.id}`)} />
+            <ItemCard item={item} thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined} onPress={() => { setCollection(items.map((i) => i.id)); router.push({ pathname: "/item/[id]", params: { id: item.id } }); }} />
           </View>
         )}
         ListEmptyComponent={
@@ -103,7 +115,7 @@ export default function Library() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md },
-  list: { padding: space.lg, paddingBottom: TAB_BAR_HEIGHT + space.xxl },
+  list: { padding: space.lg, paddingBottom: TAB_BAR_CLEARANCE },
   cell: { flex: 1 },
   cellLeft: { paddingRight: space.sm },
   cellRight: { paddingLeft: space.sm },

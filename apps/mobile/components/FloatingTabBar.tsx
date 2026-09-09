@@ -20,7 +20,8 @@ export interface TabBarProps {
 
 /** The height the bar occupies, so screens can keep their content clear of it. */
 export const TAB_BAR_HEIGHT = 64;
-export const TAB_BAR_GAP = space.md;
+/** What a scrolling screen must leave free at the bottom: the bar, the home indicator and a margin. */
+export const TAB_BAR_CLEARANCE = TAB_BAR_HEIGHT + 56;
 
 const ICONS: Record<string, { idle: IconName; active: IconName }> = {
   index: { idle: "home", active: "homeActive" },

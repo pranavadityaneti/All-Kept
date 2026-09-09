@@ -3,12 +3,13 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button } from "../components/Button";
+import { IconButton } from "../components/IconButton";
 import { ItemCard } from "../components/ItemCard";
 import { useFilters } from "../lib/filters";
 import { useSearch, type LibraryItem } from "../lib/library";
 import { track } from "../lib/metrics";
 import { useSession } from "../lib/session";
+import { setCollection } from "../lib/collection";
 import { useThumbnails } from "../lib/thumbnails";
 import { radius, space, type, usePalette } from "../lib/theme";
 
@@ -51,7 +52,7 @@ export default function Search() {
           clearButtonMode="while-editing"
           style={[styles.input, type.body, { backgroundColor: p.surface, borderColor: p.border, color: p.ink }]}
         />
-        <Button label="Done" variant="secondary" onPress={() => router.back()} />
+        <IconButton name="close" label="Close search" onPress={() => router.back()} />
       </View>
 
       <FlashList
@@ -63,7 +64,7 @@ export default function Search() {
         ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
         renderItem={({ item, index }) => (
           <View style={[styles.cell, index % 2 === 0 ? styles.cellLeft : styles.cellRight]}>
-            <ItemCard item={item} thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined} onPress={() => router.push(`/item/${item.id}`)} />
+            <ItemCard item={item} thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined} onPress={() => { setCollection(items.map((i) => i.id)); router.push({ pathname: "/item/[id]", params: { id: item.id } }); }} />
           </View>
         )}
         ListEmptyComponent={

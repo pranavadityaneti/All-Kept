@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button } from "../components/Button";
+import { IconButton } from "../components/IconButton";
 import { cardTitle } from "../components/ItemCard";
 import { useRecentSaves } from "../lib/home";
 import { useSession } from "../lib/session";
@@ -36,7 +36,7 @@ export default function Activity() {
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Text style={[type.title, { color: p.ink }]}>Activity</Text>
-        <Button label="Done" variant="secondary" onPress={() => router.back()} />
+        <IconButton name="close" label="Close" onPress={() => router.back()} />
       </View>
       <FlatList
         data={items}

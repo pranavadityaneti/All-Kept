@@ -5,7 +5,7 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
-import { Icon } from "../../components/Icon";
+import { IconButton } from "../../components/IconButton";
 import { ItemCard } from "../../components/ItemCard";
 import { SearchField } from "../../components/SearchField";
 import { SectionHeader } from "../../components/SectionHeader";
@@ -15,8 +15,9 @@ import { useFacets, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
+import { setCollection } from "../../lib/collection";
 import { useThumbnails } from "../../lib/thumbnails";
-import { TAB_BAR_HEIGHT } from "../../components/FloatingTabBar";
+import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { radius, space, type, usePalette } from "../../lib/theme";
 
 const CATEGORIES_SHOWN = 6;
@@ -54,15 +55,7 @@ export default function Home() {
       >
         <View style={styles.header}>
           <Wordmark height={24} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Activity"
-            onPress={() => router.push("/activity")}
-            hitSlop={space.md}
-            style={({ pressed }) => [styles.bell, { backgroundColor: p.surfaceAlt, borderColor: p.border, opacity: pressed ? 0.8 : 1 }]}
-          >
-            <Icon name="bell" size={20} color={p.ink} />
-          </Pressable>
+          <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />
         </View>
 
         <SearchField onPress={() => router.push("/search")} />
@@ -95,7 +88,7 @@ export default function Home() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rail} contentContainerStyle={styles.railInner}>
               {items.slice(0, 8).map((item) => (
                 <View key={item.id} style={styles.railCard}>
-                  <ItemCard item={item} thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined} onPress={() => router.push(`/item/${item.id}`)} />
+                  <ItemCard item={item} thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined} onPress={() => { setCollection(items.map((i) => i.id)); router.push({ pathname: "/item/[id]", params: { id: item.id } }); }} />
                 </View>
               ))}
             </ScrollView>
@@ -144,9 +137,8 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  page: { padding: space.lg, gap: space.xl, paddingBottom: TAB_BAR_HEIGHT + space.xxl },
+  page: { padding: space.lg, gap: space.xl, paddingBottom: TAB_BAR_CLEARANCE },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  bell: { width: 40, height: 40, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
   section: { gap: space.md },
   rail: { marginHorizontal: -space.lg },
   railInner: { paddingHorizontal: space.lg, gap: space.md },
