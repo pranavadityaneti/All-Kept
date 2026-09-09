@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { IconButton } from "../../components/IconButton";
 import { SearchOverlay } from "../../components/SearchOverlay";
+import { Wordmark } from "../../components/Wordmark";
 import { Card } from "../../components/Card";
 import { FilterBar } from "../../components/FilterBar";
 import { FilterSheet } from "../../components/FilterSheet";
@@ -60,7 +61,7 @@ export default function Library() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
-        <Text style={[type.title, { color: p.ink }]}>Allkept</Text>
+        <Wordmark height={24} />
         {(items.length > 0 || hasFilters) && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
       </View>
 
