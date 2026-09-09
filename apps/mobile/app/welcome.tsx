@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
+import { StatusBar } from "expo-status-bar";
 import { Button } from "../components/Button";
 import { Icon } from "../components/Icon";
 import { WelcomeIllustration } from "../components/WelcomeIllustration";
@@ -28,26 +29,25 @@ export default function Welcome() {
       ]);
     } else setError(result.message);
   };
-  return <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
+  return <SafeAreaView style={styles.safe}>
+    <StatusBar style="light" />
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
       <View style={styles.brand}>
-        <Image source={require("../assets/logo-home.png")} style={styles.logo} contentFit="contain" accessibilityLabel="Allkept" />
-        <Text style={[styles.eyebrow, { color: p.inkMuted }]}>ONE LIBRARY. EVERYTHING YOU SAVE.</Text>
+        <View collapsable={false} style={[StyleSheet.absoluteFill, { backgroundColor: "#0E0F14" }]} />
+        <View collapsable={false} style={{ mixBlendMode: "lighten" }}><Image source={require("../assets/brand/lockup-dark.png")} style={styles.logo} contentFit="contain" accessibilityLabel="Allkept" /></View>
       </View>
       <View style={styles.story}>
         <WelcomeIllustration />
         <View style={styles.copy}>
-          <Text accessibilityRole="header" style={[styles.headline, { color: p.ink }]}>Save anywhere.{"\n"}<Text style={{ color: p.accent }}>Find it here.</Text></Text>
-          <Text style={[styles.description, { color: p.inkMuted }]}>Your links, posts and videos, together.{"\n"}Sorted for you. Easy to search.{"\n"}One tap back to the original.</Text>
+          <Text accessibilityRole="header" style={styles.headline}>All your saves.{"\n"}One place.</Text>
         </View>
       </View>
       <View style={styles.actions}>
       {session.status === "loading" ? <ActivityIndicator color={p.accent} /> : <>
-        {session.status === "ready" && session.anonymous && <Text style={[styles.guest, { color: p.inkMuted }]}>Your saves are still here. Connect Google to keep them with you.</Text>}
-        <Pressable accessibilityRole="button" accessibilityLabel="Continue with Google" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { void signIn(); }} style={({ pressed }) => [styles.google, { backgroundColor: p.accent, opacity: busy ? 0.65 : pressed ? 0.85 : 1 }]}>
-          {busy ? <ActivityIndicator color={p.accentInk} /> : <><Icon name="google" size={21} color={p.accentInk} /><Text style={[styles.googleLabel, { color: p.accentInk }]}>Continue with Google</Text><Icon name="chevron" size={18} color={p.accentInk} /></>}
+        {session.status === "ready" && session.anonymous && <Text style={[styles.guest, { color: "#98A0B4" }]}>Your existing saves stay with you.</Text>}
+        <Pressable accessibilityRole="button" accessibilityLabel="Continue with Google" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { void signIn(); }} style={({ pressed }) => [styles.google, { backgroundColor: "#7653E8", opacity: busy ? 0.65 : pressed ? 0.85 : 1 }]}>
+          {busy ? <ActivityIndicator color={p.accentInk} /> : <><Icon name="google" size={18} color={p.accentInk} /><Text style={[styles.googleLabel, { color: p.accentInk }]}>Continue with Google</Text></>}
         </Pressable>
-        <Text style={[styles.footer, { color: p.inkMuted }]}>Sign up or sign in with your Google account.</Text>
         {session.status === "error" && <Button label="Retry connection" variant="secondary" onPress={session.retry} />}
         {backup && session.status !== "ready" && <Button label="Restore this phone’s previous library" variant="secondary" disabled={busy} onPress={() => { setBusy(true); void restoreGuestLibrary().catch((e: Error) => setError(e.message)).finally(() => setBusy(false)); }} />}
       </>}
@@ -58,18 +58,16 @@ export default function Welcome() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 19, paddingBottom: 18, alignItems: "center" },
-  brand: { alignItems: "center", gap: 13 },
-  logo: { width: 157, height: 37 },
-  eyebrow: { fontSize: 9, fontWeight: "600", letterSpacing: 1.65, textAlign: "center" },
-  story: { flex: 1, justifyContent: "center", width: "100%", maxWidth: 430, paddingTop: 16, paddingBottom: 26 },
-  copy: { alignItems: "center", gap: 17, marginTop: 13 },
-  headline: { fontSize: 36, lineHeight: 40, fontWeight: "700", letterSpacing: -1.4, textAlign: "center" },
-  description: { fontSize: 14, lineHeight: 22, textAlign: "center" },
-  actions: { width: "100%", maxWidth: 430, gap: 12 },
-  guest: { fontSize: 12, lineHeight: 17, textAlign: "center", paddingHorizontal: 16, marginBottom: 2 },
-  google: { minHeight: 56, paddingHorizontal: 22, paddingVertical: 16, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 13 },
-  googleLabel: { flex: 1, fontSize: 16, fontWeight: "600", textAlign: "center" },
-  footer: { fontSize: 11, lineHeight: 16, textAlign: "center" },
+  safe: { flex: 1, backgroundColor: "#0E0F14", isolation: "isolate" },
+  page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 28, alignItems: "center" },
+  // Lighten compositing drops the darker baked-in plate against our dark canvas.
+  brand: { alignItems: "center" },
+  logo: { width: 174, height: 130 },
+  story: { flex: 1, justifyContent: "center", width: "100%", maxWidth: 460, paddingBottom: 28 },
+  copy: { alignItems: "center", marginTop: 12 },
+  headline: { color: "#F3F4F8", fontSize: 36, lineHeight: 43, fontWeight: "600", letterSpacing: -1.2, textAlign: "center" },
+  actions: { width: "100%", maxWidth: 360, alignItems: "center", gap: 18 },
+  guest: { fontSize: 12, lineHeight: 17, textAlign: "center" },
+  google: { minHeight: 48, maxWidth: "100%", paddingHorizontal: 24, paddingVertical: 13, borderRadius: 15, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 },
+  googleLabel: { fontSize: 14, fontWeight: "500", textAlign: "center", flexShrink: 1 },
 });

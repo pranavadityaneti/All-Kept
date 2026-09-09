@@ -40,7 +40,7 @@ export type ThemeChoice = "system" | "light" | "dark";
 const KEY = "allkept.theme";
 
 /** The choice, shared by every screen so they cannot disagree, and remembered between launches. */
-let choice: ThemeChoice = "system";
+let choice: ThemeChoice = "dark";
 const listeners = new Set<(c: ThemeChoice) => void>();
 let loaded = false;
 

@@ -17,6 +17,10 @@ const NAMES = {
   trash: "trash-outline",
   open: "open-outline",
   check: "checkmark",
+  camera: "camera-outline",
+  add: "add",
+  down: "chevron-down",
+  back: "arrow-back",
   download: "cloud-download-outline",
   // Platform logos, so a save can offer to open where it came from. Ionicons ships these, which
   // keeps brand artwork out of the repository.
