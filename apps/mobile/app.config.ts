@@ -41,10 +41,12 @@ const config: ExpoConfig = {
       ios: { enabled: true, activationRule: { supportsText: true, supportsWebUrlWithMaxCount: 1 } },
       android: { enabled: true, singleShareMimeTypes: ["text/plain"] },
     }],
-    // White in both themes, for the same reason as the icon: the wordmark is near-black and the
-    // mark fades to cream, so the lockup only holds on a light ground. A dark variant would need
-    // the artwork redrawn, not recoloured.
-    ["expo-splash-screen", { image: "./assets/splash-icon.png", imageWidth: 220, backgroundColor: "#FFFFFF", dark: { backgroundColor: "#FFFFFF" } }],
+    // The splash is the welcome screen's first frame, not a second thing before it. Same ground,
+    // same lockup, so launching reads as one continuous moment instead of a white card cutting to a
+    // dark one. The dark lockup carries a baked-in plate rather than transparency, which is invisible
+    // here only because that plate is within two levels of this background; changing either means
+    // checking both.
+    ["expo-splash-screen", { image: "./assets/brand/lockup-dark.png", imageWidth: 220, backgroundColor: "#0E0F14", dark: { backgroundColor: "#0E0F14" } }],
   ],
 };
 
