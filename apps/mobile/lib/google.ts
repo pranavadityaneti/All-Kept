@@ -1,68 +1,76 @@
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
-import { forgetSession } from "./session";
+import { callbackCode } from "./google-callback";
+import { chunkedSecureStore } from "./storage";
 import { supabase } from "./supabase";
 
-/** Where Google sends the person back to. Registered in Supabase's redirect list. */
+WebBrowser.maybeCompleteAuthSession();
 export const AUTH_REDIRECT = Linking.createURL("auth-callback");
+const BACKUP_KEY = "allkept.previous-guest-session";
+const ALREADY = /already|exists|identity.*linked|email.*use/i;
+export type LinkResult = { ok: true } | { ok: false; reason: "cancelled" | "already_linked" | "failed"; message: string };
+const failure = (error: unknown): LinkResult => {
+  const message = error instanceof Error ? error.message : "Could not sign in. Please try again.";
+  return { ok: false, reason: ALREADY.test(message) ? "already_linked" : "failed", message };
+};
 
-export type LinkResult =
-  | { ok: true }
-  | { ok: false; reason: "cancelled" | "already_linked" | "failed"; message: string };
-
-const ALREADY = /already|exists|identity is already linked/i;
-
-/**
- * Attaches a Google account to the library that already exists on this phone.
- *
- * Linking rather than signing in is the whole point: a plain sign-in would start a second, empty
- * account and strand everything saved so far. Supabase refuses to link a Google account that
- * belongs to another library, and that refusal is reported plainly rather than swallowed.
- */
-export async function linkGoogle(): Promise<LinkResult> {
-  const started = await supabase.auth.linkIdentity({
-    provider: "google",
-    options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
-  });
-  if (started.error || !started.data?.url) {
-    const message = started.error?.message ?? "Google sign-in is unavailable right now.";
-    return { ok: false, reason: ALREADY.test(message) ? "already_linked" : "failed", message };
-  }
-
-  const outcome = await WebBrowser.openAuthSessionAsync(started.data.url, AUTH_REDIRECT);
-  if (outcome.type !== "success") return { ok: false, reason: "cancelled", message: "Sign-in was cancelled." };
-
-  const returned = new URL(outcome.url);
-  const error = returned.searchParams.get("error_description") ?? returned.searchParams.get("error");
-  if (error) return { ok: false, reason: ALREADY.test(error) ? "already_linked" : "failed", message: error };
-
-  // The session that comes back carries the linked identity; hand it to the client either way it arrives.
-  const code = returned.searchParams.get("code");
-  if (code) {
-    const exchanged = await supabase.auth.exchangeCodeForSession(code);
-    if (exchanged.error) return { ok: false, reason: "failed", message: exchanged.error.message };
-  } else {
-    const fragment = new URLSearchParams(returned.hash.replace(/^#/, ""));
-    const access_token = fragment.get("access_token");
-    const refresh_token = fragment.get("refresh_token");
-    if (access_token && refresh_token) {
-      const set = await supabase.auth.setSession({ access_token, refresh_token });
-      if (set.error) return { ok: false, reason: "failed", message: set.error.message };
-    }
-  }
-
-  await supabase.auth.refreshSession().catch(() => undefined);
-  forgetSession(); // the memoised bootstrap describes an anonymous account that no longer exists
-  return { ok: true };
+// The browser promise and the callback route can receive the same URL; exchange its code once.
+const exchanges = new Map<string, Promise<LinkResult>>();
+export function completeGoogleCallback(url: string): Promise<LinkResult> {
+  let code: string;
+  try { code = callbackCode(url, AUTH_REDIRECT); } catch (e) { return Promise.resolve(failure(e)); }
+  const existing = exchanges.get(code);
+  if (existing) return existing;
+  if (exchanges.size >= 10) exchanges.delete(exchanges.keys().next().value!);
+  const work = (async (): Promise<LinkResult> => {
+    try {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) return failure(error);
+      if (!data.user || data.user.is_anonymous || !data.user.identities?.some((i) => i.provider === "google")) throw new Error("Google sign-in did not complete. Please try again.");
+      const saved = await chunkedSecureStore.getItem(BACKUP_KEY);
+      if (saved && (JSON.parse(saved) as { userId: string }).userId === data.user.id) await chunkedSecureStore.removeItem(BACKUP_KEY);
+      return { ok: true };
+    } catch (e) { return failure(e); }
+  })();
+  exchanges.set(code, work);
+  return work;
 }
 
+/** A guest is linked in place. Switching to an existing account is an explicit, reversible choice. */
+export async function signInGoogle(useExistingAccount = false): Promise<LinkResult> {
+  try {
+    const { data: current, error } = await supabase.auth.getSession();
+    if (error) return failure(error);
+    const guest = current.session?.user.is_anonymous === true;
+    if (guest && useExistingAccount) {
+      await chunkedSecureStore.setItem(BACKUP_KEY, JSON.stringify({ userId: current.session!.user.id, access_token: current.session!.access_token, refresh_token: current.session!.refresh_token }));
+    }
+    const options = { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true, queryParams: { prompt: "select_account" } };
+    const started = guest && !useExistingAccount
+      ? await supabase.auth.linkIdentity({ provider: "google", options })
+      : await supabase.auth.signInWithOAuth({ provider: "google", options });
+    if (started.error || !started.data?.url) return failure(started.error ?? new Error("Google sign-in is unavailable."));
+    const outcome = await WebBrowser.openAuthSessionAsync(started.data.url, AUTH_REDIRECT);
+    if (outcome.type !== "success") return { ok: false, reason: "cancelled", message: "Sign-in was cancelled." };
+    return completeGoogleCallback(outcome.url);
+  } catch (e) { return failure(e); }
+}
+export const linkGoogle = () => signInGoogle();
+export async function hasGuestLibrary(): Promise<boolean> {
+  return !!await chunkedSecureStore.getItem(BACKUP_KEY);
+}
+export async function restoreGuestLibrary(): Promise<void> {
+  const saved = await chunkedSecureStore.getItem(BACKUP_KEY);
+  if (!saved) throw new Error("No previous library is stored on this phone.");
+  const backup = JSON.parse(saved) as { userId: string; access_token: string; refresh_token: string };
+  const { data, error } = await supabase.auth.setSession(backup);
+  if (error || !data.user || data.user.id !== backup.userId) throw new Error("Could not restore the previous library. Please try again.");
+  // Keep the refreshed token until that guest is successfully linked to Google.
+  if (data.session) await chunkedSecureStore.setItem(BACKUP_KEY, JSON.stringify({ userId: data.user.id, access_token: data.session.access_token, refresh_token: data.session.refresh_token }));
+}
 export interface Identity { email: string | null; provider: string }
-
-/** The accounts attached to this library, so Settings can say who is signed in. */
 export async function identities(): Promise<Identity[]> {
   const { data, error } = await supabase.auth.getUserIdentities();
   if (error || !data) return [];
-  return data.identities
-    .filter((i) => i.provider !== "anonymous")
-    .map((i) => ({ email: (i.identity_data?.["email"] as string | undefined) ?? null, provider: i.provider }));
+  return data.identities.filter((i) => i.provider !== "anonymous").map((i) => ({ email: (i.identity_data?.["email"] as string | undefined) ?? null, provider: i.provider }));
 }

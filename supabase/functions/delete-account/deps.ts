@@ -26,6 +26,25 @@ export function realDeps(db: SupabaseClient): DeleteDeps {
       const { error } = await db.storage.from("thumbs").remove(paths);
       if (error) throw error;
     },
+    async removeProfilePhotos(userId) {
+      const folders = [userId], paths: string[] = [];
+      while (folders.length) {
+        const folder = folders.pop()!;
+        for (let offset = 0; ; offset += PAGE) {
+          const { data, error } = await db.storage.from("avatars").list(folder, { limit: PAGE, offset });
+          if (error) throw error;
+          for (const object of data ?? []) {
+            const path = `${folder}/${object.name}`;
+            if (object.id) paths.push(path); else folders.push(path);
+          }
+          if (!data || data.length < PAGE) break;
+        }
+      }
+      for (let i = 0; i < paths.length; i += PAGE) {
+        const removed = await db.storage.from("avatars").remove(paths.slice(i, i + PAGE));
+        if (removed.error) throw removed.error;
+      }
+    },
     async forgetIgsids(igsids) {
       const ids = igsids.filter((id) => PLATFORM_ID.test(id));
       if (ids.length === 0) return { events: 0, replies: 0 };

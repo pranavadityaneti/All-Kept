@@ -1,5 +1,7 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@1";
 import { deleteAccount, USER_TABLES, type DeleteDeps } from "../delete-account/delete.ts";
+import { realDeps } from "../delete-account/deps.ts";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 
@@ -16,6 +18,7 @@ class Fake implements DeleteDeps {
   async listSources() { this.step("listSources"); return this.sources; }
   async listThumbnails() { this.step("listThumbnails"); return this.thumbs; }
   async removeThumbnails(paths: string[]) { this.step("removeThumbnails"); this.removed.push(paths); }
+  async removeProfilePhotos() { this.step("removeProfilePhotos"); }
   async forgetIgsids(igsids: string[]) { this.step(`forgetIgsids:${igsids.join("|")}`); return { events: 12, replies: 2 }; }
   async deleteRows(table: string) { this.step(`deleteRows:${table}`); return this.rows[table] ?? 0; }
   async deleteAuthUser() { this.step("deleteAuthUser"); this.authDeleted = true; }
@@ -26,7 +29,7 @@ Deno.test("deletion forgets thumbnails, Instagram ids, every row children-first,
   const f = new Fake();
   const s = await deleteAccount(USER, f);
   assertEquals(s, { thumbnails: 2, events: 12, replies: 5, items: 4, sources: 2 });
-  assertEquals(f.calls, ["listSources", "listThumbnails", "removeThumbnails", "forgetIgsids:1086349983924918", ...USER_TABLES.map((t) => `deleteRows:${t}`), "deleteAuthUser"]);
+  assertEquals(f.calls, ["listSources", "listThumbnails", "removeThumbnails", "removeProfilePhotos", "forgetIgsids:1086349983924918", ...USER_TABLES.map((t) => `deleteRows:${t}`), "deleteAuthUser"]);
   assertEquals(f.calls.indexOf("deleteAuthUser"), f.calls.length - 1);
   assertEquals(f.removed, [[`${USER}/a.jpg`, `${USER}/b.jpg`]]);
   assertEquals(f.logged[0]!["user"], USER);
@@ -50,9 +53,30 @@ Deno.test("a person with nothing linked and nothing stored is still deleted; no 
 });
 
 Deno.test("a failure before the end leaves the login in place so the same token can retry", async () => {
-  for (const failOn of ["removeThumbnails", "forgetIgsids:1086349983924918", "deleteRows:items"]) {
+  for (const failOn of ["removeThumbnails", "removeProfilePhotos", "forgetIgsids:1086349983924918", "deleteRows:items"]) {
     const f = new Fake(); f.failOn = failOn;
     await assertRejects(() => deleteAccount(USER, f), Error, "failed");
     assertEquals(f.authDeleted, false, failOn);
   }
+});
+
+Deno.test("avatar cleanup enumerates all pages and legacy folders before deleting in batches", async () => {
+  const removed: string[][] = [];
+  const files = Array.from({ length: 205 }, (_, i) => ({ id: String(i), name: `${i}.jpg` }));
+  const root = [...files, { id: null, name: "legacy" }];
+  const db = { storage: { from(bucket: string) {
+    assertEquals(bucket, "avatars");
+    return {
+      list(folder: string, options: { offset: number; limit: number }) {
+        assertEquals(removed.length, 0);
+        assertEquals([USER, `${USER}/legacy`].includes(folder), true);
+        const entries = folder === USER ? root : [{ id: "old", name: "old.jpg" }];
+        return Promise.resolve({ data: entries.slice(options.offset, options.offset + options.limit), error: null });
+      },
+      remove(paths: string[]) { removed.push(paths); return Promise.resolve({ error: null }); },
+    };
+  } } } as unknown as SupabaseClient;
+  await realDeps(db).removeProfilePhotos(USER);
+  assertEquals(removed.map((batch) => batch.length), [100, 100, 6]);
+  assertEquals(removed.flat(), [...files.map((file) => `${USER}/${file.name}`), `${USER}/legacy/old.jpg`]);
 });

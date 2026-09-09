@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Chip } from "../../components/Chip";
@@ -9,7 +9,9 @@ import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { Icon } from "../../components/Icon";
 import { SettingsGroup, SettingsRow } from "../../components/SettingsRow";
 import { useDeleteAccount } from "../../lib/account";
-import { identities, linkGoogle } from "../../lib/google";
+import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/google";
+import { useProfile, useAvatar } from "../../lib/profile";
+import { genderLabel } from "../../lib/profile-fields";
 import { openLink } from "../../lib/open";
 import { useSession } from "../../lib/session";
 import { useLinkedSource, useSetReplies } from "../../lib/sources";
@@ -31,33 +33,20 @@ export default function Settings() {
   const remove = useDeleteAccount();
   const updates = useOtaUpdates();
   const theme = useThemeChoice();
-  const queryClient = useQueryClient();
-  const [linking, setLinking] = useState(false);
   const account = useQuery({ queryKey: ["identities"], enabled: ready, queryFn: identities });
-  const signedIn = (account.data ?? [])[0] ?? null;
-
-  const connectGoogle = async () => {
-    setLinking(true);
-    const result = await linkGoogle();
-    setLinking(false);
-    if (result.ok) {
-      session.refresh();
-      void queryClient.invalidateQueries({ queryKey: ["identities"] });
-      return;
-    }
-    if (result.reason === "cancelled") return;
-    Alert.alert(
-      result.reason === "already_linked" ? "That Google account is already in use" : "Could not sign in",
-      result.reason === "already_linked"
-        ? "It belongs to another Allkept library. Use a different Google account, or keep using this phone's library as it is."
-        : result.message,
-    );
-  };
+  const signedIn = (account.data ?? []).find((i) => i.provider === "google") ?? null;
+  const profile = useProfile(ready ? session.userId : null);
+  const avatar = useAvatar(profile.data?.avatar_path);
+  const backup = useQuery({ queryKey: ["guest-backup"], queryFn: hasGuestLibrary });
+  const restorePreviousLibrary = () => Alert.alert("Restore this phone’s previous library?", "You will return to its Google connection screen. Your current Google library stays in your account.", [
+    { text: "Cancel", style: "cancel" },
+    { text: "Restore library", onPress: () => { void restoreGuestLibrary().catch((e: Error) => Alert.alert("Could not restore", e.message)); } },
+  ]);
 
   const confirmSignOut = () =>
     Alert.alert("Sign out?", "Your library stays safe and comes back when you sign in again.", [
       { text: "Stay signed in", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => { void supabase.auth.signOut().then(() => session.refresh()); } },
+      { text: "Sign out", style: "destructive", onPress: () => { void supabase.auth.signOut({ scope: "local" }).then(({ error }) => { if (error) Alert.alert("Could not sign out", "Please try again."); }); } },
     ]);
 
   const confirmDelete = () =>
@@ -80,29 +69,23 @@ export default function Settings() {
 
         <View style={[styles.account, { backgroundColor: p.surface, borderColor: p.border }]}>
           <View style={[styles.avatar, { backgroundColor: p.accentSoft }]}>
-            <Icon name={signedIn ? "check" : "settings"} size={22} color={p.accent} />
+            {avatar.data ? <Image source={{ uri: avatar.data }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Icon name="settings" size={22} color={p.accent} />}
           </View>
           <View style={styles.accountText}>
             <Text style={[type.heading, { color: p.ink }]} numberOfLines={1}>
-              {signedIn?.email ?? "This phone"}
+              {profile.data?.display_name ?? "Your account"}
             </Text>
             <Text style={[type.label, { color: p.inkMuted }]}>
-              {signedIn ? "Signed in with Google" : "Your library lives on this phone only"}
+              {signedIn?.email ?? (ready ? session.user.email : "Signed in with Google")}
             </Text>
           </View>
         </View>
 
-        {!signedIn && (
-          <SettingsGroup>
-            <SettingsRow
-              icon="open"
-              title={linking ? "Opening Google…" : "Sign in with Google"}
-              detail="Keeps your library when you change phone"
-              onPress={() => { void connectGoogle(); }}
-              last
-            />
-          </SettingsGroup>
-        )}
+        <SettingsGroup>
+          <SettingsRow title="Gender" detail={profile.data ? genderLabel(profile.data) ?? "Not set" : "Loading…"} />
+          <SettingsRow title="Phone number" detail={profile.data?.phone ?? "Not provided"} />
+          <SettingsRow title="Edit profile" detail="Photo, name and contact details" onPress={() => router.push("/profile")} last />
+        </SettingsGroup>
 
         <SettingsGroup>
           <SettingsRow
@@ -178,7 +161,8 @@ export default function Settings() {
         )}
 
         <SettingsGroup>
-          {signedIn && <SettingsRow icon="open" title="Sign out" onPress={confirmSignOut} />}
+          <SettingsRow icon="open" title="Sign out" onPress={confirmSignOut} />
+          {backup.data && <SettingsRow title="This phone’s previous library" detail="Restore and connect it to Google" onPress={restorePreviousLibrary} />}
           <SettingsRow icon="trash" title="Delete account and everything in it" danger onPress={confirmDelete} last />
         </SettingsGroup>
       </ScrollView>
@@ -190,7 +174,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   page: { padding: space.lg, gap: space.lg, paddingBottom: TAB_BAR_CLEARANCE },
   account: { flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth },
-  avatar: { width: 48, height: 48, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  avatar: { overflow: "hidden", width: 48, height: 48, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   accountText: { flex: 1, gap: 2 },
   appearance: { padding: space.lg, gap: space.md },
   choices: { flexDirection: "row", gap: space.sm, flexWrap: "wrap" },

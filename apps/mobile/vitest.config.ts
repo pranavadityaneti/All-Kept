@@ -1,11 +1,12 @@
 import { defineConfig } from "vitest/config";
 
-// Pure logic only: anything that touches React Native is verified on the simulator.
+// Native modules are mocked in component tests; device-only behavior still needs a native build.
 // The workspace packages ship TypeScript source, so they must be transformed rather than
 // treated as external modules, or the runner tries to parse .ts as .js.
 export default defineConfig({
+  esbuild: { jsx: "automatic" },
   test: {
-    include: ["test/**/*.test.ts"],
+    include: ["test/**/*.test.{ts,tsx}"],
     environment: "node",
     server: { deps: { inline: [/@allkept\//] } },
   },

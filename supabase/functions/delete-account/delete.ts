@@ -9,6 +9,8 @@ export interface DeleteDeps {
   /** Full object paths of the person's stored thumbnails. */
   listThumbnails(userId: string): Promise<string[]>;
   removeThumbnails(paths: string[]): Promise<void>;
+  /** All avatar uploads, including abandoned replacements. */
+  removeProfilePhotos(userId: string): Promise<void>;
   /** Raw webhook events and outbound replies are keyed by the Instagram id, not by user; delete them by that id. */
   forgetIgsids(igsids: string[]): Promise<{ events: number; replies: number }>;
   deleteRows(table: UserTable, userId: string): Promise<number>;
@@ -30,6 +32,8 @@ export async function deleteAccount(userId: string, deps: DeleteDeps): Promise<D
 
   const paths = await deps.listThumbnails(userId);
   for (let i = 0; i < paths.length; i += REMOVE_BATCH) await deps.removeThumbnails(paths.slice(i, i + REMOVE_BATCH));
+
+  await deps.removeProfilePhotos(userId);
 
   const forgotten = igsids.length ? await deps.forgetIgsids(igsids) : { events: 0, replies: 0 };
 

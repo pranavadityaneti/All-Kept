@@ -5,6 +5,7 @@ const TTL_SECONDS = 24 * 60 * 60;
 const BATCH = 100;
 /** path -> { url, expiresAt } for this run of the app; storage paths are stable, the signatures are not. */
 const cache = new Map<string, { url: string; expiresAt: number }>();
+export function clearThumbnailCache(): void { cache.clear(); }
 
 function cached(paths: string[]): Record<string, string> {
   const now = Date.now();

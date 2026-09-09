@@ -28,5 +28,6 @@ export const supabase = createClient(url || "https://unconfigured.invalid", anon
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
+    flowType: "pkce",
   },
 });

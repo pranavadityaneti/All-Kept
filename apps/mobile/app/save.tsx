@@ -1,5 +1,5 @@
 import * as Clipboard from "expo-clipboard";
-import { getSharedPayloads, clearSharedPayloads } from "expo-sharing";
+import { pendingShare, clearPendingShare } from "../lib/pending-share";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -30,10 +30,12 @@ export default function SaveLink() {
 
   useEffect(() => {
     if (incoming !== "1") return;
-    const read = () => {
+    let live = true;
+    const read = async () => {
       if (running.current) return;
       try {
-        const payloads = getSharedPayloads();
+        const payloads = await pendingShare();
+        if (!live) return;
         if (!payloads.length) return;
         const fingerprint = JSON.stringify(payloads);
         if (seenShare.current === fingerprint) return;
@@ -46,7 +48,7 @@ export default function SaveLink() {
     };
     read();
     const sub = AppState.addEventListener("change", (state) => { if (state === "active") read(); });
-    return () => sub.remove();
+    return () => { live = false; sub.remove(); };
   }, [incoming]);
 
   const save = async () => {
@@ -65,13 +67,13 @@ export default function SaveLink() {
       if (failure || !data?.itemId) throw new Error("Could not save the link. Check your connection and try again.");
       setSaved(data);
       invalidateLibrary(queryClient);
-      if (incoming === "1") { clearSharedPayloads(); seenShare.current = null; }
+      if (incoming === "1") { await clearPendingShare(); seenShare.current = null; }
     } catch (e) { setError(e instanceof Error ? e.message : "Could not save the link."); }
     finally { running.current = false; setBusy(false); }
   };
 
-  const close = () => {
-    if (incoming === "1") clearSharedPayloads();
+  const close = async () => {
+    if (incoming === "1") await clearPendingShare();
     router.replace("/");
   };
 
