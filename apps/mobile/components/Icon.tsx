@@ -17,6 +17,7 @@ const NAMES = {
   trash: "trash-outline",
   open: "open-outline",
   check: "checkmark",
+  download: "cloud-download-outline",
 } as const;
 
 export type IconName = keyof typeof NAMES;

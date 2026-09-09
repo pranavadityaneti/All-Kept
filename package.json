@@ -10,6 +10,7 @@
     "test": "npm run test --workspaces --if-present",
     "sync:shared": "node scripts/sync-shared.mjs",
     "test:functions": "bash scripts/test-functions.sh",
+    "check:functions": "deno check --node-modules-dir=none supabase/functions/*/index.ts",
     "supabase": "supabase",
     "events": "node scripts/dump-events.mjs"
   },

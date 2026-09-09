@@ -121,6 +121,13 @@ export default function Settings() {
               disabled: !linked.data || setReplies.isPending,
               onChange: (v) => setReplies.mutate(v),
             }}
+          />
+          <SettingsRow
+            icon="download"
+            title="Bring in your older saves"
+            detail="Everything you saved before Allkept"
+            onPress={() => router.push("/import")}
+            right={<Icon name="chevron" size={18} color={p.inkMuted} />}
             last
           />
         </SettingsGroup>

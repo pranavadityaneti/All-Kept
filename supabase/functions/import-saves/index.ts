@@ -8,6 +8,7 @@ import { BlobReader, TextWriter, ZipReader } from "jsr:@zip-js/zip-js@2.7.62";
 import { adminClient, userIdFromRequest } from "../_shared/supabase.ts";
 import { apiError, json, readJson } from "../_shared/http.ts";
 import { parseSavedExport, type SavedEntry } from "../_shared/normalize.ts";
+import type { ImportSavesResponse } from "../_shared/contracts.ts";
 
 /** Guards against a file that would take the whole function down. */
 const MAX_BYTES = 60 * 1024 * 1024;
@@ -17,8 +18,6 @@ const MAX_UNPACKED_BYTES = 64 * 1024 * 1024;
 const MAX_UNPACKED_TOTAL = 96 * 1024 * 1024;
 const MAX_ENTRIES = 20_000;
 const BATCH = 200;
-
-interface ImportResult { importId: string; found: number; added: number; skipped: number }
 
 /** Reads the export, whether the person picked the whole zip or just the one file inside it. */
 async function readExport(bytes: Uint8Array, name: string): Promise<unknown[]> {
@@ -69,9 +68,23 @@ function mergeDocuments(documents: unknown[]): SavedEntry[] {
     .slice(0, MAX_ENTRIES);
 }
 
+/**
+ * Files left behind by a run that died between the upload and the read. The person owns the folder,
+ * nothing else is in it, and the next import clears the last one's leftovers.
+ */
+async function removeStale(db: ReturnType<typeof adminClient>, userId: string, keep: string): Promise<void> {
+  const { data } = await db.storage.from("imports").list(userId, { limit: 100 });
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  const stale = (data ?? [])
+    .filter((o) => `${userId}/${o.name}` !== keep && new Date(o.created_at ?? Date.now()).getTime() < cutoff)
+    .map((o) => `${userId}/${o.name}`);
+  if (stale.length > 0) await db.storage.from("imports").remove(stale);
+}
+
 Deno.serve(async (req) => {
   const db = adminClient();
   let importId: string | null = null;
+  let uploaded: string | null = null;
   try {
     if (req.method !== "POST") return apiError("bad_request", "POST only");
     const userId = await userIdFromRequest(req);
@@ -80,12 +93,15 @@ Deno.serve(async (req) => {
     const body = await readJson(req);
     const path = typeof body?.["path"] === "string" ? body["path"] : "";
     if (!path.startsWith(`${userId}/`)) return apiError("bad_request", "that file is not yours");
+    uploaded = path;
 
     const file = await db.storage.from("imports").download(path);
     if (file.error || !file.data) return apiError("not_found", "could not read that file");
     // Refuse before it is in memory, not after.
     if (file.data.size > MAX_BYTES) return apiError("bad_request", "that file is too large to read");
     const bytes = new Uint8Array(await file.data.arrayBuffer());
+    // Never let tidying up stop an import.
+    await removeStale(db, userId, path).catch((err: unknown) => console.error("import-saves could not clear old files", err));
 
     const entries = mergeDocuments(await readExport(bytes, path));
     if (entries.length === 0) {
@@ -139,7 +155,7 @@ Deno.serve(async (req) => {
     await db.from("imports").update({ added, skipped: entries.length - added, finished_at: new Date().toISOString() }).eq("id", importId);
     await db.storage.from("imports").remove([path]); // the file has been read; no reason to keep it
 
-    const result: ImportResult = { importId, found: entries.length, added, skipped: entries.length - added };
+    const result: ImportSavesResponse = { importId, found: entries.length, added, skipped: entries.length - added };
     return json(result);
   } catch (e) {
     const reason = (e instanceof Error ? e.message : String(e)).slice(0, 200);
@@ -149,6 +165,8 @@ Deno.serve(async (req) => {
       await db.from("imports").update({ error: reason, finished_at: new Date().toISOString() }).eq("id", importId)
         .then(undefined, (err: unknown) => console.error("import-saves could not record the failure", err));
     }
+    // Their file has done all it is going to do here.
+    if (uploaded) await db.storage.from("imports").remove([uploaded]).catch((err: unknown) => console.error("import-saves could not remove the file", err));
     return apiError("internal", `could not read that export: ${reason}`);
   }
 });

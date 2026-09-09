@@ -2,6 +2,25 @@
 
 What cost more than two attempts, and what actually worked.
 
+## `deno check` quietly rewrites node_modules, and the next build fails (9 Sep 2026)
+
+**Symptom.** A build fails with "Runtime version calculated on local machine not equal to the one on
+the build server". Nothing in the app changed. Later, the fingerprint source list is full of
+`node_modules/.deno/...` paths.
+
+**Cause.** `supabase/functions/_shared/anthropic.ts` imports `npm:@anthropic-ai/sdk`, which is not a
+dependency of the root `package.json`, so a plain `deno check` refuses to resolve it. The obvious
+escape, `--node-modules-dir=auto`, makes Deno **rewrite the shared `node_modules` into its own
+`.deno` layout**. Every native module then sits at a different path, the fingerprint moves, and the
+build no longer matches anything.
+
+**What worked.** `deno check --node-modules-dir=none`, which resolves npm specifiers from Deno's own
+global cache and never writes into `node_modules`. It is now `npm run check:functions` so nobody has
+to remember the flag. When the layout has already been rewritten: `rm -rf node_modules && npm ci`.
+
+**What did not work.** `--node-modules-dir=auto`. It type-checks perfectly and breaks the next build,
+which is the worst possible combination: the damage is invisible until a build is already running.
+
 ## Over-the-air updates silently miss a build (9 Sep 2026)
 
 **Symptom.** An update publishes fine but never reaches the installed app, with no error anywhere.

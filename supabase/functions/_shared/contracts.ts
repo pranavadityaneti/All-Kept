@@ -112,3 +112,10 @@ export interface DeleteAccountResponse { deleted: true; thumbnails: number; even
 export interface ReprocessItemRequest { itemId: string }
 export interface ReprocessItemResponse { status: ItemStatus; category: string | null }
 
+
+/** POST /import-saves (JWT): reads the Instagram export the caller uploaded and creates the saves it names. */
+export interface ImportSavesRequest { path: string }
+export interface ImportSavesResponse { importId: string; found: number; added: number; skipped: number }
+
+/** public.import_progress(import_id): how far one import has got, counted from the saves themselves. */
+export interface ImportProgress { found: number; added: number; ready: number; waiting: number; finished: boolean }

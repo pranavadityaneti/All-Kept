@@ -4,7 +4,8 @@ import { supabase } from "./supabase";
 export type EventName =
   | "app_open" | "library_view" | "item_open" | "open_original" | "share_out"
   | "search" | "category_changed" | "note_saved" | "link_started" | "link_completed"
-  | "paste_link" | "item_deleted";
+  | "paste_link" | "item_deleted"
+  | "import_opened" | "import_started" | "import_finished" | "import_failed";
 
 /**
  * Records what someone did, never what they wrote: a search records how long the term was and how
