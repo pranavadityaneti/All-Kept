@@ -1,12 +1,16 @@
 import Constants from "expo-constants";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, StyleSheet, Switch, Text, View } from "react-native";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Screen } from "../../components/Screen";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDeleteAccount } from "../../lib/account";
+import { identities, linkGoogle } from "../../lib/google";
 import { openLink } from "../../lib/open";
 import { useSession } from "../../lib/session";
+import { supabase } from "../../lib/supabase";
 import { Chip } from "../../components/Chip";
 import { useLinkedSource, useSetReplies } from "../../lib/sources";
 import { useOtaUpdates } from "../../lib/updates";
@@ -27,6 +31,28 @@ export default function Settings() {
   const remove = useDeleteAccount();
   const updates = useOtaUpdates();
   const theme = useThemeChoice();
+  const queryClient = useQueryClient();
+  const [linking, setLinking] = useState(false);
+  const account = useQuery({ queryKey: ["identities"], enabled: session.status === "ready", queryFn: identities });
+  const signedIn = (account.data ?? [])[0] ?? null;
+
+  const connectGoogle = async () => {
+    setLinking(true);
+    const result = await linkGoogle();
+    setLinking(false);
+    if (result.ok) {
+      session.refresh();
+      void queryClient.invalidateQueries({ queryKey: ["identities"] });
+      return;
+    }
+    if (result.reason === "cancelled") return;
+    Alert.alert(
+      result.reason === "already_linked" ? "That Google account is already in use" : "Could not sign in",
+      result.reason === "already_linked"
+        ? "It belongs to another Allkept library. Use a different Google account, or keep using this phone's library as it is."
+        : result.message,
+    );
+  };
 
   const confirmDelete = () => {
     Alert.alert(
@@ -92,7 +118,30 @@ export default function Settings() {
 
       <Card>
         <Text style={[type.heading, { color: p.ink }]}>Your account</Text>
-        <Text style={[type.body, { color: p.inkMuted }]}>This library lives on this phone. Signing in with Google, so it follows you to a new phone, comes soon.</Text>
+        {signedIn ? (
+          <>
+            <Text style={[type.body, { color: p.inkMuted }]}>
+              Signed in with Google{signedIn.email ? ` as ${signedIn.email}` : ""}. Your library follows you to a new phone.
+            </Text>
+            <Button
+              label="Sign out"
+              variant="secondary"
+              onPress={() =>
+                Alert.alert("Sign out?", "Your library stays safe and comes back when you sign in again.", [
+                  { text: "Stay signed in", style: "cancel" },
+                  { text: "Sign out", style: "destructive", onPress: () => { void supabase.auth.signOut().then(() => session.refresh()); } },
+                ])
+              }
+            />
+          </>
+        ) : (
+          <>
+            <Text style={[type.body, { color: p.inkMuted }]}>
+              This library lives on this phone. Sign in with Google and it follows you to a new one; everything already saved comes with it.
+            </Text>
+            <Button label={linking ? "Opening Google…" : "Sign in with Google"} busy={linking} onPress={() => { void connectGoogle(); }} />
+          </>
+        )}
         <Button label="Delete account and everything in it" variant="secondary" busy={remove.isPending} onPress={confirmDelete} />
       </Card>
 

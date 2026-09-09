@@ -38,7 +38,7 @@ async function startSession(): Promise<SessionState> {
   return { status: "ready", userId: created.data.user.id, anonymous: true };
 }
 
-export function useSession(): SessionState & { retry: () => void } {
+export function useSession(): SessionState & { retry: () => void; refresh: () => void } {
   const [state, setState] = useState<SessionState>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -71,5 +71,6 @@ export function useSession(): SessionState & { retry: () => void } {
     return () => sub.subscription.unsubscribe();
   }, [state]);
 
-  return { ...state, retry: () => { forgetSession(); setAttempt((a) => a + 1); } };
+  const again = () => { forgetSession(); setAttempt((a) => a + 1); };
+  return { ...state, retry: again, refresh: again };
 }
