@@ -46,6 +46,10 @@ const config: ExpoConfig = {
     // dark one. The dark lockup carries a baked-in plate rather than transparency, which is invisible
     // here only because that plate is within two levels of this background; changing either means
     // checking both.
+    // Push. The icon is monochrome by design on Android, where the system paints it; iOS uses the
+    // app icon and ignores this. No sounds bundled: the default is what people expect and a custom
+    // one is a thing to get wrong.
+    ["expo-notifications", { icon: "./assets/icon-bell.png", color: "#6D46F2" }],
     ["expo-splash-screen", { image: "./assets/brand/lockup-dark.png", imageWidth: 220, backgroundColor: "#0E0F14", dark: { backgroundColor: "#0E0F14" } }],
   ],
 };

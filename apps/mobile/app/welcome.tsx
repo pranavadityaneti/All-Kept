@@ -6,7 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { Button } from "../components/Button";
 import { Icon } from "../components/Icon";
 import { WelcomeIllustration } from "../components/WelcomeIllustration";
-import { hasGuestLibrary, restoreGuestLibrary, signInGoogle } from "../lib/google";
+import { hasGuestLibrary, restoreGuestLibrary, signInWith, type AuthProvider } from "../lib/google";
 import { useSession } from "../lib/session";
 import { type, usePalette } from "../lib/theme";
 
@@ -15,16 +15,17 @@ export default function Welcome() {
   const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
   const [backup, setBackup] = useState(false);
   useEffect(() => { void hasGuestLibrary().then(setBackup).catch(() => undefined); }, []);
-  const signIn = async (existing = false) => {
+  const signIn = async (provider: AuthProvider, existing = false) => {
     if (busy) return;
     setBusy(true); setError(null);
-    const result = await signInGoogle(existing);
+    const result = await signInWith(provider, existing);
     setBusy(false);
     if (result.ok || result.reason === "cancelled") return;
+    const name = provider === "apple" ? "Apple ID" : "Google account";
     if (result.reason === "already_linked") {
-      Alert.alert("That Google account has a library", "You can choose another Google account to keep this phone’s saves together, or sign in to your existing library. This phone’s previous library will remain available to restore.", [
-        { text: "Choose another account", onPress: () => { void signIn(); } },
-        { text: "Use existing library", onPress: () => { void signIn(true); } },
+      Alert.alert(`That ${name} has a library`, `You can use another ${name} to keep this phone’s saves together, or sign in to your existing library. This phone’s previous library will remain available to restore.`, [
+        { text: "Use another", onPress: () => { void signIn(provider); } },
+        { text: "Use existing library", onPress: () => { void signIn(provider, true); } },
         { text: "Cancel", style: "cancel" },
       ]);
     } else setError(result.message);
@@ -44,8 +45,14 @@ export default function Welcome() {
       <View style={styles.actions}>
       {session.status === "loading" ? <ActivityIndicator color={p.accent} /> : <>
         {session.status === "ready" && session.anonymous && <Text style={[styles.guest, { color: p.inkMuted }]}>Your existing saves stay with you.</Text>}
-        <Pressable accessibilityRole="button" accessibilityLabel="Continue with Google" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { void signIn(); }} style={({ pressed }) => [styles.google, { backgroundColor: p.accent, opacity: busy ? 0.65 : pressed ? 0.85 : 1 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Continue with Google" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { void signIn("google"); }} style={({ pressed }) => [styles.google, { backgroundColor: p.accent, opacity: busy ? 0.65 : pressed ? 0.85 : 1 }]}>
           {busy ? <ActivityIndicator color={p.accentInk} /> : <><Icon name="google" size={18} color={p.accentInk} /><Text style={[styles.googleLabel, { color: p.accentInk }]}>Continue with Google</Text></>}
+        </Pressable>
+        {/* Black with a white mark, which is one of the two forms Apple's guidelines allow, and the
+            one that holds on either ground. Same size and weight as the Google button above it:
+            Apple asks that its option be no less prominent than the others offered beside it. */}
+        <Pressable accessibilityRole="button" accessibilityLabel="Continue with Apple" accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { void signIn("apple"); }} style={({ pressed }) => [styles.google, { backgroundColor: "#000000", opacity: busy ? 0.65 : pressed ? 0.85 : 1 }]}>
+          <Icon name="apple" size={19} color="#FFFFFF" /><Text style={[styles.googleLabel, { color: "#FFFFFF" }]}>Continue with Apple</Text>
         </Pressable>
         {session.status === "error" && <Button label="Retry connection" variant="secondary" light onPress={session.retry} />}
         {backup && session.status !== "ready" && <Button label="Restore this phone’s previous library" variant="secondary" light disabled={busy} onPress={() => { setBusy(true); void restoreGuestLibrary().catch((e: Error) => setError(e.message)).finally(() => setBusy(false)); }} />}

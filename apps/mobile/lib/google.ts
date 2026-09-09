@@ -9,6 +9,18 @@ export const AUTH_REDIRECT = Linking.createURL("auth-callback");
 const BACKUP_KEY = "allkept.previous-guest-session";
 const ALREADY = /already|exists|identity.*linked|email.*use/i;
 export type LinkResult = { ok: true } | { ok: false; reason: "cancelled" | "already_linked" | "failed"; message: string };
+
+/**
+ * The providers someone can sign in with.
+ *
+ * Apple goes through the same browser flow as Google rather than the native sheet, and that is a
+ * deliberate trade. The native sheet returns an identity token, and signing in with one *replaces*
+ * the session — so a guest who had been saving things would arrive at a new, empty account with
+ * their library orphaned behind them. linkIdentity keeps the guest and attaches the account to it,
+ * which is the only behaviour worth having here. Face ID would be nicer; losing someone's saves
+ * would not be.
+ */
+export type AuthProvider = "google" | "apple";
 const failure = (error: unknown): LinkResult => {
   const message = error instanceof Error ? error.message : "Could not sign in. Please try again.";
   return { ok: false, reason: ALREADY.test(message) ? "already_linked" : "failed", message };
@@ -16,7 +28,7 @@ const failure = (error: unknown): LinkResult => {
 
 // The browser promise and the callback route can receive the same URL; exchange its code once.
 const exchanges = new Map<string, Promise<LinkResult>>();
-export function completeGoogleCallback(url: string): Promise<LinkResult> {
+export function completeAuthCallback(url: string): Promise<LinkResult> {
   let code: string;
   try { code = callbackCode(url, AUTH_REDIRECT); } catch (e) { return Promise.resolve(failure(e)); }
   const existing = exchanges.get(code);
@@ -26,7 +38,9 @@ export function completeGoogleCallback(url: string): Promise<LinkResult> {
     try {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) return failure(error);
-      if (!data.user || data.user.is_anonymous || !data.user.identities?.some((i) => i.provider === "google")) throw new Error("Google sign-in did not complete. Please try again.");
+      // Any real identity will do: the guard is against a flow that half-finished and left the
+      // session anonymous, not against the particular provider that finished it.
+      if (!data.user || data.user.is_anonymous || !data.user.identities?.some((i) => i.provider !== "anonymous")) throw new Error("Sign-in did not complete. Please try again.");
       const saved = await chunkedSecureStore.getItem(BACKUP_KEY);
       if (saved && (JSON.parse(saved) as { userId: string }).userId === data.user.id) await chunkedSecureStore.removeItem(BACKUP_KEY);
       return { ok: true };
@@ -37,7 +51,7 @@ export function completeGoogleCallback(url: string): Promise<LinkResult> {
 }
 
 /** A guest is linked in place. Switching to an existing account is an explicit, reversible choice. */
-export async function signInGoogle(useExistingAccount = false): Promise<LinkResult> {
+export async function signInWith(provider: AuthProvider, useExistingAccount = false): Promise<LinkResult> {
   try {
     const { data: current, error } = await supabase.auth.getSession();
     if (error) return failure(error);
@@ -45,17 +59,28 @@ export async function signInGoogle(useExistingAccount = false): Promise<LinkResu
     if (guest && useExistingAccount) {
       await chunkedSecureStore.setItem(BACKUP_KEY, JSON.stringify({ userId: current.session!.user.id, access_token: current.session!.access_token, refresh_token: current.session!.refresh_token }));
     }
-    const options = { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true, queryParams: { prompt: "select_account" } };
+    // Apple has no account chooser to ask for, and passing one it does not know is a way to be
+    // handed back an error instead of a sign-in page.
+    const options = {
+      redirectTo: AUTH_REDIRECT,
+      skipBrowserRedirect: true,
+      ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
+    };
     const started = guest && !useExistingAccount
-      ? await supabase.auth.linkIdentity({ provider: "google", options })
-      : await supabase.auth.signInWithOAuth({ provider: "google", options });
-    if (started.error || !started.data?.url) return failure(started.error ?? new Error("Google sign-in is unavailable."));
+      ? await supabase.auth.linkIdentity({ provider, options })
+      : await supabase.auth.signInWithOAuth({ provider, options });
+    const name = provider === "apple" ? "Apple" : "Google";
+    if (started.error || !started.data?.url) return failure(started.error ?? new Error(`${name} sign-in is unavailable.`));
     const outcome = await WebBrowser.openAuthSessionAsync(started.data.url, AUTH_REDIRECT);
     if (outcome.type !== "success") return { ok: false, reason: "cancelled", message: "Sign-in was cancelled." };
-    return completeGoogleCallback(outcome.url);
+    return completeAuthCallback(outcome.url);
   } catch (e) { return failure(e); }
 }
-export const linkGoogle = () => signInGoogle();
+/** Kept so every existing caller reads the same as it did. */
+export const signInGoogle = (useExistingAccount = false) => signInWith("google", useExistingAccount);
+export const signInApple = (useExistingAccount = false) => signInWith("apple", useExistingAccount);
+export const linkGoogle = () => signInWith("google");
+export const completeGoogleCallback = completeAuthCallback;
 export async function hasGuestLibrary(): Promise<boolean> {
   return !!await chunkedSecureStore.getItem(BACKUP_KEY);
 }

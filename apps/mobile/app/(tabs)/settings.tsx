@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
@@ -9,7 +10,9 @@ import { Icon } from "../../components/Icon";
 import { SettingsGroup, SettingsRow } from "../../components/SettingsRow";
 import { useDeleteAccount } from "../../lib/account";
 import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/google";
+import { usePreferences, useSetPreference } from "../../lib/preferences";
 import { useProfile, useAvatar } from "../../lib/profile";
+import { openSystemSettings, pushPermission, registerForPush, unregisterPush } from "../../lib/push";
 import { genderLabel } from "../../lib/profile-fields";
 import { openLink } from "../../lib/open";
 import { useSession } from "../../lib/session";
@@ -33,7 +36,41 @@ export default function Settings() {
   const updates = useOtaUpdates();
   const theme = useThemeChoice();
   const account = useQuery({ queryKey: ["identities"], enabled: ready, queryFn: identities });
-  const signedIn = (account.data ?? []).find((i) => i.provider === "google") ?? null;
+  const accounts = (account.data ?? []).filter((i) => i.provider !== "anonymous");
+  // Whichever account is showing the email under the name. Apple can hide the real address behind a
+  // relay, so the first identity with an email on it is more use than a fixed preference for one.
+  const signedIn = accounts.find((i) => i.email) ?? accounts[0] ?? null;
+  const userId = ready ? session.userId : null;
+  const prefs = usePreferences(userId);
+  const setPref = useSetPreference(userId);
+  // What the OS says, which the switch cannot override. Once someone has refused, only the system
+  // settings can undo it — the app is given one chance at that prompt and has already spent it.
+  const [osPermission, setOsPermission] = useState<"granted" | "denied" | "undetermined">("undetermined");
+  useEffect(() => { void pushPermission().then(setOsPermission); }, []);
+
+  const notifications = prefs.data?.notifyEnabled ?? false;
+  const blocked = notifications && osPermission === "denied";
+
+  const setNotifications = async (on: boolean) => {
+    if (!userId) return;
+    if (!on) {
+      setPref.mutate({ name: "notifyEnabled", value: false });
+      await unregisterPush();
+      return;
+    }
+    // The permission is asked for here and nowhere else, so it is spent on someone who has just
+    // reached for the switch rather than on someone who has only opened the app.
+    const outcome = await registerForPush(userId);
+    setOsPermission(await pushPermission());
+    if (outcome.ok) { setPref.mutate({ name: "notifyEnabled", value: true }); return; }
+    if (outcome.reason === "denied") {
+      setPref.mutate({ name: "notifyEnabled", value: true }); // remembered, so it works the moment the OS allows it
+      return;
+    }
+    if (outcome.reason === "simulator") { Alert.alert("Not on a simulator", "Push notifications need a real device."); return; }
+    Alert.alert("Could not turn those on", outcome.detail);
+  };
+
   const profile = useProfile(ready ? session.userId : null);
   const avatar = useAvatar(profile.data?.avatar_path);
   const backup = useQuery({ queryKey: ["guest-backup"], queryFn: hasGuestLibrary });
@@ -117,6 +154,61 @@ export default function Settings() {
             detail="Everything you saved before Allkept"
             onPress={() => router.push("/import")}
             right={<Icon name="chevron" size={18} color={p.inkMuted} />}
+            last
+          />
+        </SettingsGroup>
+
+        {accounts.length > 0 && (
+          <SettingsGroup>
+            {accounts.map((i, n) => (
+              <SettingsRow
+                key={i.provider}
+                icon={i.provider === "apple" ? "apple" : "google"}
+                title={i.provider === "apple" ? "Apple" : "Google"}
+                // Apple's relay address is the account, so it is shown as it is rather than
+                // described as hidden — it is a real address that reaches the person.
+                detail={i.email ?? "Signed in"}
+                last={n === accounts.length - 1}
+              />
+            ))}
+          </SettingsGroup>
+        )}
+
+        <SettingsGroup>
+          <SettingsRow
+            icon="bell"
+            title="Notifications"
+            detail={blocked ? "Turned off in your phone's settings" : "When a save lands and when one needs you"}
+            toggle={{ value: notifications, onChange: (v) => { void setNotifications(v); }, disabled: !prefs.data }}
+          />
+          {blocked && (
+            <SettingsRow icon="open" title="Allow them in Settings" detail="Allkept cannot ask again itself" onPress={openSystemSettings} />
+          )}
+          {/* The individual choices only mean anything while the master switch is on, and a screen
+              full of switches that do nothing is how people conclude a feature is broken. */}
+          {notifications && !blocked && (
+            <>
+              <SettingsRow
+                title="A save has landed"
+                detail="Once it has been sorted"
+                toggle={{ value: prefs.data?.notifySorted ?? true, onChange: (v) => setPref.mutate({ name: "notifySorted", value: v }) }}
+              />
+              <SettingsRow
+                title="A save needs you"
+                detail="It arrived without a link, or could not be read"
+                toggle={{ value: prefs.data?.notifyAttention ?? true, onChange: (v) => setPref.mutate({ name: "notifyAttention", value: v }) }}
+                last
+              />
+            </>
+          )}
+        </SettingsGroup>
+
+        <SettingsGroup>
+          <SettingsRow
+            icon="settings"
+            title="Sort saves automatically"
+            detail="Allkept reads a save's title and caption to file it. Off, saves arrive uncategorised."
+            toggle={{ value: prefs.data?.aiSortingEnabled ?? true, onChange: (v) => setPref.mutate({ name: "aiSortingEnabled", value: v }), disabled: !prefs.data }}
             last
           />
         </SettingsGroup>

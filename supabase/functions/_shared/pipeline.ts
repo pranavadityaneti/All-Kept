@@ -111,6 +111,16 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
     Object.assign(it, r.patch, { status: r.status });
   }
 
+  // Whether this person lets the classifier read their saves at all. Read here rather than trusted
+  // from the app: the switch is a promise about what leaves the system, so the check belongs at the
+  // point where it would leave. A missing profile row is treated as consent, because that is the
+  // behaviour every existing save was captured under and the column defaults to true.
+  const { data: prefRow } = await db.from("profiles").select("ai_sorting_enabled").eq("user_id", it.user_id).maybeSingle();
+  if ((prefRow as { ai_sorting_enabled?: boolean } | null)?.ai_sorting_enabled === false) {
+    deps.log("pipeline: classification declined by preference", { item: itemId });
+    return null;
+  }
+
   // A whole back catalogue is worth classifying, but not at the everyday price.
   const classifier = it.captured_via === "import" ? (deps.bulkClassifier ?? deps.classifier) : deps.classifier;
   return runClassification({

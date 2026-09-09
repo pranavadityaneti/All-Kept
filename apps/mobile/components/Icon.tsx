@@ -27,6 +27,7 @@ const NAMES = {
   download: "cloud-download-outline",
   web: "globe-outline",
   note: "document-text-outline",
+  apple: "logo-apple",
 } as const;
 
 export type IconName = keyof typeof NAMES | Brand;
