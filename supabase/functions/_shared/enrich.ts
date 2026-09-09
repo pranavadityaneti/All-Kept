@@ -39,6 +39,8 @@ export interface EnrichDeps {
   fetch: typeof fetch;
   /** Stores the image at `url` as the item's thumbnail and returns the storage path; throws with a short reason when nothing was stored. */
   snapshot(userId: string, itemId: string, url: string): Promise<string | null>;
+  /** Absent until YOUTUBE_API_KEY is configured, in which case a video's shape simply is not learned. */
+  youtubeKey?: string;
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
@@ -47,6 +49,30 @@ const TIMEOUT_MS = 8_000;
 const MAX_HTML_BYTES = 256_000;
 export const RETRY_LADDER_MS = [60_000, 300_000, 1_800_000, 7_200_000, 43_200_000];
 const UA = "Mozilla/5.0 (compatible; AllkeptBot/0.1; +https://allkept.app)";
+
+/**
+ * Asking YouTube for a player this tall makes it answer with the video's own proportions rather than
+ * a default box, which is the only way to learn the shape of a video. See `parseAspect`.
+ */
+const ASPECT_PROBE_PX = 8192;
+
+/**
+ * The true shape of a YouTube video, as width ÷ height, or null when YouTube will not say.
+ *
+ * Nothing else in the pipeline knows it. A Short saved from a playlist arrives as an ordinary
+ * `watch?v=` link, so its kind is `video` like everything else, and YouTube's oEmbed answers a flat
+ * 200x113 for a Short and a widescreen video alike — both were checked against real saves. Only the
+ * Data API distinguishes them. Without this the app has to guess, and it guesses 16:9, which is what
+ * put vertical videos inside black bars.
+ */
+export function parseAspect(body: unknown): number | null {
+  const player = (body as { items?: { player?: { embedWidth?: unknown; embedHeight?: unknown } }[] } | null)?.items?.[0]?.player;
+  // YouTube sends both as strings.
+  const w = Number(player?.embedWidth);
+  const h = Number(player?.embedHeight);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
+  return Math.round((w / h) * 1000) / 1000;
+}
 
 function oembedUrl(platform: Platform, url: string): string | null {
   const u = encodeURIComponent(url);
@@ -267,7 +293,22 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     }
   }
 
-  // 3. Thumbnail snapshot (never fails the item).
+  // 3. The shape of a YouTube video (never fails the item: without it the app falls back to 16:9,
+  //    which is exactly where it stood before this existed).
+  const videoId = patch.external_id ?? item.external_id;
+  if (platform === "youtube" && deps.youtubeKey && videoId) {
+    try {
+      const q = new URLSearchParams({ part: "player", id: videoId, maxHeight: String(ASPECT_PROBE_PX), key: deps.youtubeKey });
+      const res = await fetchWithTimeout(deps.fetch, `https://www.googleapis.com/youtube/v3/videos?${q.toString()}`);
+      const aspect = res.ok ? parseAspect(await res.json().catch(() => null)) : null;
+      if (aspect) patch.media_meta = { ...(patch.media_meta ?? {}), aspect };
+      else deps.log("enrich: youtube shape unavailable", { item: item.id, status: res.status });
+    } catch (e) {
+      deps.log("enrich: youtube shape failed", { item: item.id, reason: String(e).slice(0, 120) });
+    }
+  }
+
+  // 4. Thumbnail snapshot (never fails the item).
   const thumbUrl = patch.thumbnail_url_remote ?? item.thumbnail_url_remote;
   if (thumbUrl && !item.thumbnail_path) {
     try {

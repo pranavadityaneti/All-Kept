@@ -28,14 +28,23 @@ export interface ItemDetail {
   summary: string | null;
   /** The publisher, for a link from a site we have no platform name for. */
   siteName: string | null;
+  /** The video's shape as width ÷ height, when enrichment managed to learn it. A Short is 0.563. */
+  aspect: number | null;
 }
 
 const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,item_ai(category,user_category,tags,summary)";
 
 type Row = Record<string, unknown>;
 
+/** Only a real, positive number counts. Anything else means we never learned the shape. */
+function readAspect(meta: Record<string, unknown> | null): number | null {
+  const a = meta?.["aspect"];
+  return typeof a === "number" && Number.isFinite(a) && a > 0 ? a : null;
+}
+
 function toDetail(r: Row): ItemDetail {
   const ai = (r["item_ai"] ?? null) as Row | null;
+  const meta = (r["media_meta"] ?? null) as Record<string, unknown> | null;
   return {
     id: String(r["id"]),
     platform: String(r["platform"]),
@@ -57,7 +66,8 @@ function toDetail(r: Row): ItemDetail {
     modelCategory: (ai?.["category"] as string | null) ?? null,
     tags: Array.isArray(ai?.["tags"]) ? (ai!["tags"] as string[]) : [],
     summary: (ai?.["summary"] as string | null) ?? null,
-    siteName: ((r["media_meta"] as Record<string, unknown> | null)?.["site_name"] as string | null) ?? null,
+    siteName: (meta?.["site_name"] as string | null) ?? null,
+    aspect: readAspect(meta),
   };
 }
 

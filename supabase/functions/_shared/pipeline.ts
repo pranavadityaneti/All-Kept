@@ -87,7 +87,14 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
     if (path) it.thumbnail_path = path;
   }
   if (needsEnrich) {
-    const r = await enrich(it, { fetch: deps.fetch, snapshot: (u, i, url) => snapshotTo(db, deps.fetch, u, i, url), log: deps.log });
+    // The same key the playlist door uses. Absent, a video's shape is simply not learned.
+    const youtubeKey = Deno.env.get("YOUTUBE_API_KEY")?.trim();
+    const r = await enrich(it, {
+      fetch: deps.fetch,
+      snapshot: (u, i, url) => snapshotTo(db, deps.fetch, u, i, url),
+      log: deps.log,
+      ...(youtubeKey ? { youtubeKey } : {}),
+    });
     const patch: Record<string, unknown> = { ...r.patch, status: r.status, enrich_attempts: it.enrich_attempts + 1, next_attempt_at: null };
     if (r.status === "failed") patch["next_attempt_at"] = r.retryAfterMs && r.retryAfterMs > 0 ? new Date(Date.now() + r.retryAfterMs).toISOString() : null;
     if (r.error) patch["media_meta"] = { ...(r.patch.media_meta ?? {}), last_error: r.error };

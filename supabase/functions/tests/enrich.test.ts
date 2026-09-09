@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { decodeEntities, enrich, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -207,4 +207,51 @@ Deno.test("a provider that refuses and a page with nothing to read is honestly m
     "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response("<html><head><title>Login</title></head></html>"),
   })));
   assertEquals([r.status, r.patch.title, r.patch.author_name, r.retryAfterMs], ["preview_unavailable", undefined, undefined, undefined]);
+});
+
+Deno.test("youtube: the video's true shape is read from the Data API and kept beside the oEmbed", async () => {
+  const seen: string[] = [];
+  const f = fakeFetch({
+    "https://www.youtube.com/oembed": () => Response.json({ title: "Can AI Guess His Name?", author_name: "someone", thumbnail_url: "https://i.ytimg.com/t.jpg", provider_name: "YouTube", type: "video" }),
+    // The real answer for a Short, taken from YouTube on 10 Sep 2026. Strings, not numbers.
+    "https://www.googleapis.com/youtube/v3/videos": () => Response.json({ items: [{ player: { embedWidth: "4608", embedHeight: "8192" } }] }),
+  }, seen);
+  const r = await enrich(base({ platform: "youtube", kind: "video", external_id: "bD0GoM9JVns", source_url: "https://www.youtube.com/watch?v=bD0GoM9JVns", canonical_url: "https://www.youtube.com/watch?v=bD0GoM9JVns", text: null }), { ...deps(f), youtubeKey: "k" });
+  const meta = r.patch.media_meta as Record<string, unknown>;
+  assertEquals(meta["aspect"], 0.563); // 9:16, and nothing else in the pipeline knows this
+  assert(meta["oembed"], "the oEmbed findings survive alongside it");
+  assert(seen.some((u) => u.includes("part=player") && u.includes("maxHeight=8192")), "asks for a tall player, or YouTube answers with a default box");
+});
+
+Deno.test("youtube: a shape we cannot learn never fails the item", async () => {
+  for (const route of [
+    () => new Response("quota exceeded", { status: 403 }),
+    () => Response.json({ items: [] }),
+    () => { throw new Error("network down"); },
+  ]) {
+    const f = fakeFetch({
+      "https://www.youtube.com/oembed": () => Response.json({ title: "A video", provider_name: "YouTube", type: "video" }),
+      "https://www.googleapis.com/youtube/v3/videos": route,
+    });
+    const r = await enrich(base({ platform: "youtube", kind: "video", external_id: "x", source_url: "https://www.youtube.com/watch?v=x", canonical_url: "https://www.youtube.com/watch?v=x", text: null }), { ...deps(f), youtubeKey: "k" });
+    assertEquals(r.status, "ready");
+    assertEquals((r.patch.media_meta as Record<string, unknown>)["aspect"], undefined);
+  }
+});
+
+Deno.test("youtube: no key configured means no call at all", async () => {
+  const seen: string[] = [];
+  const f = fakeFetch({ "https://www.youtube.com/oembed": () => Response.json({ title: "A video", provider_name: "YouTube", type: "video" }) }, seen);
+  await enrich(base({ platform: "youtube", kind: "video", external_id: "x", source_url: "https://www.youtube.com/watch?v=x", canonical_url: "https://www.youtube.com/watch?v=x", text: null }), deps(f));
+  assert(!seen.some((u) => u.includes("googleapis.com")), "nothing is asked for without a key");
+});
+
+Deno.test("parseAspect: only believes a pair of real, positive numbers", () => {
+  assertEquals(parseAspect({ items: [{ player: { embedWidth: "14564", embedHeight: "8192" } }] }), 1.778); // 16:9
+  assertEquals(parseAspect({ items: [{ player: { embedWidth: "4608", embedHeight: "8192" } }] }), 0.563);  // 9:16
+  assertEquals(parseAspect({ items: [] }), null);
+  assertEquals(parseAspect({ items: [{ player: {} }] }), null);
+  assertEquals(parseAspect({ items: [{ player: { embedWidth: "0", embedHeight: "0" } }] }), null);
+  assertEquals(parseAspect(null), null);
+  assertEquals(parseAspect("not json at all"), null);
 });

@@ -15,16 +15,35 @@ const MEASURE = `
     if (!meta) { meta = document.createElement('meta'); meta.name = 'viewport'; document.head.appendChild(meta); }
     meta.setAttribute('content', 'width=device-width, initial-scale=1');
 
-    function send() {
+    var current = 0;
+
+    function measure() {
       var card = document.querySelector('.EmbedFrame, .Embed, blockquote, body > div');
       var h = card ? Math.ceil(card.getBoundingClientRect().height) : 0;
       if (!h) h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight || 0);
-      if (h > 0) window.ReactNativeWebView.postMessage(JSON.stringify({ h: h, w: window.innerWidth }));
+      return h;
     }
 
-    send();
-    [200, 600, 1500, 3000].forEach(function (t) { setTimeout(send, t); });
-    new MutationObserver(send).observe(document.body, { childList: true, subtree: true });
+    function send(h) {
+      if (h > 0) { current = h; window.ReactNativeWebView.postMessage(JSON.stringify({ h: h, w: window.innerWidth })); }
+    }
+
+    // While the card is loading, whatever it says goes — it is still assembling itself and may end up
+    // either taller or shorter. Afterwards the only thing still changing the page is whatever is
+    // playing inside it, changing it many times a second, and each of those measurements is really
+    // the frame we last set being read back to us. Believing a smaller one then makes the frame walk
+    // itself down towards nothing, which is what a playing video used to do. So once loading is over
+    // the card may still grow — a slow connection finishes late and must be allowed to — but it may
+    // never shrink. Bursts are collapsed into one measurement either way.
+    var pending = 0;
+    function afterSettling() {
+      clearTimeout(pending);
+      pending = setTimeout(function () { var h = measure(); if (h > current) send(h); }, 80);
+    }
+
+    send(measure());
+    [200, 600, 1500, 3000].forEach(function (t) { setTimeout(function () { send(measure()); }, t); });
+    new MutationObserver(afterSettling).observe(document.body, { childList: true, subtree: true });
     true;
   })();
 `;
@@ -67,7 +86,8 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
   url: string;
   width: number;
   height: number;
-  onHeight: (h: number) => void;
+  /** Given only for an embed that has a height of its own. A player is laid out, never measured. */
+  onHeight?: (h: number) => void;
   /** When false the embed ignores touches, and a tap anywhere on it plays or pauses instead. */
   interactive?: boolean;
   /** False once this save is no longer the one being looked at, which stops whatever it was playing. */
@@ -122,7 +142,7 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
           setSupportMultipleWindows={false}
           javaScriptEnabled
           domStorageEnabled
-          injectedJavaScript={MEASURE}
+          {...(onHeight ? { injectedJavaScript: MEASURE } : {})}
           injectedJavaScriptBeforeContentLoaded={STAY}
           onShouldStartLoadWithRequest={stayOnEmbed}
           onMessage={(event) => {
@@ -130,7 +150,7 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
               const m = JSON.parse(event.nativeEvent.data) as { h: number; w: number };
               const scale = m.w > 0 ? width / m.w : 1;
               const fitted = Math.ceil(m.h * scale);
-              if (fitted > 80) onHeight(fitted);
+              if (fitted > 80) onHeight?.(fitted);
             } catch { /* the page may post messages of its own; ignore them */ }
           }}
           onLoadEnd={() => setLoading(false)}

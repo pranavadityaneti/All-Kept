@@ -7,7 +7,7 @@ import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
-import { embedUrl, initialHeight } from "../lib/embed";
+import { DEFAULT_ASPECT, embedFit, embedUrl, fitBox, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote, useRetrySorting } from "../lib/item";
 import { track, useTrackOnce } from "../lib/metrics";
 import { canRetrySorting, categoryLabel } from "../lib/sorting";
@@ -69,7 +69,19 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   // an Instagram card carries its picture at the top and its own chrome underneath, so trimming
   // the bottom loses the chrome and keeps the thing you came to watch.
   const mediaMax = Math.max(160, height - footerHeight - 56 - space.lg * 2);
-  const naturalHeight = playerHeight ?? initialHeight(detail.platform, playerWidth);
+  // Only a card is asked how tall it is. A player fills its box, so a height reported back by one is
+  // just the box read aloud — taking it as the new box is what made a playing video close up.
+  const measured = embedFit(detail.platform) === "card";
+  const cardHeight = playerHeight ?? initialHeight(detail.platform, playerWidth);
+  // A card keeps the full width and is cut to the height it reported. A player is given a box of the
+  // video's own shape instead: a Short gets a tall, narrow one rather than black bars either side of
+  // a widescreen frame. Until enrichment has learned the shape, 16:9 is the assumption it always was.
+  const aspect = detail.aspect ?? DEFAULT_ASPECT;
+  const box = measured
+    ? { width: playerWidth, height: Math.min(cardHeight, mediaMax) }
+    : fitBox(aspect, playerWidth, mediaMax);
+  // Full screen has the whole window to fill, and the same rule applies to it.
+  const fullBox = fitBox(aspect, width, screenHeight);
 
   const confirmDelete = () =>
     Alert.alert("Delete this save?", "It goes from your library for good. The original stays where it is.", [
@@ -100,7 +112,14 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           // Touches belong to the embed. A carousel is turned by the arrows Instagram draws inside it,
           // and with the saves paged vertically nothing else wants the sideways swipe any more. It is
           // paused while the full-screen copy is up, so the two are never playing the same reel at once.
-          <EmbedPlayer url={embed} width={playerWidth} height={Math.min(naturalHeight, mediaMax)} onHeight={setPlayerHeight} interactive active={active && !fullScreen} />
+          <EmbedPlayer
+            url={embed}
+            width={box.width}
+            height={box.height}
+            {...(measured ? { onHeight: setPlayerHeight } : {})}
+            interactive
+            active={active && !fullScreen}
+          />
         ) : thumbnail ? (
           <Pressable accessibilityRole="imagebutton" accessibilityLabel="View picture full screen" onPress={() => setZoomed(true)}>
             {/* Contained, not cropped. This is the whole picture Instagram sent and there is no second
@@ -224,7 +243,14 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           </View>
           {embed && (
             <ScrollView contentContainerStyle={styles.fullScroll} showsVerticalScrollIndicator={false}>
-              <EmbedPlayer url={embed} width={width} height={fullHeight ?? screenHeight} onHeight={setFullHeight} interactive active={active} />
+              <EmbedPlayer
+                url={embed}
+                width={measured ? width : fullBox.width}
+                height={measured ? (fullHeight ?? screenHeight) : fullBox.height}
+                {...(measured ? { onHeight: setFullHeight } : {})}
+                interactive
+                active={active}
+              />
             </ScrollView>
           )}
         </View>
@@ -270,5 +296,5 @@ const styles = StyleSheet.create({
   sheetBody: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2, gap: space.md },
   full: { flex: 1 },
   fullBar: { position: "absolute", top: space.xxl + space.lg, right: space.lg, zIndex: 2 },
-  fullScroll: { flexGrow: 1, justifyContent: "center" },
+  fullScroll: { flexGrow: 1, justifyContent: "center", alignItems: "center" },
 });

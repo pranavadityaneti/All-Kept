@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMBED_ORIGIN, embedUrl, initialHeight } from "../lib/embed";
+import { DEFAULT_ASPECT, EMBED_ORIGIN, embedFit, embedUrl, fitBox, initialHeight } from "../lib/embed";
 
 const item = (over: Partial<Parameters<typeof embedUrl>[0]> = {}) => ({
   platform: "instagram", canonicalUrl: null, sourceUrl: null, externalId: null, ...over,
@@ -32,6 +32,30 @@ describe("playing a save in the app", () => {
     expect(embedUrl(item({ platform: "note" }))).toBeNull();
     expect(embedUrl(item({ platform: "web", canonicalUrl: "https://example.com/x" }))).toBeNull();
     expect(embedUrl(item({ platform: "youtube", externalId: null }))).toBeNull();
+  });
+
+  it("asks a card how tall it is and never asks a player", () => {
+    // A player answers with the height of the box it was given, so believing it shrinks the box a
+    // little every time the page changes — which, while a video plays, is many times a second.
+    expect(embedFit("youtube")).toBe("player");
+    expect(embedFit("instagram")).toBe("card");
+    expect(embedFit("reddit")).toBe("card");
+  });
+
+  it("draws a player at the video's own shape, never letterboxed and never overflowing", () => {
+    // A widescreen video takes the full width and only the height it needs.
+    expect(fitBox(16 / 9, 360, 600)).toEqual({ width: 360, height: 203 });
+    // A Short is 0.563 — it would want 640px of height at full width, so it is narrowed to fit 600
+    // rather than sitting in a 16:9 frame with black bars either side, which was the bug.
+    expect(fitBox(0.563, 360, 600)).toEqual({ width: 338, height: 600 });
+    // Exactly as tall as the space allows: keep the full width, no narrowing.
+    expect(fitBox(0.6, 360, 600)).toEqual({ width: 360, height: 600 });
+  });
+
+  it("falls back to 16:9 rather than drawing a box from a number that means nothing", () => {
+    for (const bad of [0, -1, NaN, Infinity]) {
+      expect(fitBox(bad, 360, 9999)).toEqual(fitBox(DEFAULT_ASPECT, 360, 9999));
+    }
   });
 
   it("starts a video box at the shape of its platform", () => {
