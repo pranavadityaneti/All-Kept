@@ -3,13 +3,20 @@ import { MAX_INTERVAL_MS, MIN_INTERVAL_MS, needsFullRead, nextPollAt, toCaptures
 import { playlistCount, playlistEntries } from "../youtube-poll/youtube-api.ts";
 
 const NOW = new Date("2026-09-09T12:00:00.000Z");
-const SOURCE: Source = { id: "src-1", userId: "user-1", playlistId: "PLabc", knownCount: 3 };
+const SOURCE: Source = { id: "src-1", userId: "user-1", playlistId: "PLabc", syncedCount: 3 };
 
 Deno.test("the count is the cheap gate on reading a playlist at all", () => {
   assertEquals(needsFullRead(3, 3), false);   // unchanged, costs one unit and stops
   assertEquals(needsFullRead(3, 4), true);    // something added
   assertEquals(needsFullRead(3, 2), true);    // something removed, worth a look
   assertEquals(needsFullRead(null, 0), true); // never read before, even when empty
+});
+
+Deno.test("a just-connected playlist is read in full, however many videos register saw", () => {
+  // The bug this exists for: register stored the playlist's size, the poller read that as "already
+  // synced", and a freshly connected playlist was never read. Nothing was ever captured, and the
+  // logs said the poll succeeded. Only a read we performed may write the synced count.
+  assertEquals(needsFullRead(null, 4), true);
 });
 
 Deno.test("polling quickens on a find and backs off to a day when nothing changes", () => {
@@ -37,10 +44,10 @@ Deno.test("entries become captures keyed on the playlist entry, and dead videos 
   assertEquals(out[0]!.sourceKind, "youtube_playlist");
   assertEquals(out[0]!.sharedUrl, "https://www.youtube.com/watch?v=vid-1");
   assertEquals(out[0]!.savedAt, "2026-09-01T10:00:00.000Z");
-  assertEquals(out[0]!.caption, "A talk");
+  assertEquals(out[0]!.title, "A talk");
   // No added-at from YouTube means now, never a made-up date.
   assertEquals(out[1]!.savedAt, NOW.toISOString());
-  assertEquals("caption" in out[1]!, false);
+  assertEquals("title" in out[1]!, false); // "Private video" is YouTube's placeholder, not a title
 });
 
 Deno.test("a playlist YouTube will not show us reads as gone, not as zero videos", async () => {

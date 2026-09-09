@@ -39,7 +39,8 @@ Deno.serve(async (req) => {
     const meta = row.meta ?? {};
     const source: Source = {
       id: row.id, userId: row.user_id, playlistId: row.external_id,
-      knownCount: typeof meta["videos"] === "number" ? meta["videos"] : null,
+      // Written only after a read that actually captured; never by register.
+      syncedCount: typeof meta["syncedCount"] === "number" ? meta["syncedCount"] : null,
     };
     const previousInterval = typeof meta["intervalMs"] === "number" ? meta["intervalMs"] : null;
 
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
       }
 
       let found = 0;
-      if (needsFullRead(source.knownCount, count)) {
+      if (needsFullRead(source.syncedCount, count)) {
         const entries = await playlistEntries(source.playlistId, key);
         for (const input of toCaptures(source, entries, now)) {
           // capture() is idempotent on the playlist entry id, so re-reading a playlist re-captures
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
         last_polled_at: now.toISOString(),
         ...(found > 0 ? { last_seen_at: now.toISOString() } : {}),
         poll_after: at.toISOString(),
-        meta: { ...meta, videos: count, intervalMs: Math.max(MIN_INTERVAL_MS, at.getTime() - now.getTime()) },
+        meta: { ...meta, videos: count, syncedCount: count, intervalMs: Math.max(MIN_INTERVAL_MS, at.getTime() - now.getTime()) },
         updated_at: now.toISOString(),
       }).eq("id", row.id);
 

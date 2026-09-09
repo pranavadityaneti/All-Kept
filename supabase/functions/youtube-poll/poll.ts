@@ -14,8 +14,12 @@ export interface Source {
   id: string;
   userId: string;
   playlistId: string;
-  /** How many videos the playlist held when we last read it. */
-  knownCount: number | null;
+  /**
+   * How many videos there were the last time *we read the playlist through*, which is not the same
+   * as how many YouTube says there are. Registering a playlist learns the size without capturing
+   * anything, so the two must stay separate or the first poll decides it has nothing to do.
+   */
+  syncedCount: number | null;
 }
 
 /** Polls back off when nothing changes and quicken when something does, within these bounds. */
@@ -39,8 +43,8 @@ export function nextPollAt(now: Date, previousIntervalMs: number | null, foundSo
  * count is the cheap gate. It misses the case where someone adds one video and removes another
  * between polls, which the next real change picks up.
  */
-export function needsFullRead(knownCount: number | null, currentCount: number): boolean {
-  return knownCount === null || knownCount !== currentCount;
+export function needsFullRead(syncedCount: number | null, currentCount: number): boolean {
+  return syncedCount === null || syncedCount !== currentCount;
 }
 
 /** Playlist entries turned into captures, newest save first, private and deleted videos dropped. */
@@ -56,6 +60,8 @@ export function toCaptures(source: Source, entries: PlaylistEntry[], now: Date):
       sourceEventId: e.itemId,
       savedAt: e.addedAt ?? now.toISOString(),
       sharedUrl: `https://www.youtube.com/watch?v=${e.videoId}`,
-      ...(e.title ? { caption: e.title } : {}),
+      // A video's title is its title, not its caption: caption becomes the item's body text,
+      // which for YouTube stays empty until enrichment reads the description.
+      ...(e.title ? { title: e.title } : {}),
     }));
 }
