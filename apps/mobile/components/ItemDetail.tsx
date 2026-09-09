@@ -26,7 +26,7 @@ const savedOn = (iso: string) => new Date(iso).toLocaleDateString(undefined, { d
  * scrolling page would spend the whole gesture arguing with the pager about who owns a drag. So the
  * caption, tags, note and category live in a sheet instead, one tap away.
  */
-export function ItemDetail({ id, width, height, onBack }: { id: string; width: number; height: number; onBack: () => void }) {
+export function ItemDetail({ id, width, height, active, onBack }: { id: string; width: number; height: number; active: boolean; onBack: () => void }) {
   const p = usePalette();
   const session = useSession();
   const { height: screenHeight } = useWindowDimensions();
@@ -95,7 +95,10 @@ export function ItemDetail({ id, width, height, onBack }: { id: string; width: n
 
       <View style={styles.media}>
         {embed ? (
-          <EmbedPlayer url={embed} width={playerWidth} height={Math.min(naturalHeight, mediaMax)} onHeight={setPlayerHeight} />
+          // Touches belong to the embed. A carousel is turned by the arrows Instagram draws inside it,
+          // and with the saves paged vertically nothing else wants the sideways swipe any more. It is
+          // paused while the full-screen copy is up, so the two are never playing the same reel at once.
+          <EmbedPlayer url={embed} width={playerWidth} height={Math.min(naturalHeight, mediaMax)} onHeight={setPlayerHeight} interactive active={active && !fullScreen} />
         ) : thumbnail ? (
           <Pressable accessibilityRole="imagebutton" accessibilityLabel="View picture full screen" onPress={() => setZoomed(true)}>
             <Image source={{ uri: thumbnail }} style={[styles.hero, { width: playerWidth, height: Math.min(playerWidth, mediaMax), backgroundColor: p.surfaceAlt }]} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
@@ -206,7 +209,7 @@ export function ItemDetail({ id, width, height, onBack }: { id: string; width: n
           </View>
           {embed && (
             <ScrollView contentContainerStyle={styles.fullScroll} showsVerticalScrollIndicator={false}>
-              <EmbedPlayer url={embed} width={width} height={fullHeight ?? screenHeight} onHeight={setFullHeight} interactive />
+              <EmbedPlayer url={embed} width={width} height={fullHeight ?? screenHeight} onHeight={setFullHeight} interactive active={active} />
             </ScrollView>
           )}
         </View>

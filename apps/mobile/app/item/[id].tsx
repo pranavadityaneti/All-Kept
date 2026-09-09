@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { FlatList, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { FlatList, View, type ViewToken } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ItemDetail } from "../../components/ItemDetail";
 import { collectionFor } from "../../lib/collection";
@@ -18,11 +18,21 @@ export default function ItemScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [box, setBox] = useState<{ width: number; height: number } | null>(null);
+  const [activeId, setActiveId] = useState(id ?? "");
 
   const { pages, startIndex } = useMemo(() => {
     const ids = collectionFor(id ?? "");
     return { pages: ids.map((value) => ({ id: value })), startIndex: Math.max(0, ids.indexOf(id ?? "")) };
   }, [id]);
+
+  // The pager deliberately keeps the neighbours mounted so a flick is instant, so nothing else tells a
+  // save it has been left behind. Whichever one fills the screen is the active one; the rest go quiet.
+  // Both of these are held in a ref because React Native refuses a viewability handler that changes.
+  const viewability = useRef({ itemVisiblePercentThreshold: 60 }).current;
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const shown = viewableItems[0];
+    if (shown) setActiveId(shown.key);
+  }).current;
 
   const back = () => router.back();
 
@@ -36,7 +46,7 @@ export default function ItemScreen() {
         }}
       >
         {box && (pages.length === 1 ? (
-          <ItemDetail id={pages[0]!.id} width={box.width} height={box.height} onBack={back} />
+          <ItemDetail id={pages[0]!.id} width={box.width} height={box.height} active onBack={back} />
         ) : (
           <FlatList
             data={pages}
@@ -49,7 +59,10 @@ export default function ItemScreen() {
             initialNumToRender={1}
             maxToRenderPerBatch={2}
             decelerationRate="fast"
-            renderItem={({ item }) => <ItemDetail id={item.id} width={box.width} height={box.height} onBack={back} />}
+            viewabilityConfig={viewability}
+            onViewableItemsChanged={onViewableItemsChanged}
+            extraData={activeId}
+            renderItem={({ item }) => <ItemDetail id={item.id} width={box.width} height={box.height} active={item.id === activeId} onBack={back} />}
           />
         ))}
       </View>
