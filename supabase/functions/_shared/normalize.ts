@@ -331,3 +331,4 @@ export function normalize(input: NormalizeInput): NormalizedLink {
 }
 
 export * from "./saved-export.ts";
+export * from "./youtube.ts";

@@ -66,6 +66,7 @@ export interface LinkStartResponse {
   expiresAt: string;
 }
 
+/** POST /youtube-register (JWT): starts watching a YouTube playlist the person points us at. */
 export interface YoutubeRegisterRequest {
   playlistUrl: string;
 }
@@ -75,6 +76,8 @@ export interface YoutubeRegisterResponse {
   playlistId: string;
   title: string;
   itemCount: number;
+  /** True when this playlist was already theirs, so the app can say "still watching" rather than "connected". */
+  alreadyConnected: boolean;
 }
 
 export interface ItemAiOutput {

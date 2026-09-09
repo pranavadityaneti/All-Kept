@@ -330,3 +330,4 @@ export function normalize(input: NormalizeInput): NormalizedLink {
 }
 
 export * from "./saved-export";
+export * from "./youtube";

@@ -11,7 +11,8 @@ const FILES = [
   // The source is extensionless, which both TypeScript (Bundler resolution) and Metro accept, and
   // only the Deno copy gets ".ts" added.
   { src: "packages/normalize/src/saved-export.ts", dst: "supabase/functions/_shared/saved-export.ts", rewrite: (s) => s },
-  { src: "packages/normalize/src/index.ts", dst: "supabase/functions/_shared/normalize.ts", rewrite: (s) => s.replaceAll('"./saved-export"', '"./saved-export.ts"') },
+  { src: "packages/normalize/src/youtube.ts", dst: "supabase/functions/_shared/youtube.ts", rewrite: (s) => s },
+  { src: "packages/normalize/src/index.ts", dst: "supabase/functions/_shared/normalize.ts", rewrite: (s) => s.replaceAll('"./saved-export"', '"./saved-export.ts"').replaceAll('"./youtube"', '"./youtube.ts"') },
   { src: "packages/contracts/src/index.ts", dst: "supabase/functions/_shared/contracts.ts", rewrite: (s) => s.replaceAll('"@allkept/normalize"', '"./normalize.ts"') },
 ];
 

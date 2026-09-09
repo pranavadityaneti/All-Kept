@@ -448,3 +448,8 @@ entrypoint = "./functions/reprocess-item/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/import-saves/index.ts"
+
+[functions.youtube-register]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/youtube-register/index.ts"
