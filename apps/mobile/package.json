@@ -14,7 +14,7 @@
     "doctor": "npx expo-doctor",
     "build:ios": "npx --yes eas-cli@latest build --profile testflight --platform ios",
     "build:android": "npx --yes eas-cli@latest build --profile preview --platform android",
-    "submit:ios": "npx --yes eas-cli@latest submit --profile production --platform ios --latest"
+    "submit:ios": "npx --yes eas-cli@latest submit --platform ios --latest --non-interactive"
   },
   "dependencies": {
     "@allkept/contracts": "*",
