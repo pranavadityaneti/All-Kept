@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery, type QueryClient } from "@tanstack/react-query";
+import type { ClassificationStatus } from "@allkept/contracts";
 import { supabase } from "./supabase";
 
 export interface LibraryItem {
@@ -6,6 +7,7 @@ export interface LibraryItem {
   platform: string;
   kind: string;
   status: string;
+  classificationStatus?: ClassificationStatus;
   title: string | null;
   text: string | null;
   authorName: string | null;
@@ -26,11 +28,12 @@ export const NO_FILTERS: Filters = { platforms: [], categories: [] };
 const PAGE = 30;
 type Row = Record<string, unknown>;
 
-const toItem = (r: Row): LibraryItem => ({
+export const toItem = (r: Row): LibraryItem => ({
   id: String(r["id"]),
   platform: String(r["platform"]),
   kind: String(r["kind"]),
   status: String(r["status"]),
+  classificationStatus: r["classification_status"] as ClassificationStatus,
   title: (r["title"] as string | null) ?? null,
   text: (r["text"] as string | null) ?? null,
   authorName: (r["author_name"] as string | null) ?? null,
@@ -45,9 +48,10 @@ const toItem = (r: Row): LibraryItem => ({
   summary: (r["summary"] as string | null) ?? null,
 });
 
-async function fetchPage(q: string | null, filters: Filters, before: string | null): Promise<{ items: LibraryItem[]; nextCursor: string | null }> {
-  const { data, error } = await supabase.rpc("library_query", {
-    q,
+interface LibraryCursor { savedAt: string; id: string }
+
+async function fetchPage(filters: Filters, before: LibraryCursor | null): Promise<{ items: LibraryItem[]; nextCursor: LibraryCursor | null }> {
+  const { data, error } = await supabase.rpc("library_query_v2", {
     platforms: filters.platforms.length ? filters.platforms : null,
     categories: filters.categories.length ? filters.categories : null,
     before,
@@ -55,32 +59,43 @@ async function fetchPage(q: string | null, filters: Filters, before: string | nu
   });
   if (error) throw new Error(error.message);
   const items = ((data ?? []) as Row[]).map(toItem);
-  // Search returns one ranked page; the grid pages by the oldest save on the page.
-  const nextCursor = !q && items.length === PAGE ? items[items.length - 1]!.lastSavedAt : null;
+  // Include the ID so saves with the same timestamp are never skipped.
+  const nextCursor = items.length === PAGE ? { savedAt: items[items.length - 1]!.lastSavedAt, id: items[items.length - 1]!.id } : null;
   return { items, nextCursor };
 }
 
 export function useLibrary(filters: Filters, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: ["library", filters],
+    queryKey: ["library", "v2", filters],
     enabled,
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) => fetchPage(null, filters, pageParam),
+    initialPageParam: null as LibraryCursor | null,
+    queryFn: ({ pageParam }) => fetchPage(filters, pageParam),
     getNextPageParam: (last) => last.nextCursor,
   });
 }
 
+interface SearchCursor extends LibraryCursor { score: number; embedding: number[] | null }
+interface SearchPage { items: LibraryItem[]; nextCursor: SearchCursor | null; mode: "hybrid" | "keyword" }
+
 export function useSearch(q: string, filters: Filters, enabled: boolean) {
   const term = q.trim();
-  return useQuery({
-    queryKey: ["search", term, filters],
+  return useInfiniteQuery({
+    queryKey: ["search", "v2", term, filters],
     enabled: enabled && term.length > 0,
-    queryFn: async () => (await fetchPage(term, filters, null)).items,
+    initialPageParam: null as SearchCursor | null,
+    queryFn: async ({ pageParam, signal }): Promise<SearchPage> => {
+      const { data, error } = await supabase.functions.invoke<{ items: Row[]; nextCursor: SearchCursor | null; mode: SearchPage["mode"] }>("search-library", {
+        body: { q: term, ...filters, cursor: pageParam }, signal,
+      });
+      if (error || !data) throw new Error("Could not search your library. Please try again.");
+      return { ...data, items: data.items.map(toItem) };
+    },
+    getNextPageParam: (last) => last.nextCursor,
   });
 }
 
 /** Every list that shows saves. One place, so a change to a save can never refresh some of them and miss others. */
-export const LIBRARY_KEYS = [["library"], ["facets"], ["recent-saves"]] as const;
+export const LIBRARY_KEYS = [["library"], ["facets"], ["recent-saves"], ["search"], ["item"]] as const;
 
 export function invalidateLibrary(queryClient: QueryClient): void {
   for (const key of LIBRARY_KEYS) void queryClient.invalidateQueries({ queryKey: key });

@@ -73,7 +73,7 @@ export async function startImport(path: string): Promise<ImportSavesResponse> {
 
 /** How far along the import is. null when the run is not this person's, or has gone. */
 export async function importProgress(importId: string): Promise<ImportProgress | null> {
-  const { data, error } = await supabase.rpc("import_progress", { import_id: importId });
+  const { data, error } = await supabase.rpc("import_progress_v2", { import_id: importId });
   if (error) throw new Error(error.message);
   const row = Array.isArray(data) ? (data[0] as ImportProgress | undefined) : (data as ImportProgress | null);
   return row ?? null;

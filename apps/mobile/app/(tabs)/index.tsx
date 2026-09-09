@@ -10,6 +10,7 @@ import { ItemCard } from "../../components/ItemCard";
 import { SearchField } from "../../components/SearchField";
 import { SectionHeader } from "../../components/SectionHeader";
 import { Wordmark } from "../../components/Wordmark";
+import { categoryLabel } from "../../lib/sorting";
 import { useRecentSaves } from "../../lib/home";
 import { useFacets, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
@@ -40,7 +41,7 @@ export default function Home() {
 
   // A category tile borrows the newest picture saved under it.
   const pictureFor = (category: string) => {
-    const match = items.find((i) => (i.category ?? "Sorting") === category && i.thumbnailPath);
+    const match = items.find((i) => categoryLabel(i) === category && i.thumbnailPath);
     return match?.thumbnailPath ? thumbnails[match.thumbnailPath] : undefined;
   };
 
@@ -59,6 +60,7 @@ export default function Home() {
         </View>
 
         <SearchField onPress={() => router.push("/search")} />
+        <Button label="Save a link" variant="secondary" onPress={() => router.push("/save")} />
 
         {session.status === "error" && (
           <Card>

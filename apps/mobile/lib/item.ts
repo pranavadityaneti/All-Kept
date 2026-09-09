@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ReprocessItemResponse } from "@allkept/contracts";
+import type { ClassificationStatus, ReprocessItemResponse } from "@allkept/contracts";
 import { parseAttachedLink } from "./attach-link";
 import { invalidateLibrary } from "./library";
 import { supabase } from "./supabase";
@@ -10,6 +10,7 @@ export interface ItemDetail {
   platform: string;
   kind: string;
   status: string;
+  classificationStatus?: ClassificationStatus;
   title: string | null;
   text: string | null;
   note: string | null;
@@ -27,7 +28,7 @@ export interface ItemDetail {
   summary: string | null;
 }
 
-const SELECT = "id,platform,kind,status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,item_ai(category,user_category,tags,summary)";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,item_ai(category,user_category,tags,summary)";
 
 type Row = Record<string, unknown>;
 
@@ -38,6 +39,7 @@ function toDetail(r: Row): ItemDetail {
     platform: String(r["platform"]),
     kind: String(r["kind"]),
     status: String(r["status"]),
+    classificationStatus: r["classification_status"] as ClassificationStatus,
     title: (r["title"] as string | null) ?? null,
     text: (r["text"] as string | null) ?? null,
     note: (r["note"] as string | null) ?? null,
@@ -139,5 +141,13 @@ export function useAttachLink(id: string, expectPlatform?: string, thumbnailPath
       void queryClient.invalidateQueries({ queryKey: ["item", id] });
       invalidateLibrary(queryClient);
     },
+  });
+}
+
+/** Retries the failed stage. Concurrent requests share the database classification lease. */
+export function useRetrySorting(id: string) {
+  return useItemMutation<void>(id, async () => {
+    const { error } = await supabase.functions.invoke<ReprocessItemResponse>("reprocess-item", { body: { itemId: id, retry: true } });
+    if (error) throw new Error("Could not retry. Please try again.");
   });
 }

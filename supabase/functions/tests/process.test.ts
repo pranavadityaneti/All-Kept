@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { ATTACH_WINDOW_MS, CATEGORY_WAIT_MS, processEvent, REPLY_TEXT, type ProcessDeps, type LinkedSource, type ReplyMeta } from "../instagram-webhook/process.ts";
+import { CATEGORY_WAIT_MS, processEvent, REPLY_TEXT, type ProcessDeps, type LinkedSource, type ReplyMeta } from "../instagram-webhook/process.ts";
 import type { NormalizedLink } from "../_shared/normalize.ts";
 import type { EventRow } from "../instagram-webhook/handler.ts";
 import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
@@ -18,8 +18,8 @@ const REEL = ev({ mid: "mid-reel", attachments: [{ type: "ig_reel", payload: { u
 const POST = ev({ mid: "mid-post", attachments: [{ type: "ig_post", payload: { url: "https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=1812&signature=x", title: "n8n AI Agents decoded in 8 slides", ig_post_media_id: "17897654949593778" } }] });
 const LINK = ev({ mid: "mid-link", text: "https://www.youtube.com/watch?v=WfJPBVXPt8k" });
 // What a person sends after being asked for the link: pasted plainly, or with words and tracking around it.
-const PASTED = ev({ mid: "mid-paste", text: "https://www.instagram.com/p/DcVMQIIMa5-/" }, 1788859253587 + 60_000);
-const PASTED_MESSY = ev({ mid: "mid-paste-2", text: "here you go https://www.instagram.com/p/DcVMQIIMa5-/?igsh=abc123" }, 1788859253587 + 90_000);
+const PASTED = ev({ mid: "mid-paste", reply_to: { mid: "mid-post" }, text: "https://www.instagram.com/p/DcVMQIIMa5-/" }, 1788859253587 + 60_000);
+const PASTED_MESSY = ev({ mid: "mid-paste-2", reply_to: { mid: "mid-post" }, text: "here you go https://www.instagram.com/p/DcVMQIIMa5-/?igsh=abc123" }, 1788859253587 + 90_000);
 const PHOTO = ev({ mid: "mid-photo", attachments: [{ type: "image", payload: { url: "https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=1210" } }] });
 const DELETION = ev({ mid: "mid-reel", is_deleted: true });
 const ECHO = ev({ mid: "mid-echo", is_echo: true, text: "Saved" });
@@ -51,15 +51,15 @@ class Fake implements ProcessDeps {
   waited: number[] = [];
   async waitForCategory(_itemId: string, timeoutMs: number) { this.waited.push(timeoutMs); return this.category; }
   noLinkCard: { id: string } | null = null;
-  asked: Date[] = [];
+  asked: { userId: string; sourceId: string; messageId: string }[] = [];
   attached: { itemId: string; externalId: string | null; canonicalUrl: string | null }[] = [];
-  attachResult: "attached" | "duplicate" = "attached";
-  async latestNoLink(_u: string, since: Date) { this.asked.push(since); return this.noLinkCard; }
+  attachResult: "attached" | "duplicate" | "missing" = "attached";
+  async noLinkForReply(userId: string, sourceId: string, messageId: string) { this.asked.push({ userId, sourceId, messageId }); return this.noLinkCard; }
   async attachLink(itemId: string, _u: string, link: NormalizedLink) { this.attached.push({ itemId, externalId: link.externalId, canonicalUrl: link.canonicalUrl }); return this.attachResult; }
   log() {}
 }
 
-Deno.test("a link pasted after a link-less post completes that card instead of making a second one", async () => {
+Deno.test("a link explicitly replying to a linkless post completes that card", async () => {
   const f = new Fake();
   f.noLinkCard = { id: "item-nolink" };
   const out = await processEvent(PASTED, f);
@@ -69,8 +69,7 @@ Deno.test("a link pasted after a link-less post completes that card instead of m
   assertEquals(f.waited, [CATEGORY_WAIT_MS]); // enriched now, so the reply can carry the sort
   assertEquals(f.replies[0]!.text, "Attached · Travel & places");
   assertEquals(f.replies[0]!.meta.itemId, "item-nolink");
-  // Only a card from the last day is taken as the one being answered.
-  assertEquals(f.asked[0]!.toISOString(), new Date(NOW.getTime() - ATTACH_WINDOW_MS).toISOString());
+  assertEquals(f.asked, [{ userId: USER, sourceId: "src-1", messageId: "mid-post" }]);
 });
 
 Deno.test("the paste can come with words and tracking around it and still attaches cleanly", async () => {
@@ -231,4 +230,72 @@ Deno.test("with replies off, saves are captured silently", async () => {
   f.source!.repliesEnabled = false;
   await processEvent(REEL, f);
   assertEquals([f.captures.length, f.replies.length], [1, 0]);
+});
+
+Deno.test("an unrelated pasted link never attaches to the latest linkless card", async () => {
+  const f = new Fake();
+  f.noLinkCard = { id: "item-nolink" };
+  const out = await processEvent(ev({ mid: "independent", text: "https://www.instagram.com/p/AnotherPost/" }), f);
+  assertEquals(out.action, "captured");
+  assertEquals(f.asked, []);
+  assertEquals(f.attached, []);
+});
+
+Deno.test("a post payload with a permalink keeps the original URL and CDN snapshot", async () => {
+  const f = new Fake();
+  await processEvent(ev({ mid: "post-with-link", attachments: [{ type: "ig_post", payload: {
+    permalink: "https://www.instagram.com/p/Original/?igsh=tracking", ig_post_media_id: "1789001",
+    url: "https://lookaside.fbsbx.com/image", title: "A caption",
+  } }] }), f);
+  assertEquals(f.captures[0]!.sharedUrl, "https://www.instagram.com/p/Original/");
+  assertEquals(f.captures[0]!.snapshotUrl, "https://lookaside.fbsbx.com/image");
+  assertEquals(f.captures[0]!.noLink, undefined);
+  assert(!f.replies[0]!.text.includes(REPLY_TEXT.noLink));
+});
+
+Deno.test("paired legacy share and post attachments become one card in either order", async () => {
+  const post = { type: "ig_post", payload: { ig_post_media_id: "1789001", url: "https://lookaside.fbsbx.com/image", title: "Caption" } };
+  const share = { type: "share", payload: { url: "https://www.instagram.com/p/Original/" } };
+  for (const attachments of [[post, share], [share, post]]) {
+    const f = new Fake();
+    await processEvent(ev({ mid: "paired", attachments }), f);
+    assertEquals(f.captures.length, 1);
+    assertEquals(f.captures[0]!.sharedUrl, "https://www.instagram.com/p/Original/");
+    assertEquals(f.captures[0]!.caption, "Caption");
+  }
+});
+
+Deno.test("ambiguous multiple posts do not borrow a companion share's URL", async () => {
+  const f = new Fake();
+  await processEvent(ev({ mid: "multiple", attachments: [
+    { type: "ig_post", payload: { ig_post_media_id: "1", url: "https://lookaside.fbsbx.com/one" } },
+    { type: "ig_post", payload: { ig_post_media_id: "2", url: "https://lookaside.fbsbx.com/two" } },
+    { type: "share", payload: { url: "https://www.instagram.com/p/Unknown/" } },
+  ] }), f);
+  assertEquals(f.captures.slice(0, 2).map((c) => c.noLink), [true, true]);
+  assertEquals(f.captures.slice(0, 2).map((c) => c.sharedUrl), [undefined, undefined]);
+});
+
+Deno.test("a post URL in payload.url is never treated as its thumbnail", async () => {
+  const f = new Fake();
+  await processEvent(ev({ mid: "url-post", attachments: [{ type: "ig_post", payload: { url: "https://www.instagram.com/p/Original/" } }] }), f);
+  assertEquals(f.captures[0]!.sharedUrl, "https://www.instagram.com/p/Original/");
+  assertEquals(f.captures[0]!.snapshotUrl, undefined);
+});
+
+Deno.test("a failed attachment race is not acknowledged as attached", async () => {
+  const f = new Fake();
+  f.noLinkCard = { id: "item-nolink" };
+  f.attachResult = "missing";
+  assertEquals((await processEvent(PASTED, f)).action, "captured");
+  assert(!f.replies[0]!.text.startsWith("Attached"));
+});
+
+Deno.test("a companion share that disagrees with the post's own permalink stays separate", async () => {
+  const f = new Fake();
+  await processEvent(ev({ mid: "disagree", attachments: [
+    { type: "ig_post", payload: { ig_post_media_id: "1", permalink: "https://www.instagram.com/p/First/", url: "https://lookaside.fbsbx.com/image" } },
+    { type: "share", payload: { url: "https://www.instagram.com/p/Second/" } },
+  ] }), f);
+  assertEquals(f.captures.map((c) => c.sharedUrl), ["https://www.instagram.com/p/First/", "https://www.instagram.com/p/Second/"]);
 });

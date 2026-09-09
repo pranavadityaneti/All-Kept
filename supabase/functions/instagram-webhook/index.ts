@@ -89,21 +89,25 @@ Deno.serve(async (req) => {
         if (result === TIMED_OUT) { log("instagram: category not ready within wait", { item: itemId, timeoutMs }); return null; }
         return result;
       },
-      async latestNoLink(userId, since) {
-        const { data, error } = await db.from("items").select("id").eq("user_id", userId).eq("platform", "instagram").eq("status", "no_link")
-          .gte("created_at", since.toISOString()).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      async noLinkForReply(userId, sourceId, messageId) {
+        const { data: cap, error } = await db.from("captures").select("item_id")
+          .eq("user_id", userId).eq("source_kind", "instagram_dm").eq("source_event_id", messageId).maybeSingle();
         if (error) throw error;
+        if (!cap) return null;
+        const { data, error: e2 } = await db.from("items").select("id").eq("id", cap.item_id)
+          .eq("user_id", userId).eq("source_id", sourceId).eq("platform", "instagram").eq("status", "no_link").maybeSingle();
+        if (e2) throw e2;
         return data ? { id: data.id as string } : null;
       },
       async attachLink(itemId, userId, link) {
         // The same write the app makes when a link is pasted on the card itself. Guarded on the status
         // so two pastes in quick succession cannot both land.
-        const { error } = await db.from("items").update({
+        const { data, error } = await db.from("items").update({
           platform: link.platform, kind: link.kind, source_url: link.sourceUrl, canonical_url: link.canonicalUrl,
           external_id: link.externalId, needs_expansion: link.needsExpansion, status: "pending", enrich_attempts: 0, next_attempt_at: null,
-        }).eq("id", itemId).eq("user_id", userId).eq("status", "no_link");
+        }).eq("id", itemId).eq("user_id", userId).eq("status", "no_link").select("id").maybeSingle();
         if (error) { if (error.code === "23505") return "duplicate"; throw error; }
-        return "attached";
+        return data ? "attached" : "missing";
       },
       log,
     };

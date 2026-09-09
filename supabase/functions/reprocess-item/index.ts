@@ -19,15 +19,20 @@ Deno.serve(async (req) => {
 
     const db = adminClient();
     // Service role bypasses row-level security, so ownership is checked here before anything runs.
-    const { data: owned, error } = await db.from("items").select("id").eq("id", itemId).eq("user_id", userId).maybeSingle();
+    const { data: owned, error } = await db.from("items").select("id,status").eq("id", itemId).eq("user_id", userId).maybeSingle();
     if (error) throw error;
     if (!owned) return apiError("not_found", "no such item");
 
+    const retry = body?.["retry"] === true;
+    if (retry && owned.status === "failed") {
+      const { error: resetError } = await db.from("items").update({ status: "pending", enrich_attempts: 0, next_attempt_at: null }).eq("id", itemId).eq("user_id", userId).eq("status", "failed");
+      if (resetError) throw resetError;
+    }
     const log = (message: string, meta?: Record<string, unknown>) => console.log(message, meta ?? {});
-    const category = await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log });
+    const category = await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log }, retry);
 
-    const { data: after } = await db.from("items").select("status").eq("id", itemId).maybeSingle();
-    const body2: ReprocessItemResponse = { status: (after?.status ?? "pending") as ReprocessItemResponse["status"], category };
+    const { data: after } = await db.from("items").select("status,classification_status").eq("id", itemId).maybeSingle();
+    const body2: ReprocessItemResponse = { status: (after?.status ?? "pending") as ReprocessItemResponse["status"], category, classificationStatus: after?.classification_status };
     return json(body2);
   } catch (e) {
     console.error("reprocess-item failed", e);

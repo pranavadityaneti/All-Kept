@@ -14,7 +14,7 @@ export interface ExistingItem {
 /** Column names match public.items. */
 export interface NewItemRow {
   user_id: string;
-  source_id: string;
+  source_id: string | null;
   source_event_id: string;
   platform: Platform;
   kind: Kind;

@@ -89,8 +89,9 @@ export default function ImportSaves() {
   }, [userId]);
 
   const filled = progress.data ? progress.data.ready : 0;
-  const total = progress.data ? progress.data.ready + progress.data.waiting : 0;
-  const pct = total > 0 ? Math.round((filled / total) * 100) : stage.name === "done" ? 100 : 0;
+  const failed = progress.data?.failed ?? 0;
+  const total = progress.data ? progress.data.ready + progress.data.waiting + failed : 0;
+  const pct = total > 0 ? Math.round(((filled + failed) / total) * 100) : stage.name === "done" ? 100 : 0;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
@@ -166,7 +167,7 @@ export default function ImportSaves() {
 
             {stage.added > 0 && (
               <Card>
-                <Text style={[type.heading, { color: p.ink }]}>Filling them in</Text>
+                <Text style={[type.heading, { color: p.ink }]}>{progress.data?.finished ? "Import processed" : "Filling them in"}</Text>
                 <Text style={[type.body, { color: p.inkMuted }]}>
                   Covers, captions and categories arrive over the next few hours. You can close the app; it carries on without you.
                 </Text>
@@ -174,7 +175,7 @@ export default function ImportSaves() {
                   <View style={[styles.fill, { width: `${pct}%`, backgroundColor: p.accent }]} />
                 </View>
                 <Text style={[type.label, { color: p.inkMuted }]}>
-                  {progress.data ? `${filled} of ${total} ready` : "Counting…"}
+                  {progress.data ? `${filled} of ${total} ready${failed ? ` · ${failed} need attention` : ""}` : "Counting…"}
                 </Text>
               </Card>
             )}

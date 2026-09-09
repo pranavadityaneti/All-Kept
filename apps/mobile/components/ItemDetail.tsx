@@ -8,8 +8,9 @@ import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { embedUrl, initialHeight } from "../lib/embed";
-import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../lib/item";
+import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote, useRetrySorting } from "../lib/item";
 import { track, useTrackOnce } from "../lib/metrics";
+import { canRetrySorting, categoryLabel } from "../lib/sorting";
 import { openLink } from "../lib/open";
 import { platformIcon, platformLabel } from "../lib/platforms";
 import { useSession } from "../lib/session";
@@ -40,6 +41,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   useTrackOnce(userId, "item_open");
   const setCategory = useSetCategory(id, userId);
   const setNote = useSetNote(id);
+  const retrySorting = useRetrySorting(id);
   const remove = useDeleteItem(id, detail?.thumbnailPath ?? null);
   const attach = useAttachLink(id, detail?.status === "no_link" && detail.platform === "instagram" ? "instagram" : undefined, detail?.thumbnailPath ?? null);
 
@@ -122,9 +124,10 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           </Text>
         </Pressable>
 
+        {detail.status === "no_link" && <Button label="Add original link" variant="secondary" onPress={() => setSheet(true)} />}
         <View style={styles.actions}>
           <View style={styles.actionsLeft}>
-            <Chip label={detail.category ?? "Sorting"} selected={!!detail.category} onPress={() => setSheet(true)} />
+            <Chip label={categoryLabel(detail)} selected={!!detail.category} onPress={() => setSheet(true)} />
             {url && (
               <IconButton
                 name={platformIcon(detail.platform)}
@@ -152,7 +155,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
               <View style={[styles.block, { backgroundColor: p.surface, borderColor: p.border }]}>
                 <Text style={[type.heading, { color: p.ink }]}>{detail.status === "failed" ? "That link did not work" : "Add the post's link"}</Text>
                 <Text style={[type.body, { color: p.inkMuted }]}>
-                  {detail.status === "failed" ? "We could not read anything at that address. Paste the link again, in full." : "Instagram does not send the link for a plain post. Paste it here and it plays in place."}
+                  {detail.status === "failed" ? "We could not read anything at that address. Paste the link again, in full." : "This share arrived without its original link. In Instagram, open this post, choose Copy link from the share menu, and paste it here."}
                 </Text>
                 <TextInput
                   accessibilityLabel="Paste the post's link"
@@ -175,6 +178,16 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
                   })}
                 />
                 {attachError && <Text style={[type.label, { color: p.bad }]}>{attachError}</Text>}
+              </View>
+            )}
+
+            {canRetrySorting(detail) && (
+              <View style={[styles.block, { backgroundColor: p.surface, borderColor: p.border }]}>
+                <Text style={[type.body, { color: p.inkMuted }]}>
+                  {detail.classificationStatus === "retry_wait" ? "Sorting hit a temporary problem. We will retry automatically, or you can retry now." : "We could not finish sorting this save. Retry, or choose a category below."}
+                </Text>
+                <Button label="Retry sorting" busy={retrySorting.isPending} onPress={() => retrySorting.mutate()} />
+                {retrySorting.error && <Text style={[type.label, { color: p.bad }]}>{retrySorting.error.message}</Text>}
               </View>
             )}
 

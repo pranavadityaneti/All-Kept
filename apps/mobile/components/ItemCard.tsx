@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { categoryLabel, sortingNote } from "../lib/sorting";
 import { platformLabel } from "../lib/platforms";
 import type { LibraryItem } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -13,7 +14,8 @@ export function cardTitle(item: LibraryItem): string {
 
 /** What the card says while the pipeline is still working, or when it could not finish. */
 export function statusNote(item: LibraryItem): string | null {
-  if (item.status === "pending" || item.status === "failed") return "Sorting…";
+  const sorting = sortingNote(item);
+  if (sorting) return sorting;
   if (item.status === "no_link") return "No link";
   if (item.status === "preview_unavailable") return "No preview";
   return null;
@@ -22,7 +24,7 @@ export function statusNote(item: LibraryItem): string | null {
 export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thumbnail?: string; onPress: () => void }) {
   const p = usePalette();
   const note = statusNote(item);
-  const category = item.category ?? "Sorting";
+  const category = categoryLabel(item);
 
   return (
     <Pressable

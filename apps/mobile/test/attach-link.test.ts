@@ -37,3 +37,9 @@ describe("pasting a link onto a save", () => {
     expect(parseAttachedLink("www.instagram.com/p/ABC123/", "instagram").platform).toBe("instagram");
   });
 });
+
+it("does not turn a linkless post into an Instagram profile or story", () => {
+  for (const url of ["https://www.instagram.com/person/", "https://www.instagram.com/stories/person/123/"]) {
+    expect(() => parseAttachedLink(url, "instagram")).toThrow(/not a profile or story/);
+  }
+});

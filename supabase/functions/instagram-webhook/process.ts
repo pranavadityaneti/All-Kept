@@ -2,7 +2,7 @@
 import type { EventRow } from "./handler.ts";
 import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
 import { LINK_CODE_LENGTH } from "../_shared/contracts.ts";
-import { normalize, type NormalizedLink } from "../_shared/normalize.ts";
+import { instagramPermalink, type NormalizedLink } from "../_shared/normalize.ts";
 
 export type ReplyKind = "linked" | "code_rejected" | "unlinked" | "unsupported" | "confirm" | "control";
 
@@ -38,10 +38,10 @@ export interface ProcessDeps {
   sendReply(igsid: string, text: string, meta: ReplyMeta): Promise<void>;
   /** Resolves to the category once classification lands, or null after the timeout. */
   waitForCategory(itemId: string, timeoutMs: number): Promise<string | null>;
-  /** The sender's newest card that arrived without a link, if one is recent enough to be what they are answering. */
-  latestNoLink(userId: string, since: Date): Promise<{ id: string } | null>;
+  /** Only the linkless post explicitly replied to, within this user and source. */
+  noLinkForReply(userId: string, sourceId: string, messageId: string): Promise<{ id: string } | null>;
   /** Gives a link-less card its link. "duplicate" when that post is already a card of its own. */
-  attachLink(itemId: string, userId: string, link: NormalizedLink): Promise<"attached" | "duplicate">;
+  attachLink(itemId: string, userId: string, link: NormalizedLink): Promise<"attached" | "duplicate" | "missing">;
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
@@ -56,8 +56,6 @@ const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
 const CODE_RE = new RegExp(`^[A-Z2-9]{${LINK_CODE_LENGTH}}$`);
 const HOUR = 3_600_000;
 const REPLY_WINDOW_MS = 23 * HOUR;
-/** How long a pasted link is taken as the answer to "paste the link". A day, because people come back to it. */
-export const ATTACH_WINDOW_MS = 24 * HOUR;
 /** How long the confirmation waits for the sort. Reels take 8 to 11 s (preview page, image, model); past this the reply says "sorting" and the library still gets the category. */
 export const CATEGORY_WAIT_MS = 20_000;
 
@@ -72,7 +70,7 @@ export const REPLY_TEXT = {
   alreadySaved: "Already saved.",
   saved: (category: string | null) => (category ? `Saved · ${category}` : "Saved, sorting…"),
   note: "Saved as a note.",
-  noLink: " Instagram doesn't share the post's link with me; paste the link here and I'll attach it.",
+  noLink: " The original link was not included. Reply to your post message with its copied link, or open this save in Allkept and tap Add original link.",
   attached: (category: string | null) => (category ? `Attached · ${category}` : "Attached, sorting…"),
 } as const;
 
@@ -134,38 +132,54 @@ export async function processEvent(row: EventRow, deps: ProcessDeps): Promise<Pr
   const attachments = Array.isArray(message["attachments"]) ? (message["attachments"] as unknown[]).filter(isObj) : [];
   const inputs: CaptureInput[] = [];
   let unsupported = false;
+  // Some payloads carry both a legacy share and an ig_post attachment for the same post.
+  // Pair only an unambiguous one-to-one combination; never borrow a URL from another post.
+  const posts = attachments.filter((a) => a["type"] === "ig_post");
+  const shares = attachments.filter((a) => a["type"] === "share");
+  const possibleCompanion = posts.length === 1 && shares.length === 1 && isObj(shares[0]!["payload"])
+    ? instagramPermalink(str(shares[0]!["payload"]["url"]) ?? "") : null;
+  const postPayload = posts.length === 1 && isObj(posts[0]!["payload"]) ? posts[0]!["payload"] : {};
+  const ownLink = instagramPermalink(str(postPayload["permalink"]) ?? "") ?? instagramPermalink(str(postPayload["url"]) ?? "");
+  const companion = possibleCompanion && (!ownLink || ownLink.externalId === possibleCompanion.externalId) ? possibleCompanion : null;
   attachments.forEach((a, index) => {
     const type = str(a["type"]);
     const p = isObj(a["payload"]) ? a["payload"] : {};
     const sourceEventId = index === 0 ? mid : `${mid}#${index}`;
     const base = { userId: source.userId, sourceId: source.id, sourceKind: "instagram_dm" as const, sourceEventId, savedAt: messageTime.toISOString() };
-    if (type === "ig_reel" && str(p["url"])) {
-      inputs.push({ ...base, sharedUrl: str(p["url"])!, ...(str(p["title"]) ? { caption: str(p["title"])! } : {}) });
-    } else if (type === "ig_post" && str(p["ig_post_media_id"])) {
+    const permalink = instagramPermalink(str(p["permalink"]) ?? "") ?? instagramPermalink(str(p["url"]) ?? "");
+    if (type === "share" && companion) return; // captured with the post below, regardless of attachment order
+    if ((type === "ig_reel" || type === "share") && permalink) {
+      inputs.push({ ...base, sharedUrl: permalink.canonicalUrl!, ...(str(p["title"]) ? { caption: str(p["title"])! } : {}) });
+    } else if (type === "ig_post") {
+      const link = permalink ?? companion;
+      const mediaId = str(p["ig_post_media_id"]);
+      if (!link && !mediaId) { unsupported = true; return; }
       inputs.push({
-        ...base, platform: "instagram", kind: "post", externalId: `igpost:${str(p["ig_post_media_id"])}`, noLink: true,
-        ...(str(p["title"]) ? { caption: str(p["title"])! } : {}), ...(str(p["url"]) ? { snapshotUrl: str(p["url"])! } : {}),
+        ...base,
+        ...(mediaId ? { instagramMediaId: mediaId } : {}),
+        ...(link ? { sharedUrl: link.canonicalUrl! } : { platform: "instagram" as const, kind: "post" as const, externalId: `igpost:${mediaId}`, noLink: true }),
+        ...(str(p["title"]) ? { caption: str(p["title"])! } : {}),
+        ...(!instagramPermalink(str(p["url"]) ?? "") && str(p["url"]) ? { snapshotUrl: str(p["url"])! } : {}),
       });
     } else {
       unsupported = true;
     }
   });
   if (inputs.length === 0 && text.length > 0) {
-    // A link pasted after a post that came without one is the answer to our own question, not a new
-    // save. Instagram never puts a post's permalink in a message, only a reel's, so this is the one
-    // way that card ever gets its link; until now the paste made a second card beside the first.
-    const link = normalize({ url: null, text });
-    if (link.platform === "instagram" && link.externalId && link.canonicalUrl) {
-      const card = await deps.latestNoLink(source.userId, new Date(now.getTime() - ATTACH_WINDOW_MS));
+    // A URL is an attachment only when the sender explicitly replies to the saved post.
+    // An unrelated URL sent later must never overwrite the newest linkless card.
+    const link = instagramPermalink(text);
+    const reply = isObj(message["reply_to"]) ? message["reply_to"] : null;
+    const replyMid = reply ? str(reply["mid"]) : null;
+    if (link && replyMid) {
+      const card = await deps.noLinkForReply(source.userId, source.id, replyMid);
       if (card && (await deps.attachLink(card.id, source.userId, link)) === "attached") {
-        // Enriched now so the reply can carry the sort; with replies off the sweeper gets to it.
         if (source.repliesEnabled) {
           const category = await deps.waitForCategory(card.id, CATEGORY_WAIT_MS);
           await deps.sendReply(igsid, REPLY_TEXT.attached(category), { kind: "confirm", userId: source.userId, sourceId: source.id, itemId: card.id, notAfter });
         }
         return { action: "attached", itemIds: [card.id] };
       }
-      // Already a card of its own: the ordinary path below finds it and says so.
     }
     inputs.push({ userId: source.userId, sourceId: source.id, sourceKind: "instagram_dm", sourceEventId: mid, savedAt: messageTime.toISOString(), sharedText: text });
   }

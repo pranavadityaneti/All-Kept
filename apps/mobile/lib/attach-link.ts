@@ -1,5 +1,5 @@
 // Checking a pasted link. Kept free of React and of anything native so it can be tested directly.
-import { normalize } from "@allkept/normalize";
+import { instagramPermalink, normalize } from "@allkept/normalize";
 
 export interface AttachedLink {
   platform: string; kind: string; sourceUrl: string; canonicalUrl: string | null; externalId: string | null; needsExpansion: boolean;
@@ -35,6 +35,9 @@ export function parseAttachedLink(pasted: string, expectPlatform?: string): Atta
   if (link.platform === "note" || !link.sourceUrl) throw new Error("That does not look like a link.");
   if (expectPlatform && link.platform !== expectPlatform) {
     throw new Error(expectPlatform === "instagram" ? "Paste the link to the Instagram post itself." : `That is not a ${expectPlatform} link.`);
+  }
+  if (expectPlatform === "instagram" && !instagramPermalink(withScheme)) {
+    throw new Error("Paste the link to the Instagram post or reel, not a profile or story.");
   }
   return { platform: link.platform, kind: link.kind, sourceUrl: link.sourceUrl, canonicalUrl: link.canonicalUrl, externalId: link.externalId, needsExpansion: link.needsExpansion };
 }

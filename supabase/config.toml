@@ -463,3 +463,8 @@ entrypoint = "./functions/youtube-poll/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/save-link/index.ts"
+
+[functions.search-library]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/search-library/index.ts"

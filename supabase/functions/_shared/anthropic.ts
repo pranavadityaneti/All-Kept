@@ -21,7 +21,7 @@ const OUTPUT_SCHEMA = {
 } as const;
 
 export function anthropicDeps(apiKey: string): ClassifyDeps {
-  const client = new Anthropic({ apiKey });
+  const client = new Anthropic({ apiKey, timeout: 20_000, maxRetries: 0 });
   return {
     async call(system, user): Promise<ModelResult> {
       try {
@@ -40,7 +40,7 @@ export function anthropicDeps(apiKey: string): ClassifyDeps {
         try { output = JSON.parse(text); } catch { return { output: null, refused: false, model: response.model, usage: response.usage, error: "model returned non-JSON" }; }
         return { output, refused: false, model: response.model, usage: response.usage };
       } catch (e) {
-        return { output: null, refused: false, model: MODEL, usage: null, error: String(e).slice(0, 300) };
+        return { output: null, refused: false, model: MODEL, usage: null, error: e instanceof Anthropic.APIError ? `anthropic ${e.status ?? "request failed"}` : "anthropic request failed" };
       }
     },
   };

@@ -1,11 +1,12 @@
 // Runs enrichment and classification for one item against the database. Used by the webhook (right after capture), the poller and the sweeper.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { enrich, type EnrichableItem } from "./enrich.ts";
-import { classify, PROMPT_VERSION, type ClassifyDeps, type ModelUsage } from "./classify.ts";
+import { PROMPT_VERSION, type ClassifyDeps, type ModelUsage } from "./classify.ts";
+import { runClassification, type ClassificationClaim } from "./classification-worker.ts";
 
 export interface PipelineDeps {
   fetch: typeof fetch;
-  /** null until a model key is configured (see classifiers.ts): enrichment still runs, classification waits for the sweeper. */
+  /** null until a model key is configured (see classifiers.ts): enrichment still runs, classification reports a configuration failure. */
   classifier: ClassifyDeps | null;
   /** The cheaper tier for an imported back catalogue. Falls back to `classifier` when absent. */
   bulkClassifier?: ClassifyDeps | null;
@@ -61,8 +62,8 @@ export async function snapshotTo(db: SupabaseClient, fetchImpl: typeof fetch, us
 
 const reasonOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 200);
 
-/** Enriches (if pending/failed/no_link without thumbnail) and classifies (if not yet classified). Returns the category when known. */
-export async function runPipeline(db: SupabaseClient, itemId: string, deps: PipelineDeps): Promise<string | null> {
+/** Enriches (if pending/failed/no_link without thumbnail) and claims due classification work. Returns the category when known. */
+export async function runPipeline(db: SupabaseClient, itemId: string, deps: PipelineDeps, retryClassification = false): Promise<string | null> {
   const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta, captured_via").eq("id", itemId).maybeSingle();
   if (error) throw error;
   if (!item) return null;
@@ -103,18 +104,30 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
     Object.assign(it, r.patch, { status: r.status });
   }
 
-  const { data: ai } = await db.from("item_ai").select("category, user_category").eq("item_id", itemId).maybeSingle();
-  if (ai) return (ai.user_category ?? ai.category) as string | null;
   // A whole back catalogue is worth classifying, but not at the everyday price.
   const classifier = it.captured_via === "import" ? (deps.bulkClassifier ?? deps.classifier) : deps.classifier;
-  if (!classifier) return null;
-
-  const c = await classify({ platform: it.platform, kind: it.kind, url: it.canonical_url ?? it.source_url, title: it.title, text: it.text, author: it.author_name, note: it.note }, classifier);
-  const row: Record<string, unknown> = c.output
-    ? { item_id: itemId, user_id: it.user_id, ...c.output, model: c.model, prompt_version: PROMPT_VERSION, usage: { ...(c.usage ?? {}), cost_usd: costUsd(c.model, c.usage) }, ai_error: null }
-    : { item_id: itemId, user_id: it.user_id, model: c.model, prompt_version: PROMPT_VERSION, usage: c.usage, ai_error: c.error };
-  const { error: e3 } = await db.from("item_ai").upsert(row, { onConflict: "item_id" });
-  if (e3) throw e3;
-  if (!c.output) deps.log("pipeline: classification failed", { item: itemId, error: c.error });
-  return c.output?.category ?? null;
+  return runClassification({
+    classifier,
+    async claim(retry) {
+      const { data, error } = await db.rpc("claim_item_classification", { p_item_id: itemId, p_retry: retry });
+      if (error) throw error;
+      return data as ClassificationClaim | null;
+    },
+    async finish(claim, result, retryable) {
+      const { data, error } = await db.rpc("finish_item_classification", {
+        p_item_id: itemId, p_lease: claim.lease, p_revision: claim.revision,
+        p_output: result.output ? { ...result.output, prompt_version: PROMPT_VERSION } : null,
+        p_error: result.error, p_model: result.model,
+        p_usage: { ...(result.usage ?? {}), cost_usd: costUsd(result.model, result.usage) }, p_retryable: retryable,
+      });
+      if (error) throw error;
+      if (!result.output) deps.log("pipeline: classification failed", { item: itemId, attempt: claim.attempt, retryable });
+      return data === true;
+    },
+    async category() {
+      const { data, error } = await db.from("item_ai").select("category,user_category").eq("item_id", itemId).maybeSingle();
+      if (error) throw error;
+      return (data?.user_category ?? data?.category ?? null) as string | null;
+    },
+  }, retryClassification);
 }

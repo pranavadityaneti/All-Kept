@@ -5,8 +5,9 @@ import { StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconButton } from "../components/IconButton";
 import { ItemCard } from "../components/ItemCard";
-import { useFilters } from "../lib/filters";
-import { useSearch, type LibraryItem } from "../lib/library";
+import { FilterBar } from "../components/FilterBar";
+import { Button } from "../components/Button";
+import { useSearch, useFacets, NO_FILTERS, type Filters, type LibraryItem } from "../lib/library";
 import { track } from "../lib/metrics";
 import { useSession } from "../lib/session";
 import { setCollection } from "../lib/collection";
@@ -17,7 +18,8 @@ export default function Search() {
   const p = usePalette();
   const router = useRouter();
   const session = useSession();
-  const { filters } = useFilters();
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const facets = useFacets(session.status === "ready");
   const [text, setText] = useState("");
   const [term, setTerm] = useState("");
 
@@ -28,15 +30,15 @@ export default function Search() {
   }, [text]);
 
   const results = useSearch(term, filters, session.status === "ready");
-  const items: LibraryItem[] = results.data ?? [];
+  const items: LibraryItem[] = [...new Map((results.data?.pages.flatMap((page) => page.items) ?? []).map((item) => [item.id, item])).values()];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const searched = term.trim().length > 0;
   const userId = session.status === "ready" ? session.userId : null;
 
   useEffect(() => {
     if (!searched || results.isPending || results.isError) return;
-    track(userId, "search", { length: term.trim().length, results: items.length });
-  }, [term, searched, results.isPending, results.isError, items.length, userId]);
+    track(userId, "search", { length: term.trim().length, results: results.data?.pages[0]?.items.length ?? 0 });
+  }, [term, searched, results.isPending, results.isError, results.data?.pages[0]?.items.length, userId]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
@@ -46,7 +48,8 @@ export default function Search() {
           autoFocus
           value={text}
           onChangeText={setText}
-          placeholder="Search captions, tags, people"
+          placeholder="Search words, people, or ideas"
+          maxLength={300}
           placeholderTextColor={p.inkMuted}
           returnKeyType="search"
           clearButtonMode="while-editing"
@@ -55,8 +58,17 @@ export default function Search() {
         <IconButton name="close" label="Close search" onPress={() => router.back()} />
       </View>
 
+      <FilterBar facets={facets.data} filters={filters}
+        onToggle={(group, value) => setFilters((current) => ({ ...current, [group]: current[group].includes(value) ? current[group].filter((v) => v !== value) : [...current[group], value] }))}
+        onClear={() => setFilters(NO_FILTERS)}
+      />
       <FlashList
         data={items}
+        onEndReached={() => { if (results.hasNextPage && !results.isFetching && !results.isError) void results.fetchNextPage(); }}
+        onEndReachedThreshold={0.5}
+        refreshing={searched && results.isRefetching && !results.isFetchingNextPage}
+        onRefresh={() => { if (searched) void results.refetch(); }}
+        ListFooterComponent={results.isFetchingNextPage ? <Text style={[type.label, styles.empty, { color: p.inkMuted }]}>Loading more…</Text> : results.isError && items.length > 0 ? <Button label="Retry loading results" onPress={() => { void (results.isFetchNextPageError ? results.fetchNextPage() : results.refetch()); }} /> : null}
         numColumns={2}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
@@ -72,6 +84,8 @@ export default function Search() {
             <Text style={[type.body, { color: p.inkMuted }]}>
               {!searched ? "Type to search everything you have saved." : results.isPending ? "Searching…" : results.error ? "Search failed. Try again." : `Nothing matches “${term}”.`}
             </Text>
+            {searched && results.isError && <Button label="Retry search" onPress={() => { void results.refetch(); }} />}
+            {searched && !results.isPending && !results.isError && (filters.platforms.length > 0 || filters.categories.length > 0) && <Button label="Search all saves" onPress={() => setFilters(NO_FILTERS)} />}
           </View>
         }
       />

@@ -124,7 +124,7 @@ export interface ImportSavesRequest { path: string }
 export interface ImportSavesResponse { importId: string; found: number; added: number; skipped: number }
 
 /** public.import_progress(import_id): how far one import has got, counted from the saves themselves. */
-export interface ImportProgress { found: number; added: number; ready: number; waiting: number; finished: boolean }
+export interface ImportProgress { found: number; added: number; ready: number; waiting: number; failed?: number; finished: boolean }
 
 /** Direct share/paste of an Instagram permalink. requestId is reused when retrying a save. */
 export interface SaveLinkRequest { text: string; requestId: string }

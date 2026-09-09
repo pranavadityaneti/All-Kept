@@ -109,3 +109,16 @@ Deno.test("a saved time in the future is clamped to now", async () => {
   assertEquals(f.items[0]!.row.saved_at, NOW.toISOString());
   assert(f.items[0]!.row.raw.input);
 });
+
+Deno.test("direct shares need no connected source and deduplicate with DM permalinks", async () => {
+  const f = new Fake();
+  const url = "https://www.instagram.com/p/Original/";
+  const first = await capture(base({ sourceId: null, sourceKind: "share", sourceEventId: "request-123", sharedUrl: url }), f);
+  const replay = await capture(base({ sourceId: null, sourceKind: "share", sourceEventId: "request-123", sharedUrl: url }), f);
+  const dm = await capture(base({ sharedUrl: url }), f);
+  assertEquals([first.itemId, replay.itemId, dm.itemId], ["item-1", "item-1", "item-1"]);
+  assertEquals(f.items[0]!.row.source_id, null);
+  assertEquals(f.items[0]!.row.canonical_url, url);
+  assertEquals(f.items.length, 1);
+  assertEquals(f.bumps.length, 1);
+});
