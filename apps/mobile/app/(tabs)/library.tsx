@@ -12,6 +12,7 @@ import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
 import { useThumbnails } from "../../lib/thumbnails";
+import { TAB_BAR_HEIGHT } from "../../components/FloatingTabBar";
 import { space, type, usePalette } from "../../lib/theme";
 
 export default function Library() {
@@ -102,7 +103,7 @@ export default function Library() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md },
-  list: { padding: space.lg },
+  list: { padding: space.lg, paddingBottom: TAB_BAR_HEIGHT + space.xxl },
   cell: { flex: 1 },
   cellLeft: { paddingRight: space.sm },
   cellRight: { paddingLeft: space.sm },

@@ -1,4 +1,5 @@
 import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
@@ -44,6 +45,7 @@ export default function ConnectInstagram() {
   useEffect(() => {
     if (linked.data && !linkedReported.current) {
       linkedReported.current = true;
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       track(userId, "link_completed");
     }
   }, [linked.data, userId]);
@@ -64,10 +66,12 @@ export default function ConnectInstagram() {
   const copy = async () => {
     if (code.status !== "ready") return;
     await Clipboard.setStringAsync(code.code);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setCopied(true);
   };
 
   const openInstagram = async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const ok = await Linking.canOpenURL(MESSAGE_URL).catch(() => false);
     await Linking.openURL(ok ? MESSAGE_URL : PROFILE_URL);
   };

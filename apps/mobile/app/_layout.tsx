@@ -55,8 +55,8 @@ function Shell() {
 
   return (
     <>
-      {/* The app is dark whatever the device is set to. */}
-      <StatusBar style="light" />
+      {/* Follows the chosen theme, not the device, so the clock stays legible either way. */}
+      <StatusBar style={p.blur === "dark" ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: p.bg } }} />
     </>
   );

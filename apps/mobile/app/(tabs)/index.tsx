@@ -16,6 +16,7 @@ import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
 import { useThumbnails } from "../../lib/thumbnails";
+import { TAB_BAR_HEIGHT } from "../../components/FloatingTabBar";
 import { radius, space, type, usePalette } from "../../lib/theme";
 
 const CATEGORIES_SHOWN = 6;
@@ -143,7 +144,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  page: { padding: space.lg, gap: space.xl, paddingBottom: space.xxl },
+  page: { padding: space.lg, gap: space.xl, paddingBottom: TAB_BAR_HEIGHT + space.xxl },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   bell: { width: 40, height: 40, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, alignItems: "center", justifyContent: "center" },
   section: { gap: space.md },

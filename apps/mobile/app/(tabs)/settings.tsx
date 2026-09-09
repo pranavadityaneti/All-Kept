@@ -1,14 +1,17 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { Alert, Linking, StyleSheet, Switch, Text, View } from "react-native";
+import { Alert, StyleSheet, Switch, Text, View } from "react-native";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Screen } from "../../components/Screen";
 import { useDeleteAccount } from "../../lib/account";
+import { openLink } from "../../lib/open";
 import { useSession } from "../../lib/session";
+import { Chip } from "../../components/Chip";
 import { useLinkedSource, useSetReplies } from "../../lib/sources";
 import { useOtaUpdates } from "../../lib/updates";
-import { space, type, usePalette } from "../../lib/theme";
+import { TAB_BAR_HEIGHT } from "../../components/FloatingTabBar";
+import { space, type, usePalette, useThemeChoice, type ThemeChoice } from "../../lib/theme";
 
 const PRIVACY = "https://pranavadityaneti.github.io/All-Kept/privacy.html";
 const TERMS = "https://pranavadityaneti.github.io/All-Kept/terms.html";
@@ -23,6 +26,7 @@ export default function Settings() {
   const setReplies = useSetReplies(linked.data);
   const remove = useDeleteAccount();
   const updates = useOtaUpdates();
+  const theme = useThemeChoice();
 
   const confirmDelete = () => {
     Alert.alert(
@@ -72,6 +76,16 @@ export default function Settings() {
       </Card>
 
       <Card>
+        <Text style={[type.heading, { color: p.ink }]}>Appearance</Text>
+        <Text style={[type.body, { color: p.inkMuted }]}>Follow your phone, or pick one and stay with it.</Text>
+        <View style={styles.choices}>
+          {([["system", "Automatic"], ["light", "Light"], ["dark", "Dark"]] as [ThemeChoice, string][]).map(([value, label]) => (
+            <Chip key={value} label={label} selected={theme.choice === value} onPress={() => theme.setChoice(value)} />
+          ))}
+        </View>
+      </Card>
+
+      <Card>
         <Text style={[type.heading, { color: p.ink }]}>How to save</Text>
         <Text style={[type.body, { color: p.inkMuted }]}>In Instagram, tap the paper plane under a reel or post, choose @allkeptapp, and send. Plain posts arrive without a link; open the card and paste the link to attach it.</Text>
       </Card>
@@ -110,14 +124,15 @@ export default function Settings() {
       </Card>
 
       <View style={styles.links}>
-        <Text accessibilityRole="link" style={[type.label, { color: p.accent }]} onPress={() => { void Linking.openURL(PRIVACY); }}>Privacy</Text>
-        <Text accessibilityRole="link" style={[type.label, { color: p.accent }]} onPress={() => { void Linking.openURL(TERMS); }}>Terms</Text>
+        <Text accessibilityRole="link" style={[type.label, { color: p.accent }]} onPress={() => { void openLink(PRIVACY); }}>Privacy</Text>
+        <Text accessibilityRole="link" style={[type.label, { color: p.accent }]} onPress={() => { void openLink(TERMS); }}>Terms</Text>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  choices: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   switchRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   switchLabel: { flex: 1 },
   links: { flexDirection: "row", alignItems: "center", gap: space.lg, paddingTop: space.sm },

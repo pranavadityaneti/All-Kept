@@ -1,16 +1,26 @@
-import { Image, type ColorValue, type ImageStyle, type StyleProp } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import type { ColorValue, StyleProp, TextStyle } from "react-native";
 
-/** Line icons drawn as assets, so the app carries no icon library. */
-const SOURCES = {
-  home: require("../assets/icon-home.png"),
-  library: require("../assets/icon-library.png"),
-  settings: require("../assets/icon-settings.png"),
-  bell: require("../assets/icon-bell.png"),
-  search: require("../assets/icon-search.png"),
+/** Rounded, soft-cornered icons. One map, so a screen never reaches for a set directly. */
+const NAMES = {
+  home: "home-outline",
+  homeActive: "home",
+  library: "albums-outline",
+  libraryActive: "albums",
+  settings: "settings-outline",
+  settingsActive: "settings",
+  bell: "notifications-outline",
+  search: "search-outline",
+  close: "close",
+  chevron: "chevron-forward",
+  share: "share-outline",
+  trash: "trash-outline",
+  open: "open-outline",
+  check: "checkmark",
 } as const;
 
-export type IconName = keyof typeof SOURCES;
+export type IconName = keyof typeof NAMES;
 
-export function Icon({ name, size = 22, color, style }: { name: IconName; size?: number; color: ColorValue; style?: StyleProp<ImageStyle> }) {
-  return <Image source={SOURCES[name]} style={[{ width: size, height: size, tintColor: color }, style]} resizeMode="contain" accessibilityIgnoresInvertColors />;
+export function Icon({ name, size = 22, color, style }: { name: IconName; size?: number; color: ColorValue; style?: StyleProp<TextStyle> }) {
+  return <Ionicons name={NAMES[name]} size={size} color={color as string} style={style} />;
 }

@@ -2,13 +2,14 @@ import { CATEGORIES } from "@allkept/contracts";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { EmbedPlayer } from "../../components/EmbedPlayer";
 import { Chip } from "../../components/Chip";
 import { embedUrl, initialHeight } from "../../lib/embed";
+import { openLink } from "../../lib/open";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../../lib/item";
 import { track, useTrackOnce } from "../../lib/metrics";
 import { platformLabel } from "../../lib/platforms";
@@ -131,7 +132,7 @@ export default function ItemScreen() {
             <Button
               label={`Open in ${platformLabel(detail.platform)}`}
               variant={embed ? "secondary" : "primary"}
-              onPress={() => { track(userId, "open_original", { platform: detail.platform }); void Linking.openURL(url); }}
+              onPress={() => { track(userId, "open_original", { platform: detail.platform }); void openLink(url); }}
             />
           ) : null}
           <Button
