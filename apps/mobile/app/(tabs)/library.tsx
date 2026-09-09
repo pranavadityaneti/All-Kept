@@ -1,10 +1,11 @@
 import { FlashList } from "@shopify/flash-list";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { RefreshControl, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { IconButton } from "../../components/IconButton";
+import { SearchOverlay } from "../../components/SearchOverlay";
 import { Card } from "../../components/Card";
 import { FilterBar } from "../../components/FilterBar";
 import { ItemCard } from "../../components/ItemCard";
@@ -42,13 +43,14 @@ export default function Library() {
 
   const items: LibraryItem[] = library.data?.pages.flatMap((page) => page.items) ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
+  const [searching, setSearching] = useState(false);
   const busy = library.isPending || linked.isPending || (!loaded && ready);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Text style={[type.title, { color: p.ink }]}>Allkept</Text>
-        {items.length > 0 && <IconButton name="search" label="Search your saves" onPress={() => router.push("/search")} />}
+        {items.length > 0 && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
       </View>
 
       <FilterBar facets={facets.data} filters={filters} onToggle={toggle} onClear={clear} />
@@ -107,6 +109,14 @@ export default function Library() {
           </View>
         }
         ListFooterComponent={library.isFetchingNextPage ? <Text style={[type.label, styles.footer, { color: p.inkMuted }]}>Loading more…</Text> : null}
+      />
+
+      <SearchOverlay
+        visible={searching}
+        enabled={ready}
+        userId={ready ? session.userId : null}
+        onClose={() => setSearching(false)}
+        onOpenItem={(id) => { setSearching(false); router.push({ pathname: "/item/[id]", params: { id } }); }}
       />
     </SafeAreaView>
   );

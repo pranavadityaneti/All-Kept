@@ -7,7 +7,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { IconButton } from "../../components/IconButton";
 import { ItemCard } from "../../components/ItemCard";
-import { SearchField } from "../../components/SearchField";
+import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
 import { Wordmark } from "../../components/Wordmark";
 import { categoryLabel } from "../../lib/sorting";
@@ -38,6 +38,7 @@ export default function Home() {
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const categories = facets.data?.categories ?? [];
   const [shown, setShown] = useState(CATEGORIES_SHOWN);
+  const [searching, setSearching] = useState(false);
 
   // A category tile borrows the newest picture saved under it.
   const pictureFor = (category: string) => {
@@ -56,10 +57,12 @@ export default function Home() {
       >
         <View style={styles.header}>
           <Wordmark height={24} />
-          <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />
+          <View style={styles.headerActions}>
+            <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />
+            <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />
+          </View>
         </View>
 
-        <SearchField onPress={() => router.push("/search")} />
         <Button label="Save a link" variant="secondary" onPress={() => router.push("/save")} />
 
         {session.status === "error" && (
@@ -133,6 +136,14 @@ export default function Home() {
           </View>
         )}
       </ScrollView>
+
+      <SearchOverlay
+        visible={searching}
+        enabled={ready}
+        userId={ready ? session.userId : null}
+        onClose={() => setSearching(false)}
+        onOpenItem={(id) => { setSearching(false); router.push({ pathname: "/item/[id]", params: { id } }); }}
+      />
     </SafeAreaView>
   );
 }
@@ -140,6 +151,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   page: { padding: space.lg, gap: space.xl, paddingBottom: TAB_BAR_CLEARANCE },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: space.sm },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   section: { gap: space.md },
   rail: { marginHorizontal: -space.lg },
