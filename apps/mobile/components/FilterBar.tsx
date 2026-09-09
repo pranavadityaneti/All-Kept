@@ -20,7 +20,7 @@ export function FilterBar({ facets, filters, onToggle, onClear }: {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bar} contentContainerStyle={styles.row}>
       {active && <Chip label="Clear" onPress={onClear} />}
       {platforms.length > 1 && platforms.map((f) => (
-        <Chip key={`p-${f.value}`} label={`${FILTER_LABEL[f.value] ?? f.value} ${f.n}`} selected={filters.platforms.includes(f.value)} onPress={() => onToggle("platforms", f.value)} />
+        <Chip key={`p-${f.value}`} platform={f.value} label={`${FILTER_LABEL[f.value] ?? f.value} ${f.n}`} selected={filters.platforms.includes(f.value)} onPress={() => onToggle("platforms", f.value)} />
       ))}
       {platforms.length > 1 && categories.length > 0 && <View style={styles.divider} />}
       {categories.map((f) => (

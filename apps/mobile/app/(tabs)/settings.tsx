@@ -89,7 +89,7 @@ export default function Settings() {
 
         <SettingsGroup>
           <SettingsRow
-            icon="share"
+            icon="instagram"
             title="Instagram"
             detail={linked.data ? `@${linked.data.handle ?? "connected"} · since ${since(linked.data.since)}` : "Not connected yet"}
             onPress={linked.data ? undefined : () => router.push("/setup/instagram")}

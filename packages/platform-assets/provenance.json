@@ -1,0 +1,129 @@
+[
+  {
+    "file": "assets/facebook.png",
+    "brand": "facebook",
+    "source_page": "https://www.meta.com/brand/resources/facebook/logo/",
+    "source_file": "source/facebook.png",
+    "source_sha256": "2adfd474d91fd20c51084309ed000c1ae6cc7f5f70af14d375930f5a71301308",
+    "asset_sha256": "b38092847c4b6d205733441b25c6b37caa86163d9815352c89eae4a2e3d7369e",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/google.png",
+    "brand": "google",
+    "source_page": "https://developers.google.com/identity/branding-guidelines",
+    "source_file": "source/google.png",
+    "source_sha256": "d1ce9c2af0b10a7333abc99bc706f9a6a199e5b65bf3e3009624f076b8638e6a",
+    "asset_sha256": "cbae0e5c1cf0a5ba68d41c6f25275a91db1ad28ab828c940fbce65a834c82c9c",
+    "retrieved_at": "2026-09-09",
+    "source_url": "https://developers.google.com/static/identity/images/g-logo.png"
+  },
+  {
+    "file": "assets/instagram.png",
+    "brand": "instagram",
+    "source_page": "https://www.meta.com/brand/resources/instagram/instagram-brand/",
+    "source_file": "source/instagram.png",
+    "source_sha256": "21f86b55f986848665ce54ab354ff6b43b7705e6c421d90c04369882b5956766",
+    "asset_sha256": "bc8d4689552fd9c83c0c76938885ff616ef716edc12bf0ba3a8b55ae55c46dbf",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/linkedin.png",
+    "brand": "linkedin",
+    "source_page": "https://brand.linkedin.com/downloads",
+    "source_file": "source/linkedin.png",
+    "source_sha256": "3c0149f26168b5fe0f43e68664abe40341a6443b3cd435d18a73e12f64f8b600",
+    "asset_sha256": "682cfc956f742fab3f57a4a1375333bcf9ad8bcfee8b6525a4f278d40fdbbc36",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/pinterest.png",
+    "brand": "pinterest",
+    "source_page": "https://business.pinterest.com/en-gb/brand-guidelines/",
+    "source_file": "source/pinterest.png",
+    "source_sha256": "5410764149903d1db37bbd92d37aa6e08ff4c129bd13d7d9e65762312d4da774",
+    "asset_sha256": "dec1d0265326936a49113a4c030a32cb8f18b7a6f1df9c67f9fbd19e182edef5",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/reddit.png",
+    "brand": "reddit",
+    "source_page": "https://redditinc.com/brand",
+    "source_file": "source/reddit.svg",
+    "source_sha256": "ed676471a877af054e0d540140c1b2deaa3f4cd1f4b74aa4094cccd04011fe03",
+    "asset_sha256": "0c4522a0b4ece09b1c33429a93e407e112217c809b33e319f2c8210f3dc778b4",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/slack.png",
+    "brand": "slack",
+    "source_page": "https://slack.com/media-kit",
+    "source_file": "source/slack.svg",
+    "source_sha256": "1f40066b694020057218c46eb2a11982b278d89b2dc8f96a21e4ea04e2b9db3b",
+    "asset_sha256": "628a79264bd054feb3db3ac590b3387944f0a2474774f273ec8d4989211efd36",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/threads-dark.png",
+    "brand": "threads",
+    "source_page": "https://www.meta.com/brand/resources/threads/",
+    "source_file": "source/threads-dark.svg",
+    "source_sha256": "2d569c12fb51499e296ebae0178ea928bce5abf4695f31edceee7b3d22d1a894",
+    "asset_sha256": "8c73d9cc697c0564368100af7afc9937e1edbba7160c4d3e85fee928c9db1db5",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/threads-light.png",
+    "brand": "threads",
+    "source_page": "https://www.meta.com/brand/resources/threads/",
+    "source_file": "source/threads-light.svg",
+    "source_sha256": "82b6bfe6c7f21bec096ad95c08fa2348f9105a8f9f910691b46eb0599f8f5f40",
+    "asset_sha256": "b5a4e535f0a1cc5c88f89d59c5dad0433e6f1f57c0273cc5476bafb878658c2a",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/tiktok.png",
+    "brand": "tiktok",
+    "source_page": "https://www.tiktokbrandhub.com/",
+    "source_file": "source/tiktok.svg",
+    "source_sha256": "f33d54af60ac20ce648219918229fec9121161862442f6e08c86fd84318386c7",
+    "asset_sha256": "c8bcd435c09ea03bee0b6f2cbe2564085184e9051c38bf913521de485d4f9099",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/whatsapp.png",
+    "brand": "whatsapp",
+    "source_page": "https://www.meta.com/brand/resources/whatsapp/whatsapp-brand/",
+    "source_file": "source/whatsapp.svg",
+    "source_sha256": "f7b1311db718533e671645f57cd94b92f0e006e61d7e6581a80675fc5a478fc4",
+    "asset_sha256": "b79a1a96aa8578842ee8e43be69aebadca0244fa528d96e5ad95cedb8ab4f571",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/x-dark.png",
+    "brand": "x",
+    "source_page": "https://about.x.com/en/who-we-are/brand-toolkit",
+    "source_file": "source/x-dark.svg",
+    "source_sha256": "dd46f96b6f47fcd33683b79ddfaf3daca1d4f8aeba3c0f2bde1584c69cc699d4",
+    "asset_sha256": "0c5d0634e2a23099a80e5db03232c7e05401df289febfec6190a95f343b12670",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/x-light.png",
+    "brand": "x",
+    "source_page": "https://about.x.com/en/who-we-are/brand-toolkit",
+    "source_file": "source/x-light.png",
+    "source_sha256": "391a3a86f40e253b584defa5f284c7402a2175a705ebb2b4b9460112fc92dc77",
+    "asset_sha256": "c02049d54d24bf9f3ff07e6601c6ba64f94d8e29aebfc92d1283bd86dd567782",
+    "retrieved_at": "2026-09-09"
+  },
+  {
+    "file": "assets/youtube.png",
+    "brand": "youtube",
+    "source_page": "https://brand.youtube/youtube-icon",
+    "source_file": "source/youtube.png",
+    "source_sha256": "1027b1b0517727adb9697155a270744381c3ce9b047b1c8bd8a9389dc7d07a83",
+    "asset_sha256": "6eed5e46d5776cf914c65e40f153332c10ac20086558170781e69dfedc03754d",
+    "retrieved_at": "2026-09-09"
+  }
+]

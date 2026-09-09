@@ -483,41 +483,27 @@ select {
   min-width: 0;
 }
 .platform-icon {
-  width: 27px;
-  height: 27px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border: 1px solid #42374e;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #d6b9f1;
-  background: #2d2438;
+  flex-shrink: 0;
 }
-.color-1 {
-  background: #352325;
-  border-color: #593038;
-  color: #ffa8ab;
+.platform-logo {
+  display: inline-block;
+  flex-shrink: 0;
+  object-fit: contain;
+  vertical-align: middle;
 }
-.color-2 {
-  background: #212c37;
-  border-color: #344454;
-  color: #9dc1e2;
+.platform-logo.generic {
+  color: #aaa4b5;
 }
-.color-3 {
-  background: #28282e;
-  border-color: #44444b;
-  color: #d6d4e0;
-}
-.color-4 {
-  background: #362920;
-  border-color: #553d2e;
-  color: #edbb91;
-}
-.color-5 {
-  background: #24252d;
-  border-color: #363946;
-  color: #b8bdd1;
+.platform-inline,
+td strong.platform-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  vertical-align: middle;
 }
 .platform-name {
   display: flex;
@@ -529,7 +515,6 @@ select {
 }
 .platform-name strong {
   font-weight: 450;
-  text-transform: capitalize;
 }
 .platform-name span {
   color: #bcb6c8;

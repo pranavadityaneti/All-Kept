@@ -1,3 +1,5 @@
+import { PlatformLogo } from "./PlatformLogo";
+import { platformName } from "../../../packages/platform-assets/catalog";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ApiError,
@@ -91,16 +93,6 @@ function Badge({ value }: { value: unknown }) {
       <i />
       {readable(text)}
     </span>
-  );
-}
-function GoogleMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M21.8 12.2c0-.7-.1-1.5-.2-2.2H12v4.2h5.5a4.7 4.7 0 0 1-2 3.1v2.6h3.4c2-1.8 2.9-4.5 2.9-7.7ZM12 22c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6a6.2 6.2 0 0 1-9.2-3.2H2.8v2.7A10.4 10.4 0 0 0 12 22ZM6.3 13.7a6 6 0 0 1 0-3.4V7.6H2.8a10 10 0 0 0 0 8.8l3.5-2.7ZM12 6c1.6 0 3 .6 4.1 1.6l3-3A10 10 0 0 0 2.8 7.6l3.5 2.7A6 6 0 0 1 12 6Z"
-      />
-    </svg>
   );
 }
 function App() {
@@ -235,7 +227,7 @@ function App() {
                 disabled={!configured || loginBusy}
                 onClick={() => void signIn()}
               >
-                <GoogleMark />
+                <PlatformLogo platform="google" size={18} />
                 {loginBusy ? "Opening Google…" : "Continue with Google"}
               </button>
             )}
@@ -795,14 +787,14 @@ function OverviewPanel({
               <p>No saves in this period yet.</p>
             </div>
           ) : (
-            data.platforms.map((p, i) => (
+            data.platforms.map((p) => (
               <div className="platform-row" key={p.platform}>
-                <span className={`platform-icon color-${i % 6}`}>
-                  {p.platform.slice(0, 1).toUpperCase()}
+                <span className="platform-icon">
+                  <PlatformLogo platform={p.platform} size={24} />
                 </span>
                 <div>
                   <div className="platform-name">
-                    <strong>{readable(p.platform)}</strong>
+                    <strong>{platformName(p.platform)}</strong>
                     <span>
                       {formatNumber(p.count)}{" "}
                       <small>{Math.round((p.count / total) * 100)}%</small>
@@ -949,7 +941,10 @@ function DataTable({
                       {r.title ? cell(r, "title") : "Untitled save"}
                     </strong>
                     <small>
-                      <span className="capitalize">{cell(r, "platform")}</span>{" "}
+                      <span className="platform-inline">
+                        <PlatformLogo platform={String(r.platform)} size={18} />
+                        {platformName(String(r.platform))}
+                      </span>{" "}
                       · {cell(r, "email")}
                     </small>
                     <code title={r.id}>{r.id.slice(0, 8)}</code>
@@ -994,7 +989,14 @@ function DataTable({
               ) : page === "sources" ? (
                 <>
                   <td>
-                    <strong className="capitalize">{cell(r, "kind")}</strong>
+                    <strong className="platform-inline">
+                      <PlatformLogo platform={String(r.kind)} size={22} />
+                      {r.kind === "instagram_dm"
+                        ? "Instagram DM"
+                        : r.kind === "youtube_playlist"
+                          ? "YouTube playlist"
+                          : platformName(String(r.kind))}
+                    </strong>
                     <small>{cell(r, "handle")}</small>
                   </td>
                   <td>{cell(r, "email")}</td>
@@ -1007,7 +1009,10 @@ function DataTable({
               ) : page === "imports" ? (
                 <>
                   <td>
-                    <strong className="capitalize">{cell(r, "source")}</strong>
+                    <strong className="platform-inline">
+                      <PlatformLogo platform={String(r.source)} size={22} />
+                      {platformName(String(r.source))} export
+                    </strong>
                     <small>{cell(r, "email")}</small>
                   </td>
                   <td className="number">

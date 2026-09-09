@@ -1,3 +1,4 @@
+import { PlatformLogo } from "./PlatformLogo";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { categoryLabel, sortingNote } from "../lib/sorting";
@@ -37,8 +38,9 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
         {thumbnail ? (
           <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} accessibilityIgnoresInvertColors />
         ) : (
-          <Text style={[type.label, styles.placeholder, { color: p.inkMuted }]}>{platformLabel(item.platform)}</Text>
+          <View style={styles.placeholder}><PlatformLogo platform={item.platform} size={40}/><Text style={[type.label, { color: p.inkMuted }]}>{platformLabel(item.platform)}</Text></View>
         )}
+        {thumbnail && <View style={[styles.platformBadge, { backgroundColor: p.surface }]}><PlatformLogo platform={item.platform} size={20}/></View>}
         {note && (
           <View style={[styles.badge, { backgroundColor: p.surface, borderColor: p.border }]}>
             <Text style={[type.label, { color: p.inkMuted }]}>{note}</Text>
@@ -56,7 +58,8 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
 const styles = StyleSheet.create({
   card: { flex: 1, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, overflow: "hidden" },
   thumb: { aspectRatio: 1, alignItems: "center", justifyContent: "center" },
-  placeholder: { textTransform: "uppercase", letterSpacing: 1 },
+  placeholder: { alignItems: "center", gap: space.sm },
+  platformBadge: { position: "absolute", right: space.sm, bottom: space.sm, padding: 7, borderRadius: radius.sm },
   badge: { position: "absolute", left: space.sm, top: space.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill, paddingHorizontal: space.sm, paddingVertical: 2 },
   body: { padding: space.md, gap: space.xs },
 });
