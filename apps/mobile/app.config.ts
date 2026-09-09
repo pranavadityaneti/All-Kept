@@ -18,7 +18,9 @@ const config: ExpoConfig = {
   },
   android: {
     package: "app.allkept.mobile",
-    adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#191919" },
+    // White, not the app's dark ground: the mark's lower edge is an alpha fade to cream, drawn
+    // for a white background. Over anything dark it composites to a muddy tan.
+    adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FFFFFF" },
   },
   // The EAS project Pranav created on 8 Sep 2026. Builds and over-the-air updates resolve through it.
   extra: { eas: { projectId: "55c2d8b3-2f30-462b-b052-2a685de0aa54" } },
@@ -34,7 +36,10 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-secure-store",
-    ["expo-splash-screen", { image: "./assets/splash-icon.png", imageWidth: 220, backgroundColor: "#191919", dark: { backgroundColor: "#191919" } }],
+    // White in both themes, for the same reason as the icon: the wordmark is near-black and the
+    // mark fades to cream, so the lockup only holds on a light ground. A dark variant would need
+    // the artwork redrawn, not recoloured.
+    ["expo-splash-screen", { image: "./assets/splash-icon.png", imageWidth: 220, backgroundColor: "#FFFFFF", dark: { backgroundColor: "#FFFFFF" } }],
   ],
 };
 
