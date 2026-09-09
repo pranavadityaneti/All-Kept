@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Chip } from "../../components/Chip";
 import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { Icon } from "../../components/Icon";
 import { SettingsGroup, SettingsRow } from "../../components/SettingsRow";
+import { ThemeChoice } from "../../components/ThemeChoice";
 import { useDeleteAccount } from "../../lib/account";
 import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/google";
 import { useProfile, useAvatar } from "../../lib/profile";
@@ -16,7 +16,7 @@ import { openLink } from "../../lib/open";
 import { useSession } from "../../lib/session";
 import { useLinkedSource, useSetReplies } from "../../lib/sources";
 import { supabase } from "../../lib/supabase";
-import { radius, space, type, usePalette, useThemeChoice, type ThemeChoice } from "../../lib/theme";
+import { radius, space, type, usePalette, useThemeChoice } from "../../lib/theme";
 import { useOtaUpdates } from "../../lib/updates";
 
 const PRIVACY = "https://pranavadityaneti.github.io/All-Kept/privacy.html";
@@ -125,11 +125,7 @@ export default function Settings() {
         <SettingsGroup>
           <View style={styles.appearance}>
             <Text style={[type.body, { color: p.ink }]}>Appearance</Text>
-            <View style={styles.choices}>
-              {([["system", "Automatic"], ["light", "Light"], ["dark", "Dark"]] as [ThemeChoice, string][]).map(([value, label]) => (
-                <Chip key={value} label={label} selected={theme.choice === value} onPress={() => theme.setChoice(value)} />
-              ))}
-            </View>
+            <ThemeChoice value={theme.choice} onChange={theme.setChoice} />
           </View>
         </SettingsGroup>
 
@@ -177,5 +173,4 @@ const styles = StyleSheet.create({
   avatar: { overflow: "hidden", width: 48, height: 48, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   accountText: { flex: 1, gap: 2 },
   appearance: { padding: space.lg, gap: space.md },
-  choices: { flexDirection: "row", gap: space.sm, flexWrap: "wrap" },
 });

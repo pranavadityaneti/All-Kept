@@ -40,7 +40,9 @@ export type ThemeChoice = "system" | "light" | "dark";
 const KEY = "allkept.theme";
 
 /** The choice, shared by every screen so they cannot disagree, and remembered between launches. */
-let choice: ThemeChoice = "dark";
+// Light by default: the library is a wall of other people's pictures, and a light ground lets them
+// read as they were made. Dark stays a choice in Settings for anyone who wants it.
+let choice: ThemeChoice = "light";
 const listeners = new Set<(c: ThemeChoice) => void>();
 let loaded = false;
 
