@@ -8,6 +8,7 @@ export type SourceKind = "instagram_dm" | "youtube_playlist";
 export type CapturedVia = SourceKind | "share";
 export type SourceStatus = "active" | "disconnected" | "unreadable";
 export type ItemStatus = "pending" | "ready" | "preview_unavailable" | "no_link" | "failed";
+export type ClassificationStatus = "queued" | "processing" | "ready" | "retry_wait" | "failed";
 export type ClientOs = "ios" | "android";
 
 export const CATEGORIES = [
@@ -33,8 +34,8 @@ export interface ItemIdentity {
 /** What any door hands to the capture module. */
 export interface CaptureInput {
   userId: string;
-  sourceId: string;
-  sourceKind: SourceKind;
+  sourceId: string | null;
+  sourceKind: CapturedVia;
   /** Instagram message id, or YouTube playlist item id. Makes the capture idempotent. */
   sourceEventId: string;
   /** ISO-8601: when the user saved it (message time, playlist add time). */
@@ -50,6 +51,8 @@ export interface CaptureInput {
   platform?: Platform;
   kind?: Kind;
   externalId?: string;
+  /** Retained independently when a post's permalink supplies the deduplication shortcode. */
+  instagramMediaId?: string;
   /** Title when the door knows it (YouTube video title). Captions go in `caption`. */
   title?: string;
 }
@@ -112,8 +115,8 @@ export const LINK_CODE_LENGTH = 6;
 export interface DeleteAccountResponse { deleted: true; thumbnails: number; events: number; replies: number; items: number; sources: number }
 
 /** POST /reprocess-item (JWT): enrich and classify one item the caller owns, now rather than at the next sweep. */
-export interface ReprocessItemRequest { itemId: string }
-export interface ReprocessItemResponse { status: ItemStatus; category: string | null }
+export interface ReprocessItemRequest { itemId: string; retry?: boolean }
+export interface ReprocessItemResponse { status: ItemStatus; category: string | null; classificationStatus?: ClassificationStatus }
 
 
 /** POST /import-saves (JWT): reads the Instagram export the caller uploaded and creates the saves it names. */
@@ -122,3 +125,7 @@ export interface ImportSavesResponse { importId: string; found: number; added: n
 
 /** public.import_progress(import_id): how far one import has got, counted from the saves themselves. */
 export interface ImportProgress { found: number; added: number; ready: number; waiting: number; finished: boolean }
+
+/** Direct share/paste of an Instagram permalink. requestId is reused when retrying a save. */
+export interface SaveLinkRequest { text: string; requestId: string }
+export type SaveLinkResponse = CaptureResult;

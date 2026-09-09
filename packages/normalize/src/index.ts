@@ -150,6 +150,42 @@ const pathOnly = (base: string, u: URL, platform: keyof typeof SHARE_KEYS, kind:
 const CODE = /^[A-Za-z0-9_-]+$/;
 const DIGITS = /^\d+$/;
 
+/** A post/reel permalink, never a profile, story, or temporary messaging CDN asset. */
+export function instagramPermalink(text: string): NormalizedLink | null {
+  const input = text.trim().replace(/^(?:www\.)?instagram\.com\//i, "https://www.instagram.com/");
+  const link = normalize({ text: input });
+  return link.platform === "instagram" && link.canonicalUrl && link.externalId
+    && /^https:\/\/www\.instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+\/$/.test(link.canonicalUrl)
+    ? link : null;
+}
+
+/**
+ * A link someone pasted or shared into the direct-save door. Any address, not only a platform we
+ * recognise: an unknown site is a `web` article and enrichment reads its own preview tags.
+ *
+ * A copied address often arrives without its scheme, which the parser reads as a note rather than a
+ * link, so a bare host is retried with one. null only when there is no link in the text at all.
+ */
+export function saveLink(text: string): NormalizedLink | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const direct = normalize({ text: trimmed });
+  if (direct.platform !== "note") return direct;
+  if (!/^[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:[/?#]|$)/i.test(trimmed)) return null;
+  const scheme = normalize({ text: `https://${trimmed}` });
+  return scheme.platform === "note" ? null : scheme;
+}
+
+/** Direct saves may also use Instagram's own redirect links; enrichment expands those later. */
+export function instagramSaveLink(text: string): NormalizedLink | null {
+  const permalink = instagramPermalink(text);
+  if (permalink) return permalink;
+  const input = text.trim().replace(/^(?:www\.)?instagram\.com\//i, "https://www.instagram.com/");
+  const link = normalize({ text: input });
+  if (link.platform !== "instagram" || !link.needsExpansion || !link.sourceUrl) return null;
+  return /^\/share\/[^/]+/.test(new URL(link.sourceUrl).pathname) ? link : null;
+}
+
 function instagram(u: URL): Partial3 {
   const s = segs(u);
   if (s[0] === "share") return expand();

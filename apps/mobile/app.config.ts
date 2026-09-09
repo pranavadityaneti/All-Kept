@@ -36,6 +36,10 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-secure-store",
+    ["expo-sharing", {
+      ios: { enabled: true, activationRule: { supportsText: true, supportsWebUrlWithMaxCount: 1 } },
+      android: { enabled: true, singleShareMimeTypes: ["text/plain"] },
+    }],
     // White in both themes, for the same reason as the icon: the wordmark is near-black and the
     // mark fades to cream, so the lockup only holds on a light ground. A dark variant would need
     // the artwork redrawn, not recoloured.

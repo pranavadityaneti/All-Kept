@@ -458,3 +458,8 @@ entrypoint = "./functions/youtube-register/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/youtube-poll/index.ts"
+
+[functions.save-link]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/save-link/index.ts"
