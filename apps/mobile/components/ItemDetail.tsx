@@ -11,7 +11,7 @@ import { embedUrl, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../lib/item";
 import { track, useTrackOnce } from "../lib/metrics";
 import { openLink } from "../lib/open";
-import { platformLabel } from "../lib/platforms";
+import { platformIcon, platformLabel } from "../lib/platforms";
 import { useSession } from "../lib/session";
 import { shareItem } from "../lib/share";
 import { useThumbnails } from "../lib/thumbnails";
@@ -161,15 +161,18 @@ export function ItemDetail({ id, width, onBack }: { id: string; width: number; o
           </Card>
         )}
 
+        {/* The two ends of what you can do with a save. Delete sits at the far side rather than
+            beside the thing you tap often, because the two are one mis-tap apart otherwise. */}
         <View style={styles.actions}>
-          {url && (
-            <Button
+          {url ? (
+            <IconButton
+              name={platformIcon(detail.platform)}
               label={`Open in ${platformLabel(detail.platform)}`}
-              variant={embed ? "secondary" : "primary"}
+              size={48}
               onPress={() => { track(userId, "open_original", { platform: detail.platform }); void openLink(url); }}
             />
-          )}
-          <Button label="Delete this save" variant="secondary" busy={remove.isPending} onPress={confirmDelete} />
+          ) : <View />}
+          <IconButton name="trash" label="Delete this save" size={48} tone="danger" disabled={remove.isPending} onPress={confirmDelete} />
         </View>
       </ScrollView>
 
@@ -215,7 +218,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.sm, flexWrap: "wrap" },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   details: { gap: space.md },
-  actions: { gap: space.md, paddingTop: space.sm },
+  actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: space.md },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.md, minHeight: 48 },
   noteInput: { minHeight: 88, textAlignVertical: "top" },
   full: { flex: 1 },

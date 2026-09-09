@@ -18,6 +18,19 @@ const NAMES = {
   open: "open-outline",
   check: "checkmark",
   download: "cloud-download-outline",
+  // Platform logos, so a save can offer to open where it came from. Ionicons ships these, which
+  // keeps brand artwork out of the repository.
+  instagram: "logo-instagram",
+  youtube: "logo-youtube",
+  x: "logo-x",
+  facebook: "logo-facebook",
+  tiktok: "logo-tiktok",
+  reddit: "logo-reddit",
+  threads: "logo-threads",
+  linkedin: "logo-linkedin",
+  pinterest: "logo-pinterest",
+  web: "globe-outline",
+  note: "document-text-outline",
 } as const;
 
 export type IconName = keyof typeof NAMES;
