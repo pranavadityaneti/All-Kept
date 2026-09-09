@@ -82,12 +82,6 @@ Deno.test("notes are simply ready", async () => {
   assertEquals(r.status, "ready");
 });
 
-Deno.test("instagram tokenless oEmbed (html only): author is parsed from the embed markup", async () => {
-  const html = '<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/reel/DcVMQIIMa5-/"><div><a href="https://www.instagram.com/reel/DcVMQIIMa5-/">A post shared by David Senra (@davidsenra)</a></div></blockquote>';
-  const r = await enrich(base({ text: null }), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": () => Response.json({ version: "1.0", provider_name: "Instagram", type: "rich", width: 658, html }) })));
-  assertEquals([r.status, r.patch.author_name, r.patch.author_handle, r.patch.thumbnail_url_remote], ["ready", "David Senra", "davidsenra", undefined]);
-});
-
 // Shape of Instagram's real reel page tags on 8 Sep 2026 (entities and signed CDN url as served).
 const IG_PAGE = `<html><head><title>Instagram</title>
 <meta property="og:title" content="David Senra on Instagram: &quot;Travis Kalanick on the little details that helped Uber beat Lyft: &#x201c;I needed to subsidize rides&#x201d;&quot;" />
@@ -195,4 +189,22 @@ Deno.test("web page: Open Graph reading is capped the same way", async () => {
   const html = `<meta property="og:title" content="Capped" /><meta property="og:description" content="Still parsed" />`;
   const r = await enrich(base({ platform: "web", kind: "article", canonical_url: "https://site/huge", text: null }), deps(fakeFetch({ "https://site/huge": () => new Response(hugePage(html), { headers: { "content-type": "text/html" } }) })));
   assertEquals([r.status, r.patch.title, r.patch.text], ["ready", "Capped", "Still parsed"]);
+});
+
+Deno.test("a provider that refuses outright still yields a card from the permalink's own tags", async () => {
+  // Meta answers 400 for some reels; the page still publishes everything a card needs.
+  const r = await enrich(base({ text: null }), deps(fakeFetch({
+    "https://graph.facebook.com/v23.0/instagram_oembed": () => new Response("{}", { status: 400 }),
+    "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response(IG_PAGE),
+  })));
+  assertEquals([r.status, r.patch.author_name, r.patch.author_handle], ["ready", "David Senra", "davidsenra"]);
+  assert(r.patch.thumbnail_url_remote!.startsWith("https://scontent.cdninstagram.com/"));
+});
+
+Deno.test("a provider that refuses and a page with nothing to read is honestly marked unavailable", async () => {
+  const r = await enrich(base(), deps(fakeFetch({
+    "https://graph.facebook.com/v23.0/instagram_oembed": () => new Response("{}", { status: 400 }),
+    "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response("<html><head><title>Login</title></head></html>"),
+  })));
+  assertEquals([r.status, r.patch.title, r.patch.author_name, r.retryAfterMs], ["preview_unavailable", undefined, undefined, undefined]);
 });

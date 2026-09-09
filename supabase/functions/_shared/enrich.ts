@@ -110,7 +110,7 @@ export function decodeEntities(s: string): string {
 const stripTags = (html: string) => decodeEntities(html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")).trim();
 
 /** Reads Open Graph / Twitter Card / title tags from an HTML document. */
-export function parseOpenGraph(html: string): { title?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string } {
+export function parseOpenGraph(html: string): { title?: string; ogTitle?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string } {
   const head = html.slice(0, 200_000);
   const meta = (names: string[]): string | undefined => {
     for (const n of names) {
@@ -124,7 +124,8 @@ export function parseOpenGraph(html: string): { title?: string; twitterTitle?: s
   };
   const titleTag = /<title[^>]*>([^<]*)<\/title>/i.exec(head)?.[1]?.trim();
   const out: ReturnType<typeof parseOpenGraph> = {};
-  const title = meta(["og:title", "twitter:title"]) ?? titleTag; if (title) out.title = title;
+  const ogTitle = meta(["og:title", "twitter:title"]); if (ogTitle) out.ogTitle = ogTitle;
+  const title = ogTitle ?? titleTag; if (title) out.title = title;
   const twitterTitle = meta(["twitter:title"]); if (twitterTitle) out.twitterTitle = twitterTitle;
   const description = meta(["og:description", "twitter:description", "description"]); if (description) out.description = description;
   const image = meta(["og:image", "twitter:image"]); if (image) out.image = image;
@@ -204,8 +205,15 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       const res = await fetchWithTimeout(deps.fetch, oe ?? target);
       const verdict = classifyHttp(res.status);
       if (verdict === "retry") return retry(`metadata ${res.status}`);
+
+      // Whether to ask the permalink itself for a preview. Two ways to get here: the provider
+      // refused outright (a private post, or a feature this app is not approved for), or it
+      // answered without the fields a card needs.
+      let askThePage = false;
+
       if (verdict === "unavailable") {
-        status = "preview_unavailable";
+        askThePage = !!oe;
+        if (!oe) status = "preview_unavailable";
       } else if (oe) {
         const j = await res.json().catch(() => ({})) as Record<string, unknown>;
         const s = (k: string) => (typeof j[k] === "string" ? (j[k] as string) : undefined);
@@ -214,33 +222,10 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         else if (title && !item.title) patch.title = title;
         if (s("author_name") && !item.author_name) patch.author_name = s("author_name");
         if (s("author_url")) patch.author_handle = s("author_url");
-        // Tokenless Meta oEmbed returns only the embed HTML; the author is named inside it ("A post shared by Name (@handle)").
-        if (!patch.author_name && !item.author_name && s("html")) {
-          const shared = /A post shared by ([^<(]+?)\s*\(@([A-Za-z0-9._]+)\)/.exec(s("html")!);
-          if (shared) { patch.author_name = stripTags(shared[1]!).trim(); patch.author_handle = shared[2]!; }
-        }
         if (s("thumbnail_url") && !item.thumbnail_url_remote) patch.thumbnail_url_remote = s("thumbnail_url");
         if (platform === "x" && s("html") && !item.text) patch.text = stripTags(s("html")!);
         patch.media_meta = { oembed: { provider: s("provider_name"), type: s("type"), width: j["thumbnail_width"], height: j["thumbnail_height"] } };
-        // Providers may answer 200 without author or thumbnail (Meta does so without an approved app token).
-        // The permalink's own link-preview tags are the fallback; a failure here never costs the item its card.
-        const missingAuthor = !(patch.author_name ?? item.author_name);
-        const missingThumb = !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
-        if ((missingAuthor || missingThumb) && /^https?:\/\//.test(target)) {
-          const page = await fetchOpenGraph(deps.fetch, target);
-          if (!page) {
-            deps.log("enrich: link-preview fallback unavailable", { item: item.id, platform });
-          } else {
-            const ig = platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
-            let learned = false;
-            if (missingAuthor && (ig.authorName ?? page.og.author)) { patch.author_name = ig.authorName ?? page.og.author; learned = true; }
-            if (ig.authorHandle && !patch.author_handle) { patch.author_handle = ig.authorHandle; learned = true; }
-            if (missingThumb && page.og.image) { patch.thumbnail_url_remote = page.og.image; learned = true; }
-            if (!item.text && !patch.text && (ig.caption ?? page.og.description)) { patch.text = ig.caption ?? page.og.description; learned = true; }
-            if (learned) patch.media_meta = { ...patch.media_meta, link_preview: true };
-            else deps.log("enrich: link-preview tags absent", { item: item.id, platform }); // e.g. a login wall served in place of the post
-          }
-        }
+        askThePage = !(patch.author_name ?? item.author_name) || !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
       } else {
         const html = await readHead(res, MAX_HTML_BYTES);
         const og = parseOpenGraph(html);
@@ -250,6 +235,28 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         if (og.author && !item.author_name) patch.author_name = og.author;
         if (og.siteName) patch.media_meta = { site_name: og.siteName };
         if (!og.title && !og.description) status = "preview_unavailable";
+      }
+
+      if (askThePage && /^https?:\/\//.test(target)) {
+        const page = await fetchOpenGraph(deps.fetch, target);
+        const ig = page && platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
+        let learned = false;
+        if (page) {
+          if (!(patch.author_name ?? item.author_name) && (ig.authorName ?? page.og.author)) { patch.author_name = ig.authorName ?? page.og.author; learned = true; }
+          if (ig.authorHandle && !patch.author_handle) { patch.author_handle = ig.authorHandle; learned = true; }
+          if (!(patch.thumbnail_url_remote ?? item.thumbnail_url_remote) && page.og.image) { patch.thumbnail_url_remote = page.og.image; learned = true; }
+          if (!item.text && !patch.text && (ig.caption ?? page.og.description)) { patch.text = ig.caption ?? page.og.description; learned = true; }
+          // Only a declared preview title, never the page's own <title>, which on a login wall reads "Login".
+          if (!item.title && !patch.title && !patch.text && page.og.ogTitle) { patch.title = page.og.ogTitle; learned = true; }
+        }
+        if (learned) {
+          patch.media_meta = { ...(patch.media_meta ?? {}), link_preview: true };
+          status = "ready"; // no-link posts never reach here, so a card is what this becomes
+        } else {
+          deps.log(page ? "enrich: link-preview tags absent" : "enrich: link-preview fallback unavailable", { item: item.id, platform });
+          // Only now is there truly nothing to show.
+          if (verdict === "unavailable") status = "preview_unavailable";
+        }
       }
     } catch (e) {
       return retry(`metadata: ${String(e).slice(0, 200)}`);
