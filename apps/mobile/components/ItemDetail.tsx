@@ -65,6 +65,15 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const heading = detail.title?.trim() || detail.text?.split("\n").find((l) => l.trim()) || platformLabel(detail.platform);
   const noteValue = note ?? detail.note ?? "";
   const needsLink = detail.status === "no_link" || detail.status === "failed";
+  // "No link yet" was shown for both, and for a failed save it is simply untrue: the link is there,
+  // the button below opens it, we just could not read the page at the end of it. Sites like Amazon
+  // and MakeMyTrip refuse automated readers outright, so that is the ordinary outcome for them
+  // rather than a fault, and it should not read like one.
+  const blankNote =
+    detail.status === "no_link" ? "No link yet"
+      : detail.status === "failed" ? "Could not read this page"
+      : detail.status === "preview_unavailable" ? "This site gives no preview"
+      : "Nothing to play";
 
   // Whatever the header and footer leave. The embed is capped to it rather than shrunk to fit:
   // an Instagram card carries its picture at the top and its own chrome underneath, so trimming
@@ -130,7 +139,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         ) : (
           <View style={[styles.blank, { width: playerWidth, maxHeight: mediaMax, backgroundColor: p.surfaceAlt }]}>
             <Icon name={platformIcon(detail.platform)} size={36} color={p.inkMuted} />
-            <Text style={[type.label, { color: p.inkMuted }]}>{needsLink ? "No link yet" : "Nothing to play"}</Text>
+            <Text style={[type.label, { color: p.inkMuted }]}>{blankNote}</Text>
           </View>
         )}
       </View>
