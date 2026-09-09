@@ -2,6 +2,25 @@
 
 What cost more than two attempts, and what actually worked.
 
+## Three green suites, and the bundler still refuses (9 Sep 2026)
+
+**Symptom.** `eas update` dies at the export step: "Unable to resolve module ./saved-export.js".
+`tsc --noEmit`, 73 package tests, 25 app tests and 83 function tests were all green beforehand.
+
+**Cause.** A cross-file import written as `export * from "./saved-export.js"` pointing at a `.ts`
+file. TypeScript and vitest both resolve `.js` to the `.ts` beside it. **Metro does not.** It looks
+for that literal file, does not find it, and stops. So every check we run agreed, and the one tool
+that actually builds the bundle disagreed.
+
+**What worked.** Write the import extensionless — `"./saved-export"`. `moduleResolution: "Bundler"`
+accepts it and so does Metro. Only the Deno copy needs a real extension, and `sync-shared.mjs` adds
+it on the way out.
+
+**The lesson worth keeping.** Type-checking is not bundling. Before publishing an update, run
+`npx expo export --output-dir /tmp/x --platform ios --platform android` — it is the same export
+`eas update` runs, takes about a minute, and fails on your machine instead of halfway through a
+publish.
+
 ## `deno check` quietly rewrites node_modules, and the next build fails (9 Sep 2026)
 
 **Symptom.** A build fails with "Runtime version calculated on local machine not equal to the one on

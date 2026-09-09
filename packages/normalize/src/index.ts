@@ -329,4 +329,4 @@ export function normalize(input: NormalizeInput): NormalizedLink {
   };
 }
 
-export * from "./saved-export.js";
+export * from "./saved-export";
