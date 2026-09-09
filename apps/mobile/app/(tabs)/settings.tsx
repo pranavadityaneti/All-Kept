@@ -123,6 +123,13 @@ export default function Settings() {
             }}
           />
           <SettingsRow
+            icon="youtube"
+            title="YouTube playlist"
+            detail="Save a video to a playlist and it lands here"
+            onPress={() => router.push("/setup/youtube")}
+            right={<Icon name="chevron" size={18} color={p.inkMuted} />}
+          />
+          <SettingsRow
             icon="download"
             title="Bring in your older saves"
             detail="Everything you saved before Allkept"

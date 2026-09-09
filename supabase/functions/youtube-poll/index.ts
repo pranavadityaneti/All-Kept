@@ -12,6 +12,12 @@ const BATCH = 20;
 
 interface SourceRow { id: string; user_id: string; external_id: string; poll_after: string | null; meta: Record<string, unknown> | null }
 
+/** How many saves this playlist has put in the library so far. */
+async function countItems(db: ReturnType<typeof adminClient>, sourceId: string): Promise<number> {
+  const { count } = await db.from("items").select("id", { count: "exact", head: true }).eq("source_id", sourceId);
+  return count ?? 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
   const secret = req.headers.get("x-internal-secret") ?? "";
@@ -57,13 +63,13 @@ Deno.serve(async (req) => {
 
       let found = 0;
       if (needsFullRead(source.syncedCount, count)) {
+        // Counted from the library either side of the read, not from capture's own flag: re-capturing
+        // a playlist entry correctly returns the original card, and with it the original's flag, so
+        // every entry would look new on every re-read and the backoff would never engage.
+        const before = await countItems(db, row.id);
         const entries = await playlistEntries(source.playlistId, key);
-        for (const input of toCaptures(source, entries, now)) {
-          // capture() is idempotent on the playlist entry id, so re-reading a playlist re-captures
-          // nothing; only genuinely new entries become items.
-          const r = await capture(input, cdeps);
-          if (!r.deduplicated) found++;
-        }
+        for (const input of toCaptures(source, entries, now)) await capture(input, cdeps);
+        found = Math.max(0, (await countItems(db, row.id)) - before);
       }
 
       const at = nextPollAt(now, previousInterval, found > 0);
