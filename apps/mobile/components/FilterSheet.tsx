@@ -7,8 +7,8 @@ import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { categoryStyle, tint } from "../lib/categories";
-import { filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
-import type { Facets, Filters } from "../lib/library";
+import { FLAG_ICON, SHAPE_ICON, filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
+import { countFilters, type Facets, type Filters } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
 
 const IN_MS = 200, OUT_MS = 140;
@@ -50,7 +50,9 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
   if (!mounted) return null;
 
   const categories = filterOptions("categories", facets, filters);
-  const active = filters.platforms.length + filters.categories.length;
+  const shapes = filterOptions("shapes", facets, filters);
+  const flags = filterOptions("flags", facets, filters);
+  const active = countFilters(filters);
   const empty = active > 0 && !matches.pending && matches.n === 0;
 
   const panel = {
@@ -77,8 +79,21 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
             {/* Platforms are not listed here any more: they are pills on the bar itself, where they
                 are one tap rather than three. Listing them in both places would let the same filter
                 be switched on in two ways and read as two different controls. */}
-            {categories.length === 0 && (
+            {categories.length === 0 && shapes.length === 0 && flags.length === 0 && (
               <Text style={[type.body, { color: p.inkMuted }]}>Nothing to filter yet. Save something and its category appears here.</Text>
+            )}
+
+            {shapes.length > 0 && (
+              <Group title="What it is">
+                {shapes.map((o) => (
+                  <Option
+                    key={o.value}
+                    option={o}
+                    onPress={() => onToggle("shapes", o.value)}
+                    mark={<Ionicons name={(SHAPE_ICON[o.value] ?? "ellipse-outline") as never} size={15} color={p.inkMuted} />}
+                  />
+                ))}
+              </Group>
             )}
 
             {categories.length > 0 && (
@@ -96,6 +111,19 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
                     />
                   );
                 })}
+              </Group>
+            )}
+
+            {flags.length > 0 && (
+              <Group title="Status">
+                {flags.map((o) => (
+                  <Option
+                    key={o.value}
+                    option={o}
+                    onPress={() => onToggle("flags", o.value)}
+                    mark={<Ionicons name={(FLAG_ICON[o.value] ?? "ellipse-outline") as never} size={15} color={p.inkMuted} />}
+                  />
+                ))}
               </Group>
             )}
           </ScrollView>

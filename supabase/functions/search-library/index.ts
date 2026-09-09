@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
           global: { headers: { Authorization: request.headers.get("authorization")! } },
           auth: { persistSession: false, autoRefreshToken: false },
         });
-        const { data, error } = await db.rpc("search_library", args);
+        const { data, error } = await db.rpc("search_library_v2", args);
         if (error) throw error;
         return data ?? [];
       },

@@ -13,7 +13,7 @@ import { FilterSheet } from "../../components/FilterSheet";
 import { ItemCard } from "../../components/ItemCard";
 import { activeFilters, exactMatches, type Matches } from "../../lib/filter-options";
 import { useFilters } from "../../lib/filters";
-import { useFacets, useLibrary, type LibraryItem } from "../../lib/library";
+import { NO_FILTERS, useFacets, useLibrary, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
@@ -37,7 +37,7 @@ export default function Library() {
     const wanted = params.category;
     if (!loaded || !wanted || applied.current === wanted) return;
     applied.current = wanted;
-    set({ platforms: [], categories: [wanted] });
+    set({ ...NO_FILTERS, categories: [wanted] });
   }, [loaded, params.category, set]);
   const library = useLibrary(filters, ready && loaded);
   const facets = useFacets(ready);
