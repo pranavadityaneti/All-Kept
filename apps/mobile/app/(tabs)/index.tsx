@@ -7,6 +7,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { IconButton } from "../../components/IconButton";
 import { ItemCard } from "../../components/ItemCard";
+import { SaveLinkField } from "../../components/SaveLinkField";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
 import { Wordmark } from "../../components/Wordmark";
@@ -69,7 +70,6 @@ export default function Home() {
           </View>
         </View>
 
-        <Button label="Save a link" variant="secondary" onPress={() => router.push("/save")} />
 
         {session.status === "error" && (
           <Card>
@@ -106,6 +106,8 @@ export default function Home() {
           )}
         </View>
 
+
+        <SaveLinkField />
         {categories.length > 0 && (
           <View style={styles.section}>
             <SectionHeader
