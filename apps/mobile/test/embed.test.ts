@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { embedUrl, initialHeight } from "../lib/embed";
+import { EMBED_ORIGIN, embedUrl, initialHeight } from "../lib/embed";
 
 const item = (over: Partial<Parameters<typeof embedUrl>[0]> = {}) => ({
   platform: "instagram", canonicalUrl: null, sourceUrl: null, externalId: null, ...over,
@@ -17,9 +17,14 @@ describe("playing a save in the app", () => {
       .toBe("https://www.instagram.com/tv/TV1/embed/");
   });
 
-  it("plays YouTube through the no-cookie host, inline", () => {
-    expect(embedUrl(item({ platform: "youtube", externalId: "WfJPBVXPt8k" })))
-      .toBe("https://www.youtube-nocookie.com/embed/WfJPBVXPt8k?playsinline=1&rel=0");
+  it("plays YouTube through the no-cookie host, inline, and names an origin", () => {
+    // The origin is not decoration: without it YouTube answers a WebView with "Video player
+    // configuration error (153)", because the request carries no referrer at all.
+    const url = embedUrl(item({ platform: "youtube", externalId: "WfJPBVXPt8k" }))!;
+    expect(url).toContain("https://www.youtube-nocookie.com/embed/WfJPBVXPt8k?");
+    expect(url).toContain("playsinline=1");
+    expect(url).toContain("rel=0");
+    expect(url).toContain(`origin=${encodeURIComponent(EMBED_ORIGIN)}`);
   });
 
   it("has nothing to play for a post with no link, a note or an unknown platform", () => {

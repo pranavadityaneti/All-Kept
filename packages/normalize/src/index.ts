@@ -343,8 +343,36 @@ function note(text: string | null): NormalizedLink {
   };
 }
 
+/**
+ * Some links are only a note saying where to go next. A search result copied from Google arrives
+ * wrapped, and saving the wrapper means saving Google's "Redirect Notice" page instead of the thing.
+ * Only wrappers that carry their destination in plain sight are unwrapped; anything needing a request
+ * to resolve is left to enrichment, which already follows short links.
+ */
+const WRAPPERS: Record<string, string> = {
+  "google.com": "q", "l.facebook.com": "u", "lm.facebook.com": "u",
+  "l.instagram.com": "u", "away.vk.com": "to", "out.reddit.com": "url",
+};
+
+export function unwrapRedirect(raw: string): string {
+  let current = raw, hops = 0;
+  while (hops++ < 3) {
+    let u: URL;
+    try { u = new URL(current); } catch { return current; }
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    const key = WRAPPERS[host];
+    const target = key ? u.searchParams.get(key) : null;
+    if (!target) return current;
+    let next: URL;
+    try { next = new URL(target); } catch { return current; }
+    if (next.protocol !== "https:" && next.protocol !== "http:") return current;
+    current = next.toString();
+  }
+  return current;
+}
+
 export function normalize(input: NormalizeInput): NormalizedLink {
-  const rawUrl = input.url?.trim() || null;
+  const rawUrl = input.url?.trim() ? unwrapRedirect(input.url.trim()) : null;
   const rawText = input.text?.trim() || null;
   let sourceUrl: string | null = null;
   let text: string | null = rawText;

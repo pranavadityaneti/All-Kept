@@ -8,6 +8,9 @@ export interface EmbeddableItem { platform: string; canonicalUrl: string | null;
 
 const INSTAGRAM = /instagram\.com\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/i;
 
+/** The site the embeds are told they are running on. Our own, so it is honest and stable. */
+export const EMBED_ORIGIN = "https://pranavadityaneti.github.io";
+
 export function embedUrl(item: EmbeddableItem): string | null {
   const link = item.canonicalUrl ?? item.sourceUrl ?? "";
   if (item.platform === "instagram") {
@@ -18,7 +21,10 @@ export function embedUrl(item: EmbeddableItem): string | null {
   }
   if (item.platform === "youtube" && item.externalId) {
     // The no-cookie host, and inline playback so it does not take over the screen.
-    return `https://www.youtube-nocookie.com/embed/${item.externalId}?playsinline=1&rel=0`;
+    // origin is what stops YouTube answering with "Video player configuration error (153)": their
+    // player refuses an embed that arrives with no referrer, and a WebView loading a bare address
+    // sends none. The value must match the referrer the player is given (see EmbedPlayer).
+    return `https://www.youtube-nocookie.com/embed/${item.externalId}?playsinline=1&rel=0&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
   }
   return null;
 }

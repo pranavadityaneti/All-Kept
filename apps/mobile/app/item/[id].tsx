@@ -49,6 +49,10 @@ export default function ItemScreen() {
           <ItemDetail id={pages[0]!.id} width={box.width} height={box.height} active onBack={back} />
         ) : (
           <FlatList
+            // Remounted when the page size settles, so the initial position is recomputed against the
+            // height actually in force. Without this the list keeps an offset measured against the old
+            // height and opens showing the bottom of one save above the top of the next.
+            key={`${box.width}x${box.height}`}
             data={pages}
             keyExtractor={(n) => n.id}
             pagingEnabled
@@ -59,6 +63,9 @@ export default function ItemScreen() {
             initialNumToRender={1}
             maxToRenderPerBatch={2}
             decelerationRate="fast"
+            snapToInterval={box.height}
+            snapToAlignment="start"
+            disableIntervalMomentum
             viewabilityConfig={viewability}
             onViewableItemsChanged={onViewableItemsChanged}
             extraData={activeId}

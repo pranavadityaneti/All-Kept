@@ -46,14 +46,20 @@ export default function Home() {
     return match?.thumbnailPath ? thumbnails[match.thumbnailPath] : undefined;
   };
 
-  const refreshing = recent.isRefetching || facets.isRefetching;
-  const onRefresh = () => { void recent.refetch(); void facets.refetch(); };
+  // Only a pull the person actually made turns this indicator on. Binding it to isRefetching held it
+  // open for every background refetch, and realtime causes plenty, which left a spinner stuck at the
+  // top of the screen with the library pushed down beneath it.
+  const [pulled, setPulled] = useState(false);
+  const onRefresh = () => {
+    setPulled(true);
+    void Promise.allSettled([recent.refetch(), facets.refetch()]).then(() => setPulled(false));
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <ScrollView
         contentContainerStyle={styles.page}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={p.inkMuted} />}
+        refreshControl={<RefreshControl refreshing={pulled} onRefresh={onRefresh} tintColor={p.inkMuted} />}
       >
         <View style={styles.header}>
           <Wordmark height={24} />

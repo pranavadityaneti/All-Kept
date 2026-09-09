@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { Icon } from "./Icon";
+import { EMBED_ORIGIN } from "../lib/embed";
 import { radius, usePalette } from "../lib/theme";
 
 /**
@@ -110,7 +111,8 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
       <View style={styles.fill} pointerEvents={interactive ? "auto" : "none"}>
         <WebView
           ref={web}
-          source={{ uri: url }}
+          // A referrer to match the origin in the URL. YouTube rejects a request that carries neither.
+          source={{ uri: url, headers: { Referer: `${EMBED_ORIGIN}/` } }}
           style={{ width, height, backgroundColor: "transparent" }}
           originWhitelist={["https://*"]}
           allowsInlineMediaPlayback

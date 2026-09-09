@@ -57,6 +57,10 @@ function oembedUrl(platform: Platform, url: string): string | null {
     case "youtube": return `https://www.youtube.com/oembed?url=${u}&format=json`;
     case "x": return `https://publish.twitter.com/oembed?url=${u}&omit_script=true`;
     case "tiktok": return `https://www.tiktok.com/oembed?url=${u}`;
+    // Reddit serves an interstitial rather than preview tags to anything that is not a browser, so
+    // the page itself yields nothing. Their oEmbed is the sanctioned route and returns the title and
+    // the poster, which is all a card needs.
+    case "reddit": return `https://www.reddit.com/oembed?url=${u}`;
     default: return null;
   }
 }
