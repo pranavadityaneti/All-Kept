@@ -17,6 +17,7 @@ export interface ItemDetail {
   authorHandle: string | null;
   canonicalUrl: string | null;
   sourceUrl: string | null;
+  externalId: string | null;
   thumbnailPath: string | null;
   lastSavedAt: string;
   saveCount: number;
@@ -26,7 +27,7 @@ export interface ItemDetail {
   summary: string | null;
 }
 
-const SELECT = "id,platform,kind,status,title,text,note,author_name,author_handle,canonical_url,source_url,thumbnail_path,last_saved_at,save_count,item_ai(category,user_category,tags,summary)";
+const SELECT = "id,platform,kind,status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,item_ai(category,user_category,tags,summary)";
 
 type Row = Record<string, unknown>;
 
@@ -44,6 +45,7 @@ function toDetail(r: Row): ItemDetail {
     authorHandle: (r["author_handle"] as string | null) ?? null,
     canonicalUrl: (r["canonical_url"] as string | null) ?? null,
     sourceUrl: (r["source_url"] as string | null) ?? null,
+    externalId: (r["external_id"] as string | null) ?? null,
     thumbnailPath: (r["thumbnail_path"] as string | null) ?? null,
     lastSavedAt: String(r["last_saved_at"]),
     saveCount: Number(r["save_count"] ?? 1),

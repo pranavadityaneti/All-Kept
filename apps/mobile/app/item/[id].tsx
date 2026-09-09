@@ -2,11 +2,13 @@ import { CATEGORIES } from "@allkept/contracts";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { EmbedPlayer } from "../../components/EmbedPlayer";
 import { Chip } from "../../components/Chip";
+import { embedUrl, initialHeight } from "../../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote } from "../../lib/item";
 import { track, useTrackOnce } from "../../lib/metrics";
 import { platformLabel } from "../../lib/platforms";
@@ -37,6 +39,10 @@ export default function ItemScreen() {
   // A post Instagram sent without a link can only be fixed by an Instagram link.
   const attach = useAttachLink(id ?? "", detail?.status === "no_link" && detail.platform === "instagram" ? "instagram" : undefined, detail?.thumbnailPath ?? null);
 
+  const { width: screenWidth } = useWindowDimensions();
+  const playerWidth = screenWidth - space.lg * 2;
+  const [playerHeight, setPlayerHeight] = useState<number | null>(null);
+  const [zoomed, setZoomed] = useState(false);
   const [picking, setPicking] = useState(false);
   const [note, setNoteText] = useState<string | null>(null);
   const [link, setLink] = useState("");
@@ -46,6 +52,7 @@ export default function ItemScreen() {
   if (!detail) return <Centered text="This item is no longer in your library." onBack={() => router.back()} />;
 
   const url = openableUrl(detail);
+  const embed = embedUrl(detail);
   const noteValue = note ?? detail.note ?? "";
   const heading = detail.title?.trim() || detail.text?.split("\n").find((l) => l.trim()) || platformLabel(detail.platform) || "Saved";
 
@@ -63,9 +70,20 @@ export default function ItemScreen() {
           <Button label="Back" variant="secondary" onPress={() => router.back()} />
         </View>
 
-        {thumbnail && (
-          <Image source={{ uri: thumbnail }} style={[styles.hero, { backgroundColor: p.surfaceAlt }]} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
-        )}
+        {/* The post plays here, through the platform's own embed. Falling back to the stored picture,
+            which is all we have for a post Instagram sent without a link. */}
+        {embed ? (
+          <EmbedPlayer
+            url={embed}
+            width={playerWidth}
+            height={playerHeight ?? initialHeight(detail.platform, playerWidth)}
+            onHeight={setPlayerHeight}
+          />
+        ) : thumbnail ? (
+          <Pressable accessibilityRole="imagebutton" accessibilityLabel="View picture full screen" onPress={() => setZoomed(true)}>
+            <Image source={{ uri: thumbnail }} style={[styles.hero, { backgroundColor: p.surfaceAlt }]} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
+          </Pressable>
+        ) : null}
 
         <Text style={[type.title, { color: p.ink }]}>{heading}</Text>
 
@@ -110,7 +128,11 @@ export default function ItemScreen() {
 
         <View style={styles.actions}>
           {url ? (
-            <Button label={`Open in ${platformLabel(detail.platform)}`} onPress={() => { track(userId, "open_original", { platform: detail.platform }); void Linking.openURL(url); }} />
+            <Button
+              label={`Open in ${platformLabel(detail.platform)}`}
+              variant={embed ? "secondary" : "primary"}
+              onPress={() => { track(userId, "open_original", { platform: detail.platform }); void Linking.openURL(url); }}
+            />
           ) : null}
           <Button
             label="Share"
@@ -171,6 +193,12 @@ export default function ItemScreen() {
 
         <Button label="Delete this save" variant="secondary" busy={remove.isPending} onPress={confirmDelete} />
       </ScrollView>
+
+      <Modal visible={zoomed} animationType="fade" onRequestClose={() => setZoomed(false)} statusBarTranslucent>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close picture" onPress={() => setZoomed(false)} style={[styles.zoom, { backgroundColor: "#000" }]}>
+          {thumbnail && <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityIgnoresInvertColors />}
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -191,6 +219,7 @@ const styles = StyleSheet.create({
   scroll: { padding: space.lg, gap: space.lg },
   headerRow: { flexDirection: "row" },
   hero: { width: "100%", aspectRatio: 1, borderRadius: radius.lg },
+  zoom: { flex: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: space.sm, flexWrap: "wrap" },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   actions: { gap: space.md },
