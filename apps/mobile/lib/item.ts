@@ -26,9 +26,11 @@ export interface ItemDetail {
   modelCategory: string | null;
   tags: string[];
   summary: string | null;
+  /** The publisher, for a link from a site we have no platform name for. */
+  siteName: string | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,item_ai(category,user_category,tags,summary)";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,item_ai(category,user_category,tags,summary)";
 
 type Row = Record<string, unknown>;
 
@@ -55,6 +57,7 @@ function toDetail(r: Row): ItemDetail {
     modelCategory: (ai?.["category"] as string | null) ?? null,
     tags: Array.isArray(ai?.["tags"]) ? (ai!["tags"] as string[]) : [],
     summary: (ai?.["summary"] as string | null) ?? null,
+    siteName: ((r["media_meta"] as Record<string, unknown> | null)?.["site_name"] as string | null) ?? null,
   };
 }
 

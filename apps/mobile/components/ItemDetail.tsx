@@ -120,7 +120,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         <Pressable accessibilityRole="button" accessibilityLabel="Details for this save" onPress={() => setSheet(true)}>
           <Text numberOfLines={2} style={[type.heading, { color: p.ink }]}>{heading}</Text>
           <Text style={[type.label, styles.meta, { color: p.inkMuted }]} numberOfLines={1}>
-            {detail.authorName ?? platformLabel(detail.platform)} · {savedOn(detail.lastSavedAt)} · more
+            {detail.authorName ?? detail.siteName ?? platformLabel(detail.platform)} · {savedOn(detail.lastSavedAt)} · more
           </Text>
         </Pressable>
 
