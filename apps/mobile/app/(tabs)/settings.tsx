@@ -49,8 +49,25 @@ export default function Settings() {
   const [osPermission, setOsPermission] = useState<"granted" | "denied" | "undetermined">("undetermined");
   useEffect(() => { void pushPermission().then(setOsPermission); }, []);
 
-  const notifications = prefs.data?.notifyEnabled ?? false;
-  const blocked = notifications && osPermission === "denied";
+  /**
+   * On only when notifications can actually arrive.
+   *
+   * The stored column defaults to true, so reading it alone drew the switch already on before the
+   * OS had ever been asked — which left nothing to turn on, and tapping it only turned it off. The
+   * column means "wants them"; a notification needs that *and* the OS's permission *and* a device
+   * registered against the account, so the switch shows all three or it is lying.
+   */
+  const wants = prefs.data?.notifyEnabled ?? false;
+  const notifications = wants && osPermission === "granted";
+  const blocked = wants && osPermission === "denied";
+
+  // A token is not forever: it changes on reinstall, on restore to a new phone, and Expo may rotate
+  // it. Re-registering whenever the app opens with notifications on keeps the row current and
+  // repairs an account whose device silently stopped being reachable.
+  useEffect(() => {
+    if (!userId || !wants || osPermission !== "granted") return;
+    void registerForPush(userId);
+  }, [userId, wants, osPermission]);
 
   const setNotifications = async (on: boolean) => {
     if (!userId) return;
@@ -62,10 +79,13 @@ export default function Settings() {
     // The permission is asked for here and nowhere else, so it is spent on someone who has just
     // reached for the switch rather than on someone who has only opened the app.
     const outcome = await registerForPush(userId);
-    setOsPermission(await pushPermission());
+    const now = await pushPermission();
+    setOsPermission(now);
     if (outcome.ok) { setPref.mutate({ name: "notifyEnabled", value: true }); return; }
     if (outcome.reason === "denied") {
-      setPref.mutate({ name: "notifyEnabled", value: true }); // remembered, so it works the moment the OS allows it
+      // Remembered, so it starts working the moment the OS is told to allow it — and the row
+      // beneath now offers the way there, because the switch cannot open that door itself.
+      setPref.mutate({ name: "notifyEnabled", value: true });
       return;
     }
     if (outcome.reason === "simulator") { Alert.alert("Not on a simulator", "Push notifications need a real device."); return; }
@@ -187,7 +207,7 @@ export default function Settings() {
           )}
           {/* The individual choices only mean anything while the master switch is on, and a screen
               full of switches that do nothing is how people conclude a feature is broken. */}
-          {notifications && !blocked && (
+          {notifications && (
             <>
               <SettingsRow
                 title="A save has landed"
@@ -208,7 +228,7 @@ export default function Settings() {
           <SettingsRow
             icon="settings"
             title="Sort saves automatically"
-            detail="Allkept reads a save's title and caption to file it. Off, saves arrive uncategorised."
+            detail="Allkept reads a save's title and caption to file it and to match it by meaning when you search. Off, nothing is sent to be read: saves arrive uncategorised and search matches words only."
             toggle={{ value: prefs.data?.aiSortingEnabled ?? true, onChange: (v) => setPref.mutate({ name: "aiSortingEnabled", value: v }), disabled: !prefs.data }}
             last
           />
