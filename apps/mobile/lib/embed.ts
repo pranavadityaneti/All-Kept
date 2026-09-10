@@ -19,6 +19,18 @@ export function embedUrl(item: EmbeddableItem): string | null {
     const kind = m[1]!.toLowerCase() === "reels" ? "reel" : m[1]!.toLowerCase();
     return `https://www.instagram.com/${kind}/${m[2]}/embed/`;
   }
+  if (item.platform === "youtube") {
+    // A playlist is not a video, and its id is not a video id. Saved from a /playlist?list= link,
+    // the id stored is the playlist's, and asking for /embed/PLxxxx got exactly what asking for a
+    // video that does not exist gets: "An error occurred. Please try again later." YouTube embeds a
+    // playlist through videoseries instead. A watch link that merely carries a list= alongside its
+    // v= is still a video, so the video wins wherever both are present.
+    const link = item.canonicalUrl ?? item.sourceUrl ?? "";
+    const list = /[?&]list=([A-Za-z0-9_-]+)/.exec(link);
+    if (list && !/[?&]v=[A-Za-z0-9_-]/.test(link)) {
+      return `https://www.youtube-nocookie.com/embed/videoseries?list=${list[1]}&playsinline=1&rel=0&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
+    }
+  }
   if (item.platform === "youtube" && item.externalId) {
     // The no-cookie host, and inline playback so it does not take over the screen.
     // origin is what stops YouTube answering with "Video player configuration error (153)": their

@@ -63,3 +63,28 @@ describe("playing a save in the app", () => {
     expect(initialHeight("instagram", 320)).toBe(448);
   });
 });
+
+describe("a saved YouTube playlist", () => {
+  const yt = (over: Record<string, unknown>) => ({ platform: "youtube", canonicalUrl: null, sourceUrl: null, externalId: null, ...over }) as Parameters<typeof embedUrl>[0];
+
+  it("embeds through videoseries, not as a video that does not exist", () => {
+    // /embed/PLxxxx returns "An error occurred. Please try again later." — the playlist id was
+    // being handed to YouTube as though it were a video id.
+    const url = embedUrl(yt({ canonicalUrl: "https://www.youtube.com/playlist?list=PLjp4kRtCGC5WuB5BJlbMZ9RW3NEFv07yQ", externalId: "PLjp4kRtCGC5WuB5BJlbMZ9RW3NEFv07yQ" }))!;
+    expect(url).toContain("/embed/videoseries?list=PLjp4kRtCGC5WuB5BJlbMZ9RW3NEFv07yQ");
+    expect(url).not.toContain("/embed/PLjp4kRt");
+  });
+
+  it("still plays the video when a watch link merely carries a list alongside it", () => {
+    // Sharing from inside a playlist gives both. The video is what was being watched.
+    const url = embedUrl(yt({ canonicalUrl: "https://www.youtube.com/watch?v=bD0GoM9JVns&list=PLabc123", externalId: "bD0GoM9JVns" }))!;
+    expect(url).toContain("/embed/bD0GoM9JVns?");
+    expect(url).not.toContain("videoseries");
+  });
+
+  it("carries the origin a playlist needs just as a video does", () => {
+    const url = embedUrl(yt({ canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", externalId: "PLxyz" }))!;
+    expect(url).toContain(`origin=${encodeURIComponent(EMBED_ORIGIN)}`);
+    expect(url).toContain("playsinline=1");
+  });
+});

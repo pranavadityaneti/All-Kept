@@ -87,13 +87,13 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, isolation: "isolate" },
-  page: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 14, alignItems: "center", justifyContent: "center" },
-  brand: { height: 48, alignItems: "center", justifyContent: "center", zIndex: 2 },
+  page: { flexGrow: 1, paddingHorizontal: 14, paddingTop: 0, paddingBottom: 0, alignItems: "center", justifyContent: "flex-start" },
+  brand: { height: 40, alignItems: "center", justifyContent: "center", zIndex: 2 },
   logo: { width: 132, height: 52 },
-  heroFrame: { width: "100%", maxWidth: 380, height: 352, overflow: "hidden", marginTop: -2 },
+  heroFrame: { width: "100%", maxWidth: 380, height: 372, overflow: "hidden", marginTop: -2 },
   hero: { width: "100%", height: "100%" },
   sheet: {
-    width: "100%", maxWidth: 380, minHeight: 294, marginTop: -30, paddingHorizontal: 24, paddingTop: 27, paddingBottom: 17,
+    width: "100%", maxWidth: 380, minHeight: 294, flexGrow: 1, marginTop: -30, paddingHorizontal: 24, paddingTop: 27, paddingBottom: 24,
     borderWidth: StyleSheet.hairlineWidth, borderRadius: 32, alignItems: "center",
     shadowColor: "#35254E", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.09, shadowRadius: 22, elevation: 5,
   },
