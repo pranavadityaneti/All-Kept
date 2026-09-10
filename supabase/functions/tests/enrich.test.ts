@@ -255,3 +255,68 @@ Deno.test("parseAspect: only believes a pair of real, positive numbers", () => {
   assertEquals(parseAspect(null), null);
   assertEquals(parseAspect("not json at all"), null);
 });
+
+/** A fetch that answers a redirect chain, recording exactly which addresses were tried. */
+const chain = (routes: Record<string, () => Response>, seen: string[]): typeof fetch =>
+  (async (input: string | URL | Request) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    seen.push(url);
+    const hit = Object.entries(routes).find(([prefix]) => url.startsWith(prefix));
+    if (!hit) throw new TypeError(`error sending request for ${url}`);
+    return hit[1]();
+  }) as typeof fetch;
+
+const redirect = (to: string) => new Response(null, { status: 302, headers: { location: to } });
+const page = (title: string) =>
+  new Response(`<html><head><meta property="og:title" content="${title}"><meta property="og:description" content="d"></head></html>`,
+    { headers: { "content-type": "text/html" } });
+
+Deno.test("a shortener that redirects to http is read over https instead", async () => {
+  const seen: string[] = [];
+  // The real case: shrts.in sends us to http://inshorts.com, which answers nothing on port 80.
+  const f = chain({
+    "https://shrts.in/": () => redirect("http://inshorts.com/en/news/8iyihkaa-1"),
+    "https://inshorts.com/": () => page("Rapido driver sends 'I love you' text"),
+  }, seen);
+  const r = await enrich(base({ platform: "web", kind: "article", text: null, title: null,
+    source_url: "https://shrts.in/oeuz2b39pm", canonical_url: "https://shrts.in/oeuz2b39pm", external_id: null }), deps(f));
+  assertEquals(r.status, "ready");
+  assertEquals(r.patch.title, "Rapido driver sends 'I love you' text");
+  // Never asked for the insecure address at all, because the secure one answered.
+  assert(!seen.some((u) => u.startsWith("http://")), `tried http: ${seen.join(", ")}`);
+});
+
+Deno.test("a site that really only has http still works", async () => {
+  const seen: string[] = [];
+  const f = chain({
+    "https://start.example/": () => redirect("http://oldsite.example/page"),
+    "http://oldsite.example/": () => page("Still here"),
+  }, seen);
+  const r = await enrich(base({ platform: "web", kind: "article", text: null, title: null,
+    source_url: "https://start.example/x", canonical_url: "https://start.example/x", external_id: null }), deps(f));
+  // https was tried first and threw; the address as given was then used rather than giving up.
+  assertEquals(r.patch.title, "Still here");
+  assert(seen.includes("https://oldsite.example/page"), "should have tried https first");
+  assert(seen.includes("http://oldsite.example/page"), "should have fallen back to http");
+});
+
+Deno.test("a redirect loop ends rather than running forever", async () => {
+  const seen: string[] = [];
+  const f = chain({ "https://loop.example/": () => redirect("https://loop.example/again") }, seen);
+  const r = await enrich(base({ platform: "web", kind: "article", text: null, title: null,
+    source_url: "https://loop.example/a", canonical_url: "https://loop.example/a", external_id: null }), deps(f));
+  // Bounded, and reported as a retryable failure rather than hanging.
+  assert(seen.length <= 6, `walked ${seen.length} hops`);
+  assertEquals(r.status, "failed");
+});
+
+Deno.test("a relative Location is resolved against the address it came from", async () => {
+  const seen: string[] = [];
+  const f = chain({
+    "https://site.example/old": () => redirect("/new/place"),
+    "https://site.example/new": () => page("Moved"),
+  }, seen);
+  const r = await enrich(base({ platform: "web", kind: "article", text: null, title: null,
+    source_url: "https://site.example/old", canonical_url: "https://site.example/old", external_id: null }), deps(f));
+  assertEquals(r.patch.title, "Moved");
+});

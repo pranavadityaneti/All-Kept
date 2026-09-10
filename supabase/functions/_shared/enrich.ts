@@ -98,6 +98,43 @@ async function fetchWithTimeout(f: typeof fetch, url: string, init: RequestInit 
   finally { clearTimeout(t); }
 }
 
+/** More hops than any honest link needs, few enough that a redirect loop ends quickly. */
+const MAX_HOPS = 5;
+
+/**
+ * Follows redirects ourselves, so an `http://` hop can be tried over `https://` first.
+ *
+ * A link shortener sent us to `http://inshorts.com/...`; that host answers nothing on port 80 and
+ * the connection was reset, so a page carrying a full set of preview tags over https read as a save
+ * with no title, no text and no picture. Letting fetch follow the chain internally gives no chance
+ * to intervene at the hop that matters, so the chain is walked here instead.
+ *
+ * Upgrade first, fall back second: https is tried, and only if that fails at the network level is
+ * the http address used as given. A site that genuinely has no https still works; one that has
+ * both, which is nearly all of them now, is read over the secure one.
+ */
+async function fetchFollowing(f: typeof fetch, url: string, init: RequestInit = {}): Promise<Response> {
+  let target = url;
+  for (let hop = 0; hop < MAX_HOPS; hop++) {
+    const secure = target.startsWith("http://") ? `https://${target.slice(7)}` : target;
+    let res: Response;
+    try {
+      res = await fetchWithTimeout(f, secure, { ...init, redirect: "manual" });
+    } catch (e) {
+      // Only worth a second try when we changed the address ourselves.
+      if (secure === target) throw e;
+      res = await fetchWithTimeout(f, target, { ...init, redirect: "manual" });
+    }
+    if (res.status < 300 || res.status >= 400) return res;
+    const location = res.headers.get("location");
+    if (!location) return res;
+    // The body of a redirect is never read; leaving it open holds the connection.
+    await res.body?.cancel().catch(() => undefined);
+    target = new URL(location, secure).toString();
+  }
+  throw new Error("too many redirects");
+}
+
 /** Reads at most `maxBytes` of a response body, then cancels the rest so a large page costs neither time nor memory. */
 export async function readHead(res: Response, maxBytes: number): Promise<string> {
   if (!res.body) return "";
@@ -184,7 +221,7 @@ export function parseInstagramOpenGraph(html: string): { authorName?: string; au
 /** Fetches a page and reads its link-preview tags. Best effort: any failure returns null. */
 async function fetchOpenGraph(f: typeof fetch, url: string): Promise<{ html: string; og: ReturnType<typeof parseOpenGraph> } | null> {
   try {
-    const res = await fetchWithTimeout(f, url, { headers: { accept: "text/html, */*;q=0.5" } });
+    const res = await fetchFollowing(f, url, { headers: { accept: "text/html, */*;q=0.5" } });
     if (classifyHttp(res.status) !== "ok") return null;
     const html = await readHead(res, MAX_HTML_BYTES);
     return { html, og: parseOpenGraph(html) };
@@ -212,7 +249,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
   // 1. Expand short links, then re-normalise.
   if (item.needs_expansion && sourceUrl) {
     try {
-      const res = await fetchWithTimeout(deps.fetch, sourceUrl, { redirect: "follow" });
+      const res = await fetchFollowing(deps.fetch, sourceUrl);
       const finalUrl = res.url || sourceUrl;
       const link = normalize({ url: finalUrl });
       if (link.platform !== "note" && !link.needsExpansion) {
@@ -232,7 +269,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
   if (platform !== "note" && item.status !== "no_link" && target) {
     const oe = oembedUrl(platform, target);
     try {
-      const res = await fetchWithTimeout(deps.fetch, oe ?? target);
+      const res = await fetchFollowing(deps.fetch, oe ?? target);
       const verdict = classifyHttp(res.status);
       if (verdict === "retry") return retry(`metadata ${res.status}`);
 
