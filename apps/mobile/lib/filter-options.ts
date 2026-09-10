@@ -16,6 +16,8 @@ export const SHAPE_LABEL: Record<string, string> = {
   post: "Posts & carousels",
   note: "Notes",
   link: "Links",
+  profile: "Profiles",
+  story: "Stories",
   other: "Other",
 };
 
@@ -25,6 +27,8 @@ export const SHAPE_ICON: Record<string, string> = {
   post: "images-outline",
   note: "document-text-outline",
   link: "link-outline",
+  profile: "person-circle-outline",
+  story: "time-outline",
   other: "ellipsis-horizontal",
 };
 

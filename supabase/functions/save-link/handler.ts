@@ -22,6 +22,13 @@ export async function handleSaveLink(req: Request, deps: SaveLinkDeps): Promise<
   if (!text || !link) {
     return apiError("bad_request", "That doesn't look like a link. Copy the address and paste it here.");
   }
+  // The DM door has always said "I can keep posts, reels and links for now, not photos or stories".
+  // A pasted story used to slip past that and become a save whose link is dead within the day, so
+  // the two doors now answer the same way.
+  if (link.kind === "story") {
+    return apiError("bad_request", "Stories disappear after 24 hours, so there is nothing to keep. Save the post or the profile instead.");
+  }
+
   const result = await deps.capture({
     userId, sourceId: null, sourceKind: "share", sourceEventId: requestId,
     savedAt: new Date().toISOString(), sharedUrl: link.canonicalUrl ?? link.sourceUrl!, sharedText: text,
