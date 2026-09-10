@@ -238,7 +238,26 @@ export function looksLikeBlockTitle(title: string | undefined): boolean {
   return t.length <= WALL_NAME_MAX && BLOCK_WORD.test(t);
 }
 
-export function parseOpenGraph(html: string): { title?: string; ogTitle?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string } {
+/**
+ * Whether a page is the page we asked for.
+ *
+ * Facebook answers a video address it does not recognise with HTTP 200 and a perfectly good set of
+ * preview tags — for its generic Watch landing page, titled "Discover popular videos". Nothing about
+ * that reads as a failure, so the save would have been stored, marked ready, and named after a page
+ * nobody asked for. That is worse than an honest error, because nothing invites a second look.
+ *
+ * The test is the page's own declared address. Ask for /watch/?v=1234567890 and it says its address
+ * is /watch/ — the identifier is gone, so this is not that video. Ask for /nasa and it says /NASA/,
+ * which is the same page in different case. Only ever applied when we hold an identifier to look
+ * for, and only when the page declares an address at all, so a page that says nothing is trusted
+ * exactly as much as it was before.
+ */
+export function isWrongPage(declaredUrl: string | undefined, externalId: string | null): boolean {
+  if (!declaredUrl || !externalId) return false;
+  return !declaredUrl.toLowerCase().includes(externalId.toLowerCase());
+}
+
+export function parseOpenGraph(html: string): { title?: string; ogTitle?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string; url?: string } {
   const head = html.slice(0, 200_000);
   const meta = (names: string[]): string | undefined => {
     for (const n of names) {
@@ -259,6 +278,10 @@ export function parseOpenGraph(html: string): { title?: string; ogTitle?: string
   const image = meta(["og:image", "twitter:image"]); if (image) out.image = image;
   const siteName = meta(["og:site_name"]); if (siteName) out.siteName = siteName;
   const author = meta(["author", "article:author"]); if (author) out.author = author;
+  // What the page says its own address is. og:url first, then the canonical link.
+  const canonical = /<link[^>]+rel=["']canonical["'][^>]*?href=["']([^"']+)["']|<link[^>]+href=["']([^"']+)["'][^>]*?rel=["']canonical["']/i.exec(head);
+  const url = meta(["og:url"]) ?? (canonical?.[1] ?? canonical?.[2])?.trim();
+  if (url) out.url = url;
   return out;
 }
 
@@ -377,6 +400,11 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       } else {
         const html = await readHead(res, MAX_HTML_BYTES);
         const og = parseOpenGraph(html);
+        if (isWrongPage(og.url, patch.external_id ?? item.external_id)) {
+          deps.log("enrich: page is not the one asked for", { item: item.id, declared: og.url?.slice(0, 80) });
+          status = "preview_unavailable";
+          return { status, patch };
+        }
         // A declared og:title is trusted; a bare <title> is not, because that is where a block page
         // puts its own name.
         const declared = og.ogTitle ?? og.twitterTitle;
@@ -391,6 +419,12 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
 
       if (askThePage && /^https?:\/\//.test(target)) {
         const page = await fetchOpenGraph(deps.fetch, target);
+        // The fallback reads a page too, and can be handed the same substitute.
+        if (page && isWrongPage(page.og.url, patch.external_id ?? item.external_id)) {
+          deps.log("enrich: fallback page is not the one asked for", { item: item.id, declared: page.og.url?.slice(0, 80) });
+          if (verdict === "unavailable") status = "preview_unavailable";
+          return { status, patch };
+        }
         const ig = page && platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
         let learned = false;
         if (page) {

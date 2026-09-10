@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -407,4 +407,45 @@ Deno.test("playlistId tells a playlist from a video that happens to sit in one",
   assertEquals(playlistId("https://www.youtube.com/watch?v=abc123&list=PLxyz"), null);
   assertEquals(playlistId("https://www.youtube.com/watch?v=abc123"), null);
   assertEquals(playlistId(null), null);
+});
+
+Deno.test("isWrongPage only fires when there is an identifier and a declared address to compare", () => {
+  // The real case: asked for a video, handed the Watch landing page, which says so itself.
+  assertEquals(isWrongPage("https://www.facebook.com/watch/", "1234567890"), true);
+  assertEquals(isWrongPage("https://www.facebook.com/watch/?v=1234567890", "1234567890"), false);
+  // Case is not a difference: Facebook answers /nasa with /NASA/.
+  assertEquals(isWrongPage("https://www.facebook.com/NASA/", "NASA"), false);
+  // Nothing to compare means nothing is refused. A page that declares no address, or a save with no
+  // identifier — every plain article — is trusted exactly as much as before.
+  assertEquals(isWrongPage(undefined, "123"), false);
+  assertEquals(isWrongPage("https://example.com/", null), false);
+});
+
+Deno.test("a substitute page is refused rather than stored under its own name", async () => {
+  // Facebook answers an unrecognised video address with 200 and a full set of tags for its Watch
+  // landing page. Nothing about that reads as failure, which is what made it dangerous.
+  const f = fakeFetch({ "https://www.facebook.com": () => new Response(
+    `<html><head><meta property="og:title" content="Discover popular videos | Facebook">
+     <meta property="og:description" content="Video is the place to enjoy videos">
+     <meta property="og:url" content="https://www.facebook.com/watch/"></head></html>`,
+    { headers: { "content-type": "text/html" } }) });
+  const r = await enrich(base({ platform: "facebook", kind: "video", title: null, text: null, external_id: "1234567890",
+    source_url: "https://www.facebook.com/watch/?v=1234567890", canonical_url: "https://www.facebook.com/watch/?v=1234567890" }), deps(f));
+  assertEquals(r.status, "preview_unavailable");
+  assertEquals(r.patch.title, undefined);
+  assertEquals(r.patch.thumbnail_url_remote, undefined);
+});
+
+Deno.test("the real page is still read when its address matches", async () => {
+  const f = fakeFetch({ "https://www.facebook.com": () => new Response(
+    `<html><head><meta property="og:title" content="NASA">
+     <meta property="og:description" content="Space">
+     <meta property="og:url" content="https://www.facebook.com/NASA/"></head></html>`,
+    { headers: { "content-type": "text/html" } }) });
+  const r = await enrich(base({ platform: "facebook", kind: "profile", title: null, text: null, external_id: "NASA",
+    source_url: "https://www.facebook.com/nasa", canonical_url: "https://www.facebook.com/nasa" }), deps(f));
+  // The guard let it through, which is the point. What lands is the description as the card's text —
+  // this path prefers that over the title, and does not take a page's own <title> at all.
+  assertEquals(r.status, "ready");
+  assertEquals(r.patch.text, "Space");
 });
