@@ -9,11 +9,11 @@
 -- onboarding_completed_at when gender is present, so an app that stops sending it would leave every
 -- person looping through onboarding forever, unable to finish.
 
--- 1. Forget what was collected. One row holds a value today.
-update public.profiles set gender = null, gender_custom = null
-where gender is not null or gender_custom is not null;
-
--- 2. Stop requiring it, and stop validating it.
+-- 1. Stop requiring it, and stop validating it.
+--
+-- This has to come before the data is cleared. The trigger fires on the UPDATE below, and the old
+-- one raises on a null gender for a row that has already completed onboarding — so clearing first
+-- fails on the very rows it is meant to clear.
 --
 -- Identical to the previous version but for the gender clauses: the self-describe check, the
 -- clearing of gender_custom, and gender's place in the completion condition and its error message.
@@ -45,6 +45,10 @@ end;
 $$;
 
 revoke all on function public.validate_profile_submission() from public,anon,authenticated;
+
+-- 2. Forget what was collected. One row holds a value today.
+update public.profiles set gender = null, gender_custom = null
+where gender is not null or gender_custom is not null;
 
 -- 3. The columns stay, empty, for now.
 --
