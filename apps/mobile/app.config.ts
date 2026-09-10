@@ -26,6 +26,13 @@ const config: ExpoConfig = {
   },
   android: {
     package: "app.allkept.mobile",
+    // Firebase project allkept-6a042, added 10 Sep 2026. Android push has no route around FCM: the
+    // notification leaves Expo's service and reaches the device through Google, so without this file
+    // the app builds clean and then fails at runtime with "Default FirebaseApp is not initialized".
+    // Safe in the repo — the key inside is restricted to this package plus its signing certificate,
+    // and it ships inside the APK regardless. The service-account key that authorises *sending*
+    // lives in EAS credentials and must never land here.
+    googleServicesFile: "./google-services.json",
     // White, not the app's dark ground: the mark's lower edge is an alpha fade to cream, drawn
     // for a white background. Over anything dark it composites to a muddy tan.
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FFFFFF" },
