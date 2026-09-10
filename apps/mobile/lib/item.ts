@@ -30,6 +30,8 @@ export interface ItemDetail {
   siteName: string | null;
   /** The video's shape as width ÷ height, when enrichment managed to learn it. A Short is 0.563. */
   aspect: number | null;
+  /** False when the provider refuses to play this in a frame. Absent means nothing is known. */
+  embeddable: boolean | null;
 }
 
 const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,item_ai(category,user_category,tags,summary)";
@@ -68,6 +70,7 @@ function toDetail(r: Row): ItemDetail {
     summary: (ai?.["summary"] as string | null) ?? null,
     siteName: (meta?.["site_name"] as string | null) ?? null,
     aspect: readAspect(meta),
+    embeddable: typeof meta?.["embeddable"] === "boolean" ? (meta["embeddable"] as boolean) : null,
   };
 }
 

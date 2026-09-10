@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -363,4 +363,48 @@ Deno.test("a page that declares og:title is taken at its word, whatever it says"
     source_url: "https://site.example/a", canonical_url: "https://site.example/a", external_id: null }), deps(f));
   assertEquals(r.patch.title, "Error handling, explained");
   assertEquals(r.status, "ready");
+});
+
+Deno.test("a saved playlist is read from the Data API, not from an oEmbed that refuses it", async () => {
+  const seen: string[] = [];
+  const f = fakeFetch({
+    // YouTube's oEmbed answers "Unauthorized" for a playlist; it serves videos only.
+    "https://www.youtube.com/oembed": () => new Response("Unauthorized", { status: 401 }),
+    "https://www.googleapis.com/youtube/v3/playlists": () => Response.json({
+      items: [{ snippet: { title: "Startup", channelTitle: "Pranav Aditya",
+        thumbnails: { medium: { url: "https://i.ytimg.com/m.jpg" }, maxres: { url: "https://i.ytimg.com/max.jpg" } } },
+        status: { privacyStatus: "public" } }],
+    }),
+  }, seen);
+  const r = await enrich(base({ platform: "youtube", kind: "post", title: null, text: null, external_id: "PLxyz",
+    source_url: "https://www.youtube.com/playlist?list=PLxyz", canonical_url: "https://www.youtube.com/playlist?list=PLxyz" }), { ...deps(f), youtubeKey: "k" });
+  assertEquals([r.status, r.patch.title, r.patch.author_name], ["ready", "Startup", "Pranav Aditya"]);
+  assertEquals(r.patch.thumbnail_url_remote, "https://i.ytimg.com/max.jpg"); // widest available
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["embeddable"], true);
+  assert(!seen.some((u) => u.includes("/oembed")), "the oEmbed that cannot answer is not asked");
+});
+
+Deno.test("an unlisted playlist is kept, and marked as one the app must not frame", async () => {
+  const f = fakeFetch({ "https://www.googleapis.com/youtube/v3/playlists": () => Response.json({
+    items: [{ snippet: { title: "Startup", channelTitle: "Pranav Aditya" }, status: { privacyStatus: "unlisted" } }] }) });
+  const r = await enrich(base({ platform: "youtube", kind: "post", title: null, text: null, external_id: "PLxyz",
+    source_url: "https://www.youtube.com/playlist?list=PLxyz", canonical_url: "https://www.youtube.com/playlist?list=PLxyz" }), { ...deps(f), youtubeKey: "k" });
+  // Still a good card — it just cannot be played in a frame.
+  assertEquals([r.status, r.patch.title], ["ready", "Startup"]);
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["embeddable"], false);
+});
+
+Deno.test("a playlist that is gone is not retried forever", async () => {
+  const f = fakeFetch({ "https://www.googleapis.com/youtube/v3/playlists": () => Response.json({ items: [] }) });
+  const r = await enrich(base({ platform: "youtube", kind: "post", title: null, text: null, external_id: "PLgone",
+    source_url: "https://www.youtube.com/playlist?list=PLgone", canonical_url: "https://www.youtube.com/playlist?list=PLgone" }), { ...deps(f), youtubeKey: "k" });
+  assertEquals(r.status, "preview_unavailable");
+  assertEquals(r.retryAfterMs, undefined);
+});
+
+Deno.test("playlistId tells a playlist from a video that happens to sit in one", () => {
+  assertEquals(playlistId("https://www.youtube.com/playlist?list=PLxyz"), "PLxyz");
+  assertEquals(playlistId("https://www.youtube.com/watch?v=abc123&list=PLxyz"), null);
+  assertEquals(playlistId("https://www.youtube.com/watch?v=abc123"), null);
+  assertEquals(playlistId(null), null);
 });

@@ -4,7 +4,11 @@
  * Instagram and YouTube both publish an embed page meant for exactly this; the video file itself is
  * never touched, which is what their terms require and what keeps the @allkeptapp account safe.
  */
-export interface EmbeddableItem { platform: string; canonicalUrl: string | null; sourceUrl: string | null; externalId: string | null }
+export interface EmbeddableItem {
+  platform: string; canonicalUrl: string | null; sourceUrl: string | null; externalId: string | null;
+  /** False when the provider will not play this in a frame, whatever address we build. */
+  embeddable?: boolean | null;
+}
 
 const INSTAGRAM = /instagram\.com\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/i;
 
@@ -28,6 +32,10 @@ export function embedUrl(item: EmbeddableItem): string | null {
     const link = item.canonicalUrl ?? item.sourceUrl ?? "";
     const list = /[?&]list=([A-Za-z0-9_-]+)/.exec(link);
     if (list && !/[?&]v=[A-Za-z0-9_-]/.test(link)) {
+      // Only a public playlist plays in a frame. An unlisted one answers "This video is unavailable"
+      // inside the player, so there is nothing to gain by asking — the card and its picture say more
+      // than a black rectangle does. Enrichment records which it is.
+      if (item.embeddable === false) return null;
       return `https://www.youtube-nocookie.com/embed/videoseries?list=${list[1]}&playsinline=1&rel=0&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
     }
   }

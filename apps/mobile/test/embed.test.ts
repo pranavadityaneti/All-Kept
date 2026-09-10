@@ -88,3 +88,24 @@ describe("a saved YouTube playlist", () => {
     expect(url).toContain("playsinline=1");
   });
 });
+
+describe("a playlist the provider will not play", () => {
+  it("is not embedded at all, rather than embedded into an error", () => {
+    // YouTube refuses an unlisted playlist in a frame and says "This video is unavailable" inside
+    // it. A card with the playlist's own picture on it beats a black rectangle.
+    const item = { platform: "youtube", canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", sourceUrl: null, externalId: "PLxyz", embeddable: false };
+    expect(embedUrl(item)).toBeNull();
+  });
+
+  it("is embedded when the provider allows it, or when nothing is known either way", () => {
+    const base = { platform: "youtube", canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", sourceUrl: null, externalId: "PLxyz" };
+    expect(embedUrl({ ...base, embeddable: true })).toContain("videoseries?list=PLxyz");
+    // Saves made before this was recorded must not lose their player on a guess.
+    expect(embedUrl(base)).toContain("videoseries?list=PLxyz");
+  });
+
+  it("never blocks a video on a flag meant for playlists", () => {
+    const video = { platform: "youtube", canonicalUrl: "https://www.youtube.com/watch?v=abc123", sourceUrl: null, externalId: "abc123", embeddable: false };
+    expect(embedUrl(video)).toContain("/embed/abc123?");
+  });
+});

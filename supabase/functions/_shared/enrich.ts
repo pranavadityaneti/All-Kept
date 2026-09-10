@@ -65,6 +65,38 @@ const ASPECT_PROBE_PX = 8192;
  * Data API distinguishes them. Without this the app has to guess, and it guesses 16:9, which is what
  * put vertical videos inside black bars.
  */
+/** A saved YouTube link that is a playlist rather than a video. Their ids and their APIs differ. */
+export const playlistId = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  const m = /[?&]list=([A-Za-z0-9_-]+)/.exec(url);
+  return m && !/[?&]v=[A-Za-z0-9_-]/.test(url) ? m[1]! : null;
+};
+
+/**
+ * What YouTube says about a playlist.
+ *
+ * Their oEmbed answers "Unauthorized" for a playlist — it serves videos only — so a saved playlist
+ * arrived with no title, no picture and no text at all. The playlist page does carry preview tags,
+ * but reading it means scraping past whatever YouTube serves a datacentre, and we already hold a key
+ * that answers the question properly. This is the same call the register door makes.
+ */
+export function parsePlaylist(body: unknown): { title: string; channel: string | null; thumbnail: string | null; embeddable: boolean } | null {
+  const snippet = (body as { items?: { snippet?: Record<string, unknown>; status?: { privacyStatus?: unknown } }[] } | null)?.items?.[0]?.snippet;
+  const privacy = (body as { items?: { status?: { privacyStatus?: unknown } }[] } | null)?.items?.[0]?.status?.privacyStatus;
+  if (!snippet) return null;
+  const title = typeof snippet["title"] === "string" ? (snippet["title"] as string).trim() : "";
+  if (!title) return null;
+  const thumbs = snippet["thumbnails"] as Record<string, { url?: string }> | undefined;
+  // Widest first: the card wants the best it can get, and not every playlist has every size.
+  const thumbnail = ["maxres", "standard", "high", "medium", "default"]
+    .map((k) => thumbs?.[k]?.url).find((u): u is string => typeof u === "string" && !!u) ?? null;
+  const channel = typeof snippet["channelTitle"] === "string" ? (snippet["channelTitle"] as string).trim() || null : null;
+  // Only a public playlist plays in an embedded player. An unlisted one answers "This video is
+  // unavailable" inside the frame, however the embed address is written — so the app is told not to
+  // try, and shows the card and a way out to YouTube instead of a black box.
+  return { title, channel, thumbnail, embeddable: privacy === "public" };
+}
+
 export function parseAspect(body: unknown): number | null {
   const player = (body as { items?: { player?: { embedWidth?: unknown; embedHeight?: unknown } }[] } | null)?.items?.[0]?.player;
   // YouTube sends both as strings.
@@ -295,7 +327,27 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
   // 2. Metadata. No-link posts and notes have nothing to fetch.
   const target = canonical ?? sourceUrl;
   let status: ItemStatus = item.status === "no_link" ? "no_link" : "ready";
-  if (platform !== "note" && item.status !== "no_link" && target) {
+  const playlist = platform === "youtube" ? playlistId(target) : null;
+  if (playlist && deps.youtubeKey) {
+    try {
+      const q = new URLSearchParams({ part: "snippet,status", id: playlist, key: deps.youtubeKey });
+      const res = await fetchFollowing(deps.fetch, `https://www.googleapis.com/youtube/v3/playlists?${q.toString()}`);
+      const found = res.ok ? parsePlaylist(await res.json().catch(() => null)) : null;
+      if (found) {
+        if (!item.title) patch.title = found.title;
+        if (found.channel && !item.author_name) patch.author_name = found.channel;
+        if (found.thumbnail && !item.thumbnail_url_remote) patch.thumbnail_url_remote = found.thumbnail;
+        patch.media_meta = { ...(patch.media_meta ?? {}), youtube_playlist: true, embeddable: found.embeddable };
+        status = "ready";
+      } else {
+        // A playlist that has been made private, or deleted, is not a retryable failure.
+        deps.log("enrich: playlist unavailable", { item: item.id, status: res.status });
+        status = "preview_unavailable";
+      }
+    } catch (e) {
+      return retry(`playlist: ${String(e).slice(0, 200)}`);
+    }
+  } else if (platform !== "note" && item.status !== "no_link" && target) {
     const oe = oembedUrl(platform, target);
     try {
       const res = await fetchFollowing(deps.fetch, oe ?? target);
