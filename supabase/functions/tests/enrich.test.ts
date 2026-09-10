@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -319,4 +319,48 @@ Deno.test("a relative Location is resolved against the address it came from", as
   const r = await enrich(base({ platform: "web", kind: "article", text: null, title: null,
     source_url: "https://site.example/old", canonical_url: "https://site.example/old", external_id: null }), deps(f));
   assertEquals(r.patch.title, "Moved");
+});
+
+Deno.test("a block page's own title is never stored as the save's title", () => {
+  // Real titles, taken from the walls these sites actually serve.
+  for (const t of ["Flipkart reCAPTCHA", "Just a moment...", "Attention Required! | Cloudflare",
+                   "Access Denied", "Error 403", "Checking your browser before accessing",
+                   "Security check", "Robot Check", "Are you a human"]) {
+    assert(looksLikeBlockTitle(t), `should have been refused: ${t}`);
+  }
+});
+
+Deno.test("an ordinary title is not mistaken for a wall, including ones about walls", () => {
+  // The hard cases: a real article whose subject is the very thing we are screening for. Length is
+  // what separates them — a wall names itself in a few words, an article does not.
+  for (const t of ["Hacker News", "Rapido driver sends 'I love you' text", "Apple (India)",
+                   "How CAPTCHAs actually work — a deep dive into the arms race",
+                   "Cloudflare's new edge runtime, and what it means for us",
+                   "Startup Ideas for Students", "Error handling in Rust", "Login flows worth copying"]) {
+    assert(!looksLikeBlockTitle(t), `should have been kept: ${t}`);
+  }
+  assert(!looksLikeBlockTitle(undefined));
+  assert(!looksLikeBlockTitle("   "));
+});
+
+Deno.test("a page behind a captcha is marked unavailable rather than titled after the captcha", async () => {
+  const f = fakeFetch({ "https://shop.example": () => new Response(
+    "<html><head><title>Flipkart reCAPTCHA</title></head><body>verify</body></html>",
+    { headers: { "content-type": "text/html" } }) });
+  const r = await enrich(base({ platform: "web", kind: "article", title: null, text: null,
+    source_url: "https://shop.example/x", canonical_url: "https://shop.example/x", external_id: null }), deps(f));
+  assertEquals(r.patch.title, undefined);
+  assertEquals(r.status, "preview_unavailable");
+});
+
+Deno.test("a page that declares og:title is taken at its word, whatever it says", async () => {
+  // The guard applies only to the bare <title> fallback. A site that declares a preview title has
+  // told us what it wants shown, and second-guessing that is how real titles get thrown away.
+  const f = fakeFetch({ "https://site.example": () => new Response(
+    `<html><head><meta property="og:title" content="Error handling, explained"><title>Just a moment...</title></head></html>`,
+    { headers: { "content-type": "text/html" } }) });
+  const r = await enrich(base({ platform: "web", kind: "article", title: null, text: null,
+    source_url: "https://site.example/a", canonical_url: "https://site.example/a", external_id: null }), deps(f));
+  assertEquals(r.patch.title, "Error handling, explained");
+  assertEquals(r.status, "ready");
 });

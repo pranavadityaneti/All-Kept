@@ -177,6 +177,35 @@ export function decodeEntities(s: string): string {
 const stripTags = (html: string) => decodeEntities(html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")).trim();
 
 /** Reads Open Graph / Twitter Card / title tags from an HTML document. */
+/**
+ * A title belonging to the wall in front of a page rather than to the page.
+ *
+ * parseOpenGraph falls back to the document's own <title> when a site declares no preview tags,
+ * which is right for an ordinary page and wrong for a block: Flipkart's wall is titled "Flipkart
+ * reCAPTCHA", Cloudflare's is "Just a moment...". Stored, those become a save that looks like it
+ * worked and is named after the thing that stopped it — worse than an honest failure, because
+ * nothing about it invites a retry. Only ever applied to the fallback; a site that declares
+ * og:title is taken at its word.
+ */
+/** Phrases that are only ever a wall. No real page is titled any of these. */
+const BLOCK_PHRASE = /^\s*(just a moment|attention required|access denied|forbidden|error 40\d|are you a human|security check|checking your browser|please wait|robot check|blocked|one more step|verify you are human)/i;
+
+/**
+ * Words that suggest a wall but also belong to real writing — an article about CAPTCHAs is titled
+ * after CAPTCHAs. They only count when the title is short enough to be a wall's own name rather
+ * than a piece about one; "Flipkart reCAPTCHA" is a wall, "How CAPTCHAs actually work — a deep
+ * dive into the arms race" is a Tuesday read.
+ */
+const BLOCK_WORD = /(recaptcha|captcha|cloudflare|ddos-guard|incapsula|bot detection)/i;
+const WALL_NAME_MAX = 32;
+
+export function looksLikeBlockTitle(title: string | undefined): boolean {
+  const t = title?.trim();
+  if (!t) return false;
+  if (BLOCK_PHRASE.test(t)) return true;
+  return t.length <= WALL_NAME_MAX && BLOCK_WORD.test(t);
+}
+
 export function parseOpenGraph(html: string): { title?: string; ogTitle?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string } {
   const head = html.slice(0, 200_000);
   const meta = (names: string[]): string | undefined => {
@@ -296,12 +325,16 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       } else {
         const html = await readHead(res, MAX_HTML_BYTES);
         const og = parseOpenGraph(html);
-        if (og.title && !item.title) patch.title = og.title;
+        // A declared og:title is trusted; a bare <title> is not, because that is where a block page
+        // puts its own name.
+        const declared = og.ogTitle ?? og.twitterTitle;
+        const usable = declared ?? (looksLikeBlockTitle(og.title) ? undefined : og.title);
+        if (usable && !item.title) patch.title = usable;
         if (og.description && !item.text) patch.text = og.description;
         if (og.image && !item.thumbnail_url_remote) patch.thumbnail_url_remote = og.image;
         if (og.author && !item.author_name) patch.author_name = og.author;
         if (og.siteName) patch.media_meta = { site_name: og.siteName };
-        if (!og.title && !og.description) status = "preview_unavailable";
+        if (!usable && !og.description) status = "preview_unavailable";
       }
 
       if (askThePage && /^https?:\/\//.test(target)) {
