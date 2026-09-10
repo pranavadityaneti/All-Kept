@@ -13,7 +13,7 @@ import { categoryDisplayName } from "../lib/category-names";
 import { track, useTrackOnce } from "../lib/metrics";
 import { canRetrySorting, categoryLabel } from "../lib/sorting";
 import { openLink } from "../lib/open";
-import { platformIcon, platformLabel } from "../lib/platforms";
+import { hostLabel, platformIcon, platformLabel } from "../lib/platforms";
 import { useSession } from "../lib/session";
 import { shareItem } from "../lib/share";
 import { useThumbnails } from "../lib/thumbnails";
@@ -62,7 +62,13 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
 
   const url = openableUrl(detail);
   const embed = embedUrl(detail);
-  const heading = detail.title?.trim() || detail.text?.split("\n").find((l) => l.trim()) || platformLabel(detail.platform);
+  // A link whose page we could not read has no title and no caption, and "Web" as a heading tells
+  // you nothing about which link it was. The address always exists — it is the thing that was
+  // saved — so it stands in before the platform's own name does.
+  const heading = detail.title?.trim()
+    || detail.text?.split("\n").find((l) => l.trim())
+    || (detail.platform === "web" ? hostLabel(url) : null)
+    || platformLabel(detail.platform);
   const noteValue = note ?? detail.note ?? "";
   const needsLink = detail.status === "no_link" || detail.status === "failed";
   // "No link yet" was shown for both, and for a failed save it is simply untrue: the link is there,
@@ -140,6 +146,12 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           <View style={[styles.blank, { width: playerWidth, maxHeight: mediaMax, backgroundColor: p.surfaceAlt }]}>
             <Icon name={platformIcon(detail.platform)} size={36} color={p.inkMuted} />
             <Text style={[type.label, { color: p.inkMuted }]}>{blankNote}</Text>
+            {url && (
+              <>
+                <Text numberOfLines={3} style={[type.body, styles.blankUrl, { color: p.ink }]}>{url}</Text>
+                <Button label={`Open ${hostLabel(url) ?? "link"}`} variant="secondary" onPress={() => { track(userId, "open_original", { platform: detail.platform }); void openLink(url); }} />
+              </>
+            )}
           </View>
         )}
       </View>
@@ -292,7 +304,10 @@ const styles = StyleSheet.create({
   back: { transform: [{ rotate: "180deg" }] },
   media: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: space.lg },
   hero: { borderRadius: radius.lg },
-  blank: { aspectRatio: 1.6, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", gap: space.sm },
+  // No fixed ratio any more: it now holds an address of unknown length and a button, and a box that
+  // cannot grow either clips them or leaves them floating in the middle of nothing.
+  blank: { minHeight: 180, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", gap: space.sm, padding: space.lg },
+  blankUrl: { textAlign: "center" },
   footer: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.lg, gap: space.md },
   meta: { marginTop: 2 },
   actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
