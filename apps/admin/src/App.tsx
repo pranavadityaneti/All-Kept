@@ -27,6 +27,7 @@ type IconName =
   | "processing"
   | "sources"
   | "activity"
+  | "feedback"
   | "search"
   | "arrow"
   | "refresh"
@@ -42,6 +43,8 @@ const paths: Record<IconName, string> = {
   sources:
     "M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2",
   activity: "M3 12h4l3-8 4 16 3-8h4",
+  feedback:
+    "M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.2-.5L3 21l1.7-5a8.2 8.2 0 0 1-.7-3.4 8.4 8.4 0 0 1 8.4-8.5h.6a8.4 8.4 0 0 1 8 8Z",
   search: "M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   arrow: "M5 12h14 M13 6l6 6-6 6",
   refresh: "M20 7v5h-5 M4 17v-5h5 M6 6a8 8 0 0 1 13 2 M18 18A8 8 0 0 1 5 16",
@@ -245,6 +248,7 @@ const navigation: { id: Page; title: string; icon: IconName }[] = [
   { id: "processing", title: "Processing", icon: "processing" },
   { id: "sources", title: "Sources & imports", icon: "sources" },
   { id: "activity", title: "Activity", icon: "activity" },
+  { id: "feedback", title: "Feedback", icon: "feedback" },
 ];
 const copy: Record<Page, { title: string; description: string }> = {
   overview: {
@@ -272,6 +276,11 @@ const copy: Record<Page, { title: string; description: string }> = {
   activity: {
     title: "A pulse on Allkept.",
     description: "App events and admin actions, in chronological order.",
+  },
+  feedback: {
+    title: "What people are telling you.",
+    description:
+      "Sent from inside the app, newest first, with the build it came from.",
   },
 };
 function Dashboard({
@@ -874,6 +883,7 @@ function DataTable({
       "Started",
     ],
     activity: ["Event", "Account", "Origin", "Time"],
+    feedback: ["Message", "From", "Build", "Sent"],
   };
   return (
     <div className="panel table-wrap">
@@ -1034,6 +1044,23 @@ function DataTable({
                     {r.error && (
                       <small className="error-text">{cell(r, "error")}</small>
                     )}
+                  </td>
+                  <td>{formatDate(r.created_at, true)}</td>
+                </>
+              ) : page === "feedback" ? (
+                <>
+                  <td>
+                    {/* The whole message, wrapped. Truncating the one thing a person actually
+                        wrote is how feedback stops being read. */}
+                    <p className="feedback-message">{cell(r, "message")}</p>
+                  </td>
+                  <td>
+                    {/* Null once the account is deleted — the message is kept, the person is not. */}
+                    {r.email ? cell(r, "email") : <em>account deleted</em>}
+                  </td>
+                  <td>
+                    <code>{cell(r, "app_version")}</code>
+                    <small>{cell(r, "platform")}</small>
                   </td>
                   <td>{formatDate(r.created_at, true)}</td>
                 </>

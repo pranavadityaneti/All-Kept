@@ -863,6 +863,13 @@ td code {
   background: var(--surface-warning);
   border-color: var(--border-warning);
 }
+.feedback-message {
+  margin: 0;
+  max-width: 52ch;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
 .stacked-badges {
   display: flex;
   flex-direction: column;
