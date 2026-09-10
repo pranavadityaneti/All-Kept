@@ -3,7 +3,6 @@ import { Image } from "expo-image";
 import { useQueryClient } from "@tanstack/react-query";
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { ConfirmButton } from "./ConfirmButton";
-import { GenderField } from "./GenderField";
 import { Icon } from "./Icon";
 import { validateProfile, type Profile } from "../lib/profile-fields";
 import { profileKey, useAvatar } from "../lib/profile";
@@ -12,11 +11,11 @@ import { chunkedSecureStore } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { type, usePalette } from "../lib/theme";
 
-interface Draft { name: string; gender: string; genderCustom: string; phone: string; photoUri: string | null; uploadedPath: string | null }
+interface Draft { name: string; phone: string; photoUri: string | null; uploadedPath: string | null }
 export const profileDraftKey = (userId: string) => `allkept.profile-draft.${userId}`;
 export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { profile: Profile; suggestedName: string; onboarding: boolean; onSaved: () => void }) {
   const p = usePalette(onboarding ? "light" : undefined), client = useQueryClient();
-  const [form, setForm] = useState<Draft>({ name: profile.display_name ?? suggestedName, gender: profile.gender ?? "", genderCustom: profile.gender_custom ?? "", phone: profile.phone ?? "", photoUri: null, uploadedPath: null });
+  const [form, setForm] = useState<Draft>({ name: profile.display_name ?? suggestedName, phone: profile.phone ?? "", photoUri: null, uploadedPath: null });
   const [loaded, setLoaded] = useState(!onboarding), [stage, setStage] = useState<"photo" | "uploading" | "saving" | "done" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const finished = useRef(false);
@@ -31,7 +30,7 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
       if (!live || !saved) return;
       try {
         const draft = JSON.parse(saved) as Draft;
-        if ([draft.name, draft.gender, draft.genderCustom, draft.phone].every((v) => typeof v === "string")) setForm(draft);
+        if ([draft.name, draft.phone].every((v) => typeof v === "string")) setForm(draft);
       } catch { /* Ignore an obsolete draft. */ }
     }).catch(() => undefined).finally(() => { if (live) setLoaded(true); });
     return () => { live = false; };
@@ -68,7 +67,7 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
       }
       setStage("saving");
       const { data, error: saveError } = await supabase.from("profiles").update({ ...patch, avatar_path: path }).eq("user_id", profile.user_id)
-        .select("user_id,display_name,gender,gender_custom,phone,avatar_path,onboarding_completed_at").single();
+        .select("user_id,display_name,phone,avatar_path,onboarding_completed_at").single();
       if (saveError || !data?.onboarding_completed_at) throw new Error("Could not save your profile. Your details are kept; please try again.");
       // A lost response can still mean the write committed. Never delete a new upload on failure.
       finished.current = true;
@@ -105,9 +104,6 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
         <TextInput accessibilityLabel="Name" autoComplete="name" textContentType="name" value={form.name} onChangeText={(name) => change({ name })} editable={!busy && loaded} maxLength={80} placeholder="Your name" placeholderTextColor={p.inkMuted} selectionColor={p.accent} returnKeyType="done" style={inputStyle} />
       </View>
       <View style={styles.field}>
-        <Text style={[styles.label, { color: p.inkMuted }]}>Gender</Text>
-        <GenderField value={form.gender} disabled={busy || !loaded} onChange={(gender) => change({ gender })} light={onboarding} />
-        {form.gender === "self_describe" && <TextInput accessibilityLabel="Describe your gender" value={form.genderCustom} placeholder="In your words" placeholderTextColor={p.inkMuted} onChangeText={(genderCustom) => change({ genderCustom })} editable={!busy && loaded} maxLength={80} style={inputStyle} />}
       </View>
       <View style={styles.field}>
         <View style={styles.labelRow}><Text style={[styles.label, { color: p.inkMuted }]}>Phone</Text><Text style={[styles.optional, { color: p.inkMuted }]}>Optional</Text></View>

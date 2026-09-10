@@ -22,8 +22,6 @@ const rows: Record<string, Row[]> = {
     last_sign_in_at: ago(i / 10),
     onboarding_completed_at: i === 5 ? null : ago(i + 1),
     saves: 42 + i * 13,
-    gender: "prefer_not_to_say",
-    gender_custom: null,
     phone: null,
     sources: 2,
   })),

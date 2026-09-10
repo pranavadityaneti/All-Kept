@@ -13,7 +13,6 @@ import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/goog
 import { usePreferences, useSetPreference } from "../../lib/preferences";
 import { useProfile, useAvatar } from "../../lib/profile";
 import { openSystemSettings, pushPermission, registerForPush, unregisterPush } from "../../lib/push";
-import { genderLabel } from "../../lib/profile-fields";
 import { REVIEW_URL, SUPPORT_EMAIL } from "../../lib/feedback";
 import { openLink } from "../../lib/open";
 import { useSession } from "../../lib/session";
@@ -139,7 +138,6 @@ export default function Settings() {
         </View>
 
         <SettingsGroup>
-          <SettingsRow title="Gender" detail={profile.data ? genderLabel(profile.data) ?? "Not set" : "Loading…"} />
           <SettingsRow title="Phone number" detail={profile.data?.phone ?? "Not provided"} />
           <SettingsRow title="Edit profile" detail="Photo, name and contact details" onPress={() => router.push("/profile")} last />
         </SettingsGroup>

@@ -1179,7 +1179,6 @@ function UserDialog({
           <dl>
             {[
               ["User ID", detail.id],
-              ["Gender", detail.gender_custom ?? detail.gender],
               ["Phone", detail.phone],
               ["Joined", formatDate(detail.created_at)],
               ["Last sign-in", formatDate(detail.last_sign_in_at, true)],

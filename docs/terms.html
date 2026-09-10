@@ -1,9 +1,475 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Terms of Service · Allkept</title>
-<style>body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1b2229}h1{font-size:28px}h2{font-size:20px;margin-top:28px}small{color:#5f6b75}</style></head>
-<body><h1>Terms of Service</h1>
-<p>Allkept is provided as a test-phase service, free of charge, to invited testers.</p>
-<ul><li>You may use Allkept only to save content for your own personal use.</li>
-<li>Content you save stays the property of its original creators; Allkept stores links and previews and links back to the original post.</li>
-<li>The service may change or be withdrawn during the test phase without notice.</li>
-<li>Allkept is not affiliated with Meta, Instagram or YouTube.</li></ul><p><small>Allkept · last updated 8 September 2026 · test-phase version of this page.</small></p></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terms of Service · Allkept</title>
+<meta name="description" content="The agreement between you and Allkept: what the app does, what you may do with it, and what we promise.">
+<meta name="robots" content="index,follow">
+<style>
+  /* Same house style as privacy.html. Light ground, painted explicitly. No external dependencies. */
+  :root{
+    --bg:#F6F7FA; --surface:#FFFFFF; --surface-alt:#EEF0F6; --line:#DFE3EC;
+    --ink:#14161C; --muted:#5F6675; --accent:#6D46F2; --accent-soft:#EDE8FF;
+    --warn:#8A5200; --warn-bg:#FFF6E6; --warn-line:#F0D9A8;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:400 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 20px 72px}
+
+  nav{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:24px 0 8px}
+  .mark{font-weight:700; letter-spacing:-.02em; font-size:17px; color:var(--ink); text-decoration:none}
+  nav .links{display:flex; gap:18px; font-size:14px; flex-wrap:wrap}
+  nav a{color:var(--muted); text-decoration:none}
+  nav a:hover{color:var(--ink)}
+
+  h1{font-size:clamp(28px,5vw,38px); line-height:1.1; letter-spacing:-.03em; margin:26px 0 6px}
+  .stamp{color:var(--muted); font-size:14px; margin:0 0 22px}
+  h2{font-size:21px; letter-spacing:-.015em; margin:38px 0 10px; padding-top:14px; border-top:1px solid var(--line)}
+  h3{font-size:16.5px; margin:24px 0 6px; letter-spacing:-.01em}
+  p,li{font-size:15.5px}
+  ul,ol{padding-left:22px}
+  li{margin:5px 0}
+  a{color:var(--accent)}
+  strong{font-weight:600}
+  code{background:var(--surface-alt); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:13.5px}
+
+  .note{
+    background:var(--warn-bg); border:1px solid var(--warn-line); border-left:4px solid var(--warn);
+    border-radius:10px; padding:14px 16px; margin:20px 0; color:var(--warn); font-size:15px;
+  }
+  .note strong{color:var(--warn)}
+  .note p{margin:0 0 8px; font-size:15px}
+  .note p:last-child{margin:0}
+
+  .callout{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:18px 0}
+  .callout p:first-child,.callout ul:first-child{margin-top:0}
+  .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+
+  .tbd{
+    background:var(--accent-soft); border:1px dashed var(--accent); color:#4B2BB8;
+    border-radius:5px; padding:0 6px; font-size:13.5px; font-weight:600;
+  }
+
+  .toc{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:24px 0}
+  .toc h2{border:0; margin:0 0 8px; padding:0; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+  .toc ol{margin:0; padding-left:20px; columns:2; column-gap:28px}
+  .toc li{margin:3px 0; break-inside:avoid; font-size:14.5px}
+  .toc a{text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  @media (max-width:620px){ .toc ol{columns:1} }
+
+  .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:16px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px}
+  th,td{text-align:left; vertical-align:top; padding:10px 14px; border-bottom:1px solid var(--line)}
+  th{background:var(--surface-alt); font-weight:600; font-size:13.5px}
+  tr:last-child td{border-bottom:0}
+
+  .caps{font-size:14.5px; letter-spacing:.01em}
+
+  footer{border-top:1px solid var(--line); margin-top:44px; padding-top:20px; color:var(--muted); font-size:13.5px}
+  footer a{color:var(--muted)}
+  footer .l{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px}
+
+  @media print{
+    :root{--bg:#fff; --surface:#fff; --surface-alt:#f4f4f4; --accent:#000; --accent-soft:#fff}
+    body{font-size:10.5pt; line-height:1.45}
+    .wrap{max-width:none; padding:0}
+    nav,.toc{display:none}
+    h1{font-size:22pt}
+    h2{font-size:13pt; page-break-after:avoid; border-top:1px solid #ccc}
+    h3{font-size:11.5pt; page-break-after:avoid}
+    p,li,table{font-size:10pt}
+    table,.scroll,.note,.callout{page-break-inside:avoid}
+    .scroll{overflow:visible; border:0}
+    table{min-width:0; border:1px solid #ccc}
+    a{color:#000; text-decoration:none}
+    a[href^="http"]::after,a[href^="mailto"]::after{content:" (" attr(href) ")"; font-size:8.5pt; color:#555}
+    .tbd{border:1px solid #000; background:#fff; color:#000}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <a class="mark" href="index.html">Allkept</a>
+  <span class="links">
+    <a href="index.html">Home</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="delete.html">Delete your data</a>
+  </span>
+</nav>
+
+<h1>Terms of Service</h1>
+<p class="stamp">Last updated 10 September 2026</p>
+
+<div class="note">
+  <p><strong>Draft — not legal advice, and not yet reviewed by a lawyer.</strong></p>
+  <p>These terms were drafted against the Allkept source code so that they describe the real service.
+  They have <em>not</em> been reviewed by a qualified lawyer in any jurisdiction and they are not legal
+  advice. In particular the liability, warranty, governing-law and dispute clauses below are unreviewed
+  drafting and may not be enforceable as written. They must be reviewed by a lawyer before Allkept
+  relies on them or presents them to users as binding. Anything marked
+  <span class="tbd">[decision]</span> is unresolved and has to be filled in before publication.</p>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#agreement">The agreement</a></li>
+    <li><a href="#what">What Allkept is</a></li>
+    <li><a href="#eligibility">Who may use it</a></li>
+    <li><a href="#account">Your account</a></li>
+    <li><a href="#doors">Connecting Instagram, YouTube and imports</a></li>
+    <li><a href="#platforms">The platforms' own rules</a></li>
+    <li><a href="#use">What you may and may not do</a></li>
+    <li><a href="#content">Content: yours, theirs and ours</a></li>
+    <li><a href="#ai">Automatic sorting and search</a></li>
+    <li><a href="#takedown">Copyright and takedown</a></li>
+    <li><a href="#availability">Availability and changes</a></li>
+    <li><a href="#price">Price</a></li>
+    <li><a href="#feedback">Feedback</a></li>
+    <li><a href="#ending">Ending this agreement</a></li>
+    <li><a href="#warranty">Disclaimers</a></li>
+    <li><a href="#liability">Limitation of liability</a></li>
+    <li><a href="#indemnity">Indemnity</a></li>
+    <li><a href="#law">Governing law and disputes</a></li>
+    <li><a href="#apple">If you installed from the App Store</a></li>
+    <li><a href="#play">If you installed from Google Play</a></li>
+    <li><a href="#general">General</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</div>
+
+<h2 id="agreement">1. The agreement</h2>
+<p>These Terms of Service are an agreement between you and
+<span class="tbd">MECA Engineering Solutions (OPC) Private Limited, 4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru, Bengaluru Urban District, Karnataka 560102, India</span> ("Allkept", "we",
+"us"), operating from India. They govern your use of the Allkept mobile apps, the Allkept Instagram
+account <strong>@allkeptapp</strong>, and the Allkept website at allkept.app.</p>
+<p>By creating an Allkept account, by messaging @allkeptapp, or by using the app in any way, you agree
+to these terms. If you do not agree, do not use Allkept.</p>
+<p>Our <a href="privacy.html">Privacy Policy</a> explains what we do with your data and forms part of
+this agreement.</p>
+
+<h2 id="what">2. What Allkept is</h2>
+<p>Allkept collects things you have saved elsewhere into one private library, sorts them into
+categories automatically, and lets you search them.</p>
+<p>Saves reach Allkept three ways:</p>
+<ul>
+  <li>you send a post, reel or link to <strong>@allkeptapp</strong> on Instagram;</li>
+  <li>you connect a YouTube playlist of your own and add videos to it; or</li>
+  <li>you paste a link into the app, or share one into it from another app.</li>
+</ul>
+<p>You can also bring in older Instagram saves by uploading the "saved posts" export that Meta gives
+you.</p>
+<p>Allkept stores links, the public preview details of those links, a copy of the preview image, and
+whatever you write yourself. <strong>It does not download, copy, host or re-publish videos, audio or
+full posts.</strong> Playback happens through the platform's own embed, and every card links back to
+the original.</p>
+<h3>Notifications</h3>
+<p>Allkept can tell you when a save has landed or when one needs something from you. Notifications are
+service messages about your own library, not marketing. They are <strong>off until you turn them
+on</strong>, you can turn them off again at any time in Settings, and your phone's own settings
+override ours. A notification names the save it is about, so it may show a save's title on your lock
+screen — the <a href="privacy.html#push">Privacy Policy</a> explains what that involves.</p>
+<h3>Automatic sorting can be turned off</h3>
+<p>Sorting saves into categories is on by default and can be switched off in Settings, in which case
+saves arrive uncategorised. Search indexing is a separate thing and stays on; see
+<a href="privacy.html#ai">the Privacy Policy</a> for exactly what that means.</p>
+
+<h2 id="eligibility">3. Who may use it</h2>
+<p>You must be at least <span class="tbd">18 years</span> years old, and old enough
+under the law of your country to enter into this agreement. If your country sets a higher age for
+consenting to the processing of your personal data, that higher age applies.</p>
+<p>Allkept is for personal use by an individual. You must not create an account on behalf of a company,
+a brand, a bot or another person.</p>
+<p>You must not use Allkept if you are barred from doing so under any law that applies to you, or under
+the rules of any platform you connect to it.</p>
+
+<h2 id="account">4. Your account</h2>
+<ul>
+  <li>You sign in with <strong>Google</strong> or with <strong>Apple</strong>. Keep control of whichever
+    you use — anyone who has it has your Allkept library.</li>
+  <li>If you sign in with Apple and choose Hide My Email, the relay address Apple gives us is the only
+    address we have for you. Keep it working if you want to hear from us.</li>
+  <li>One person, one account. Do not share your account or let anyone else use it.</li>
+  <li>Everything done through your account is treated as done by you.</li>
+  <li>Tell us at <a href="mailto:hi@allkept.app">hi@allkept.app</a> if you think someone else has got
+    into your account.</li>
+</ul>
+
+<h2 id="doors">5. Connecting Instagram, YouTube and imports</h2>
+<h3>Instagram</h3>
+<p>You connect Instagram by sending a six-character code to @allkeptapp. That code links whichever
+Instagram account sent it to whichever Allkept account requested it — so do not give your code to
+anyone else, and do not send someone else's code. A code expires after ten minutes and can be used
+once.</p>
+<p>We reply in that thread to confirm a save. You can stop those replies at any time by sending
+<code>stop replies</code>, or from Settings. We only ever message people who have messaged us first,
+and we never post anything on your behalf.</p>
+<p>Some Instagram post shares arrive without the original link because Instagram does not include one.
+Those saves stay incomplete until you supply the link. That is a platform limitation, not a fault we
+can fix.</p>
+
+<h3>YouTube</h3>
+<p>You give us the link to a playlist. We read it periodically with our own YouTube API key and turn
+new videos in it into saves. We do not ask for, receive or store your Google or YouTube account
+credentials, and we can see nothing on YouTube except that one playlist. The playlist must be public or
+unlisted; YouTube shows Watch Later and Liked videos to nobody, including us. Disconnect it at any time
+in Settings.</p>
+
+<h3>Importing your older saves</h3>
+<p>You may upload the "saved posts" export Meta gives you, so that your existing Instagram saves appear
+in Allkept. Upload only an export of your own account. We read the Instagram post links out of it and
+delete the file immediately afterwards.</p>
+
+<h2 id="platforms">6. The platforms' own rules</h2>
+<p><strong>Allkept is not affiliated with, endorsed by or sponsored by Meta, Instagram, YouTube,
+Google, OpenAI, Apple or any other company named here.</strong> All trademarks belong to their
+owners.</p>
+<p>When you connect a platform to Allkept, that platform's own agreement with you continues to apply,
+and you must keep to it. In particular:</p>
+<ul>
+  <li>Instagram: the <a href="https://help.instagram.com/581066165581870" rel="noopener">Instagram Terms
+    of Use</a>.</li>
+  <li>YouTube: Allkept's YouTube door uses <strong>YouTube API Services</strong>. By using it you agree
+    to be bound by the <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of
+    Service</a>, and Google's handling of your data is described in the
+    <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a>. Allkept
+    reads only the playlist you name, and only the public details of the videos in it — their ids,
+    titles and dimensions. It does this with Allkept's own API key, and holds no authorisation on your
+    Google or YouTube account, so <strong>disconnecting the playlist in Settings is what revokes our
+    access to it</strong>. Separately, the Google account you use to sign in to Allkept can be reviewed
+    and its access revoked at
+    <a href="https://myaccount.google.com/permissions" rel="noopener">the Google security settings
+    page</a> — note that revoking it there stops you signing in, and does not by itself delete your
+    Allkept library (see <a href="delete.html">Delete your data</a>).</li>
+</ul>
+<p>If a platform changes its rules or its access in a way that breaks a door, that door may stop
+working. We will say so in the app where we can.</p>
+
+<h2 id="use">7. What you may and may not do</h2>
+<p>You may use Allkept to keep and organise things for <strong>your own personal, non-commercial
+use</strong>.</p>
+<p>You must not:</p>
+<ul>
+  <li>use Allkept to build a collection, archive, dataset or feed for anyone other than yourself, or to
+    republish, resell or redistribute what you save;</li>
+  <li>save content you have no right to access, or use Allkept to get around a platform's privacy
+    settings, paywall, geo-restriction or technical protection;</li>
+  <li>save or store anything unlawful — including child sexual abuse material, content that infringes
+    someone's rights, and content that is illegal where you are;</li>
+  <li>use Allkept to harass, stalk, monitor or profile another person;</li>
+  <li>automate, scrape, bulk-load or otherwise use Allkept other than through the app and the
+    @allkeptapp thread as they are intended to work;</li>
+  <li>attempt to reach another user's library, or any part of our systems you have not been given
+    access to;</li>
+  <li>probe, load-test, reverse engineer, decompile or interfere with the service, except to the
+    extent a law gives you a right we cannot exclude;</li>
+  <li>impersonate anyone, or link an Instagram account that is not yours; or</li>
+  <li>remove, obscure or alter any notice of ownership in the app.</li>
+</ul>
+<p>We may limit how much you can save, how fast, and how large an upload can be, to keep the service
+working for everyone.</p>
+
+<h2 id="content">8. Content: yours, theirs and ours</h2>
+<h3>What creators own</h3>
+<p>The posts, reels, videos and articles you save belong to whoever made them. Allkept does not
+transfer any right in them to you. Saving something in Allkept gives you no licence to use it beyond
+whatever the platform and the law already allowed.</p>
+
+<h3>What you own</h3>
+<p>Your notes, your category corrections, your profile details and your photo remain yours. To run the
+service we need permission to handle them, so you grant us a <strong>worldwide, non-exclusive,
+royalty-free licence to store, copy, transmit, process and display that content solely in order to
+provide Allkept to you</strong>. It is limited to running the service. It ends when you delete the
+content or your account. We do not use your content to advertise, we do not show it to other users, and
+we do not use it to train AI models.</p>
+
+<h3>What we own</h3>
+<p>Allkept — the app, the name, the design, the code and the way it works — belongs to us. You get a
+personal, revocable, non-transferable, non-sublicensable licence to use it under these terms. Nothing
+else is granted.</p>
+
+<h2 id="ai">9. Automatic sorting and search</h2>
+<p>Allkept sorts saves into categories, writes a one-line summary and extracts tags automatically, by
+sending the text of the save to a third-party AI provider (currently OpenAI — see the
+<a href="privacy.html#ai">Privacy Policy</a>). Search combines exact matching with meaning-based
+matching, which sends the words you type to the same provider.</p>
+<p><strong>These are automated guesses, not statements of fact.</strong> A category can be wrong, a
+summary can be misleading, and a search can miss something. Do not rely on them for anything that
+matters. You can change any category yourself, and your correction is never overwritten.</p>
+<p>Sorting is not a decision about you and has no legal or similarly significant effect on you.</p>
+
+<h2 id="takedown">10. Copyright and takedown</h2>
+<p>We respect intellectual property rights. If you believe something stored by Allkept infringes your
+rights, write to <a href="mailto:hi@allkept.app">hi@allkept.app</a> with:</p>
+<ul>
+  <li>the link to the original post, and enough detail to identify what has been copied;</li>
+  <li>your name and contact details;</li>
+  <li>a statement that you believe in good faith that the use is not authorised by you, your agent or
+    the law;</li>
+  <li>a statement that the information is accurate and, under penalty of perjury, that you are the
+    rights holder or authorised to act for them; and</li>
+  <li>your signature, physical or electronic.</li>
+</ul>
+<p>We will remove the stored preview text and thumbnail we hold for that post. Note that Allkept
+libraries are private to their owner and consist mainly of links back to your own original post; where
+a save is only a link, removing our stored preview is the whole of what we hold. We may pass your
+notice to the user concerned. We will end the account of anyone who repeatedly infringes.</p>
+<p>Our designated contact for infringement notices is
+<span class="tbd">MECA Engineering Solutions (OPC) Private Limited, at the registered address above</span>.</p>
+
+<h2 id="availability">11. Availability and changes</h2>
+<p>Allkept is a young product and is currently in testing. It is provided as it is, when it is
+available. We may change, suspend, limit or withdraw any part of it — including a whole door — at any
+time, with notice where it is reasonable to give notice and without it where it is not.</p>
+<p>We do not promise any level of uptime, any processing time, or that any particular save will be
+captured, previewed or sorted successfully. Platforms fail, rate-limit and change without warning, and
+some content simply has no public preview.</p>
+<p><strong>Allkept is not a backup service.</strong> Keep your own copy of anything you cannot afford to
+lose.</p>
+
+<h2 id="price">12. Price</h2>
+<p>Allkept is free to use today, and takes no payments of any kind. If we introduce paid features in
+future, we will say so before they apply to you, and nothing you already have will start costing money
+without your agreement.</p>
+
+<h2 id="feedback">13. Feedback</h2>
+<p>You can send us feedback from Settings, or write to
+<a href="mailto:hi@allkept.app">hi@allkept.app</a>. Please keep it to the product — do not put
+confidential information, or anyone else's personal details, in a feedback message. It is stored with
+the app version and platform it came from, and it cannot be read back through the app.</p>
+<p>If you send us an idea, a bug report or a suggestion, we may use it freely, without owing you
+anything and without keeping it confidential. You keep whatever rights you had in it; you are simply
+letting us act on it.</p>
+<p><strong>Feedback outlives your account on purpose.</strong> If you delete your account, the message
+stays but is detached from you: your account link and the address we could have replied to are removed.
+If you would rather the message went too, ask us and we will delete it. This is set out in the
+<a href="privacy.html#collect">Privacy Policy</a>.</p>
+
+<h2 id="ending">14. Ending this agreement</h2>
+<p><strong>You</strong> may stop at any time. Delete your account from Settings — see the
+<a href="delete.html">data deletion page</a> — which removes your library and everything else we hold
+about you, permanently and at once. The single exception is feedback you sent us, which is kept
+detached from you as described in section 13.</p>
+<p><strong>We</strong> may suspend or end your access if you break these terms, if we are required to
+by law or by a platform whose rules you have broken, if your use threatens the service or another
+person, or if we discontinue Allkept. Where it is possible and lawful, we will tell you first and give
+you a chance to get your data out.</p>
+<p>Sections that by their nature should survive the end of this agreement — ownership, disclaimers,
+liability, indemnity, governing law and this sentence — do survive it.</p>
+
+<h2 id="warranty">15. Disclaimers</h2>
+<p class="caps">ALLKEPT IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED. TO THE FULLEST EXTENT PERMITTED BY LAW WE DISCLAIM ALL IMPLIED WARRANTIES, INCLUDING
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, AND ANY WARRANTY THAT THE
+SERVICE WILL BE UNINTERRUPTED, TIMELY, SECURE, ACCURATE OR ERROR-FREE.</p>
+<p>We do not warrant the accuracy of any category, tag, summary or search result, or of any preview
+detail fetched from a third-party platform. We are not responsible for the content you save, for the
+platforms it came from, or for anything those platforms do.</p>
+<p>Some countries do not allow the exclusion of certain warranties or of consumer guarantees. Nothing
+here excludes or limits a right you have as a consumer that cannot lawfully be excluded — including
+under the Indian Consumer Protection Act, 2019, the EU Consumer Rights Directive, the UK Consumer
+Rights Act 2015 and equivalent laws.</p>
+
+<h2 id="liability">16. Limitation of liability</h2>
+<p class="caps">TO THE FULLEST EXTENT PERMITTED BY LAW, NEITHER ALLKEPT NOR ANYONE ACTING FOR IT WILL
+BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF
+PROFITS, REVENUE, GOODWILL, DATA OR SAVED CONTENT, ARISING OUT OF OR RELATING TO YOUR USE OF ALLKEPT,
+WHETHER IN CONTRACT, TORT OR OTHERWISE, AND EVEN IF WE WERE TOLD SUCH DAMAGES WERE POSSIBLE.</p>
+<p class="caps">OUR TOTAL LIABILITY FOR ALL CLAIMS RELATING TO ALLKEPT IS LIMITED TO
+<span class="tbd">the greater of ₹10,000 or US$100</span>.</p>
+<p>Nothing in these terms excludes or limits liability for death or personal injury caused by
+negligence, for fraud or fraudulent misrepresentation, or for anything else that cannot lawfully be
+excluded or limited.</p>
+
+<h2 id="indemnity">17. Indemnity</h2>
+<p>You agree to indemnify and hold us harmless against any claim, loss, liability, or reasonable cost
+arising out of your use of Allkept in breach of these terms, your breach of a platform's rules, or your
+infringement of anyone else's rights. This does not apply to the extent the claim arises from our own
+breach or negligence, and it does not apply where you are a consumer and the law does not permit it.</p>
+
+<h2 id="law">18. Governing law and disputes</h2>
+<p>These terms are governed by the laws of
+<span class="tbd">the laws of India, with exclusive jurisdiction in the courts at Bengaluru, Karnataka</span>, without regard to conflict-of-law rules. Disputes
+will be resolved by <span class="tbd">the laws of India, with exclusive jurisdiction in the courts at Bengaluru, Karnataka</span>.</p>
+<p>If you are a consumer, this does not deprive you of the protection of the mandatory laws of the
+country where you live, or of your right to bring proceedings in your local courts where the law gives
+you that right.</p>
+<p>Before starting formal proceedings, please write to
+<a href="mailto:hi@allkept.app">hi@allkept.app</a>. Most things are quicker to fix that way.</p>
+
+<h2 id="apple">19. If you installed from the App Store</h2>
+<p>These additional terms apply and, where they conflict with the rest of this agreement, they
+prevail:</p>
+<ul>
+  <li>This agreement is between you and Allkept only, <strong>not with Apple</strong>. Apple is not
+    responsible for the app or its content.</li>
+  <li>Your licence to use the app is a non-transferable licence to run it on an Apple device you own or
+    control, as permitted by the App Store Terms of Service.</li>
+  <li>Apple has <strong>no obligation</strong> to provide maintenance or support for the app.</li>
+  <li>If the app fails to conform to any applicable warranty, you may tell Apple, and Apple will refund
+    the purchase price (which for Allkept is zero). To the maximum extent permitted by law, Apple has no
+    other warranty obligation at all.</li>
+  <li>Allkept, not Apple, is responsible for any claim relating to the app: product liability, a failure
+    to conform to a legal requirement, and claims under consumer protection or similar law.</li>
+  <li>Allkept, not Apple, is responsible for investigating and resolving any third-party claim that the
+    app infringes intellectual property rights.</li>
+  <li>You represent that you are not located in a country subject to a US Government embargo or
+    designated as a "terrorist supporting" country, and that you are not on any US Government list of
+    prohibited or restricted parties.</li>
+  <li><strong>Apple and its subsidiaries are third-party beneficiaries of these terms</strong> and may
+    enforce them against you.</li>
+</ul>
+
+<h2 id="play">20. If you installed from Google Play</h2>
+<p>Your use of the app is also subject to the Google Play Terms of Service. Google is not a party to
+this agreement and is not responsible for the app.</p>
+
+<h2 id="general">21. General</h2>
+<ul>
+  <li><strong>Changes.</strong> We may update these terms. The date at the top changes with them, and
+    where a change is material we will tell you in the app before it takes effect. Continuing to use
+    Allkept after that means you accept the new terms; if you do not, delete your account.</li>
+  <li><strong>Whole agreement.</strong> These terms and the <a href="privacy.html">Privacy Policy</a>
+    are the entire agreement between us about Allkept, and replace anything said before.</li>
+  <li><strong>Severability.</strong> If a court finds part of these terms unenforceable, the rest stays
+    in force.</li>
+  <li><strong>No waiver.</strong> If we do not enforce something straight away, we have not given up the
+    right to enforce it later.</li>
+  <li><strong>Assignment.</strong> You may not transfer this agreement. We may transfer it to a
+    successor in connection with a merger, acquisition or sale of the business, on notice to you.</li>
+  <li><strong>Notices.</strong> We may reach you by email, in the app, or in the @allkeptapp thread. You
+    reach us at <a href="mailto:hi@allkept.app">hi@allkept.app</a>.</li>
+  <li><strong>Force majeure.</strong> Neither of us is liable for a failure caused by something outside
+    reasonable control.</li>
+  <li><strong>Language.</strong> These terms are written in English. A translation is provided for
+    convenience only; the English version governs.</li>
+</ul>
+
+<h2 id="contact">22. Contact</h2>
+<p><span class="tbd">MECA Engineering Solutions (OPC) Private Limited, 4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru, Bengaluru Urban District, Karnataka 560102, India</span><br>
+<span class="tbd">MECA Engineering Solutions (OPC) Private Limited, 4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru, Bengaluru Urban District, Karnataka 560102, India</span><br>
+Email: <a href="mailto:hi@allkept.app">hi@allkept.app</a></p>
+
+<footer>
+  <span>Allkept · Terms of Service · last updated 10 September 2026 · <strong>unreviewed draft</strong></span>
+  <span class="l">
+    <a href="index.html">Home</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="delete.html">Delete your data</a>
+    <a href="mailto:hi@allkept.app">hi@allkept.app</a>
+  </span>
+</footer>
+
+</div>
+</body>
+</html>
