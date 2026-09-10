@@ -278,11 +278,21 @@ function reddit(u: URL): Partial3 {
   const base = "https://www.reddit.com";
   if (bareHost(u) === "redd.it") return expand();
   if (s[0] === "r" && s[1] && s[2] === "s") return expand();
+  // A permalink to one comment carries the comment's own id after the slug, and it is a different
+  // thing from the post it sits under. Collapsing both to the post id made them the same save: the
+  // unique index on (user, platform, external_id) then deduplicated the comment away, and the person
+  // who saved a particular reply was told "Already saved" and given the thread instead.
   if (s[0] === "r" && s[1] && s[2] === "comments" && s[3] && CODE.test(s[3])) {
-    return { kind: "post", canonicalUrl: `${base}/r/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
+    const comment = s[5] && CODE.test(s[5]) ? s[5] : null;
+    return comment
+      ? { kind: "post", canonicalUrl: `${base}/r/${s[1]}/comments/${s[3]}/comment/${comment}/`, externalId: `${s[3]}_${comment}` }
+      : { kind: "post", canonicalUrl: `${base}/r/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
   }
   if (s[0] === "user" && s[1] && s[2] === "comments" && s[3] && CODE.test(s[3])) {
-    return { kind: "post", canonicalUrl: `${base}/user/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
+    const comment = s[5] && CODE.test(s[5]) ? s[5] : null;
+    return comment
+      ? { kind: "post", canonicalUrl: `${base}/user/${s[1]}/comments/${s[3]}/comment/${comment}/`, externalId: `${s[3]}_${comment}` }
+      : { kind: "post", canonicalUrl: `${base}/user/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
   }
   if (s[0] === "comments" && s[1] && CODE.test(s[1])) {
     return { kind: "post", canonicalUrl: `${base}/comments/${s[1]}/`, externalId: s[1] };
