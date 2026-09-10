@@ -1,5 +1,7 @@
-import { PlatformLogo } from "./PlatformLogo";
+import { PlatformLogo, useColorScheme } from "./PlatformLogo";
 import { platformName } from "../../../packages/platform-assets/catalog";
+import lockupLight from "../../mobile/assets/Home_All Kept_Logo.png";
+import lockupDark from "../../mobile/assets/Dark Home_All Kept_Logo.png";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ApiError,
@@ -65,22 +67,17 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   );
 }
 function Brand() {
+  const dark = useColorScheme() === "dark";
   return (
     <div className="brand">
-      <svg width="27" height="32" viewBox="0 0 27 32" aria-hidden="true">
-        <defs>
-          <linearGradient id="brand-gradient" x2="1" y2="1">
-            <stop stopColor="#603aff" />
-            <stop offset="1" stopColor="#b988ff" />
-          </linearGradient>
-        </defs>
-        <path d="M2 1h23v29L13.5 23 2 30Z" fill="url(#brand-gradient)" />
-        <path d="m2 17 23 13V17L2 30Z" fill="#e2beff" opacity=".6" />
-      </svg>
-      <span>
-        All<span className="wordmark-kept">kept</span>
-        <small>ADMIN</small>
-      </span>
+      <img
+        className="brand-lockup"
+        src={dark ? lockupDark : lockupLight}
+        alt="Allkept Admin"
+        draggable={false}
+      />
+      {/* The lockup already reads "All Kept", and the alt text carries "Admin", so this label is decoration. */}
+      <small aria-hidden="true">ADMIN</small>
     </div>
   );
 }
@@ -722,8 +719,8 @@ function OverviewPanel({
             <svg viewBox="0 0 800 200" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop stopColor="#9370ff" stopOpacity=".25" />
-                  <stop offset="1" stopColor="#9370ff" stopOpacity="0" />
+                  <stop stopOpacity=".25" />
+                  <stop offset="1" stopOpacity="0" />
                 </linearGradient>
               </defs>
               {[25, 102, 180].map((y) => (
@@ -733,7 +730,6 @@ function OverviewPanel({
                   y1={y}
                   x2="800"
                   y2={y}
-                  stroke="#29282f"
                   strokeDasharray="4 6"
                 />
               ))}
@@ -746,7 +742,6 @@ function OverviewPanel({
                   <polyline
                     points={points}
                     fill="none"
-                    stroke="#a68aff"
                     strokeWidth="2.5"
                     vectorEffect="non-scaling-stroke"
                   />

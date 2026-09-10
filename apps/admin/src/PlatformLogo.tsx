@@ -16,6 +16,25 @@ import {
   brandForPlatform,
   type Brand,
 } from "../../../packages/platform-assets/catalog";
+import { useEffect, useState } from "react";
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+/** Per-theme artwork is a different file, so the choice has to track the query rather than a value sampled at mount. */
+export function useColorScheme(): "light" | "dark" {
+  const [scheme, setScheme] = useState<"light" | "dark">(() =>
+    typeof matchMedia === "function" && matchMedia(DARK_QUERY).matches
+      ? "dark"
+      : "light",
+  );
+  useEffect(() => {
+    if (typeof matchMedia !== "function") return;
+    const query = matchMedia(DARK_QUERY);
+    const sync = () => setScheme(query.matches ? "dark" : "light");
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+  return scheme;
+}
 const LOGOS: Record<Brand, { light: string; dark: string }> = {
   instagram: { light: instagram, dark: instagram },
   youtube: { light: youtube, dark: youtube },
@@ -34,18 +53,19 @@ const LOGOS: Record<Brand, { light: string; dark: string }> = {
 export function PlatformLogo({
   platform,
   size = 22,
-  appearance = "dark",
+  appearance,
 }: {
   platform: string;
   size?: number;
   appearance?: "light" | "dark";
 }) {
+  const scheme = useColorScheme();
   const brand = brandForPlatform(platform);
   if (brand)
     return (
       <img
         className="platform-logo"
-        src={LOGOS[brand][appearance]}
+        src={LOGOS[brand][appearance ?? scheme]}
         width={size}
         height={size}
         alt=""
