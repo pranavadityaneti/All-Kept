@@ -28,6 +28,8 @@ const NAMES = {
   web: "globe-outline",
   note: "document-text-outline",
   apple: "logo-apple",
+  sound: "volume-high-outline",
+  soundOff: "volume-mute-outline",
 } as const;
 
 export type IconName = keyof typeof NAMES | Brand;

@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Pressable, StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { Icon } from "./Icon";
-import { EMBED_ORIGIN } from "../lib/embed";
+import { EMBED_ORIGIN, isPlayerAddress } from "../lib/embed";
+import { PLAYER_SCRIPT, readPlayerMessage, stateScript } from "../lib/player-script";
+import { onSoundChange, setSoundOn, soundOn } from "../lib/sound";
 import { radius, usePalette } from "../lib/theme";
 
 /**
@@ -48,15 +50,6 @@ const MEASURE = `
   })();
 `;
 
-/** Starts or stops the video without the person having to touch the embed itself. */
-const TOGGLE = `
-  (function () {
-    var v = document.querySelector('video');
-    if (v) { if (v.paused) { v.play(); } else { v.pause(); } }
-    true;
-  })();
-`;
-
 /**
  * Keeps a tap inside the card. Every link Instagram puts in its embed asks for a new window, which
  * this WebView answers by simply going there, so one stray tap on the picture would replace the save
@@ -73,16 +66,7 @@ const STAY = `
   })();
 `;
 
-/** Instagram and YouTube both play their video in the page itself, so one line silences either. */
-const STOP = `
-  (function () {
-    var v = document.querySelector('video');
-    if (v) { v.pause(); }
-    true;
-  })();
-`;
-
-export function EmbedPlayer({ url, width, height, onHeight, interactive = false, active = true }: {
+export function EmbedPlayer({ url, width, height, onHeight, interactive = false, active = true, onUnplayable }: {
   url: string;
   width: number;
   height: number;
@@ -92,37 +76,45 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
   interactive?: boolean;
   /** False once this save is no longer the one being looked at, which stops whatever it was playing. */
   active?: boolean;
+  /** The provider said there is nothing here to play (a removed TikTok post). The screen decides what to show instead. */
+  onUnplayable?: () => void;
 }) {
   const p = usePalette();
   const [loading, setLoading] = useState(true);
-  const [playing, setPlaying] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [hasVideo, setHasVideo] = useState(false);
+  const [sound, setSound] = useState(soundOn());
+  const [paused, setPaused] = useState(false); // a tap on a non-interactive player
   const web = useRef<WebView>(null);
 
-  // A save you have scrolled past stays mounted so that coming back to it is instant, which also
-  // means it keeps playing over whatever is now on screen unless it is told to stop. The button goes
-  // back to Play with it, so it does not offer to pause something that has already stopped.
-  useEffect(() => {
-    if (active) return;
-    web.current?.injectJavaScript(STOP);
-    setPlaying(false);
-  }, [active]);
+  useEffect(() => onSoundChange(setSound), []);
 
-  // Leaving Allkept is the same thing as scrolling past: sound outlives the screen otherwise, and a
-  // reel carrying on behind someone's home screen is the version of this they would notice most.
+  // The state this player should be in, applied whenever any of its inputs change. Sent before the
+  // page's video exists too: the script keeps the last state and applies it on arrival.
+  const playing = active && loaded && !paused;
+  useEffect(() => {
+    if (!loaded) return;
+    web.current?.injectJavaScript(stateScript({ playing, muted: !sound }));
+  }, [loaded, playing, sound]);
+
+  // A save you have scrolled past stays mounted so that coming back to it is instant, which also
+  // means it keeps playing over whatever is now on screen unless it is told to stop — `playing`
+  // above goes false with `active`. Coming back starts it again, so a pause is forgotten with it.
+  useEffect(() => { if (active) setPaused(false); }, [active]);
+
+  // Leaving Allkept is the same thing as scrolling past: sound outlives the screen otherwise. The
+  // sound module resets itself on the same signal; this stops the picture.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {
       if (next === "active") return;
-      web.current?.injectJavaScript(STOP);
-      setPlaying(false);
+      web.current?.injectJavaScript(stateScript({ playing: false, muted: true }));
     });
     return () => sub.remove();
   }, []);
 
   // The backstop behind STAY, for anything that asks to leave by some other route than a link. Only a
-  // navigation of the page itself is ever refused. The test is that the address is still an embed
-  // rather than that it matches ours exactly: Instagram redirects its own embeds, to the captioned
-  // variant among others, and matching exactly would refuse the very page this frame exists to show.
-  const stayOnEmbed = (request: { url: string; isTopFrame: boolean }) => !request.isTopFrame || /\/embed\b/i.test(request.url);
+  // navigation of the page itself is ever refused, and only to somewhere that is not a player page.
+  const stayOnEmbed = (request: { url: string; isTopFrame: boolean }) => !request.isTopFrame || isPlayerAddress(request.url);
 
   // Instagram's embed is a light card and must be shown as they send it, so the frame matches it
   // rather than fighting it with a dark ground behind white content.
@@ -136,16 +128,21 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
           style={{ width, height, backgroundColor: "transparent" }}
           originWhitelist={["https://*"]}
           allowsInlineMediaPlayback
-          mediaPlaybackRequiresUserAction
+          // The page may start its video without a tap: that is what autoplay is. Sound is our
+          // decision, not the page's — every player starts muted (lib/sound.ts).
+          mediaPlaybackRequiresUserAction={false}
           scrollEnabled={false}
           nestedScrollEnabled={false}
           setSupportMultipleWindows={false}
           javaScriptEnabled
           domStorageEnabled
-          {...(onHeight ? { injectedJavaScript: MEASURE } : {})}
+          injectedJavaScript={onHeight ? `${MEASURE}\n${PLAYER_SCRIPT}` : PLAYER_SCRIPT}
           injectedJavaScriptBeforeContentLoaded={STAY}
           onShouldStartLoadWithRequest={stayOnEmbed}
           onMessage={(event) => {
+            const said = readPlayerMessage(event.nativeEvent.data);
+            if (said?.kind === "player") { setHasVideo(said.hasVideo); return; }
+            if (said?.kind === "tiktok") { if (said.type === "onError") onUnplayable?.(); return; }
             try {
               const m = JSON.parse(event.nativeEvent.data) as { h: number; w: number };
               const scale = m.w > 0 ? width / m.w : 1;
@@ -153,17 +150,29 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
               if (fitted > 80) onHeight?.(fitted);
             } catch { /* the page may post messages of its own; ignore them */ }
           }}
-          onLoadEnd={() => setLoading(false)}
+          onLoadEnd={() => { setLoading(false); setLoaded(true); }}
         />
       </View>
 
       {!interactive && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={playing ? "Pause" : "Play"}
+          accessibilityLabel={paused ? "Play" : "Pause"}
           style={StyleSheet.absoluteFill}
-          onPress={() => { web.current?.injectJavaScript(TOGGLE); setPlaying((v) => !v); }}
+          onPress={() => setPaused((v) => !v)}
         />
+      )}
+
+      {hasVideo && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={sound ? "Sound off" : "Sound on"}
+          onPress={() => setSoundOn(!soundOn())}
+          style={[styles.speaker, { backgroundColor: "rgba(0,0,0,0.55)" }]}
+          hitSlop={8}
+        >
+          <Icon name={sound ? "sound" : "soundOff"} size={18} color="#FFFFFF" />
+        </Pressable>
       )}
 
       {loading && (
@@ -179,4 +188,5 @@ const styles = StyleSheet.create({
   frame: { borderRadius: radius.lg, overflow: "hidden", borderWidth: StyleSheet.hairlineWidth },
   fill: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   loading: { alignItems: "center", justifyContent: "center" },
+  speaker: { position: "absolute", right: 10, bottom: 10, width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center" },
 });
