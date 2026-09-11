@@ -138,8 +138,7 @@ export default function Settings() {
         </View>
 
         <SettingsGroup>
-          <SettingsRow title="Phone number" detail={profile.data?.phone ?? "Not provided"} />
-          <SettingsRow title="Edit profile" detail="Photo, name and contact details" onPress={() => router.push("/profile")} last />
+          <SettingsRow title="Edit profile" detail="Photo and name" onPress={() => router.push("/profile")} last />
         </SettingsGroup>
 
         <SettingsGroup>

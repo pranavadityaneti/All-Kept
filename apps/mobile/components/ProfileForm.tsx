@@ -11,11 +11,11 @@ import { chunkedSecureStore } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { type, usePalette } from "../lib/theme";
 
-interface Draft { name: string; phone: string; photoUri: string | null; uploadedPath: string | null }
+interface Draft { name: string; photoUri: string | null; uploadedPath: string | null }
 export const profileDraftKey = (userId: string) => `allkept.profile-draft.${userId}`;
 export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { profile: Profile; suggestedName: string; onboarding: boolean; onSaved: () => void }) {
   const p = usePalette(onboarding ? "light" : undefined), client = useQueryClient();
-  const [form, setForm] = useState<Draft>({ name: profile.display_name ?? suggestedName, phone: profile.phone ?? "", photoUri: null, uploadedPath: null });
+  const [form, setForm] = useState<Draft>({ name: profile.display_name ?? suggestedName, photoUri: null, uploadedPath: null });
   const [loaded, setLoaded] = useState(!onboarding), [stage, setStage] = useState<"photo" | "uploading" | "saving" | "done" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const finished = useRef(false);
@@ -30,7 +30,9 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
       if (!live || !saved) return;
       try {
         const draft = JSON.parse(saved) as Draft;
-        if ([draft.name, draft.phone].every((v) => typeof v === "string")) setForm(draft);
+        // Only the name survives a restart: onboarding asks for nothing else, and an older draft may
+        // still carry keys (phone, a photo) that must not come back.
+        if (typeof draft.name === "string") setForm((current) => ({ ...current, name: draft.name }));
       } catch { /* Ignore an obsolete draft. */ }
     }).catch(() => undefined).finally(() => { if (live) setLoaded(true); });
     return () => { live = false; };
@@ -52,7 +54,7 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
     Keyboard.dismiss();
     setError(null);
     let patch: ReturnType<typeof validateProfile>;
-    try { patch = validateProfile({ ...form, avatarPath: form.uploadedPath ?? (form.photoUri ? "upload-pending" : profile.avatar_path) }); }
+    try { patch = validateProfile({ name: form.name, avatarPath: profile.avatar_path }); }
     catch (e) { setError((e as Error).message); return false; }
     running.current = true;
     try {
@@ -67,7 +69,7 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
       }
       setStage("saving");
       const { data, error: saveError } = await supabase.from("profiles").update({ ...patch, avatar_path: path }).eq("user_id", profile.user_id)
-        .select("user_id,display_name,phone,avatar_path,onboarding_completed_at").single();
+        .select("user_id,display_name,avatar_path,onboarding_completed_at").single();
       if (saveError || !data?.onboarding_completed_at) throw new Error("Could not save your profile. Your details are kept; please try again.");
       // A lost response can still mean the write committed. Never delete a new upload on failure.
       finished.current = true;
@@ -89,25 +91,20 @@ export function ProfileForm({ profile, suggestedName, onboarding, onSaved }: { p
   const picture = form.photoUri ?? avatar.data;
   const inputStyle = [styles.input, { color: p.ink, borderColor: p.border, backgroundColor: p.surface }];
   return <View style={styles.form}>
-    <View style={styles.photoBlock}>
-      <Pressable accessibilityRole="button" accessibilityLabel={picture ? "Change profile photo" : "Add profile photo"} accessibilityHint="A profile photo is required" accessibilityState={{ disabled: busy || !loaded, busy: stage === "photo" }} disabled={busy || !loaded} onPress={() => { void choosePhoto(); }} style={({ pressed }) => [styles.photoAction, { opacity: pressed ? 0.75 : 1 }]}>
+    {/* The photo is optional and lives in Settings → Edit profile; onboarding asks for a name and nothing else. */}
+    {!onboarding && <View style={styles.photoBlock}>
+      <Pressable accessibilityRole="button" accessibilityLabel={picture ? "Change profile photo" : "Add profile photo"} accessibilityHint="Optional" accessibilityState={{ disabled: busy || !loaded, busy: stage === "photo" }} disabled={busy || !loaded} onPress={() => { void choosePhoto(); }} style={({ pressed }) => [styles.photoAction, { opacity: pressed ? 0.75 : 1 }]}>
         <View style={[styles.photo, { backgroundColor: p.surfaceAlt, borderColor: p.border }]}>
           {stage === "photo" ? <ActivityIndicator color={p.accent} /> : picture ? <Image source={{ uri: picture }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Icon name="camera" size={30} color={p.inkMuted} />}
         </View>
         <View style={[styles.addBadge, { backgroundColor: p.accent, borderColor: p.bg }]}><Icon name="add" size={17} color={p.accentInk} /></View>
       </Pressable>
       <Text style={[styles.photoLabel, { color: p.inkMuted }]}>{picture ? "Change photo" : "Add photo"}</Text>
-    </View>
+    </View>}
     <View style={styles.fields}>
       <View style={styles.field}>
         <Text style={[styles.label, { color: p.inkMuted }]}>Name</Text>
         <TextInput accessibilityLabel="Name" autoComplete="name" textContentType="name" value={form.name} onChangeText={(name) => change({ name })} editable={!busy && loaded} maxLength={80} placeholder="Your name" placeholderTextColor={p.inkMuted} selectionColor={p.accent} returnKeyType="done" style={inputStyle} />
-      </View>
-      <View style={styles.field}>
-      </View>
-      <View style={styles.field}>
-        <View style={styles.labelRow}><Text style={[styles.label, { color: p.inkMuted }]}>Phone</Text><Text style={[styles.optional, { color: p.inkMuted }]}>Optional</Text></View>
-        <TextInput accessibilityLabel="Phone number with country code, optional" autoComplete="tel" keyboardType="phone-pad" value={form.phone} onChangeText={(phone) => change({ phone })} editable={!busy && loaded} maxLength={30} placeholder="+91 98765 43210" placeholderTextColor={p.inkMuted} selectionColor={p.accent} style={inputStyle} />
       </View>
     </View>
     <View style={styles.submit}>
@@ -127,8 +124,6 @@ const styles = StyleSheet.create({
   fields: { gap: 30 },
   field: { gap: 12 },
   label: { fontSize: 13, fontWeight: "500" },
-  labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  optional: { fontSize: 11 },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 17, paddingHorizontal: 18, paddingVertical: 17, minHeight: 58, fontSize: 16 },
   submit: { marginTop: "auto", paddingTop: 8, gap: 8 },
   message: { textAlign: "center", lineHeight: 21 },

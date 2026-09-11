@@ -16,53 +16,71 @@ import { ProfileForm } from "../components/ProfileForm";
 import { ConfirmButton } from "../components/ConfirmButton";
 import type { Profile } from "../lib/profile-fields";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-const profile: Profile = { user_id: "owner", display_name: null, phone: null, avatar_path: null, onboarding_completed_at: null };
-beforeEach(() => { vi.clearAllMocks(); mocks.draft.clear(); mocks.pick.mockResolvedValue("file:///draft.jpg"); mocks.bytes.mockResolvedValue(new ArrayBuffer(2)); mocks.upload.mockResolvedValue({ error: null }); mocks.remove.mockResolvedValue({ error: null }); mocks.single.mockResolvedValue({ data: { ...profile, display_name: "Pranav", avatar_path: "owner/new.jpg", onboarding_completed_at: "2026-09-09" }, error: null }); });
-async function renderForm() {
+const fresh: Profile = { user_id: "owner", display_name: null, avatar_path: null, onboarding_completed_at: null };
+const existing: Profile = { ...fresh, display_name: "Pranav", onboarding_completed_at: "2026-09-09" };
+beforeEach(() => { vi.clearAllMocks(); mocks.draft.clear(); mocks.pick.mockResolvedValue("file:///draft.jpg"); mocks.bytes.mockResolvedValue(new ArrayBuffer(2)); mocks.upload.mockResolvedValue({ error: null }); mocks.remove.mockResolvedValue({ error: null }); mocks.single.mockResolvedValue({ data: { ...existing, avatar_path: "owner/new.jpg" }, error: null }); });
+async function renderForm(onboarding: boolean) {
   let view!: ReactTestRenderer;
   const saved = vi.fn();
-  await act(async () => { view = create(<QueryClientProvider client={new QueryClient()}><ProfileForm profile={profile} suggestedName="Pranav" onboarding onSaved={saved} /></QueryClientProvider>); });
+  const profile = onboarding ? fresh : existing;
+  await act(async () => { view = create(<QueryClientProvider client={new QueryClient()}><ProfileForm profile={profile} suggestedName={onboarding ? "Pranav" : ""} onboarding={onboarding} onSaved={saved} /></QueryClientProvider>); });
   return { view, saved };
 }
+const photoControls = (view: ReactTestRenderer) => view.root.findAll((n) => /profile photo/.test(String(n.props.accessibilityLabel ?? "")));
+const textInputs = (view: ReactTestRenderer) => view.root.findAll((n) => String(n.type) === "TextInput");
 const press = async (view: ReactTestRenderer, label: string) => { await act(async () => {
   if (label === "Add profile photo") await view.root.findByProps({ accessibilityLabel: label }).props.onPress();
   else { const button = view.root.findByType(ConfirmButton); if (await button.props.onConfirm()) button.props.onComplete(); }
 }); };
 describe("profile form", () => {
-  it("places the photo before name and phone, and asks nothing else", async () => {
-    const { view } = await renderForm();
-    const fields = view.root.findAll((n) => n.props.accessibilityLabel === "Add profile photo" || String(n.type) === "TextInput");
-    expect(fields[0]!.props.accessibilityLabel).toBe("Add profile photo");
-    expect(fields[1]!.props.accessibilityLabel).toBe("Name");
-    expect(fields.at(-1)!.props.accessibilityLabel).toContain("Phone");
-    // Three fields and no more: a fourth means something was asked for that was meant to be gone.
-    expect(fields).toHaveLength(3);
+  it("onboarding asks for a name and nothing else", async () => {
+    const { view } = await renderForm(true);
+    expect(photoControls(view)).toHaveLength(0);
+    const inputs = textInputs(view);
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]!.props.accessibilityLabel).toBe("Name");
     await act(async () => view.unmount());
   });
-  it("retains entered fields after upload failure and completes only after retry succeeds", async () => {
-    const { view, saved } = await renderForm();
-    await press(view, "Add profile photo");
-    mocks.upload.mockResolvedValueOnce({ error: new Error("network") });
+  it("editing from Settings offers the photo and the name, and no phone", async () => {
+    const { view } = await renderForm(false);
+    expect(photoControls(view)).toHaveLength(1);
+    const inputs = textInputs(view);
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]!.props.accessibilityLabel).toBe("Name");
+    expect(view.root.findAll((n) => /phone/i.test(String(n.props.accessibilityLabel ?? "")))).toHaveLength(0);
+    await act(async () => view.unmount());
+  });
+  it("onboarding completes with just a name, clears the draft, and sends nothing else", async () => {
+    const { view, saved } = await renderForm(true);
     await press(view, "Save and continue");
-    expect(saved).not.toHaveBeenCalled();
-    expect(mocks.update).not.toHaveBeenCalled();
-    expect(view.root.findByProps({ accessibilityLabel: "Name" }).props.value).toBe("Pranav");
-    await press(view, "Save and continue");
-    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ display_name: "Pranav", phone: null }));
-    // Nothing gendered may reach the database, whatever an old restored draft carried.
-    expect(Object.keys(mocks.update.mock.calls[0]![0] as object).some((k) => k.startsWith("gender"))).toBe(false);
+    expect(mocks.upload).not.toHaveBeenCalled();
+    const payload = mocks.update.mock.calls[0]![0] as Record<string, unknown>;
+    expect(payload).toEqual({ display_name: "Pranav", avatar_path: null });
     expect(saved).toHaveBeenCalledOnce();
     expect(mocks.draft.size).toBe(0);
     await act(async () => view.unmount());
   });
+  it("retains the entered name after an upload failure and completes only after the retry succeeds", async () => {
+    const { view, saved } = await renderForm(false);
+    await press(view, "Add profile photo");
+    mocks.upload.mockResolvedValueOnce({ error: new Error("network") });
+    await press(view, "Save changes");
+    expect(saved).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(view.root.findByProps({ accessibilityLabel: "Name" }).props.value).toBe("Pranav");
+    await press(view, "Save changes");
+    expect(mocks.update).toHaveBeenCalledWith({ display_name: "Pranav", avatar_path: expect.stringMatching(/^owner\/.+\.jpg$/) });
+    expect(saved).toHaveBeenCalledOnce();
+    await act(async () => view.unmount());
+  });
   it("retries a failed profile write without uploading the photo again", async () => {
-    const { view, saved } = await renderForm();
+    const { view, saved } = await renderForm(false);
     await press(view, "Add profile photo");
     mocks.single.mockResolvedValueOnce({ data: null, error: new Error("lost response") });
-    await press(view, "Save and continue");
+    await press(view, "Save changes");
     expect(saved).not.toHaveBeenCalled();
     expect(mocks.remove).not.toHaveBeenCalled();
-    await press(view, "Save and continue");
+    await press(view, "Save changes");
     expect(mocks.upload).toHaveBeenCalledOnce();
     expect(saved).toHaveBeenCalledOnce();
     await act(async () => view.unmount());
