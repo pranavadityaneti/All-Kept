@@ -29,6 +29,11 @@ export interface NormalizedLink {
   text: string | null;
   /** true when the server must follow redirects before the link can be canonicalised. */
   needsExpansion: boolean;
+  /**
+   * false when the link is a page on a known platform that the normaliser has no shape for — a front
+   * door, a login page, an explore feed. Such a page is never adopted as a short link's destination.
+   */
+  recognised: boolean;
 }
 
 export interface NormalizeInput {
@@ -133,7 +138,7 @@ export function detectPlatform(hostname: string): Exclude<Platform, "note"> {
   return "web";
 }
 
-type Partial3 = { kind: Kind; canonicalUrl: string | null; externalId: string | null; needsExpansion?: boolean };
+type Partial3 = { kind: Kind; canonicalUrl: string | null; externalId: string | null; needsExpansion?: boolean; recognised?: false };
 
 const expand = (kind: Kind = "post"): Partial3 => ({ kind, canonicalUrl: null, externalId: null, needsExpansion: true });
 const segs = (u: URL) => u.pathname.split("/").filter(Boolean);
@@ -151,7 +156,7 @@ function cleanQuery(u: URL, extra: readonly string[] = []): string {
 }
 
 const pathOnly = (base: string, u: URL, platform: keyof typeof SHARE_KEYS, kind: Kind = "post"): Partial3 => ({
-  kind, canonicalUrl: base + trimSlash(u.pathname) + cleanQuery(u, SHARE_KEYS[platform]), externalId: null,
+  kind, canonicalUrl: base + trimSlash(u.pathname) + cleanQuery(u, SHARE_KEYS[platform]), externalId: null, recognised: false,
 });
 const CODE = /^[A-Za-z0-9_-]+$/;
 /** Paths X owns, so they are never mistaken for somebody's handle. */
@@ -382,7 +387,7 @@ function note(text: string | null): NormalizedLink {
   const t = text?.trim() ? text.trim() : null;
   return {
     platform: "note", kind: "text", canonicalUrl: null,
-    externalId: t ? fnv1a64(t) : null, sourceUrl: null, text: t, needsExpansion: false,
+    externalId: t ? fnv1a64(t) : null, sourceUrl: null, text: t, needsExpansion: false, recognised: true,
   };
 }
 
@@ -432,7 +437,7 @@ export function normalize(input: NormalizeInput): NormalizedLink {
   const p = HANDLERS[platform](u);
   return {
     platform, kind: p.kind, canonicalUrl: p.canonicalUrl, externalId: p.externalId,
-    sourceUrl, text, needsExpansion: p.needsExpansion === true,
+    sourceUrl, text, needsExpansion: p.needsExpansion === true, recognised: p.recognised !== false,
   };
 }
 

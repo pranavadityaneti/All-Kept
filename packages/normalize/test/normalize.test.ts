@@ -162,6 +162,20 @@ describe("normalize", () => {
     const out = normalize({ url: null, text: "x".repeat(20_001) + " https://late.example.com/" });
     expect(out.platform).toBe("note");
   });
+  it("marks a page it has no shape for as unrecognised, and everything else as recognised", () => {
+    const unrecognised = [
+      "https://www.tiktok.com/", "https://www.tiktok.com/about?lang=en", "https://www.tiktok.com/login?redirect_url=x", "https://www.tiktok.com/explore",
+      "https://www.instagram.com/explore/tags/food/", "https://x.com/home",
+    ];
+    for (const url of unrecognised) expect(normalize({ url }).recognised, url).toBe(false);
+    const recognised = [
+      "https://www.tiktok.com/@tiktok/video/7532540099460893983", "https://www.tiktok.com/@tiktok", "https://www.instagram.com/reel/DcVMQIIMa5-/",
+      "https://www.youtube.com/playlist?list=PL123", "https://x.com/naval/status/1002103360646823936", "https://example.com/some/article",
+    ];
+    for (const url of recognised) expect(normalize({ url }).recognised, url).toBe(true);
+    expect(normalize({ text: "just a note" }).recognised).toBe(true);
+    expect(normalize({ url: "https://vm.tiktok.com/ZS9dHGEcApLyX" }).recognised).toBe(true); // still to be expanded; the flag is about the destination
+  });
 });
 
 describe("extractFirstUrl", () => {
