@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sharing Shortcuts: lets "Save to Allkept" appear in the share sheet's direct-share row, pointing
+     straight at ShareActivity. The shortcut itself is published at runtime (ShareShortcut.kt). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+  <share-target android:targetClass="app.allkept.sharesave.ShareActivity">
+    <data android:mimeType="text/plain" />
+    <category android:name="app.allkept.sharesave.SHARE_TARGET" />
+  </share-target>
+</shortcuts>

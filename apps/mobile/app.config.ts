@@ -59,6 +59,8 @@ const config: ExpoConfig = {
     // The share sheet is served by our own extension (targets/share) and Android share activity
     // (modules/share-save); expo-sharing stays only for sharing *out*.
     "@bacons/apple-targets",
+    // Android: "Save to Allkept" in the direct-share row (see modules/share-save/android/src/main/res/xml/shortcuts.xml).
+    "./plugins/with-share-shortcuts",
     // The splash is the welcome screen's first frame, not a second thing before it. Same ground,
     // same lockup, so launching reads as one continuous moment instead of a white card cutting to a
     // dark one. The dark lockup carries a baked-in plate rather than transparency, which is invisible

@@ -1,0 +1,40 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="app.allkept.sharesave" >
+4
+5    <uses-sdk android:minSdkVersion="24" />
+6
+7    <application>
+7-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:2:3-16:17
+8
+9        <!-- Receives "Share" from any app, saves, shows a toast, finishes. Never launches Allkept. -->
+10        <activity
+10-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:4:5-15:16
+11            android:name="app.allkept.sharesave.ShareActivity"
+11-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:5:7-57
+12            android:excludeFromRecents="true"
+12-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:7:7-40
+13            android:exported="true"
+13-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:6:7-30
+14            android:noHistory="true"
+14-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:8:7-31
+15            android:theme="@android:style/Theme.Translucent.NoTitleBar" >
+15-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:9:7-66
+16            <intent-filter>
+16-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:10:7-14:23
+17                <action android:name="android.intent.action.SEND" />
+17-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:11:9-61
+17-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:11:17-58
+18
+19                <category android:name="android.intent.category.DEFAULT" />
+19-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:12:9-68
+19-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:12:19-65
+20
+21                <data android:mimeType="text/plain" />
+21-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:13:9-47
+21-->/Users/pranavaditya/projects/allkept/apps/mobile/modules/share-save/android/src/main/AndroidManifest.xml:13:15-44
+22            </intent-filter>
+23        </activity>
+24    </application>
+25
+26</manifest>

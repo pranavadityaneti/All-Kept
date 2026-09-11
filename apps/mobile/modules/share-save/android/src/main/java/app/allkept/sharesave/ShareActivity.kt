@@ -20,6 +20,7 @@ class ShareActivity : Activity() {
     val text = if (intent?.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT)?.trim() else null
     if (text.isNullOrEmpty()) return done("That wasn't a link")
     val credential = SharedStore.credential(app) ?: return done("Open Allkept to sign in")
+    ShareShortcut.publish(app) // from now on, "Save to Allkept" sits in the direct-share row
     val requestId = UUID.randomUUID().toString()
     SharedStore.enqueue(app, text, requestId) // durable first; dropped once the server has it
     Thread {

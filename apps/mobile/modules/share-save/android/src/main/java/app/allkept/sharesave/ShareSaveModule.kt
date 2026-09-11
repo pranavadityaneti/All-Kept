@@ -8,8 +8,8 @@ class ShareSaveModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("ShareSave")
-    Function("setCredential") { json: String -> SharedStore.setCredential(context, json) }
-    Function("clearCredential") { SharedStore.clearCredential(context) }
+    Function("setCredential") { json: String -> SharedStore.setCredential(context, json); ShareShortcut.publish(context) }
+    Function("clearCredential") { SharedStore.clearCredential(context); ShareShortcut.remove(context) }
     Function("hasCredential") { SharedStore.credential(context) != null }
     Function("peekQueue") { SharedStore.queueJson(context) }
     Function("dropQueued") { requestId: String -> SharedStore.drop(context, requestId) }
