@@ -10,8 +10,12 @@ on iOS and Android, **without opening Allkept**.
 **Revised 12 Sep (Pranav):** on iOS, **no card at all** on success — the share sheet simply
 closes. iOS locks share-extension sheets to full height and, on iOS 26, keeps their surface opaque
 (Apple forums 694643, 806121), so a compact banner was not achievable; a silent save is what
-Apple's own Reading List does. Only two cases show a small card for a second: "Open Allkept to
-sign in" and "That wasn't a link". Android keeps its toast ("Saved to Allkept ✓" / "Saved to
+Apple's own Reading List does. The brief flash of the sheet iOS animates around the extension
+cannot be removed (an actions-row extension has none but was rejected for its grey icon at the
+bottom of the list; completing before the first frame changed nothing). Feedback is a **local
+notification banner** with the app icon — "Saved to Allkept · Sorting it now" — posted by the
+extension when notifications are allowed. Only two cases show a small card for a second: "Open
+Allkept to sign in" and "That wasn't a link". Android keeps its toast ("Saved to Allkept ✓" / "Saved to
 Allkept. Syncs when you're online").
 
 ## Decisions already made

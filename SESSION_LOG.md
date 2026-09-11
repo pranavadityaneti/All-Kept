@@ -205,6 +205,27 @@ written after the fact from git history, not live — treat details as approxima
   item at 19:42:23Z (two seconds after the share; three shares deduped); queue cleared within
   8 s of a cold launch, item count still 1. Committed `4d9e874`. Spec, references, worksheet and
   queue updated. Remaining: EAS preview builds (gate), device checklist.
+- Pranav: even the flash is too much; wants a toast with the logo. iOS: only a **no-UI Action
+  extension** never presents a sheet; the toast equivalent is a **local notification banner**
+  (needs notification permission). Chose B (actions row + banner), fall back to A (app row +
+  banner) if it looks wrong. Rewrote the target: `type: "action"`, `com.apple.ui-services`,
+  `ActionRequestHandler` (NSExtensionRequestHandling) — enqueue → background upload → banner
+  "Saved to Allkept / Sorting it now" → complete; template icon generated from the app icon
+  (black bookmark on transparency); label "Save to Allkept". Rebuild running.
+- B built and installed; Pranav's verdict: grey icon at the bottom of the actions list — "who
+  would do that?" → **switching to A**: share extension in the app row (colour icon), draws
+  nothing, completes on the first frame (the brief system-sheet flash stays), notification banner
+  "Saved to Allkept · Sorting it now" when allowed, card only for sign-in / not-a-link. Template
+  icon and stale asset catalog removed; rebuild running.
+- Pranav: plan what else the home screen could show → **Opus 5 subagent launched** (background),
+  writes `docs/home-screen-plan.html` only (read-only otherwise, no git); reports when done.
+- A built and installed; Pranav: "The sheet flashed and closed, nothing else." Server: new web item
+  20:16:24Z, token uses 7. Asked whether the flash can go: not by any documented means (iOS
+  animates the sheet before extension code runs). Last lever under test: read the URL
+  synchronously (150 ms cap) and complete in `loadView`, before the first frame. Rebuilding.
+- Result: the same flash — iOS animates regardless. Pranav: let it be. Experiment removed; the
+  tested async A extension committed. Spec updated (banner, flash accepted). Pranav asks whether
+  the app icon can be placed before other apps in the share sheet.
 
 ### Decisions
 - Logging files live at the repo root: `SESSION_LOG.md`, `forlater.md`, `ERRORS.md`.
