@@ -67,6 +67,46 @@ written after the fact from git history, not live — treat details as approxima
   (Cloudflare Workers)** project with a nested `.git` and `.openai/hosting.json` — not Vercel, not
   on `main`. Which site "the website" means is the open question (GitHub Pages `docs/` is what the
   app, Meta and the worksheet link to).
+- ~14:20 Pranav: the pages go on the website, Vercel-hosted at www.allkept.app; the landing page
+  will be redesigned later — a black-and-white placeholder for now. Brainstormed → approach A
+  (Next.js, static export) approved → spec `docs/superpowers/specs/2026-09-11-website-policy-pages-design.md`
+  → plan `docs/superpowers/plans/2026-09-11-website-policy-pages.md`.
+- ~14:45 Committed on main: task A (`e0049d3`) and a docs checkpoint (`18004fe`) — needed so
+  the branch builds from the finalised policy pages.
+- 14:30–15:20 **Built `apps/website` on branch `website-pages`** (worktree
+  `.worktrees/website-pages`): skeleton `d207f18`, content `144fb8b`, style/layout `8750b8d`,
+  pages `a8af8f0`, link check `ce303c6`. Mobile fingerprint identical before/after the
+  workspace install (`b5f76d81`). The content verifier caught anchored cross-links
+  (`privacy.html#push`) that a bare-filename rewrite missed — fixed by prefix rewrite.
+  `next build` static (six routes), `tsc` clean, 7 pages link-checked, all five pages rendered
+  in the browser with no console errors and no off-host requests.
+- Port note: a leftover `vinext dev` (node PID 71730, the old Codex site) holds `[::1]:4173`;
+  left running, served the export on 4174 instead.
+- ~15:40 Pranav: push and open the PR. Pushed `website-pages`; **PR #1**
+  https://github.com/pranavadityaneti/All-Kept/pull/1 (worktree kept for review iteration).
+  Vercel project creation is his; the PR gets a preview URL once it exists.
+- Pranav also asked three launch questions (US legal exposure, US-only charging, India-only
+  ads) — answered in chat; headline: DMCA agent registration + platform-terms compliance are the
+  real US items; region-specific pricing is a store feature; ads only in India is technically
+  possible but the privacy labels/ATT/policy costs land on the whole app.
+- ~16:00 Pranav decided: **charge in the US, India free without ads**; asked for a US legal
+  readiness plan (→ `docs/us-launch-legal-plan.html`) and for onboarding to stop asking for a
+  phone number and a profile photo (photo set from Settings only).
+- ~16:30 Pranav approved the onboarding task incl. the migration and nulling stored phones.
+  **Done, test-first:** DB test `supabase/tests/profile_onboarding.sql` rewritten (it was stale —
+  still expected gender to persist), run against the hosted project via `db query --linked`
+  (verified one transaction per batch with a txid probe; the test is begin/rollback) → RED at
+  "a name alone completes onboarding"; migration `20260911110000_photo_optional_no_phone.sql`
+  pushed (`db push`, the only pending one) → DB test GREEN; profiles: 3, with phone: 0.
+  App: `test/profile-fields.test.ts` + `test/profile-form.test.tsx` rewritten → 8 RED → code →
+  10 GREEN; mobile suite 18 files / 94 tests; `tsc` clean. Files: `lib/profile-fields.ts`
+  (phone gone from the type, photo optional, `normalizePhone` removed), `components/ProfileForm.tsx`
+  (photo block only when editing; phone field removed; draft restores name only),
+  `lib/profile.ts` + form select without `phone`, `settings.tsx` (Phone row removed; "Photo and
+  name"). Not touched: `profiles.phone` column (drop later), privacy policy text (item 15).
+- Found while linking: the Supabase project is in **ap-southeast-1 (Singapore)**; the privacy
+  policy says Mumbai. Added to forlater item 15.
+- Uncommitted, awaiting Pranav's review of the diff.
 
 ### Decisions
 - Logging files live at the repo root: `SESSION_LOG.md`, `forlater.md`, `ERRORS.md`.
@@ -82,18 +122,23 @@ written after the fact from git history, not live — treat details as approxima
 2. Design leftovers uncommitted (food tile variants, welcome variants, `docs/design/*`) —
    see `forlater.md` items 2–4.
 3. `website` worktree mid-edit; `category-artwork` worktree dead — `forlater.md` 5–6.
-4. **Store submission (iOS + Android) — in progress.** Worksheet written:
+4. **Website `apps/website` — PR #1 open** (`website-pages` → `main`). Next: Pranav creates the
+   Vercel project (Root Directory `apps/website`, production branch `main`, domains
+   `www.allkept.app` + `allkept.app` redirect), checks the preview, merges. Follow-ups queued in
+   `forlater.md` items 9–13 (blocked on the domain being live).
+5. **Store submission (iOS + Android) — in progress.** Worksheet written:
    `docs/store-submission.html`. Waiting on Pranav's answers to its §12 decisions; next tasks
    in order: task A (policy markers), support page, screenshots, feature graphic, version bump,
    production builds.
-5. **Support page + "policy pages on the website".** Waiting on Pranav: GitHub Pages (`docs/`,
-   live, linked everywhere) vs the Cloudflare `website`-branch site (deploy status unknown).
 
 ### Files modified this session
 - `forlater.md` — created; item 1 → In progress; item 8 (Meta review) added
 - `SESSION_LOG.md` — created
 - `docs/store-submission.html` — created (store worksheet)
 - `docs/privacy.html`, `docs/terms.html` — task A (presentation only)
+- `docs/superpowers/specs/2026-09-11-website-policy-pages-design.md`, `docs/superpowers/plans/2026-09-11-website-policy-pages.md` — created
+- `apps/website/**` — created on branch `website-pages` (not on main yet)
+- `package-lock.json` — on the branch, the website workspace's dependencies
 
 Nothing committed. Android `preview` build launched on EAS (internal distribution — not a store release).
 

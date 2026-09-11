@@ -58,6 +58,62 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-11
 - **Originated from:** 11 Sep 2026 store-readiness review
 
+### 9. App links → www.allkept.app
+- **What + why:** `apps/mobile/app/(tabs)/settings.tsx` links privacy and terms to the GitHub Pages URLs. Once www.allkept.app serves `/privacy` and `/terms`, switch them. JS-only change → ships over the air on both platforms.
+- **Scope:** `settings.tsx` link constants only.
+- **Status:** queued — blocked on the domain being live.
+- **Date added:** 2026-09-11
+- **Originated from:** website spec, 11 Sep 2026
+
+### 10. Meta app dashboard URLs → www.allkept.app
+- **What + why:** Meta's app settings carry the privacy, terms and data-deletion URLs (GitHub Pages today). Update to `/privacy`, `/terms`, `/delete` on the domain. Pranav does this in the Meta dashboard.
+- **Scope:** external config.
+- **Status:** queued — blocked on the domain being live.
+- **Date added:** 2026-09-11
+- **Originated from:** website spec, 11 Sep 2026
+
+### 11. Store worksheet URLs → www.allkept.app
+- **What + why:** `docs/store-submission.html` names GitHub Pages URLs for privacy, support and marketing. Replace with the domain once live.
+- **Scope:** the worksheet only.
+- **Status:** queued — blocked on the domain being live.
+- **Date added:** 2026-09-11
+- **Originated from:** website spec, 11 Sep 2026
+
+### 12. GitHub Pages copies → redirects
+- **What + why:** `docs/privacy.html`, `terms.html`, `delete.html`, `testers.html` stay reachable at their old URLs (already handed to Meta and testers). Turn each into a meta-refresh redirect to the matching www.allkept.app page so there is one source of truth.
+- **Scope:** `docs/` only.
+- **Status:** queued — blocked on items 9–11 being done first.
+- **Date added:** 2026-09-11
+- **Originated from:** website spec, 11 Sep 2026
+
+### 13. Retire the old `website` worktree and branch
+- **What + why:** `.worktrees/website` (branch `website`) holds the Codex/vinext landing page with uncommitted edits and a nested `.git`; superseded by `apps/website` on `website-pages`. Keep its artwork (`public/brand`, `public/platforms`, hero PNGs) somewhere first if the redesign wants them. Needs explicit OK — deletion. Also: a leftover `vinext dev` process (PID 71730) from it holds port 4173.
+- **Scope:** git housekeeping.
+- **Status:** queued — after `website-pages` merges.
+- **Date added:** 2026-09-11
+- **Originated from:** 11 Sep 2026 website build
+
+### 14. Pricing: paid tier in the US, free in India, no ads anywhere
+- **What + why:** Decided 11 Sep 2026 (Pranav): charge US customers, India free without ads. The app has no purchases today. Needs its own design: subscription via StoreKit / Play Billing, availability limited to the US storefront in both consoles, paywall keyed off the store-reported storefront (not IP), server-side entitlement, restore purchases, auto-renewal disclosures. Adding IAP later means a new build and IAP review — not a store-launch blocker.
+- **Scope:** mobile app + Supabase entitlement + both consoles' subscription setup.
+- **Status:** queued — brainstorm first when Pranav wants it.
+- **Date added:** 2026-09-11
+- **Originated from:** launch questions, 11 Sep 2026
+
+### 15. Privacy policy content after the onboarding change
+- **What + why:** Phone collection has stopped and the photo is optional (11 Sep), so the policy's data inventory must say so. It still mentions gender (removed 10 Sep). It should state plainly that there are no ads. **And it names the wrong region:** it says the backend is in Mumbai (ap-south-1), but the Supabase project `yurbmcqoqyehbpoqplcr` is in **ap-southeast-1 (Singapore)** — a factual error on a legal page, to fix in the same pass. Content change to a public page → needs Pranav's approval; then re-run `npm run extract` in `apps/website` so the site copy follows.
+- **Scope:** `docs/privacy.html` (+ `apps/website/content/privacy.html` via extract).
+- **Status:** queued — after the onboarding change lands.
+- **Date added:** 2026-09-11
+- **Originated from:** 11 Sep 2026 onboarding decision
+
+### 16. Admin dashboard: drop the dead "Phone" row
+- **What + why:** `apps/admin/src/App.tsx:1182` renders `["Phone", detail.phone]` from the `admin_dashboard_read` RPC (`demo.ts:25` seeds it too). Phone is no longer collected and stored values are null, so the row is always empty. Remove the row and the RPC's `phone` column in the same change; later, drop `profiles.phone` itself (migration).
+- **Scope:** `apps/admin` + the admin RPC migration. Adjacent feature — not touched during the onboarding change per the scope rule.
+- **Status:** queued.
+- **Date added:** 2026-09-11
+- **Originated from:** onboarding change audit, 11 Sep 2026
+
 ---
 
 ## In progress

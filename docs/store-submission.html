@@ -90,9 +90,9 @@
 <tr><td class="f">EAS project</td><td><code>55c2d8b3-…</code>; profiles <code>preview</code> (internal APK/TestFlight-less), <code>testflight</code> (store, TestFlight), <code>production</code> (store)</td><td><code>eas.json</code></td></tr>
 <tr><td class="f">Version today</td><td><code>0.1.0</code>; build numbers assigned by EAS (<code>appVersionSource: remote</code>). No <code>production</code> build exists on either platform yet.</td><td><code>app.config.ts</code>, EAS</td></tr>
 <tr><td class="f">Availability</td><td>United States and India only. No EU/UK ⇒ no EU trader (DSA) disclosure on the App Store; matches the privacy policy's Article 27 statement. <span class="b ready">READY</span></td><td>Pranav, 11 Sep; <code>docs/privacy.html</code></td></tr>
-<tr><td class="f">Price / monetisation</td><td>Free. No in-app purchases, no subscriptions, no ads, no tracking SDKs. <span class="b ready">READY</span></td><td><code>package.json</code> (no purchase/ads/analytics libraries)</td></tr>
+<tr><td class="f">Price / monetisation</td><td>Free at launch, no ads anywhere. Decision 11 Sep: a paid tier for the <b>US storefront only</b> comes later (India stays free, no ads) — added as an in-app subscription in a later build; not part of this submission. <span class="b ready">READY</span></td><td><code>package.json</code> (no purchase/ads/analytics libraries)</td></tr>
 <tr><td class="f">Sign-in</td><td>Google or Apple, both through the browser OAuth flow (Supabase). No password login, no guest mode — an anonymous session is sent back to the welcome screen. <span class="b ready">READY</span></td><td><code>lib/auth-state.ts:12</code>, <code>app/welcome.tsx</code></td></tr>
-<tr><td class="f">Onboarding after sign-in</td><td>Name (prefilled from the provider, editable, required) · profile photo (<b>required</b>) · phone with country code (optional). Gender was removed 10 Sep.</td><td><code>components/ProfileForm.tsx</code></td></tr>
+<tr><td class="f">Onboarding after sign-in</td><td>Name only (prefilled from the provider, editable). The profile photo is optional and set from Settings → Edit profile. Phone number no longer collected (removed 11 Sep; gender removed 10 Sep).</td><td><code>components/ProfileForm.tsx</code></td></tr>
 <tr><td class="f">Age</td><td>18 and over</td><td><code>docs/terms.html</code></td></tr>
 <tr><td class="f">Legal entity / copyright</td><td>MECA Engineering Solutions (OPC) Private Limited, 4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru 560102, India</td><td><code>docs/privacy.html</code></td></tr>
 <tr><td class="f">Contact</td><td>Pranav Aditya · <code>hi@allkept.app</code> (also the in-app "Contact support" target) · phone: given by Pranav in chat on 11 Sep — <b>deliberately not written into this public repository</b>; type it into the consoles. Apple's App Review contact phone is private; Play's "Contact details" phone appears on the public listing, so leave that one blank unless you want it public. <span class="b ready">READY</span></td><td><code>lib/feedback.ts</code></td></tr>
@@ -110,8 +110,8 @@
 <tr><th>Data</th><th>Comes from</th><th>Stored in</th><th>Why</th><th>Required?</th></tr>
 <tr><td class="f">Email address</td><td>Google / Apple sign-in (Apple may relay a private address)</td><td><code>auth.users</code></td><td>Account</td><td>Yes</td></tr>
 <tr><td class="f">Name</td><td>Suggested by the provider, edited at onboarding</td><td><code>profiles.display_name</code></td><td>App functionality</td><td>Yes</td></tr>
-<tr><td class="f">Phone number</td><td>Onboarding / Edit profile</td><td><code>profiles.phone</code></td><td><span class="b decide">DECIDE</span> — nothing in the code uses it yet; the forms ask <i>why</i> it is collected. Either state a purpose or drop the field before submission.</td><td>No (optional)</td></tr>
-<tr><td class="f">Profile photo</td><td>Photo library (system picker)</td><td>Storage bucket <code>avatars</code> (private, JPEG ≤ 2 MB)</td><td>App functionality</td><td><b>Yes</b> — see <a href="#risks">risk 2</a></td></tr>
+<tr><td class="f">Phone number</td><td colspan="4"><b>Not collected</b> as of 11 Sep 2026 — the field is gone from the app, the trigger drops any value an older build sends, and stored values were nulled. Answer "not collected" on both forms.</td></tr>
+<tr><td class="f">Profile photo</td><td>Photo library (system picker), from Settings → Edit profile</td><td>Storage bucket <code>avatars</code> (private, JPEG ≤ 2 MB)</td><td>App functionality</td><td>No — optional since 11 Sep</td></tr>
 <tr><td class="f">User ID</td><td>Supabase</td><td>every table</td><td>Account</td><td>Yes</td></tr>
 <tr><td class="f">OS, cohort</td><td>App</td><td><code>profiles.os</code>, <code>profiles.cohort</code></td><td>First-party analytics</td><td>Automatic</td></tr>
 <tr><td class="f">Instagram handle + Instagram-scoped ID</td><td>Link-code DM to @allkeptapp</td><td><code>connected_sources</code></td><td>App functionality</td><td>Only if you connect Instagram</td></tr>
@@ -190,7 +190,7 @@
 <tr><td class="f">Privacy Policy URL</td><td><code>https://pranavadityaneti.github.io/All-Kept/privacy.html</code></td><td><span class="b ready">READY</span> (task A done)</td></tr>
 <tr><td class="f">Do you collect data?</td><td>Yes</td><td></td></tr>
 <tr><td class="f">Data used to track you</td><td><b>None</b> — the label reads "Data Not Used to Track"</td><td><span class="b ready">READY</span> no tracking, no ad SDKs</td></tr>
-<tr><td class="f">Data linked to you — Contact Info</td><td>Email Address · Name · Phone Number</td><td>Phone only if you keep the field (§12). Purpose: App Functionality.</td></tr>
+<tr><td class="f">Data linked to you — Contact Info</td><td>Email Address · Name</td><td>Purpose: App Functionality. (Phone Number: not collected since 11 Sep.)</td></tr>
 <tr><td class="f">Data linked to you — Identifiers</td><td>User ID</td><td>App Functionality</td></tr>
 <tr><td class="f">Data linked to you — User Content</td><td>Photos or Videos (profile photo; stored thumbnails of saved posts) · Other User Content (saved links, captions, notes, imported history) · Customer Support (feedback)</td><td>App Functionality</td></tr>
 <tr><td class="f">Data linked to you — Usage Data</td><td>Product Interaction (the <code>app_events</code> list)</td><td>Purposes: Analytics <i>and</i> App Functionality</td></tr>
@@ -272,9 +272,9 @@
 <tr><td class="f">Do you provide a way to request deletion?</td><td>Yes — in-app (Settings → Delete account and everything in it) and <code>…/All-Kept/delete.html</code></td><td>Also fill the <b>account-deletion URL</b> field with delete.html. <span class="b ready">READY</span></td></tr>
 <tr><td class="f">Personal info → Name</td><td>Collected · not shared · required · App functionality</td><td></td></tr>
 <tr><td class="f">Personal info → Email address</td><td>Collected · not shared · required · Account management</td><td></td></tr>
-<tr><td class="f">Personal info → Phone number</td><td>Collected · not shared · optional · <i>purpose?</i></td><td><span class="b decide">DECIDE</span> (§12)</td></tr>
+<tr><td class="f">Personal info → Phone number</td><td><b>Not collected</b></td><td>Removed 11 Sep</td></tr>
 <tr><td class="f">Personal info → User IDs</td><td>Collected · not shared · required · Account management</td><td></td></tr>
-<tr><td class="f">Photos and videos → Photos</td><td>Collected · not shared · required (profile photo; stored thumbnails of saves) · App functionality</td><td></td></tr>
+<tr><td class="f">Photos and videos → Photos</td><td>Collected · not shared · optional (profile photo from Settings; stored thumbnails of saves) · App functionality</td><td></td></tr>
 <tr><td class="f">Files and docs</td><td>Collected · not shared · optional (the Instagram export you choose to import) · App functionality</td><td><span class="b decide">DECIDE</span> — conservative Yes</td></tr>
 <tr><td class="f">Messages → Other in-app messages</td><td>Collected · not shared · optional (posts and text you send to @allkeptapp; feedback) · App functionality</td><td><span class="b decide">DECIDE</span> — conservative Yes</td></tr>
 <tr><td class="f">App activity → App interactions</td><td>Collected · not shared · required · Analytics</td><td>The <code>app_events</code> list</td></tr>
@@ -394,8 +394,8 @@ npm run ota:production -- "what changed"</pre>
 <h2 id="risks">11. Risks worth knowing before you submit</h2>
 <ol>
 <li><b>The Instagram door will not complete for a reviewer.</b> <span class="b risk">RISK</span> Until Meta approves the app (~20 days from today's submission), DMs to @allkeptapp only work for accounts added as Meta testers. If an Apple or Google reviewer taps "Connect Instagram" and never gets the "Linked as @you" reply, it looks broken (Apple guideline 2.1). Options: (a) submit the stores after Meta approves; (b) submit now with notes steering reviewers to paste-a-link and make sure the connect screen shows a calm "waiting for Instagram" state rather than a spinner forever — <span class="b verify">VERIFY</span> what the screen does on no reply; (c) both. <span class="b decide">DECIDE</span></li>
-<li><b>A required profile photo at onboarding.</b> <span class="b risk">RISK</span> Apple 5.1.1(ii) frowns on demanding personal information that is not needed for the app to work; a bookmarking app does not need a face. Making the photo optional is a small change and removes the question. <span class="b decide">DECIDE</span></li>
-<li><b>Phone number with no visible purpose.</b> Both forms ask why. Nothing in the code reads it yet. State the purpose or remove the field. <span class="b decide">DECIDE</span></li>
+<li><b>Profile photo</b> — was required at onboarding; optional and moved to Settings on 11 Sep. Apple 5.1.1(ii) question closed.</li>
+<li><b>Phone number</b> — removed 11 Sep; stored values nulled. Closed.</li>
 <li><b>Policy pages</b> — presentation fixed 11 Sep (task A). Whether to launch without a lawyer's pass remains your call; the pages no longer say so out loud.</li>
 <li><b>Google sign-in for Apple reviewers.</b> Google's device challenge often blocks reviewers; Sign in with Apple is the reliable path and the notes say so.</li>
 <li><b>Support URL.</b> Apple will not accept the testers page. Needs the support page.</li>
@@ -411,8 +411,8 @@ npm run ota:production -- "what changed"</pre>
 <li>SKU <code>allkept-mobile</code> — fine?</li>
 <li>Secondary category (Utilities) and Play tags — any?</li>
 <li>Content Rights: affirm the third-party-content statement?</li>
-<li>Phone number: purpose, or remove the field?</li>
-<li>Profile photo: keep it required, or make it optional? (risk 2)</li>
+<li>Phone number — <i>removed, 11 Sep.</i></li>
+<li>Profile photo — <i>optional, from Settings, 11 Sep.</i></li>
 <li>Search History label: No (accurate) or Yes (conservative)?</li>
 <li>Device ID / push token: No (Apple), Yes (Play conservative) — agree?</li>
 <li>Files and docs, Messages on Play: conservative Yes — agree?</li>
