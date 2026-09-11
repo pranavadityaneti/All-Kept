@@ -516,3 +516,13 @@ Deno.test("a full oEmbed answer is still a ready card", async () => {
   const r = await enrich(tiktokVideo(), deps(f, snaps));
   assertEquals([r.status, r.patch.title, r.patch.author_name, r.patch.author_handle, r.patch.thumbnail_path], ["ready", "current mood", "TikTok", "https://www.tiktok.com/@tiktok", "u1/item-1.jpg"]);
 });
+
+Deno.test("a TikTok's shape is learned from the frame oEmbed describes; a frame with no size teaches nothing", async () => {
+  const withSize = await enrich(tiktokVideo(), deps(fakeFetch({ "https://www.tiktok.com/oembed": () => Response.json({ title: "t", author_name: "a", thumbnail_url: "https://cdn/t.jpg", thumbnail_width: 576, thumbnail_height: 1024 }) })));
+  assertEquals((withSize.patch.media_meta as Record<string, unknown>)["aspect"], 0.563);
+  const noSize = await enrich(tiktokVideo(), deps(fakeFetch({ "https://www.tiktok.com/oembed": () => Response.json({ title: "t", author_name: "a", thumbnail_url: "https://cdn/t.jpg" }) })));
+  assertEquals((noSize.patch.media_meta as Record<string, unknown>)["aspect"], undefined);
+  // Instagram's thumbnail is a poster, not the video's frame, so its size says nothing about the shape.
+  const ig = await enrich(base(), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": () => Response.json({ author_name: "x", thumbnail_url: "https://cdn/i.jpg", thumbnail_width: 640, thumbnail_height: 640 }) })));
+  assertEquals((ig.patch.media_meta as Record<string, unknown>)["aspect"], undefined);
+});

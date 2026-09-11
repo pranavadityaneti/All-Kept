@@ -414,6 +414,13 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         if (s("thumbnail_url") && !item.thumbnail_url_remote) patch.thumbnail_url_remote = s("thumbnail_url");
         if (platform === "x" && s("html") && !item.text) patch.text = stripTags(s("html")!);
         patch.media_meta = { oembed: { provider: s("provider_name"), type: s("type"), width: j["thumbnail_width"], height: j["thumbnail_height"] } };
+        // TikTok's thumbnail is a frame of the video, so its size is the video's shape — the same
+        // number the YouTube probe below learns for a Short. Other providers send posters and
+        // crops, which say nothing about the shape.
+        if (platform === "tiktok") {
+          const w = j["thumbnail_width"], h = j["thumbnail_height"];
+          if (typeof w === "number" && typeof h === "number" && w > 0 && h > 0) patch.media_meta = { ...patch.media_meta, aspect: Math.round((w / h) * 1000) / 1000 };
+        }
         askThePage = !(patch.author_name ?? item.author_name) || !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
       } else {
         const html = await readHead(res, MAX_HTML_BYTES);
