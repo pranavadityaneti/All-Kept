@@ -73,3 +73,13 @@ Only a page with nothing readable is honestly "preview unavailable".
 
 `eas build:view` reports "unknown error" for a failed build. The real message is in the log file it
 links, which is **Brotli-compressed**: `zlib.brotliDecompressSync` in node reads it, gzip does not.
+
+## 2026-09-12 — TikTok is unreachable from Pranav's network (India block)
+- **Didn't work:** `curl` to `www.tiktok.com` (profile page, `/oembed`, `/embed`) and `vm.tiktok.com` — every request hangs and times out, inside and outside the sandbox. DNS answers (a Jio address, 49.44.x.x) but TCP never connects: the ISP-level block India has applied to TikTok since 2020. `example.com` works, so it is not the sandbox.
+- **Works:** anything server-side — the Supabase edge functions run in Singapore, where TikTok answers. Real TikTok links pasted into the app are fetched by the server, not the phone.
+- **Remember:** nothing TikTok-facing can be proven from this Mac or Pranav's phone without a VPN — not oEmbed, not the embed page, not "open in TikTok". Test TikTok through the deployed pipeline (paste links in the app, read the rows back) or from a US vantage point; do not spend attempts on local curls.
+
+## 2026-09-12 — `supabase` from Homebrew dies silently (exit 137)
+- **Didn't work:** `/opt/homebrew/bin/supabase` — every invocation, even `--version`, prints nothing and exits 137 (killed). Looks like a broken or quarantined binary; two attempts at `functions list` went nowhere before this was noticed.
+- **Works:** the repo's own CLI, `node_modules/.bin/supabase` (2.117.0) — or `npm run supabase -- <args>`.
+- **Remember:** in this repo always call `node_modules/.bin/supabase …`, never bare `supabase`. Empty output with exit 137 is the tell.

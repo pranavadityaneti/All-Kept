@@ -124,9 +124,66 @@ Each item records: what + why · scope · status · date added · originated fro
 ### 18. Share extension that saves without leaving the app (Pocket-style)
 - **What + why:** Pranav's direction, 11 Sep: sharing to Allkept should save on the spot and show "Saved to Allkept" inside the share sheet, on iOS and Android, without opening the app. Native work on both platforms plus a server-side scoped save token (the extension cannot safely share the app's refresh-rotating session). Brainstorm → spec → plan.
 - **Scope:** iOS share extension, Android share target activity, `save-link` auth path, app-group/shared storage, new native build on both platforms.
-- **Status:** built and proven on the simulator (12 Sep): silent save on iOS via background upload; Android toast. Remaining: EAS preview builds, then Pranav's device checklist; then archive.
+- **Status:** **on hold by Pranav (12 Sep): no builds until an explicit Yes.** Code complete and committed (`e676702`, `55d4909`): iOS silent share extension + banner, Android toast + direct-share shortcut. When he says Yes: EAS preview builds, device checklist, then archive.
+- **12 Sep, later:** the server side every door relies on changed — the pipeline now runs in Singapore via a region-pinned hop (`_shared/enqueue.ts`); the share extension's saves benefit without any native change.
 - **Date added:** 2026-09-11
 - **Originated from:** share-from-Instagram friction, 11 Sep 2026
+
+### 19. "Needs you" means two different things
+- **What + why:** Found by the home-screen planning agent (12 Sep): the push trigger in `supabase/functions/_shared/pipeline.ts` fires "a save needs you" for `no_link` / `preview_unavailable`, while the Library filter `needs_attention` (`library_query_v3`) matches `pending`, `failed`, `no_link` or a failed classification and excludes `preview_unavailable`. They share one status. Any home section or badge built on "needs you" inherits the disagreement. Settle one definition and use it in both places.
+- **Scope:** pipeline push trigger + the library query migration + the app's filter copy.
+- **Status:** queued — decide the definition first (Pranav).
+- **Date added:** 2026-09-12
+- **Originated from:** `docs/home-screen-plan.html`
+
+### 20. Nothing records which save was opened
+- **What + why:** `items.opened_at` exists in the schema but nothing writes it, and the `item_open` event carries no item id — so "saved, never opened" (the founding pitch, and the natural "Rediscover" section) cannot be built. Recording per-item opens is new personal-data processing → privacy-policy pass (item 15) before shipping.
+- **Scope:** `app_events` props or `items.opened_at` write on open; privacy policy.
+- **Status:** queued — Pranav to decide whether to record it.
+- **Date added:** 2026-09-12
+- **Originated from:** `docs/home-screen-plan.html`
+
+### 21. Live progress card on the home screen while a YouTube playlist syncs and sorts
+- **What + why:** Pranav (12 Sep): pasting a YouTube playlist link starts a sync + sort that takes time; the home screen should show an animated progress card with live progress (videos captured, sorted) until done. Design first: what "progress" is measurable (playlist size from the API, items captured, items classified), how it updates (realtime subscription already exists), what it shows when done or stuck.
+- **Scope:** home screen, realtime, `youtube-register`/`youtube-poll` counts.
+- **Status:** queued — after TikTok.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav, 12 Sep 2026
+
+### 22. Build the home screen's three recommended sections
+- **What + why:** Pranav (12 Sep): build the three sections from `docs/home-screen-plan.html` — "Needs you", "Start here", "A year ago today". Depends on decisions in that doc (notably one definition of "needs you", item 19) — defaults from the doc unless Pranav says otherwise.
+- **Scope:** home screen, one query each, Library filter alignment for "needs you".
+- **Status:** queued — after the progress card.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav, 12 Sep 2026
+
+### 23. X cards are broken-looking — three defects found by the WhatsApp/X audit
+- **What + why:** the audit agent (12 Sep) checked X's live endpoints: (a) `enrich.ts` still calls `publish.twitter.com/oembed`, which now answers 301 → `publish.x.com` (we follow it, but it is a hop we need not make and a host that may stop redirecting); (b) X's oEmbed never returns a title or a picture, and `askThePage` is therefore always true for X — every X save makes a second fetch of `x.com` that returns a JS shell with no preview tags, pure waste; (c) `decodeEntities` lacks `mdash`, so `&mdash;` is stored glued to the caption. The existing test at `enrich.test.ts:64` mocks a kinder response than reality. Fix together: switch the host, skip the page fallback for platforms whose pages never carry tags (X, TikTok), add the entity. X's picture can only come from X's official embed (Phase 4 of the plan).
+- **Scope:** `supabase/functions/_shared/enrich.ts`, its tests. About a day.
+- **Status:** queued.
+- **Date added:** 2026-09-12
+- **Originated from:** WhatsApp/X audit agent, `docs/whatsapp-x-plan.html`
+
+### 24. WhatsApp and X — decisions on the plan
+- **What + why:** `docs/whatsapp-x-plan.html` (12 Sep) needs seven answers: (1) is X a promised platform or merely handled; (2) build the WhatsApp number door (free in Meta fees, no App Review, needs a never-used-on-WhatsApp phone number, a migration widening four check constraints, and a phone-number line back in the privacy policy); (3) a second Meta app for WhatsApp until the Instagram review lands; (4) X bookmarks import — pay-per-use at $0.005 per Post read (likes are not buyable at all), or first check whether the free X archive holds likes/bookmarks; (5) X official embed before or after store submission (it is also the Display Requirements fix); (6) WhatsApp chat-export import — a principles question (other people's messages); (7) one generic refresh-or-expire job for X's 24-hour deletion rule and YouTube's 30-day rule (item 17).
+- **Scope:** decisions first; engineering after.
+- **Status:** waiting on Pranav.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav's request for the audit, 12 Sep 2026
+
+### 25. Videos play automatically on the save screen
+- **What + why:** Pranav (12 Sep): "I would rather want the video play automatically" for saved videos across platforms, instead of tapping Play. Today `EmbedPlayer` sets `mediaPlaybackRequiresUserAction` and a tap injects `play()`. Both iOS WebKit and Android WebView allow autoplay only when muted (or after a user gesture); YouTube's embed takes `autoplay=1&mute=1`, Instagram's embed is a card whose `<video>` can be started by injected script once loaded. Design questions: muted-first with a tap to unmute, or sound on (needs a gesture on iOS); only on the save screen or also in the library grid; data use on cellular; what "active" means when scrolling.
+- **Scope:** `apps/mobile/components/EmbedPlayer.tsx`, `apps/mobile/lib/embed.ts`, `ItemDetail.tsx`. App change — ships in a build (gated by the explicit-Yes rule).
+- **Status:** queued — brainstorm before code.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav, 12 Sep 2026
+
+### 26. TikTok Phase 2 — play TikTok inside Allkept
+- **What + why:** TikTok cards now fill in (Phase 1 closed 12 Sep), but a TikTok video opens the original instead of playing in place. Add TikTok to `embed.ts` using TikTok's embed page (the one its oEmbed HTML points at) with the same stay-in-the-card treatment as Instagram; 9:16 box; photo posts embed-or-snapshot decision. Cannot be tested from India without a VPN.
+- **Scope:** `apps/mobile/lib/embed.ts`, `EmbedPlayer.tsx`, tests. App change (build-gated).
+- **Status:** queued — pair with item 25 so autoplay is designed once for all three embeds.
+- **Date added:** 2026-09-12
+- **Originated from:** `docs/tiktok-plan.html` Phase 2; Pranav's "wasn't able to play" on 12 Sep
 
 ---
 

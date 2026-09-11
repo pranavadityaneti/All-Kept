@@ -226,6 +226,81 @@ written after the fact from git history, not live — treat details as approxima
 - Result: the same flash — iOS animates regardless. Pranav: let it be. Experiment removed; the
   tested async A extension committed. Spec updated (banner, flash accepted). Pranav asks whether
   the app icon can be placed before other apps in the share sheet.
+- Answer: iOS orders the app row by usage / pinning (no API); Android has Sharing Shortcuts →
+  Pranav: do it now. Added `res/xml/shortcuts.xml` (share-target → ShareActivity),
+  `ShareShortcut.kt` (publish on setCredential and on each classic share; remove on
+  clearCredential), `androidx.core:core-ktx`, and a config plugin `plugins/with-share-shortcuts.js`
+  that puts `android.app.shortcuts` meta-data on `.MainActivity`. Plugin loads; tsc clean.
+  Android rebuild running; emulator booting for the direct-share check.
+- **Home-screen agent finished** (13.5 min, 74 tool calls): `docs/home-screen-plan.html`.
+  Recommends, in order: "Needs you" row (invisible at zero), "Start here" doors board (replacing
+  the Instagram-only card), "A year ago today" (fixed three cards, no scroll). Risk: home becoming
+  a feed. Found in passing: the "needs you" definition mismatch (item 19) and `opened_at` never
+  written / `item_open` without item id (item 20). 12 decisions for Pranav in the doc.
+- Android shortcuts built and proven: Gradle OK, `res/xml/shortcuts.xml` in the APK, meta-data on
+  `.MainActivity`, `dumpsys shortcut` shows `save-to-allkept` (Dyn, Ic, Liv) after a classic
+  share. The visual (chooser's direct-share row) needs an app to share *from*; Chrome's first run
+  wants terms/sign-in consent on Pranav's behalf — not tapped. Committed; emulator stopped.
+- **Pranav (mid-turn): no builds without an explicit Yes (saved as memory); finish TikTok; a live
+  progress card on home while a YouTube playlist syncs/sorts (item 21); build the three
+  home-screen sections (item 22).** Order: TikTok → progress card → three sections.
+- **TikTok Phase 1 started.** Static checks done: TikTok already appears wherever platforms are
+  listed (pills are data-driven from the facets; label + logo exist), so that bullet needs no code.
+  Blocker found: TikTok is unreachable from this Mac (India's ISP block — DNS answers, TCP times out;
+  `example.com` fine). Recorded in `ERRORS.md`. The real-link proof has to run through the server
+  (Singapore) — Pranav pastes links in the app — or from a US network. Two real links found via
+  search (@tiktok/video/7532540099460893983, @selenagomez/video/7242449293112577323); no photo-post
+  or vm.tiktok.com link found yet. Latent Phase 3 gap noted: `detectPlatform` knows only
+  `tiktok.com`; TikTok's data export is believed (unverified) to use `tiktokv.com/share/video/…`
+  links, which would file as Web.
+- **Phase 1 read-back (Pranav pasted 4 of the 6 links, 02:43 IST):** the two live videos came back
+  `ready` with **no title, no author, no picture** — TikTok's oEmbed answered 2xx with nothing usable
+  (`oembed: {}`), the page fallback learned only `og:description = "TikTok"` (`text: "TikTok"`,
+  `link_preview: true`). Card criterion FAILED. The `about?lang=en` page was pasted in place of the
+  profile (asked). `vm.tiktok.com/ZS9dHGEcApLyX` expanded to something already held → "duplicate
+  after expansion" → left as a permanent `failed` row (Needs attention) with nothing learned.
+  Classes to harden: (D1) TikTok oEmbed yields nothing — needs the body, probe from the server;
+  (D2) enrich marks `ready` when nothing at all was learned after a 2xx oEmbed; (F2) a short link
+  that expands to a non-content page is adopted as if it were the post; (F3) a duplicate after
+  expansion stays `failed` forever instead of pointing at the original. No fix started.
+- **Server-side probe (pg_net from the Singapore DB, 14 read-only GETs, approved):** TikTok oEmbed
+  answers fully for videos and profiles even with the bot UA; wrong id → 400 JSON; oEmbed does not
+  expand short links (400); `vm.tiktok.com` serves a WAF "Please wait…" page (HTTP 200) to the bot
+  UA but redirects properly for a Safari UA; video/profile pages carry no og tags at all. None of
+  this reproduces what the pipeline recorded (`og:description="TikTok"`, short link → `/about`),
+  which is TikTok's India behaviour. **Hypothesis: `save-link` ran in Mumbai** (Supabase executes an
+  edge function in the region nearest the caller — Pranav's phone). Test proposed: reset the 3 test
+  rows to pending + call the sweeper from the DB (runs in Singapore).
+- **Region test (approved): CONFIRMED.** Reset the 3 test rows to pending, called the sweeper from
+  the DB; within 5 s both videos were `ready` with title, author, handle, oEmbed meta and a
+  snapshotted thumbnail. The short link expanded (bot UA → WAF redirect) to `https://www.tiktok.com/`
+  and was adopted as a `post` → `preview_unavailable` — F2 confirmed as a live path. Root cause of
+  D1: the inline pipeline runs in the caller's region (Mumbai for Pranav's phone). Fix design
+  presented for approval: pin pipeline work to the DB region via an internal region-pinned worker
+  call (D1), "nothing learned" → preview_unavailable (D2), unrecognised destination after expansion
+  = unresolved (F2), duplicate after expansion mirrors capture's dedupe (F3), browser UA on the
+  expansion hop (F4).
+- **Pranav (mid-turn): WhatsApp + X integration audit** → Opus agent dispatched (background),
+  deliverable `docs/whatsapp-x-plan.html`, read-only.
+- **Fix built and shipped (spec `1ea3b89`, plan `5038768`, Tasks 1–9 as commits `7e76741` →
+  `77805af`, inline TDD, 176 function tests + 90 normaliser tests green, `deno check` + app `tsc`
+  clean).** Deployed on Pranav's Yes: sweeper v22 (single-item mode, reports region), save-link
+  v12, reprocess-item v14, instagram-webhook v29 (all hop to the sweeper with
+  `x-region: ap-southeast-1`); migration `20260912130000_pin_cron_region` applied on his Yes (both
+  cron jobs pinned, verified). Smoke test from the DB: single-item hop answered
+  `region: ap-southeast-1`. **Proof pending:** Pranav pastes the six TikTok links from his phone.
+- Housekeeping noticed: `deno.lock` rewritten by Deno 2.8 on every run (uncommitted, not part of any
+  task); `supabase/migrations/20260912090000_share_tokens.sql` + `supabase/tests/share_tokens.sql`
+  are applied remotely but still untracked in git — to commit with the records.
+- **PROOF PASSED (Pranav pasted all six from his phone, 03:48 IST; 8 TikTok rows read back):**
+  both videos `ready` with title, author, picture (save_count 2 — the re-paste counted as a second
+  save of the original, as designed); profile `ready` with "TikTok's Creator Profile" — an answer
+  only Singapore gets; both `vm.tiktok.com` links `preview_unavailable` with `last_error: short link
+  led to an unrecognised page` (TikTok's front door, never adopted — those two short links are dead;
+  F2 behaved); the wrong id `preview_unavailable`. Phase 1 of the TikTok plan is closed.
+- **Pranav: wants videos to play automatically instead of tap-to-play** (all platforms). Answer
+  given: possible for Instagram/YouTube embeds (muted autoplay is what platforms allow), design
+  question queued as item 25. TikTok playback itself is Phase 2 (item 26).
 
 ### Decisions
 - Logging files live at the repo root: `SESSION_LOG.md`, `forlater.md`, `ERRORS.md`.

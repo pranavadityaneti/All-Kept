@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allkept — Home Screen Plan</title>
+<style>
+  :root{--bg:#F6F7FA;--card:#FFFFFF;--line:#DFE3EC;--ink:#14161C;--muted:#5F6675;--accent:#6D46F2;
+        --done:#0E7A4F;--done-bg:#E4F5EC;--gap:#8A5200;--gap-bg:#FFF3DF;--no:#A32020;--no-bg:#FBE7E7;--verify:#1F4E9C;--verify-bg:#E6EEFB}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+  h2{font-size:21px;margin:44px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:24px 0 6px}
+  h4{font-size:14px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  p{margin:8px 0}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0 8px}
+  .toc ol{margin:6px 0 0;padding-left:20px;columns:2;column-gap:28px}
+  .toc li{margin:2px 0;break-inside:avoid}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0 16px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+  th{background:#F1F2F7;font-weight:600;font-size:13px;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  td.f{font-weight:600;white-space:nowrap}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#EEF0F6;padding:1px 5px;border-radius:4px}
+  pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;background:var(--card);color:var(--ink);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;white-space:pre-wrap}
+  .b{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:5px;vertical-align:1px;white-space:nowrap}
+  .done{color:var(--done);background:var(--done-bg)} .gap{color:var(--gap);background:var(--gap-bg)} .no{color:var(--no);background:var(--no-bg)} .verify{color:var(--verify);background:var(--verify-bg)}
+  .note{background:var(--card);border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .warn{background:var(--no-bg);border-left:4px solid var(--no);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .plain{background:#F2EFFD;border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .plain b{color:var(--accent)}
+  small{color:var(--muted)}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+  .sec h3{margin-top:0}
+  .meta{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;font-size:13.5px;margin:10px 0 0;border-top:1px solid var(--line);padding-top:10px}
+  .meta dt{font-weight:600;color:var(--muted)}
+  .meta dd{margin:0}
+  .sz{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:#EEF0F6;color:var(--muted)}
+
+  /* ---- phone mockups: pure CSS, no images ---- */
+  .phones{display:flex;gap:22px;flex-wrap:wrap;margin:16px 0 6px;align-items:flex-start}
+  .ph{width:288px}
+  .ph .cap{font-size:12.5px;color:var(--muted);text-align:center;margin:0 0 8px;font-weight:600}
+  .frame{border-radius:36px;padding:9px;background:#fff;border:1px solid var(--line);box-shadow:0 12px 30px rgba(54,56,76,.13)}
+  .scr{border-radius:28px;height:690px;overflow:hidden;padding:10px 13px 16px;font-size:11px;line-height:1.35;position:relative}
+  .lt{background:#F6F7FA;color:#14161C}
+  .dk{background:#0E0F14;color:#F3F4F8}
+  .hdr{display:flex;align-items:center;justify-content:space-between;margin:2px 0 10px}
+  .mark{font-weight:800;font-size:14px;letter-spacing:-.4px;color:#6D46F2}
+  .dk .mark{color:#9B84FA}
+  .ico{display:inline-block;width:22px;height:22px;border-radius:50%;background:#FFF;border:1px solid #DFE3EC;margin-left:6px;text-align:center;line-height:21px;font-size:11px;color:#5F6675}
+  .dk .ico{background:#171922;border-color:#2B2F3F;color:#98A0B4}
+  .st{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5F6675;display:flex;justify-content:space-between;align-items:center;margin:10px 0 4px}
+  .dk .st{color:#98A0B4}
+  .st .more{font-weight:600;color:#6D46F2;text-transform:none;letter-spacing:0;font-size:10px}
+  .dk .st .more{color:#9B84FA}
+  .tag{background:#6D46F2;color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:5px;letter-spacing:.05em;vertical-align:1px}
+  .box{background:#FFF;border:1px solid #DFE3EC;border-radius:12px;padding:9px 11px}
+  .dk .box{background:#171922;border-color:#2B2F3F}
+  .attn{display:flex;align-items:center;gap:9px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#E4762A;flex:0 0 8px}
+  .attn .t{font-weight:700;font-size:11.5px}
+  .attn .s{color:#5F6675;font-size:10px}
+  .dk .attn .s{color:#98A0B4}
+  .chev{margin-left:auto;color:#5F6675}
+  .pills{display:flex;gap:6px;overflow:hidden;margin:2px 0 0}
+  .pill{border:1px solid #DFE3EC;background:#fff;border-radius:999px;padding:3px 9px;font-size:10px;white-space:nowrap;display:flex;align-items:center;gap:5px}
+  .dk .pill{background:#171922;border-color:#2B2F3F}
+  .pill.on{border-color:#6D46F2;background:#EDE8FF;color:#241F44}
+  .dk .pill.on{background:#241F44;border-color:#7C5CF6;color:#EDE8FF}
+  .sq{width:9px;height:9px;border-radius:2px;background:#C9C3E8;display:inline-block}
+  .rail{display:flex;gap:8px;overflow:hidden}
+  .rc{width:78px;flex:0 0 78px}
+  .rc .im{height:80px;border-radius:10px;background:linear-gradient(150deg,#D9D2F2,#BFC6E8);border:1px solid #DFE3EC}
+  .dk .rc .im{background:linear-gradient(150deg,#2A2450,#1C2030);border-color:#2B2F3F}
+  .rc .tt{font-size:9.5px;margin-top:4px;line-height:1.25;font-weight:600}
+  .rc .mt{font-size:9px;color:#5F6675}
+  .dk .rc .mt{color:#98A0B4}
+  .paste{display:flex;align-items:center;justify-content:space-between;border:1px solid #DFE3EC;background:#fff;border-radius:999px;padding:7px 8px 7px 13px;color:#5F6675;font-size:10.5px;margin-top:10px}
+  .dk .paste{background:#171922;border-color:#2B2F3F;color:#98A0B4}
+  .paste .go{width:22px;height:22px;border-radius:50%;background:#EEF0F6;display:inline-block}
+  .dk .paste .go{background:#1F2230}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .tile{aspect-ratio:.8;border-radius:13px;background:#F1ECFA;border:1px solid rgba(109,70,242,.14);padding:7px 8px;position:relative;overflow:hidden}
+  .dk .tile{background:#1A1530;border-color:rgba(150,120,255,.22)}
+  .tile .n{font-size:10px;font-weight:800;color:#241F44;letter-spacing:-.2px}
+  .dk .tile .n{color:#EDE8FF}
+  .tile .c{font-size:8.5px;color:rgba(65,35,61,.82);font-weight:600}
+  .dk .tile .c{color:#E2DCFA}
+  .tile .glyph{position:absolute;right:-6px;bottom:-10px;width:44px;height:44px;border-radius:12px;background:rgba(109,70,242,.16);transform:rotate(12deg)}
+  .dk .tile .glyph{background:rgba(150,120,255,.16)}
+  .door{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #EEF0F6;font-size:10.5px}
+  .dk .door{border-bottom-color:#1F2230}
+  .door:last-child{border-bottom:0}
+  .door .k{width:17px;height:17px;border-radius:5px;background:#EDE8FF;flex:0 0 17px}
+  .dk .door .k{background:#241F44}
+  .door .ok{margin-left:auto;color:#2E7D4F;font-weight:700}
+  .door .todo{margin-left:auto;color:#6D46F2;font-weight:700}
+  .dk .door .todo{color:#9B84FA}
+  .tabbar{position:absolute;left:34px;right:34px;bottom:12px;height:34px;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid #DFE3EC;display:flex;align-items:center;justify-content:space-around;font-size:9px;color:#5F6675;font-weight:700}
+  .dk .tabbar{background:rgba(23,25,34,.94);border-color:#2B2F3F;color:#98A0B4}
+  .tabbar .sel{color:#6D46F2}
+  .dk .tabbar .sel{color:#9B84FA}
+  .scrfade{position:absolute;left:0;right:0;bottom:0;height:58px;background:linear-gradient(transparent,#F6F7FA)}
+  .dk .scrfade{background:linear-gradient(transparent,#0E0F14)}
+
+  @media print{body{background:#fff;font-size:12px}.wrap{max-width:none;padding:0}.tbl,.toc,.note,.plain,.sec,.frame{border-color:#999;break-inside:avoid}h2{break-after:avoid}a{color:#000}.toc ol{columns:1}.phones{gap:14px}.ph{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Allkept home screen — what else it could show</h1>
+<p class="sub">Written 12 September 2026 from the code as it stands. Purpose: the home screen today is a rail, a paste field and a category grid. This is the menu of everything else it could honestly be, what each one would cost, and the three I would build first.</p>
+
+<p><span class="b done">HAVE IT</span> the data is already readable by the app &nbsp; <span class="b gap">SERVER WORK</span> the data exists but the app cannot see it — an RPC or column change, no new collection &nbsp; <span class="b verify">NEW CAPTURE</span> something new has to be recorded &nbsp; <span class="b no">NOT POSSIBLE</span> no route, or ruled out by the privacy/terms position</p>
+
+<div class="toc"><b>Contents</b>
+<ol>
+<li><a href="#today">What home shows today</a></li>
+<li><a href="#signals">What the data can already support</a></li>
+<li><a href="#candidates">Candidate sections — twelve of them</a></li>
+<li><a href="#recommend">Recommendation: the three to build first</a></li>
+<li><a href="#mockups">Mockups, light and dark</a></li>
+<li><a href="#decisions">Decisions for Pranav</a></li>
+<li><a href="#sources">Sources, and what I could not verify</a></li>
+</ol></div>
+
+<!-- ============================================================ -->
+<h2 id="today">1. What home shows today</h2>
+
+<p>Everything below is read from <code>apps/mobile/app/(tabs)/index.tsx</code> and the files it imports. The order is the order down the screen.</p>
+
+<div class="tbl"><table>
+<tr><th>What</th><th>Where it comes from</th><th>Behaviour worth knowing</th></tr>
+<tr><td class="f">Header</td><td><code>components/ScreenHeader.tsx</code></td><td>Wordmark left; two buttons right — search (opens <code>SearchOverlay</code> <i>over</i> the screen, blurred, you keep your place) and a bell that pushes <code>/activity</code>, a screen titled <b>Notifications</b>.</td></tr>
+<tr><td class="f">"Could not start your library"</td><td>session state</td><td>Error card with Try again. Only on failure.</td></tr>
+<tr><td class="f">"Start with Instagram"</td><td><code>lib/sources.ts</code> → <code>connected_sources</code> where <code>kind='instagram_dm'</code></td><td>Shows whenever no Instagram account is linked — <b>including for someone with 300 saves made through the share sheet</b>. It is the only door home ever mentions.</td></tr>
+<tr><td class="f">Platform pills</td><td><code>library_facets_v2()</code>, facet <code>platform</code>; <code>components/PlatformPills.tsx</code></td><td>Logo + name, <b>counts hidden on home</b> (<code>showCounts={false}</code>). The selection is home's own — deliberately not shared with Library.</td></tr>
+<tr><td class="f">"Recent saves" rail</td><td><code>lib/home.ts</code> → RPC <code>library_query_v2</code>, <code>lim: 12</code></td><td>Horizontal rail, first <b>8</b> of the 12 shown. "See all" → Library. Two different empty states: filtered-empty ("Nothing recent from TikTok") and truly empty ("Nothing saved yet…").</td></tr>
+<tr><td class="f">Paste a link</td><td><code>components/SaveLinkField.tsx</code> → edge function <code>save-link</code></td><td>Says "Saved." / "Already saved." / "Saved. Sorting it now." and clears itself after 3s (6s after a failure).</td></tr>
+<tr><td class="f">"Categories" grid</td><td><code>library_facets_v2()</code>, facet <code>category</code>; <code>components/CategoryTile.tsx</code></td><td>Three across, <b>first 6</b>, "See all" expands in place. Sorted by count. Each tile → <code>/library?category=…</code>. One artwork per category, washed dark in dark mode.</td></tr>
+<tr><td class="f">Pull to refresh</td><td>—</td><td>Refetches the rail and the facets. Only a real pull shows the spinner.</td></tr>
+<tr><td class="f">Analytics</td><td><code>lib/metrics.ts</code></td><td><code>app_open</code> and <code>library_view</code> both fire once per mount — and Library fires the same two, so "library_view" counts both tabs.</td></tr>
+</table></div>
+
+<h4>Three things about today that matter for anything new</h4>
+<ul>
+<li><b>The bell and the rail are the same query.</b> <code>/activity</code> ("Notifications") calls the identical <code>useRecentSaves</code> hook — the same 12 newest saves, grouped by day, with a status line. It is not a notification log; it is the rail again, vertically.</li>
+<li><b>The category grid already carries three things that are not categories.</b> <code>library_facets_v2</code> labels a save through <code>item_category_label</code>, which returns <code>Needs attention</code>, <code>Uncategorized</code> or <code>Sorting</code> when there is no category yet. Those come back as category values, so they become tiles — with the generic "Other" artwork, because <code>categoryStyle()</code> has no picture for them.</li>
+<li><b>Home is still on the old read.</b> Home calls <code>library_query_v2</code>; Library moved to <code>library_query_v3</code>. v3 is the one that understands dates (<code>since</code>), creators (<code>authors</code>), shapes and flags. Any date-based or creator-based section on home needs home to move to v3 first — a one-line change in <code>lib/home.ts</code>, not a migration.</li>
+</ul>
+
+<div class="plain"><b>In plain English.</b> Home today is: your logo and two buttons, a nag to connect Instagram, a row of platform logos, the last eight things you saved, a box to paste a link, and six category cards. The bell at the top shows the same eight things again in a list. Nothing on the screen tells you anything you did not already know two seconds ago.</div>
+
+<!-- ============================================================ -->
+<h2 id="signals">2. What the data can already support</h2>
+
+<p>This is the honest boundary of what any new section can be built from. "Readable today" means the phone can already get it with the functions and permissions that exist.</p>
+
+<div class="tbl"><table>
+<tr><th>Signal</th><th>Lives in</th><th>Readable today?</th><th>What it could drive</th></tr>
+<tr><td class="f">Platform</td><td><code>items.platform</code> · facet <code>platform</code></td><td><span class="b done">HAVE IT</span></td><td>Platform sections, counts on the pills.</td></tr>
+<tr><td class="f">Shape</td><td><code>item_shape(kind, media_meta)</code> · facet <code>shape</code></td><td><span class="b done">HAVE IT</span></td><td>"Reels &amp; Shorts", "Videos", "Links", "Notes" as a cut of the library.</td></tr>
+<tr><td class="f">Category</td><td><code>item_ai.user_category</code> ?? <code>item_ai.category</code> · facet <code>category</code></td><td><span class="b done">HAVE IT</span></td><td>The existing grid. 15 categories in the taxonomy.</td></tr>
+<tr><td class="f">When it was saved</td><td><code>items.saved_at</code> / <code>last_saved_at</code></td><td><span class="b done">HAVE IT</span></td><td>"This week", "On this day". <code>library_query_v3</code> takes <code>since</code>, and a window is possible by combining it with the <code>before</code> cursor. <small>(Inferred from the SQL — not exercised by any code today.)</small></td></tr>
+<tr><td class="f">Saved more than once</td><td><code>items.save_count</code> · flag <code>repeated</code></td><td><span class="b done">HAVE IT</span></td><td>"You saved this twice" — a high-precision signal of caring.</td></tr>
+<tr><td class="f">Has a note</td><td><code>items.note</code> · flag <code>noted</code></td><td><span class="b done">HAVE IT</span></td><td>The flag and count are readable; the note text only comes back on the item screen.</td></tr>
+<tr><td class="f">Needs attention</td><td>flag <code>needs_attention</code></td><td><span class="b done">HAVE IT</span></td><td>The "needs you" loop. See the warning below about what it actually includes.</td></tr>
+<tr><td class="f">Creator</td><td><code>items.author_name</code> / <code>author_handle</code></td><td><span class="b gap">SERVER WORK</span></td><td><code>library_query_v3</code> already <i>filters</i> by <code>authors</code>, but there is no author facet, so "your top three creators" needs a counting query added.</td></tr>
+<tr><td class="f">Tags and summary</td><td><code>item_ai.tags</code>, <code>.summary</code></td><td><span class="b done">HAVE IT</span> per save<br><span class="b gap">SERVER WORK</span> for counts</td><td>Per-save they come back in the library read. There is no tag facet, so "your most-saved topics" needs a counting query.</td></tr>
+<tr><td class="f">Actionability<br>(watch / try / buy / go / read / reference)</td><td><code>item_ai.actionability</code></td><td><span class="b gap">SERVER WORK</span></td><td>The classifier already writes it for every save (<code>_shared/classify.ts</code>). It is <b>not</b> in <code>library_query_v3</code>'s returned columns and not in the facets, so the app has never seen it. Exposing it is a column and a facet row — no new AI call, no new collection.</td></tr>
+<tr><td class="f">Entities (place, product, recipe, tool, person, brand)</td><td><code>item_ai.entities</code></td><td><span class="b gap">SERVER WORK</span></td><td>Same story — written, stored, never exposed.</td></tr>
+<tr><td class="f">Meaning vector</td><td><code>item_search.embedding</code> (512-dim)</td><td><span class="b gap">SERVER WORK</span></td><td>Exists per save, used only by the <code>search-library</code> function against a typed query. There is no "more like this one" path.</td></tr>
+<tr><td class="f">Connected doors</td><td><code>connected_sources</code> (Instagram DM, YouTube playlist)</td><td><span class="b done">HAVE IT</span></td><td>A "which doors are open" board. Today the app only ever reads the Instagram row.</td></tr>
+<tr><td class="f">Which door a save came through</td><td><code>items.captured_via</code> (<code>instagram_dm</code>, <code>youtube_playlist</code>, <code>share</code>, <code>import</code>)</td><td><span class="b done">HAVE IT</span></td><td>"Have you ever used the share sheet?" — a plain count on <code>items</code> under the owner's own row security. <small>(Inferred: the column and the policy allow it; no code does it today.)</small></td></tr>
+<tr><td class="f">Imports</td><td><code>imports</code> + RPC <code>import_progress(id)</code></td><td><span class="b done">HAVE IT</span></td><td>"Have you brought your history in?" The table is owner-readable; today the app only reads progress for an import it started in the same session.</td></tr>
+<tr><td class="f">Notification preferences</td><td><code>profiles.notify_*</code>, <code>ai_sorting_enabled</code></td><td><span class="b done">HAVE IT</span></td><td>Knowing when <i>not</i> to promise a notification.</td></tr>
+<tr><td class="f">What people did in the app</td><td><code>app_events</code> — 16 named events</td><td><span class="b done">HAVE IT</span></td><td>Owner-scoped, append-only. <code>app_open, library_view, item_open, open_original, share_out, search, category_changed, note_saved, link_started, link_completed, paste_link, item_deleted, import_opened/started/finished/failed</code>.</td></tr>
+<tr><td class="f">Category corrections</td><td><code>item_ai.user_category</code> + event <code>category_changed</code></td><td><span class="b done">HAVE IT</span></td><td>A correction is stored beside the model's answer, never over it.</td></tr>
+<tr><td class="f">Search terms</td><td>—</td><td><span class="b no">NOT POSSIBLE</span></td><td>Deliberately not stored. The <code>search</code> event records only the term's <i>length</i> and the number of results. "Your recent searches" would have to live on the phone, or become a change to the privacy policy.</td></tr>
+<tr><td class="f"><b>Which save you opened, and when</b></td><td><code>items.opened_at</code></td><td><span class="b verify">NEW CAPTURE</span></td><td>The column exists in the schema and <b>is never written by anything</b>. <code>item_open</code> is recorded with no properties at all, and <code>open_original</code> records only the platform. So today the system knows <i>that</i> saves get opened and has no idea <i>which</i>. Everything shaped like "you never opened this" is blocked on this one small change.</td></tr>
+<tr><td class="f">Dwell time, scroll depth, "was it seen"</td><td>—</td><td><span class="b no">NOT POSSIBLE</span></td><td>Nothing measures it. Adding it would be genuinely new behavioural collection and a privacy-policy change — and it is the kind of measurement the app's "no tracking" position exists to avoid.</td></tr>
+<tr><td class="f">Anything fetched from a platform</td><td>—</td><td><span class="b no">NOT POSSIBLE</span></td><td>Nothing on home may reach out for data a save does not already hold. That is the platform-terms line in the legal plan (§2) and it rules out trending, view counts, "is this still live", creator follower counts, and anything about other people's saves.</td></tr>
+</table></div>
+
+<div class="warn"><b>A real inconsistency, found while reading.</b> Two parts of the system disagree about what "needs you" means.
+<ul style="margin:6px 0 0">
+<li>The <b>push notification</b> (<code>_shared/pipeline.ts</code>) says needs-you = <code>no_link</code> or <code>preview_unavailable</code>. It deliberately says nothing about <code>pending</code> or <code>failed</code>, because both are still being retried.</li>
+<li>The <b>library filter</b> (<code>needs_attention</code> in <code>library_query_v3</code>) says <code>pending</code>, <code>failed</code>, <code>no_link</code>, or classification failed — and <i>excludes</i> <code>preview_unavailable</code>.</li>
+</ul>
+They overlap on exactly one case. If a "Needs you" section lands on home reading the existing flag, it will count saves that are 20 seconds old and still working, and miss the ones the person was actually notified about. This has to be settled before that section is built, and settling it changes Library's filter too — so it is a decision, not an implementation detail.</div>
+
+<!-- ============================================================ -->
+<h2 id="candidates">3. Candidate sections — twelve of them</h2>
+
+<p>The four promises each one is measured against: <b>sorted for you</b> · <b>find it again</b> · <b>ready when you need it</b> · <b>calm</b> (no ads, no tracking, no feed). The last one is not decoration — it is written into the store submission and the privacy policy, and it is the thing that rules candidates out.</p>
+
+<div class="tbl"><table>
+<tr><th>#</th><th>On screen</th><th>Data</th><th>Size</th><th>Serves</th></tr>
+<tr><td>A</td><td class="f">Start here</td><td><span class="b done">HAVE IT</span></td><td>M</td><td>New user, saving more</td></tr>
+<tr><td>B</td><td class="f">Needs you</td><td><span class="b done">HAVE IT</span></td><td>S</td><td>Sorted for you</td></tr>
+<tr><td>C</td><td class="f">This week</td><td><span class="b done">HAVE IT</span></td><td>S</td><td>Find it again</td></tr>
+<tr><td>D</td><td class="f">A year ago today</td><td><span class="b done">HAVE IT</span></td><td>S–M</td><td>Ready when you need it</td></tr>
+<tr><td>E</td><td class="f">Saved, never opened</td><td><span class="b verify">NEW CAPTURE</span></td><td>M</td><td>Ready when you need it</td></tr>
+<tr><td>F</td><td class="f">To watch · To try · To go</td><td><span class="b gap">SERVER WORK</span></td><td>M</td><td>Sorted for you</td></tr>
+<tr><td>G</td><td class="f">Where your saves come from</td><td><span class="b done">HAVE IT</span></td><td>S</td><td>Find it again</td></tr>
+<tr><td>H</td><td class="f">People you keep saving</td><td><span class="b gap">SERVER WORK</span></td><td>M</td><td>Find it again</td></tr>
+<tr><td>I</td><td class="f">Ask your saves</td><td><span class="b done">HAVE IT</span> / <span class="b verify">NEW</span></td><td>S or L</td><td>Find it again</td></tr>
+<tr><td>J</td><td class="f">You saved this twice</td><td><span class="b done">HAVE IT</span></td><td>S</td><td>Sorted for you</td></tr>
+<tr><td>K</td><td class="f">Bring in your older saves</td><td><span class="b done">HAVE IT</span></td><td>S</td><td>Saving more</td></tr>
+<tr><td>L</td><td class="f">Save without opening Allkept</td><td><span class="b done">HAVE IT</span></td><td>M</td><td>Saving more</td></tr>
+</table></div>
+
+<!-- --- A --- -->
+<div class="sec">
+<h3>A. "Start here" <span class="sz">M</span></h3>
+<p>The five doors as one small board, each row showing whether it is open: <i>Share from any app</i> · <i>Paste a link</i> · <i>Instagram — send to @allkeptapp</i> · <i>A YouTube playlist</i> · <i>Bring in your Instagram history</i>. It replaces today's single "Start with Instagram" card, which appears for anyone without a linked Instagram account no matter how many saves they already have, and never mentions the share sheet — the door that was just built, works everywhere, and needs no approval from anyone.</p>
+<p><b>Why home, not Library.</b> A person with nothing saved has an empty Library by definition. Home is the only screen they will look at, and the first week is the week the habit either forms or does not — which is precisely the number Phase 0 says decides whether to keep going.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Calm, and sorted for you — it says "here is how this works" once, rather than nagging about one platform forever.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> <code>connected_sources</code> (both kinds — today only the Instagram row is read), <code>imports</code>, and a count of <code>items</code> by <code>captured_via</code>. All owner-readable; no migration.</dd>
+<dt>Size</dt><dd><b>M</b> — the reads are trivial; the work is the copy, the artwork and deciding when each row is "done".</dd>
+<dt>Risks</dt><dd>A checklist that never completes becomes a permanent nag. It must retire itself — a rule like "gone once three doors have produced a save, or once there are 15 saves". Also: the Instagram door only works for Meta-approved testers until App Review lands, so that row must not read as broken.</dd>
+</dl>
+</div>
+
+<!-- --- B --- -->
+<div class="sec">
+<h3>B. "Needs you" <span class="sz">S</span></h3>
+<p>One quiet row, above everything, when and only when there is something a person can actually do: <i>"3 saves need a link"</i>, <i>"1 could not be read"</i>. Tapping goes to Library with the matching filter already applied. Invisible at zero.</p>
+<p><b>Why home, not Library.</b> It is a filter in Library today, behind a sheet. Nobody opens a filter sheet to discover there is work waiting. And this is the section that makes the app trustworthy: it is the app admitting what it could not do, instead of the person finding a blank card three weeks later.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Sorted for you. It closes the loop that the notification opened.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> facet <code>flag=needs_attention</code> gives the count; the <code>flags</code> argument to <code>library_query_v3</code> gives the list. <b>But</b> the definition has to be fixed first — see the warning in §2. As written, the flag counts saves that are still being worked on.</dd>
+<dt>Size</dt><dd><b>S</b> — a row, a count, and a route. Half a day, plus the decision about the definition.</dd>
+<dt>Risks</dt><dd>Shouting about a save that arrived 20 seconds ago. Splitting "still sorting" from "actually stuck" is the whole job. Second risk: it duplicates the "Needs attention" tile the category grid already shows (see §4).</dd>
+</dl>
+</div>
+
+<!-- --- C --- -->
+<div class="sec">
+<h3>C. "This week" <span class="sz">S</span></h3>
+<p>The rail, but honest about what it is: everything from the last seven days, with the count in the header — "This week · 11 saves". Below seven days old it is what the rail already shows; above it, it is a real boundary rather than an arbitrary eight cards.</p>
+<p><b>Why home, not Library.</b> Recency is the one cut of the library that a grid sorted newest-first answers badly: you have to scroll and guess where the week ends. A header with a number answers "have I saved much lately" in one glance — and for someone building the habit, that number is the feedback.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Find it again.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> — <code>library_query_v3(since => now() - 7 days)</code>. Requires home to move off <code>library_query_v2</code>, which is a one-line change in <code>lib/home.ts</code>.</dd>
+<dt>Size</dt><dd><b>S</b> — a different query and a header.</dd>
+<dt>Risks</dt><dd>This <b>replaces</b> the Recent saves rail; it must not sit beside it. A quiet week shows an empty section, so it needs a fallback ("nothing this week — here's what you saved last") rather than a blank.</dd>
+</dl>
+</div>
+
+<!-- --- D --- -->
+<div class="sec">
+<h3>D. "A year ago today" <span class="sz">S–M</span></h3>
+<p>Two or three saves from the same few days in a previous year, changing once a day. Before the app is old enough to have a year, the same section reads "Three months ago" or "Your first saves". Never more than three cards, never scrollable, never refreshed by pulling.</p>
+<p><b>Why home, not Library.</b> This is the AI-recall promise from the welcome concepts, and it is the only one of the twelve that gives a reason to open the app when nothing has happened. It is also the safest version of resurfacing: bounded to three, driven by the calendar rather than by a ranking model, and impossible to scroll into a feed.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Ready when you need it — the promise the proposal warned about when it said that without resurfacing the app becomes another graveyard.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> — a date window through <code>library_query_v3</code>: <code>since</code> for the floor, the <code>before</code> cursor for the ceiling. <small>(Inferred from the SQL; no code does a windowed read today.)</small> <code>lib/activity.ts</code> already has the calendar-day arithmetic, including the midnight edge case.</dd>
+<dt>Size</dt><dd><b>S–M</b> — the query is small; the date arithmetic and the "not old enough yet" fallbacks are where the care goes.</dd>
+<dt>Risks</dt><dd>Empty for a new library, so the fallback ladder has to be designed, not bolted on. It can resurface something a person saved once and never wanted — which is an argument for letting a card be dismissed. And it must never grow a "show more".</dd>
+</dl>
+</div>
+
+<!-- --- E --- -->
+<div class="sec">
+<h3>E. "Saved, never opened" <span class="sz">M</span></h3>
+<p>Three cards, saved more than a couple of weeks ago, never once opened. The single line the whole product was pitched on: <i>"12 things you saved and never opened."</i></p>
+<p><b>Why home, not Library.</b> Library can only show what you ask it for. This is the thing you would never think to ask for, which is exactly why it is the section that changes behaviour.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Ready when you need it.</dd>
+<dt>Data</dt><dd><span class="b verify">NEW CAPTURE</span> — <b>not buildable today.</b> <code>items.opened_at</code> is in the schema and nothing ever writes to it; the <code>item_open</code> event carries no item id. The fix is small — write <code>opened_at</code> when a save's detail screen opens, which the owner is already allowed to do to their own row — but it is a new fact recorded about a person, so it belongs in the privacy-policy pass rather than slipped in quietly.</dd>
+<dt>Size</dt><dd><b>M</b> — the capture change, plus a decision about history: every save that exists today has never been "opened" as far as the column knows, so the first render would offer the entire library. It needs a floor (only saves made after the change counts) or an honest label.</dd>
+<dt>Risks</dt><dd>The easiest of the twelve to turn into a feed — the discipline is three cards, full stop. Tone: "you never opened this" can read as a scolding; "still here when you want it" is the same fact without the finger-wagging. And it is the one candidate that needs the policy checked first.</dd>
+</dl>
+</div>
+
+<!-- --- F --- -->
+<div class="sec">
+<h3>F. "To watch · To try · To go" <span class="sz">M</span></h3>
+<p>Three or four chips grouping the library by what you would <i>do</i> with a save rather than what it is about: things to watch, things to try (a recipe, a workout), places to go, things to buy, things to read. Tapping opens Library narrowed to that group.</p>
+<p><b>Why home, not Library.</b> "What should I cook tonight" and "what should I watch" are the two real questions, and neither maps onto a category. It is the clearest step beyond the grid without inventing anything.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Sorted for you — the strongest version of it, because nobody tagged anything.</dd>
+<dt>Data</dt><dd><span class="b gap">SERVER WORK</span> — <code>item_ai.actionability</code> is already written for every save by the classifier, with the values <code>watch, try, buy, go, read, reference, none</code>. It is simply absent from <code>library_query_v3</code>'s returned columns and from the facets, so the app has never seen it. Adding a column and a facet row exposes it. <b>No new AI calls, no new collection, no extra cost.</b></dd>
+<dt>Size</dt><dd><b>M</b> — a migration (one new function version of the query and the facets), the app-side chips, and the Library filter group to match.</dd>
+<dt>Risks</dt><dd>Unlike category, actionability has <b>no correction path</b> — category corrections are stored in <code>user_category</code> beside the model's answer, and there is no equivalent column for this. A save filed under "to buy" that you cannot move stays wrong forever. Second risk: home already has platforms and categories; a third way of slicing the same library may be one too many.</dd>
+</dl>
+</div>
+
+<!-- --- G --- -->
+<div class="sec">
+<h3>G. "Where your saves come from" <span class="sz">S</span></h3>
+<p>The platform pills home already has, with the counts switched back on — and, for a library big enough to be interesting, one line underneath: "43 from Instagram · 12 from YouTube · 4 from TikTok".</p>
+<p><b>Why home, not Library.</b> It is already on home; it just refuses to say anything. Platform is the first cut anyone makes, and the counts are the difference between decoration and information. This is a change to an existing section rather than a new one.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Find it again.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> — facet <code>platform</code> already returns the tallies; home passes <code>showCounts={false}</code>.</dd>
+<dt>Size</dt><dd><b>S</b> — a prop and some copy.</dd>
+<dt>Risks</dt><dd>Almost none. The counts were hidden on purpose ("home is a glance rather than a workbench"), so this is a reversal of a deliberate choice rather than a fix — Pranav's call.</dd>
+</dl>
+</div>
+
+<!-- --- H --- -->
+<div class="sec">
+<h3>H. "People you keep saving" <span class="sz">M</span></h3>
+<p>The three handles you have saved from most, each opening Library narrowed to them. People remember "the guy who does the one-pan dinners" long before they remember which category he landed in.</p>
+<p><b>Why home, not Library.</b> There is no creator filter in the app's filter sheet at all today, so there is nowhere else for this to live. And it is a <i>recognition</i> control — you spot the name, you do not have to recall it.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Find it again.</dd>
+<dt>Data</dt><dd><span class="b gap">SERVER WORK</span> — <code>library_query_v3</code> already accepts an <code>authors</code> array, so filtering is free. There is no author facet, so the top-three counts need a counting query added. Counting client-side over one page of saves would be wrong, not approximate.</dd>
+<dt>Size</dt><dd><b>M</b> — a facet or a small dedicated RPC, plus the section.</dd>
+<dt>Risks</dt><dd><code>author_handle</code> is null for a lot of saves — a link with no readable page, an Instagram post with no permalink, an imported entry. So the list can be thin, or dominated by whichever platform reports handles best, which reads as a bug. It also shows nothing on the phone about who those people are beyond a handle: no avatars, because fetching one would be reaching out to the platform for data the save does not hold. <span class="b no">NOT POSSIBLE</span></dd>
+</dl>
+</div>
+
+<!-- --- I --- -->
+<div class="sec">
+<h3>I. "Ask your saves" <span class="sz">S or L</span></h3>
+<p>A single tappable line where the search icon's promise currently hides — <i>"What did I save about…"</i> — opening the existing search overlay with the keyboard already up, and three suggestions drawn from the person's own biggest categories.</p>
+<p><b>Why home, not Search.</b> Search is behind an icon. The third welcome concept sells "Ask your saves. Find anything." and then the home screen never repeats it. This is putting the promise where the person lands.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Find it again — and the AI-recall promise, at least halfway.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> for the prompt and the suggestions (facets + the existing overlay, which already does keyword + meaning search). <span class="b verify">NEW</span> if "ask" is to mean an actual <i>answer</i> — that is a new AI call per question, a new cost per user, and a new line in the privacy policy about what leaves the library.</dd>
+<dt>Size</dt><dd><b>S</b> for the prompt and suggestions. <b>L</b> for real answers.</dd>
+<dt>Risks</dt><dd>Saying "ask" and delivering a list of results is the kind of gap that reads as broken. Either the copy stays honest ("Search everything you kept") or the feature grows to match the word. Suggestions built from a person's own tags can also put something on the home screen they would rather not have visible over their shoulder.</dd>
+</dl>
+</div>
+
+<!-- --- J --- -->
+<div class="sec">
+<h3>J. "You saved this twice" <span class="sz">S</span></h3>
+<p>The handful of things a person sent to Allkept more than once. The strongest signal of actually caring that exists in the data, and it costs nothing to read.</p>
+<p><b>Why home, not Library.</b> It is a filter in Library ("Saved more than once"). As a section it is tiny and high-precision — but see the risk.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Sorted for you.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> — <code>items.save_count</code>, facet <code>flag=repeated</code>.</dd>
+<dt>Size</dt><dd><b>S</b>.</dd>
+<dt>Risks</dt><dd>For most people this is zero to three items, so it is a section that is empty most of the time — and an empty section is worse than no section. <b>Recommendation: do not build this as its own section.</b> Fold "saved twice" in as a small badge on the card wherever a save appears, or as a tiebreaker inside the Rediscover section.</dd>
+</dl>
+</div>
+
+<!-- --- K --- -->
+<div class="sec">
+<h3>K. "Bring in your older saves" <span class="sz">S</span></h3>
+<p>One card, shown once to someone who has never imported, offering the Instagram-history import — and later the TikTok export, per the TikTok plan's Phase 3.</p>
+<p><b>Why home, not Settings.</b> It lives in Settings today, three taps deep, under a heading nobody scrolls to. It is the single biggest one-time jump a library can make, and it is invisible.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Sorted for you — a library with 400 things in it sorts into something worth looking at; a library with 6 does not.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> — the <code>/import</code> route exists and works; <code>imports</code> is owner-readable, so "has this person ever imported" is one query.</dd>
+<dt>Size</dt><dd><b>S</b> — a card and a read.</dd>
+<dt>Risks</dt><dd>The 7 September decision was that <i>nobody will do the export ritual</i> — request the file, wait a day, download it, upload it. The importer got built anyway. Putting it on home is a bet against that judgement, so it needs a rule for retiring itself (dismissed twice, gone) and it should probably be a row inside "Start here" rather than a card of its own.</dd>
+</dl>
+</div>
+
+<!-- --- L --- -->
+<div class="sec">
+<h3>L. "Save without opening Allkept" <span class="sz">M</span></h3>
+<p>One compact, dismissible card teaching the two-tap share gesture, shown to someone whose saves have all arrived by one route — and aimed at the platform they save from most. It disappears the moment a save arrives through the share sheet.</p>
+<p><b>Why home.</b> The whole product depends on that gesture becoming automatic in week one, and the number that decides Phase 1 is exactly this: of the people who saved three things in week one, how many save anything in days 8–14. The share extension was built and proven on the simulator on 12 September (preview builds and your device checklist still to come, per queue item 18) — and nothing anywhere in the app tells anyone it exists.</p>
+<dl class="meta">
+<dt>Promise</dt><dd>Calm — one card, once, that answers a question rather than selling anything.</dd>
+<dt>Data</dt><dd><span class="b done">HAVE IT</span> — a count of <code>items</code> grouped by <code>captured_via</code> tells you which doors this person has ever used. <small>(Inferred: no code reads <code>captured_via</code> on the client today.)</small></dd>
+<dt>Size</dt><dd><b>M</b> — the read is trivial; the copy and the artwork are the work, and they have to be good or it reads as an ad.</dd>
+<dt>Risks</dt><dd>Teaching cards are the fastest route to a home screen that feels like an advert for itself. Hard rule: <b>at most one instructional card on the screen at any time</b>, and it must have a condition under which it is gone for good.</dd>
+</dl>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="recommend">4. Recommendation</h2>
+
+<h3>Build these three, in this order</h3>
+
+<p><b>1. "Needs you" (B)</b> — <span class="sz">S</span>, all the data exists. It goes first because it is the cheapest, and because it is the one that makes the app honest: the pipeline already notifies people that a save needs them, and then the app gives them nowhere to land. It also forces the definition question to be settled, which every later section benefits from. <i>Precondition:</i> decide what "needs you" means (see the warning in §2) — it must count only what a person can act on.</p>
+
+<p><b>2. "Start here" (A)</b> — <span class="sz">M</span>, all the data exists. It goes second because the worst moment in the product today is a brand-new home screen: an empty rail, no categories, and a single card that says "Start with Instagram" — a door that, until Meta's App Review lands, works only for accounts added as testers, while the share sheet that works for everyone is mentioned nowhere. Fold <b>K</b> (import) in as a row rather than building it separately, and let <b>L</b> (the share-sheet teaching card) be the one row that survives after the rest of the board has retired.</p>
+
+<p><b>3. "A year ago today" (D)</b> — <span class="sz">S–M</span>, all the data exists. It goes third because it is the promise the welcome screen makes and nothing in the app keeps, and because it gives a reason to open Allkept on a day when nothing has arrived. Three cards, changing once a day, no scroll. When <code>opened_at</code> starts being written, <b>E</b> ("saved, never opened") becomes a second source for the same section rather than a new one — same three slots, better choice of what fills them.</p>
+
+<p>Alongside those, two near-free changes: switch the platform counts back on (<b>G</b>, a prop), and move home from <code>library_query_v2</code> to <code>v3</code> so dates and creators are available at all.</p>
+
+<h3>What the home screen must not become</h3>
+<ul>
+<li><b>Not a feed.</b> Not of other people's content — there is no legitimate route to it and it is not what a personal library is — and not of your own either. The test is mechanical: <i>can you scroll it forever?</i> Every resurfacing section gets a fixed number of cards and no "show more". A feed is also the fastest way to turn a calm product into one that needs to be fed.</li>
+<li><b>Not an ad slot.</b> "No ads, nothing sold, no cross-app tracking" is written into the store submission and the privacy labels. That includes soft advertising — promoting a paid tier in a section, or dressing a suggestion up as content.</li>
+<li><b>Not a notification centre.</b> The bell already goes to a screen called Notifications. Adding a third surface showing the same arrivals would be the third copy of one query.</li>
+<li><b>Nothing that reaches out to a platform.</b> No trending, no view counts, no "is this still live", no creator avatars. Anything beyond what a save already holds crosses the platform-terms line in the legal plan §2.</li>
+</ul>
+
+<h3>What to remove or merge</h3>
+<div class="tbl"><table>
+<tr><th>Overlap</th><th>What to do</th></tr>
+<tr><td class="f">"Recent saves" rail ↔ the bell (Notifications)</td><td>They are literally the same query. Pick one meaning each: the <b>rail becomes "This week"</b> (C), and the <b>bell becomes arrivals and outcomes</b> — what landed, what got sorted, what failed — which is what a person expects from a bell. If the bell is not going to be that, it should not be a bell.</td></tr>
+<tr><td class="f">"Needs you" (B) ↔ the category grid</td><td>The grid already shows <i>Needs attention</i>, <i>Uncategorized</i> and <i>Sorting</i> as tiles, because the facet folds status into the category label. Once B exists, <b>exclude those three values from the grid</b>. They are not categories, they have no artwork, and saying it twice makes both places look wrong.</td></tr>
+<tr><td class="f">"This week" (C) ↔ "Recent saves"</td><td>Replace, do not add. Two lists of the newest saves on one screen is the problem, not the fix.</td></tr>
+<tr><td class="f">"Saved twice" (J) ↔ the Library flag</td><td>Do not build it as a section. Make it a badge on the card, and a tiebreaker inside the Rediscover section.</td></tr>
+<tr><td class="f">Anything that is really a filter (platform, shape, creator, actionability)</td><td>On home these are <b>shortcuts into Library</b>, never a second place to filter. Home already keeps its own platform selection that deliberately does not travel to Library; adding more state that behaves that way would make the two tabs argue.</td></tr>
+<tr><td class="f">"Start with Instagram" card</td><td>Absorbed into "Start here" (A). It should stop appearing for people who already save happily through another door.</td></tr>
+</table></div>
+
+<div class="plain"><b>In plain English — what changes for the person.</b> Open Allkept and the first thing you see is whether anything is waiting for you, and if nothing is, you do not see that row at all. Under it is what you saved this week, with a number. Near the bottom, above your category cards, are two or three things from a year ago that you had forgotten you kept. If you are brand new, the top of the screen is a short list of the ways to get things in — including sharing from any app, which the screen currently never mentions — and it goes away once you are using them. Nothing scrolls forever, nothing is advertised, and nothing on the screen came from anyone but you.</div>
+
+<!-- ============================================================ -->
+<h2 id="mockups">5. Mockups</h2>
+
+<p>Drawn in HTML and CSS with the house tokens — brand purple <code>#6D46F2</code>, ink <code>#241F44</code> / <code>#14161C</code>, card base <code>#F1ECFA</code>, light ground <code>#F6F7FA</code>, dark ground <code>#0E0F14</code>. No images, so the artwork on the category tiles is a stand-in shape; the existing tiles are unchanged. <span class="tag">NEW</span> marks the three recommended sections.</p>
+
+<div class="phones">
+
+<!-- LIGHT, returning user -->
+<div class="ph">
+<p class="cap">Light · someone with a library</p>
+<div class="frame"><div class="scr lt">
+  <div class="hdr"><span class="mark">allkept</span><span><span class="ico">⌕</span><span class="ico">◔</span></span></div>
+
+  <div class="st" style="margin-top:0"><span>Needs you <span class="tag">NEW</span></span></div>
+  <div class="box attn">
+    <span class="dot"></span>
+    <span><span class="t">3 saves need a link</span><br><span class="s">Instagram did not send one</span></span>
+    <span class="chev">›</span>
+  </div>
+
+  <div class="pills" style="margin-top:11px">
+    <span class="pill on"><span class="sq"></span>Instagram</span>
+    <span class="pill"><span class="sq"></span>YouTube</span>
+    <span class="pill"><span class="sq"></span>TikTok</span>
+    <span class="pill"><span class="sq"></span>Reddit</span>
+  </div>
+
+  <div class="st"><span>This week · 11 saves <span class="tag">NEW</span></span><span class="more">See all</span></div>
+  <div class="rail">
+    <div class="rc"><div class="im"></div><div class="tt">One-pan lemon pasta</div><div class="mt">Food · 2d</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">Kyoto in November</div><div class="mt">Travel · 3d</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">Desk setup 2026</div><div class="mt">Tech · 4d</div></div>
+  </div>
+
+  <div class="paste"><span>Paste a link to save</span><span class="go"></span></div>
+
+  <div class="st"><span>A year ago today <span class="tag">NEW</span></span></div>
+  <div class="rail">
+    <div class="rc"><div class="im"></div><div class="tt">Goa, the quiet end</div><div class="mt">Travel · 1y</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">15-minute mobility</div><div class="mt">Wellness · 1y</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">Sourdough, no starter</div><div class="mt">Food · 1y</div></div>
+  </div>
+
+  <div class="st"><span>Categories</span><span class="more">See all</span></div>
+  <div class="grid">
+    <div class="tile"><div class="n">Food</div><div class="c">34 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Travel</div><div class="c">21 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Wellness</div><div class="c">18 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Learn</div><div class="c">12 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Tech</div><div class="c">9 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Style</div><div class="c">7 saves</div><div class="glyph"></div></div>
+  </div>
+
+  <div class="scrfade"></div>
+  <div class="tabbar"><span class="sel">Home</span><span>Library</span><span>Settings</span></div>
+</div></div>
+</div>
+
+<!-- DARK, returning user -->
+<div class="ph">
+<p class="cap">Dark · the same screen</p>
+<div class="frame" style="background:#0E0F14;border-color:#2B2F3F"><div class="scr dk">
+  <div class="hdr"><span class="mark">allkept</span><span><span class="ico">⌕</span><span class="ico">◔</span></span></div>
+
+  <div class="st" style="margin-top:0"><span>Needs you <span class="tag" style="background:#7C5CF6">NEW</span></span></div>
+  <div class="box attn">
+    <span class="dot" style="background:#F5883C"></span>
+    <span><span class="t">3 saves need a link</span><br><span class="s">Instagram did not send one</span></span>
+    <span class="chev">›</span>
+  </div>
+
+  <div class="pills" style="margin-top:11px">
+    <span class="pill on"><span class="sq" style="background:#6E63B8"></span>Instagram</span>
+    <span class="pill"><span class="sq" style="background:#3A3F55"></span>YouTube</span>
+    <span class="pill"><span class="sq" style="background:#3A3F55"></span>TikTok</span>
+    <span class="pill"><span class="sq" style="background:#3A3F55"></span>Reddit</span>
+  </div>
+
+  <div class="st"><span>This week · 11 saves <span class="tag" style="background:#7C5CF6">NEW</span></span><span class="more">See all</span></div>
+  <div class="rail">
+    <div class="rc"><div class="im"></div><div class="tt">One-pan lemon pasta</div><div class="mt">Food · 2d</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">Kyoto in November</div><div class="mt">Travel · 3d</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">Desk setup 2026</div><div class="mt">Tech · 4d</div></div>
+  </div>
+
+  <div class="paste"><span>Paste a link to save</span><span class="go"></span></div>
+
+  <div class="st"><span>A year ago today <span class="tag" style="background:#7C5CF6">NEW</span></span></div>
+  <div class="rail">
+    <div class="rc"><div class="im"></div><div class="tt">Goa, the quiet end</div><div class="mt">Travel · 1y</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">15-minute mobility</div><div class="mt">Wellness · 1y</div></div>
+    <div class="rc"><div class="im"></div><div class="tt">Sourdough, no starter</div><div class="mt">Food · 1y</div></div>
+  </div>
+
+  <div class="st"><span>Categories</span><span class="more">See all</span></div>
+  <div class="grid">
+    <div class="tile"><div class="n">Food</div><div class="c">34 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Travel</div><div class="c">21 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Wellness</div><div class="c">18 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Learn</div><div class="c">12 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Tech</div><div class="c">9 saves</div><div class="glyph"></div></div>
+    <div class="tile"><div class="n">Style</div><div class="c">7 saves</div><div class="glyph"></div></div>
+  </div>
+
+  <div class="scrfade"></div>
+  <div class="tabbar"><span class="sel">Home</span><span>Library</span><span>Settings</span></div>
+</div></div>
+</div>
+
+<!-- LIGHT, first run -->
+<div class="ph">
+<p class="cap">Light · first run, nothing saved yet</p>
+<div class="frame"><div class="scr lt">
+  <div class="hdr"><span class="mark">allkept</span><span><span class="ico">⌕</span><span class="ico">◔</span></span></div>
+
+  <div class="st"><span>Start here <span class="tag">NEW</span></span></div>
+  <div class="box" style="padding:4px 11px">
+    <div class="door"><span class="k"></span><span>Share from any app</span><span class="todo">Show me</span></div>
+    <div class="door"><span class="k"></span><span>Paste a link</span><span class="todo">Try it</span></div>
+    <div class="door"><span class="k"></span><span>Send a reel to @allkeptapp</span><span class="todo">Connect</span></div>
+    <div class="door"><span class="k"></span><span>Watch a YouTube playlist</span><span class="todo">Add</span></div>
+    <div class="door"><span class="k"></span><span>Bring in your Instagram history</span><span class="todo">Import</span></div>
+  </div>
+
+  <div class="paste"><span>Paste a link to save</span><span class="go"></span></div>
+
+  <div class="st"><span>This week</span></div>
+  <div class="box" style="color:#5F6675;font-size:10.5px">
+    Nothing yet. The first save you make lands here within seconds, sorted.
+  </div>
+
+  <p style="font-size:10px;color:#5F6675;margin-top:14px;line-height:1.4">
+    No platform pills, no categories and no rediscover section: every one of them is driven by saves,
+    and there are none. The screen shows the doors and nothing else until the first save arrives.
+  </p>
+
+  <div class="scrfade"></div>
+  <div class="tabbar"><span class="sel">Home</span><span>Library</span><span>Settings</span></div>
+</div></div>
+</div>
+
+</div>
+
+<p><small>The category grid is unchanged in all three. "Needs you" sits above everything because it is the only section that asks for something; "A year ago today" sits below the paste field and above the grid, so the screen reads newest → action → oldest, and the grid stays the bottom of the page where it already is.</small></p>
+
+<!-- ============================================================ -->
+<h2 id="decisions">6. Decisions for Pranav</h2>
+<ol>
+<li><b>The three, and their order.</b> Needs you → Start here → A year ago today, as recommended? Or reorder — Start here first if the priority is new users at launch rather than the people already testing.</li>
+<li><b>What "needs you" means.</b> The push notification and the Library filter currently disagree (see §2). Settling it changes Library's filter as well as home, so it crosses into a feature you did not ask to touch. Approve the scope before it is built.</li>
+<li><b>Do we start recording which save you opened?</b> <code>items.opened_at</code> exists and is never written. Writing it unlocks "saved, never opened" and better rediscovery. It is a new fact about a person's behaviour, so it needs to go through the privacy-policy pass (queue item 15) rather than land quietly. Yes or no.</li>
+<li><b>The bell.</b> It currently opens a screen called Notifications that shows the same twelve saves as the rail. Does it become a real arrivals-and-outcomes log, or does it go away?</li>
+<li><b>Do the three status pseudo-categories leave the grid?</b> <i>Needs attention</i>, <i>Uncategorized</i> and <i>Sorting</i> are tiles today, with the generic artwork. If "Needs you" ships, they are saying the same thing twice.</li>
+<li><b>Is "This week" allowed to replace the Recent saves rail?</b> Replacing is the recommendation; adding it would put two lists of new saves on one screen.</li>
+<li><b>Platform counts back on home?</b> They were hidden deliberately ("home is a glance rather than a workbench"). Reversing that is your call, not a bug fix.</li>
+<li><b>May the home screen ever spend an AI call?</b> Everything recommended is free — dates, counts and statuses. "Ask your saves" with real answers, or a smarter pick of what to resurface, would cost money per person per day and adds a line to the privacy policy. Free-only, or is there a budget?</li>
+<li><b>Actionability (To watch / To try / To go) — build it, and if so does it get a correction path first?</b> Category corrections are stored beside the model's answer; actionability has no such column, so a wrong label would be permanent.</li>
+<li><b>How hard may home push the doors?</b> Proposed rule: at most one instructional card on screen at a time, and each one has a stated condition under which it disappears for good. Agree the rule, or set a different one.</li>
+<li><b>The import card.</b> On 7 September you concluded nobody would do the data-export ritual. Putting "Bring in your older saves" on home bets against that. In, or leave it in Settings?</li>
+<li><b>Does any of this wait for the store submission and Meta's App Review?</b> None of the three needs a native build — they are all JavaScript, so they ship over the air. But they change what a reviewer sees in a screenshot.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="sources">7. Sources, and what I could not verify</h2>
+
+<h4>Code read</h4>
+<ul class="src">
+<li><code>apps/mobile/app/(tabs)/index.tsx</code>, <code>library.tsx</code>, <code>settings.tsx</code>, <code>_layout.tsx</code>; <code>app/activity.tsx</code>, <code>app/search.tsx</code>, <code>app/import.tsx</code>, <code>app/welcome.tsx</code></li>
+<li><code>apps/mobile/components/</code>: <code>SearchOverlay.tsx</code>, <code>SaveLinkField.tsx</code>, <code>CategoryTile.tsx</code>, <code>PlatformPills.tsx</code>, <code>FilterBar.tsx</code>, <code>ScreenHeader.tsx</code>, <code>ItemDetail.tsx</code></li>
+<li><code>apps/mobile/lib/</code>: <code>home.ts</code>, <code>library.ts</code>, <code>filter-groups.ts</code>, <code>filter-options.ts</code>, <code>sorting.ts</code>, <code>categories.ts</code>, <code>category-names.ts</code>, <code>activity.ts</code>, <code>metrics.ts</code>, <code>sources.ts</code>, <code>preferences.ts</code>, <code>push.ts</code>, <code>import.ts</code>, <code>item.ts</code>, <code>theme.ts</code></li>
+<li><code>packages/contracts/src/index.ts</code>; <code>supabase/functions/_shared/classify.ts</code>, <code>_shared/pipeline.ts</code></li>
+<li><code>supabase/migrations/</code>: <code>20260909000100_core_v2.sql</code>, <code>…000900_app_events.sql</code>, <code>…001000_app_events_hardening.sql</code>, <code>…001100_imports.sql</code>, <code>…001300_imports_item_link.sql</code>, <code>…001400_import_events.sql</code>, <code>20260909113440_classification_retries.sql</code>, <code>20260909114451_library_search.sql</code>, <code>20260910020000_library_query_v3.sql</code>, <code>20260910030000_search_library_v2.sql</code>, <code>20260910040000_push_notifications.sql</code>, <code>20260910050000_push_trigger_and_feedback.sql</code>, <code>20260910055000_category_taxonomy.sql</code>, <code>20260910060000_ai_sorting_covers_embeddings.sql</code></li>
+<li><code>git log --oneline -120</code> and <code>git show --stat</code> for <code>7dc3210</code> (filters), <code>0689fa1</code> (one header), <code>828814a</code> (category tiles in the dark), <code>d8b6391</code> (the home screen as first built), plus the messages of <code>cc76f3a</code> (search over the screen) and <code>add5124</code> (the notification trigger).</li>
+</ul>
+
+<h4>Documents read</h4>
+<ul class="src">
+<li><code>docs/design/interface-direction.md</code> · <code>docs/design/category-prototypes/category-system.md</code> · <code>docs/design/platform-logo-artwork.md</code> · <code>docs/design/welcome-concepts/references.html</code> (the three concepts: saved fan, smart sorting, AI recall)</li>
+<li><code>docs/engineering/sorting-and-search.md</code> · <code>docs/engineering/instagram-links.md</code></li>
+<li><code>docs/store-submission.html</code> §2 (what is collected, no ads, no tracking) · <code>docs/us-launch-legal-plan.html</code> §2 (platform terms) · <code>docs/tiktok-plan.html</code> (house style, and TikTok Phase 3)</li>
+<li><code>~/projects/Random Tasks/docs/saves-app-proposal.html</code> (the use case, the resurfacing idea, the "graveyard" warning) · <code>saves-app-phase0-spec.html</code> (the decision rule and the metrics: saves per day, opens per save, habit retention in days 8–14)</li>
+<li><code>forlater.md</code> — read for anything that collides with this plan. Nothing in the queue is about the home screen; item 15 (privacy-policy content) is the one this plan touches, via decision 3.</li>
+</ul>
+
+<h4>Things I inferred rather than verified</h4>
+<ul>
+<li><b>A date window through <code>library_query_v3</code>.</b> Read from the SQL: <code>since</code> sets the floor and the <code>before</code> cursor sets the ceiling, so passing a timestamp with a maximal UUID should return everything before that instant. No code does a windowed read today, so this has not been run.</li>
+<li><b>Reading <code>imports</code> and counting <code>items</code> by <code>captured_via</code> from the phone.</b> The row-security policies allow the owner to select their own rows in both tables, so both should work with no migration. No code does either today.</li>
+<li><b>That exposing <code>actionability</code> is only a query change.</b> The column is written by the classifier and stored; adding it to the returned columns and the facets is a new version of two SQL functions. I have not written or run that migration.</li>
+<li><b>Section sizes (S/M/L).</b> These are judgements from the shape of the code, not estimates anyone has checked against a calendar.</li>
+<li><b>"This will be empty for most people."</b> I have no usage data at all — no idea how many saves a typical tester has, how many are unsorted, or how often anyone saves the same thing twice. Every judgement of the form "this section will usually be empty" comes from the structure of the data, not from measurement. If there are real numbers from the testers, they should be checked before section J or H is ruled in or out.</li>
+<li><b>The classifier's vendor in production.</b> <code>docs/store-submission.html</code> §2 already flags this as unverified (the policy names OpenAI; the code picks by whichever key is set). It does not affect anything recommended here, all of which is free of AI calls, but it would matter for decision 8.</li>
+</ul>
+
+<p><small>Allkept · home screen plan · 12 September 2026 · companion to <code>docs/tiktok-plan.html</code>, <code>docs/store-submission.html</code> and <code>docs/us-launch-legal-plan.html</code>. Nothing in the app was changed to write this.</small></p>
+
+</div>
+</body>
+</html>

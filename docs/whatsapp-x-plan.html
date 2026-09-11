@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allkept — WhatsApp and X Plan</title>
+<style>
+  :root{--bg:#F6F7FA;--card:#FFFFFF;--line:#DFE3EC;--ink:#14161C;--muted:#5F6675;--accent:#6D46F2;
+        --done:#0E7A4F;--done-bg:#E4F5EC;--gap:#8A5200;--gap-bg:#FFF3DF;--no:#A32020;--no-bg:#FBE7E7;--verify:#1F4E9C;--verify-bg:#E6EEFB;
+        --eng:#0B5C63;--eng-bg:#E6F4F5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+  h2{font-size:21px;margin:44px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:24px 0 6px}
+  h4{font-size:14px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0;padding-left:22px}
+  li{margin:3px 0}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0 8px}
+  .toc ol{margin:6px 0 0;padding-left:20px;columns:2;column-gap:28px}
+  .toc li{margin:2px 0;break-inside:avoid}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0 16px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+  th{background:#F1F2F7;font-weight:600;font-size:13px;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  td.f{font-weight:600;white-space:nowrap}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#EEF0F6;padding:1px 5px;border-radius:4px}
+  pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;background:var(--card);color:var(--ink);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;white-space:pre-wrap}
+  .b{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:5px;vertical-align:1px;white-space:nowrap}
+  .done{color:var(--done);background:var(--done-bg)} .gap{color:var(--gap);background:var(--gap-bg)} .no{color:var(--no);background:var(--no-bg)} .verify{color:var(--verify);background:var(--verify-bg)}
+  .unv{color:var(--no);background:var(--no-bg);font-weight:700;font-size:11px;padding:1px 6px;border-radius:5px;letter-spacing:.03em;white-space:nowrap}
+  .note{background:var(--card);border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .warn{background:var(--no-bg);border-left:4px solid var(--no);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .eng{background:var(--eng-bg);border-left:4px solid var(--eng);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0}
+  .eng b{color:var(--eng)}
+  q{font-style:italic}
+  small{color:var(--muted)}
+  .src{font-size:13px}
+  .src td{vertical-align:top}
+  @media print{body{background:#fff;font-size:12px}.wrap{max-width:none;padding:0}.tbl,.toc,.note,.eng,.warn{border-color:#999;break-inside:avoid}h2{break-after:avoid}a{color:#000}.toc ol{columns:1}pre{white-space:pre-wrap}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>WhatsApp and X on Allkept — plan</h1>
+<p class="sub">Written 12 September 2026 from the code as it stands and from official documentation read on that date. Purpose: decide whether either platform is worth a door, what it would cost, and what could get the app cut off. Companion to <code>docs/tiktok-plan.html</code> and <code>docs/us-launch-legal-plan.html</code>.</p>
+
+<p><span class="b done">DONE</span> already in the code &nbsp; <span class="b gap">GAP</span> to build &nbsp; <span class="b verify">VERIFY</span> believed to work, not yet proven end to end &nbsp; <span class="b no">NOT POSSIBLE</span> no route exists today &nbsp; <span class="unv">[UNVERIFIED]</span> I could not confirm this on an official page</p>
+
+<div class="note"><b>How to read the prices.</b> Every number in §6 was read from an official page on <b>12 September 2026</b> and is quoted word for word with its URL. Anything I could not load or could not find on an official page is marked <span class="unv">[UNVERIFIED]</span> and left as a gap rather than filled with a plausible figure. Two official hosts refused this machine outright: <code>developer.x.com</code> answered <code>HTTP 402</code> to every request and <code>help.x.com</code> answered <code>HTTP 403</code>. <code>docs.x.com</code> and Meta's developer site answered normally. This machine is in India; the same pages may behave differently from a US network.</div>
+
+<div class="toc"><b>Contents</b>
+<ol>
+<li><a href="#summary">The short version</a></li>
+<li><a href="#state">What exists today, file by file</a></li>
+<li><a href="#wa-doors">WhatsApp — every door</a></li>
+<li><a href="#x-doors">X — every door</a></li>
+<li><a href="#xcard">What an X card actually looks like today</a></li>
+<li><a href="#costs">Costs</a></li>
+<li><a href="#legal">Platform terms — the exposure on each door</a></li>
+<li><a href="#plan">The plan, in phases</a></li>
+<li><a href="#sources">Sources, and what I could not verify</a></li>
+<li><a href="#decisions">Decisions for Pranav</a></li>
+</ol></div>
+
+<!-- ============================================================ -->
+<h2 id="summary">1. The short version</h2>
+
+<p><b>WhatsApp is the cheaper and better of the two, and it is the one nobody expects.</b> A "forward it to Allkept's WhatsApp number" door is the same shape as the Instagram DM door that already exists — a Meta webhook, a link code, a reply in the thread — and Meta charges <b>nothing at all</b> for it in Allkept's flow: the person messages first, which opens a 24-hour window, and inside that window both their message and Allkept's reply are free. Unlike Instagram, it needs <b>no App Review</b>: Meta's own documentation says a direct developer accessing only their own business data does not need App Review or Advanced access. What it needs is a spare phone number that has never been on WhatsApp, a few days of work, and a database migration. The one real hazard is a clause in the WhatsApp Business Solution Terms about AI assistants — §7 explains it, and it deserves a careful read before a line of code is written.</p>
+
+<p><b>X is the opposite: mostly built, cheap to polish, and expensive the moment you want anything real from it.</b> Links are already detected, canonicalised, deduplicated and enriched; the logo is in the app. But X's oEmbed returns <b>no picture and no title</b> — I confirmed this against the live endpoint — so every X save today is a text-only card, and each one quietly pays for a second page fetch that returns nothing. Fixing the card is a day. Playing an X video in place is two or three days. And the thing people actually want — "bring in my X bookmarks" — now costs real money: X killed the free tier in February 2026, moved to pay-per-use, and prices a Post read at <b>$0.005</b>. A person with 500 bookmarks costs <b>$2.50</b> to import, once. A hundred such people cost $250. Worse, <b>likes are no longer purchasable at all</b> on any self-serve plan.</p>
+
+<p><b>What is not possible:</b> reading a person's WhatsApp chats, starred messages or saved messages — WhatsApp is end-to-end encrypted and publishes no such API, and the Cloud API only ever sees messages sent to the business's own number. And on X, reading a person's likes: "Following, Likes, and Quote-Posts via the API have been removed from all self-serve tiers" (X changelog, 16 April 2026).</p>
+
+<div class="eng"><b>In plain English.</b> WhatsApp is a free door that costs you a phone number and about a week. X is already half-built but currently makes ugly, pictureless cards — a day fixes that. Importing someone's X bookmarks is possible but you pay X about two and a half dollars per person who does it, and importing their likes is simply not for sale any more.</div>
+
+<!-- ============================================================ -->
+<h2 id="state">2. What exists today, file by file</h2>
+
+<p><small>Read from the working tree on 12 September 2026. <code>packages/normalize/src/index.ts</code> was being edited by another session while I read it (a <code>recognised</code> flag is being added); nothing below depends on that change, but line numbers may have moved.</small></p>
+
+<h3>X</h3>
+<div class="tbl"><table>
+<tr><th>Piece</th><th>State</th><th>Where</th><th>Notes</th></tr>
+<tr><td class="f">Platform detection</td><td><span class="b done">DONE</span></td><td><code>packages/normalize/src/index.ts</code> <code>detectPlatform</code></td><td><code>x.com</code> and subdomains, <code>twitter.com</code> and subdomains, and <code>t.co</code> all → <code>x</code>.</td></tr>
+<tr><td class="f">Tracking keys stripped</td><td><span class="b done">DONE</span></td><td>same, <code>SHARE_KEYS.x</code></td><td><code>s</code>, <code>t</code>, <code>ref_src</code>. Also <code>twclid</code> globally.</td></tr>
+<tr><td class="f">Canonical URL and kind</td><td><span class="b done">DONE</span></td><td>same, <code>x()</code></td><td><code>/&lt;handle&gt;/status/&lt;id&gt;</code> → <code>post</code>, canonical <code>https://x.com/&lt;handle&gt;/status/&lt;id&gt;</code>, external id = the status id. <code>/i/web/status/&lt;id&gt;</code> handled. A lone segment that is not one of X's own routes → <code>profile</code>. Tests in <code>packages/normalize/test/normalize.test.ts</code>.</td></tr>
+<tr><td class="f">Short links</td><td><span class="b done">DONE</span> <span class="b verify">VERIFY</span></td><td>same</td><td><code>t.co</code> → <code>needsExpansion</code>; the pipeline follows redirects (<code>fetchFollowing</code>). Believed to work; not proven with a real <code>t.co</code> share.</td></tr>
+<tr><td class="f">oEmbed enrichment</td><td><span class="b done">DONE</span> <span class="b gap">GAP</span></td><td><code>supabase/functions/_shared/enrich.ts</code>, <code>oembedUrl</code></td><td>Calls <code>https://publish.twitter.com/oembed?url=…&amp;omit_script=true</code>. <b>That host now answers <code>301 Moved Permanently</code> to <code>publish.x.com/oembed</code></b> (checked live, 12 Sep 2026). It still works because <code>fetchFollowing</code> follows redirects — at the price of an extra round trip on every X save. One-line fix.</td></tr>
+<tr><td class="f">Title and picture from oEmbed</td><td><span class="b no">NOT POSSIBLE</span></td><td>same</td><td>X's oEmbed returns <b>no <code>title</code> and no <code>thumbnail_url</code></b>. Only <code>author_name</code>, <code>author_url</code>, <code>html</code>, <code>width</code>, <code>height</code>, <code>type</code>, <code>cache_age</code>, <code>provider_name</code>, <code>provider_url</code>, <code>version</code>. Verified against the live endpoint. See §5.</td></tr>
+<tr><td class="f">Tweet text into the card</td><td><span class="b done">DONE</span> <span class="b gap">GAP</span></td><td>same, <code>platform === "x" &amp;&amp; s("html")</code></td><td>The blockquote is stripped to plain text and stored as the item's text. Two defects, both confirmed by running the real function over a real response: the separator <code>&amp;mdash;</code> is stored <b>literally</b> (<code>decodeEntities</code> knows only <code>amp lt gt quot apos nbsp</code>), and it is glued to the caption with no space.</td></tr>
+<tr><td class="f">Open Graph fallback</td><td><span class="b gap">GAP</span></td><td>same, <code>askThePage</code></td><td>Because there is never a thumbnail, <code>askThePage</code> is <b>always true</b> for X, so every X save fetches the <code>x.com</code> permalink as well. Verified live: <code>x.com</code> serves a 37 KB JavaScript shell with <b>no</b> <code>og:</code> or <code>twitter:</code> tags and no <code>&lt;title&gt;</code> to a non-browser client. The second fetch can never learn anything. Pure waste.</td></tr>
+<tr><td class="f">Deleted or missing post</td><td><span class="b done">DONE</span></td><td>same</td><td>The oEmbed endpoint answers <code>404</code>; <code>classifyHttp</code> reads that as "unavailable", the page fallback finds nothing, and the item lands as <code>preview_unavailable</code>. Correct, and verified live.</td></tr>
+<tr><td class="f">Saved X profile</td><td><span class="b verify">VERIFY</span></td><td>same</td><td>oEmbed answers <code>200</code> with <code>title: ""</code>, no <code>author_name</code>, and an HTML anchor reading "Posts by &lt;handle&gt;". So a saved profile becomes a card whose only text is "Posts by Interior". Thin but not wrong.</td></tr>
+<tr><td class="f">Logo and name</td><td><span class="b done">DONE</span></td><td><code>packages/platform-assets/assets/x-light.png</code>, <code>x-dark.png</code>, <code>catalog.ts</code>, <code>apps/mobile/components/PlatformLogo.tsx</code>, <code>apps/mobile/lib/platforms.ts</code></td><td><code>BRAND_LABELS.x = "X"</code>; the alias <code>twitter → x</code> is in place; light and dark artwork both exist and <code>PlatformLogo</code> picks by appearance.</td></tr>
+<tr><td class="f">Welcome-screen copy</td><td><span class="b gap">GAP</span></td><td><code>apps/mobile/app/welcome.tsx:50</code></td><td>"Instagram, YouTube, TikTok and the web." X is not named anywhere a new person would see it.</td></tr>
+<tr><td class="f">Share from the X app</td><td><span class="b verify">VERIFY</span></td><td><code>apps/mobile/targets/share</code> (iOS), <code>apps/mobile/modules/share-save/android</code></td><td>iOS accepts one web URL or plain text; Android accepts <code>ACTION_SEND</code> <code>text/plain</code>. X's share sheet hands over an <code>x.com</code> URL, so the generic path should carry it. Never exercised with X specifically.</td></tr>
+<tr><td class="f">Play inside Allkept</td><td><span class="b gap">GAP</span></td><td><code>apps/mobile/lib/embed.ts</code></td><td>Only Instagram and YouTube. An X card opens the original instead of playing in place.</td></tr>
+<tr><td class="f">Test coverage</td><td><span class="b gap">GAP</span></td><td><code>supabase/functions/tests/enrich.test.ts:64</code></td><td>The one X test mocks <code>publish.twitter.com/oembed</code> with a hand-written response containing <code>author_name</code> and <code>html</code>. It passes, and it is why nobody noticed the missing picture: the mock is kinder than the real endpoint.</td></tr>
+</table></div>
+
+<h3>WhatsApp</h3>
+<div class="tbl"><table>
+<tr><th>Piece</th><th>State</th><th>Where</th><th>Notes</th></tr>
+<tr><td class="f">Link detection</td><td><span class="b no">NOT POSSIBLE</span> — and correctly so</td><td><code>packages/normalize/src/index.ts</code></td><td><code>whatsapp</code> is not one of the <code>PLATFORMS</code>. A <code>wa.me</code> or <code>chat.whatsapp.com</code> address is filed as <code>web</code>. That is right: WhatsApp hosts no public posts to save. WhatsApp matters as a <b>door</b>, not as a platform a link comes from.</td></tr>
+<tr><td class="f">Logo and name</td><td><span class="b done">DONE</span></td><td><code>packages/platform-assets/assets/whatsapp.png</code>, <code>catalog.ts:10</code>, <code>PlatformLogo.tsx</code>, <code>apps/mobile/lib/platforms.ts</code></td><td><code>BRAND_LABELS.whatsapp = "WhatsApp"</code> and the icon is wired, exactly as <code>slack</code> and <code>google</code> are — brands that exist as sources, not as link platforms. Nothing to build.</td></tr>
+<tr><td class="f">Share sheet → Allkept</td><td><span class="b verify">VERIFY</span></td><td>same two share targets as above</td><td>A link shared out of WhatsApp arrives as <code>text/plain</code>, which both targets accept. What I could not verify without a phone: whether iOS offers "Share" on a plain text message at all (its long-press menu leans on Forward and Copy), and whether Android's per-message share passes the bare URL or the whole quoted line. Android's share sheet accepts <code>text/plain</code> either way, and <code>saveLink()</code> pulls the first URL out of surrounding text, so the quoted-line case should still work.</td></tr>
+<tr><td class="f">A WhatsApp number door</td><td><span class="b gap">GAP</span></td><td>would be <code>supabase/functions/whatsapp-webhook</code></td><td>Nothing exists. The Instagram webhook is the template — see §3(b).</td></tr>
+<tr><td class="f">Database shape</td><td><span class="b gap">GAP</span></td><td><code>supabase/migrations/20260909000100_core_v2.sql</code>, <code>20260908000100_message_events.sql</code>, <code>20260909001100_imports.sql</code></td><td>Four check constraints would have to widen: <code>connected_sources.kind in ('instagram_dm','youtube_playlist')</code>; <code>items.captured_via</code> and <code>captures.source_kind</code>, both <code>in ('instagram_dm','youtube_playlist','share','import')</code>; and <code>message_events.source_kind in ('instagram')</code>. One migration, additive, no data rewrite.</td></tr>
+<tr><td class="f">Chat-export import</td><td><span class="b gap">GAP</span></td><td><code>supabase/functions/import-saves</code>, <code>packages/normalize/src/saved-export.ts</code></td><td>The importer reads JSON only, and only files whose name matches <code>/saved/i</code> inside a zip. A WhatsApp export is a <code>.txt</code> inside a zip — a different reader, though the same upload path, the same size limits and the same batching.</td></tr>
+</table></div>
+
+<div class="eng"><b>In plain English.</b> X is already wired in everywhere except the two places that matter to a person: the card has no picture, and the video does not play. WhatsApp is the reverse — the logo and the name are sitting there ready, but there is no door at all yet. Neither is a big build; they are different kinds of small.</div>
+
+<!-- ============================================================ -->
+<h2 id="wa-doors">3. WhatsApp — every door</h2>
+
+<h3>(a) Share sheet → Allkept &nbsp;<span class="b verify">VERIFY</span></h3>
+<p>Already built, in the sense that Allkept accepts a shared link from any app. Nothing WhatsApp-specific exists and nothing needs to. The honest state is "believed to work, never tried". Two things to check on a real phone:</p>
+<ul>
+<li><b>iOS</b>: long-pressing a <i>text</i> message in WhatsApp offers Forward, Copy, Star, Delete — I could not confirm from documentation that it offers the system share sheet. Media messages do have a share button. If text messages do not, the practical iOS path is: tap the link (it opens Safari or the destination app) and share from there, or copy the link and paste it into Allkept.</li>
+<li><b>Android</b>: long-press a message → overflow → Share hands <code>ACTION_SEND</code> <code>text/plain</code>, which <code>ShareActivity</code> is registered for. The shared text may be the whole quoted message rather than the bare URL; <code>saveLink()</code> already extracts the first URL from surrounding text, so this should be fine.</li>
+</ul>
+
+<h3>(b) "Send it to Allkept's WhatsApp number" &nbsp;<span class="b gap">GAP</span> — possible, free, and no App Review</h3>
+
+<p>This is the door worth having. The shape is identical to the Instagram DM door already in the repo, and the pipeline underneath is entirely reusable.</p>
+
+<pre>  person                WhatsApp            Meta Cloud API        Allkept
+    |                      |                      |                  |
+    | forwards a link ---->|                      |                  |
+    |                      |--- webhook POST ---->|                  |
+    |                      |                      |-- messages[] --->| verify signature
+    |                      |                      |                  | dedupe on message id
+    |                      |                      |                  | find user by phone number
+    |                      |                      |                  | capture -> normalize -> enrich -> classify
+    |                      |                      |<-- send text ----| "Saved. Filed under Food."
+    |<--- reply in thread -|<---------------------|                  |
+                                    (free: inside the 24-hour window)</pre>
+
+<h4>What it requires</h4>
+<div class="tbl"><table>
+<tr><th>Requirement</th><th>Detail (quoted from Meta's documentation)</th></tr>
+<tr><td class="f">Meta app</td><td>A Meta app created with the "Connect with customers through WhatsApp" use case, plus a Meta Business Portfolio. Allkept already has a Meta app and a business portfolio for Instagram messaging — whether to reuse it or create a second one is a decision (§10).</td></tr>
+<tr><td class="f">App Review</td><td><b>Not needed.</b> <q>If you are a direct developer and only access your own business data, you do not need to undergo App Review or obtain Advanced access for any permissions.</q> Allkept would own the WhatsApp Business Account and the number, so it is a direct developer. This is the single biggest difference from the Instagram door, which is currently waiting on a ~20-day review clock (<code>forlater.md</code> item 8).</td></tr>
+<tr><td class="f">Permissions</td><td><code>whatsapp_business_messaging</code> — <q>needed to send any type of message to WhatsApp users, and to receive incoming message and message status webhooks</q>. <code>whatsapp_business_management</code> — <q>needed to access metadata on your WhatsApp Business account, template management, getting business phone numbers…</q></td></tr>
+<tr><td class="f">Phone number</td><td>A number Allkept controls that <b>has never been used on WhatsApp</b>: <q>Numbers already in use with WhatsApp cannot be registered unless they are deleted first.</q> It must <q>be able to receive voice calls or SMS</q> for the one-time verification code. Landlines and VoIP are permitted but not recommended for SMS one-time codes. <q>New business portfolios are initially capped at two registered business phone numbers</q>, rising to 20 on business verification or a 2,000 messaging limit.</td></tr>
+<tr><td class="f">Business verification</td><td>Not required to register a number or to receive messages. It raises the messaging limit and the phone-number cap — neither of which binds Allkept's flow (see below).</td></tr>
+<tr><td class="f">Webhook</td><td><q>The contents of any message sent from a WhatsApp user to your business phone number is communicated via webhook.</q> The payload is <code>object: "whatsapp_business_account"</code> → <code>entry[].changes[].value.messages[]</code>, each with <code>from</code> (the sender's phone number), <code>id</code>, <code>timestamp</code>, <code>type</code>, and for a text message <code>text.body</code>. The <code>id</code> is the natural idempotency key, exactly as the Instagram message id is today.</td></tr>
+<tr><td class="f">Throughput</td><td><q>Business phone numbers can send up to 80 messages per second by default</q>, and <q>1 message every 6 seconds to the same WhatsApp user</q>. Far above anything Allkept would do.</td></tr>
+</table></div>
+
+<h4>The 24-hour window, and why it makes this free</h4>
+<p>A message from a person to the business <q>opens a 24 hour customer service window</q>. Inside it, the business may send ordinary (non-template) messages, and <q>All non-template messages are free</q>. Allkept's whole interaction lives inside that window: the person sends a link, Allkept replies within seconds. Meta's own words on the two halves:</p>
+<ul>
+<li><q>Messages sent from a WhatsApp user to a business are not charged.</q></li>
+<li><q>Effective November 1, 2024 – Service conversations are now free for all businesses.</q></li>
+<li>And from the business-facing pricing page: <q>We do not charge for service messages</q>.</li>
+</ul>
+<p>Per-message charging (<q>Effective July 1, 2025, Meta charges on a per-message basis</q>) applies to <b>template</b> messages — marketing, utility, authentication — sent <i>outside</i> an open window. Allkept would send none in the normal flow. The messaging limits Meta publishes (250 unique users, rising to 2,000 and beyond) are explicitly <q>the maximum number of unique WhatsApp user phone numbers your business can deliver messages to, <b>outside of a customer service window</b>, within a moving 24-hour period</q> — so they do not bind a reply-only bot either.</p>
+
+<h4>What would have to be built</h4>
+<ol>
+<li><code>supabase/functions/whatsapp-webhook</code>: the <code>GET</code> verification handshake, <code>X-Hub-Signature-256</code> validation against the app secret (the Instagram webhook already does exactly this), the <code>messages[]</code> loop, dedupe on message id.</li>
+<li>Pairing a WhatsApp number to an Allkept account. The Instagram door's link-code mechanism (<code>link_codes</code>, <code>consumeLinkCode</code>) transfers directly: the app shows a code, the person sends it to the number, the webhook claims it.</li>
+<li>One migration widening the four check constraints listed in §2.</li>
+<li>Reply text and the reply-window guard — the <code>replies</code> table and the <code>not_after</code> column already model "do not send outside the window"; only the window length changes (24 hours rather than Instagram's).</li>
+<li>A settings screen entry and copy, mirroring "Connect Instagram".</li>
+</ol>
+
+<h3>(c) WhatsApp chat export as an import source &nbsp;<span class="b gap">GAP</span> — possible, with a privacy question attached</h3>
+<p>WhatsApp's "Export chat" produces, per chat, a zip containing a plain-text transcript (<code>_chat.txt</code> on iOS; <code>WhatsApp Chat with &lt;name&gt;.txt</code> on Android) with one line per message — date, time, sender, text — and a placeholder where media was, if "Without Media" is chosen. A link in that file is simply a URL sitting in the message body, which <code>extractFirstUrl</code> already knows how to find.</p>
+<div class="warn"><b>What I could not verify.</b> The official WhatsApp Help Center article on exporting chats renders its body in JavaScript; neither the documentation fetcher nor a plain request could read a single word of it (the page returned 1.2 MB of script and no prose). The commonly repeated limits — about <b>10,000</b> messages with media and <b>40,000</b> without — come only from third-party blogs. <span class="unv">[UNVERIFIED]</span> Treat them as a hint, not a spec, and confirm on a real phone before designing around them.</div>
+<p>Two things make this different from the Instagram import, and both are decisions rather than engineering:</p>
+<ul>
+<li><b>It is per-chat, not per-account.</b> There is no "export everything". A person would have to export each conversation they care about. That is a real friction, and it caps the feature's usefulness to "that one group chat where everyone posts restaurants".</li>
+<li><b>It contains other people's messages.</b> An Instagram saved-posts export is entirely the person's own activity. A WhatsApp transcript is a conversation — names, timestamps, and the full text of what other people wrote. Even if Allkept only keeps the URLs, the file it reads holds far more. That needs a deliberate answer in the privacy policy and in the import screen's copy, and it is the kind of thing an App Store reviewer will notice.</li>
+</ul>
+
+<h3>(d) What is not possible on WhatsApp</h3>
+<div class="tbl"><table>
+<tr><th>Door</th><th>Possible?</th><th>Why</th></tr>
+<tr><td class="f">Read a person's starred / saved messages</td><td><span class="b no">NOT POSSIBLE</span></td><td>WhatsApp publishes no API for a person's own messages, starred or otherwise. Personal chats are end-to-end encrypted and the star lives on the device.</td></tr>
+<tr><td class="f">"Connect WhatsApp" and read history</td><td><span class="b no">NOT POSSIBLE</span></td><td>The Cloud API is a business-messaging product. A business sees only messages sent <i>to its own number</i>, from the moment the webhook is live. There is no backfill and no access to the person's other conversations.</td></tr>
+<tr><td class="f">Read links from a group Allkept is not in</td><td><span class="b no">NOT POSSIBLE</span></td><td>Same reason. (Adding a business number to a group is not a supported Cloud API pattern either.)</td></tr>
+<tr><td class="f">A WhatsApp "platform" for saved links</td><td><span class="b no">NOT POSSIBLE</span></td><td>WhatsApp hosts nothing publicly. A <code>wa.me</code> link is a deep link, not a post. Filing it as <code>web</code> is correct.</td></tr>
+</table></div>
+
+<div class="eng"><b>In plain English.</b> You can give Allkept its own WhatsApp number that people forward links to, it costs nothing per message, and unlike Instagram you do not have to wait three weeks for Meta to approve it. What you cannot do is reach into someone's WhatsApp and pull out the links they already have — the only ones you ever see are the ones they deliberately send you. The chat-export route is the exception, and it drags other people's private messages along with it, so it is a decision about principles as much as about code.</div>
+
+<!-- ============================================================ -->
+<h2 id="x-doors">4. X — every door</h2>
+
+<h3>(a) Share sheet and paste &nbsp;<span class="b done">DONE</span> <span class="b verify">VERIFY</span></h3>
+<p>Both already work through the generic path. Pasting an <code>x.com</code> or <code>twitter.com</code> link into <code>SaveLinkField</code> produces a correct canonical URL and external id — there are unit tests for exactly these shapes. Sharing from the X app has never been tried. The only X-specific wrinkle is <code>t.co</code>, which is flagged for expansion and resolved by the redirect-following fetcher.</p>
+
+<h3>(b) oEmbed via publish.x.com &nbsp;<span class="b done">DONE</span> — free, public, no token</h3>
+<p>Checked live on 12 September 2026, from this machine, using Allkept's own <code>AllkeptBot</code> user agent:</p>
+<ul>
+<li><code>https://publish.twitter.com/oembed</code> → <b><code>301 Moved Permanently</code></b> → <code>https://publish.x.com/oembed</code> → <code>200</code>. Allkept follows it, so nothing is broken; the address in <code>enrich.ts</code> is simply a year out of date.</li>
+<li>X's own documentation for the endpoint states plainly: <b>"Requires authentication? No"</b> and <b>"Rate limited: No"</b>.</li>
+<li>The JSON carries: <code>url</code>, <code>author_name</code>, <code>author_url</code>, <code>html</code>, <code>width</code>, <code>height</code> (null for a post), <code>type</code>, <code>cache_age</code> (<code>3153600000</code> — a hundred years), <code>provider_name</code>, <code>provider_url</code>, <code>version</code>. <b>No <code>title</code>. No <code>thumbnail_url</code>.</b></li>
+<li>It accepts the canonical <code>x.com/&lt;handle&gt;/status/&lt;id&gt;</code> form Allkept stores, and the legacy <code>twitter.com</code> form.</li>
+<li>A profile URL returns a timeline snippet with an empty title and no author.</li>
+<li>A non-existent status returns <code>404</code> with an HTML error body.</li>
+</ul>
+<p>Server-side fetches will run from Singapore (ap-southeast-1) once the region fix lands. I have no reason to expect a different answer from there — the endpoint is a public CDN-served JSON API — but it is worth one check after the region change, because the one thing I <i>did</i> see this machine refused on was X's <i>other</i> hosts (<code>developer.x.com</code> answering <code>402</code>, <code>help.x.com</code> answering <code>403</code>).</p>
+
+<h3>(c) The X API for bookmarks and likes &nbsp;<span class="b gap">GAP</span> / <span class="b no">NOT POSSIBLE</span></h3>
+
+<h4>The pricing model changed completely in 2026</h4>
+<p>X's own changelog and pricing pages, read 12 September 2026:</p>
+<ul>
+<li><b>6 February 2026</b> — X launched pay-per-use pricing. Today's introduction page says: <q>The X API uses pay-per-usage pricing. No subscriptions—pay only for what you use.</q> and <q>Purchase credits upfront. Deducted as you use the API.</q> The changelog entry notes <q>Public Utility Apps continue to receive free scaled access</q> — a category Allkept would not qualify for.</li>
+<li><b>16 April 2026</b> — <q>Effective April 20, 2026, we introduced new "Owned Reads" pricing at $0.001 per resource</q>, and, critically: <q>Following, Likes, and Quote-Posts via the API have been removed from all self-serve tiers.</q></li>
+<li>The changelog also says <q>Basic and Pro plans remain available, and existing subscribers can opt in to Pay-Per-Use.</q> I could not load the page that lists their prices — <code>developer.x.com</code> answered <code>402</code> to every request from this machine. <span class="unv">[UNVERIFIED]</span></li>
+</ul>
+
+<h4>Bookmarks — buyable</h4>
+<p><code>GET /2/users/{id}/bookmarks</code> exists and is documented. Authentication is <q>OAuth 2.0 user context</q> with the scopes <code>tweet.read, bookmark.read, users.read</code>. <code>max_results</code> is <q>minimum: 1, maximum: 100</q>, with <code>pagination_token</code> / <code>next_token</code> paging. The documentation page I read did not state a rate limit or a ceiling on how far back bookmarks go; secondary sources say 800 most-recent, which I could not confirm officially. <span class="unv">[UNVERIFIED]</span></p>
+<p><b>The price trap.</b> There are two read prices, and Allkept pays the higher one. "Owned Reads" is $0.001 per resource, but the definition is narrow: <q>Owned Reads are requests made by your own developer app for your own data</q>, and <q>These endpoints qualify for Owned Read pricing when <code>{id}</code> matches the authenticated user and that user is the owner of the developer app.</q> Allkept's users are not the owner of Allkept's developer app. So a bookmark read is billed at the ordinary <b>Posts: Read, $0.005 per resource</b>.</p>
+
+<h4>Likes — not buyable at any self-serve price</h4>
+<p><code>GET /2/users/{id}/liked_tweets</code> is still documented (OAuth 2.0 with <code>like.read, users.read, tweet.read</code>, <code>max_results</code> 5–100), but the 16 April 2026 changelog removes Likes <q>from all self-serve tiers</q>. Reading a person's likes would therefore require Enterprise. <span class="b no">NOT POSSIBLE</span> for a launch-stage app.</p>
+
+<h4>What Allkept would have to build for bookmarks</h4>
+<ol>
+<li>An X developer account and app, with credits bought up front. X's console lets you <q>Set a maximum amount you can spend per billing cycle</q>; when credits run out, <q>API requests will be blocked until you add credits to cover the negative balance.</q></li>
+<li>OAuth 2.0 Authorization Code with PKCE inside the app — a real "Sign in with X" flow, a third identity provider alongside Google and Apple, token storage, and refresh (<code>offline.access</code>).</li>
+<li>A sync job that pages 100 at a time and normalises each status URL through the existing X handler.</li>
+<li>A deletion obligation: X's policy requires stored Content to be kept in sync and removed within 24 hours of deletion or a request (§7). That is a background job Allkept does not have today for any platform.</li>
+</ol>
+
+<h3>(d) X's data export &nbsp;<span class="unv">[UNVERIFIED]</span></h3>
+<p>X offers "Download an archive of your data" from account settings, delivered as a zip of JSON and HTML. <b>I could not verify its contents on an official page: <code>help.x.com</code> answered <code>HTTP 403</code> to every request from this machine.</b> What third-party sources consistently say, and what the X developer forum has had open threads about for years, is that the archive <b>contains likes but not bookmarks</b>, and that X says preparation can take 24 hours or longer. If that holds, the export is an interesting inversion: it gives you exactly the thing the API no longer sells (likes) and not the thing the API does sell (bookmarks). That would make the export the <i>only</i> route to a person's X likes — and a free one.</p>
+<p>This is the single highest-value fact in this document that I could not confirm. It is also easy to confirm: request the archive on Pranav's own X account and look inside. Until then it stays <span class="unv">[UNVERIFIED]</span> and Phase 3 below is written as a spike, not a build.</p>
+
+<h3>(e) Playing an X video inside Allkept &nbsp;<span class="b gap">GAP</span></h3>
+<p>X has no documented iframe URL of the Instagram <code>/embed/</code> kind. The official route is two parts: <q>An HTML snippet hosted in your web page, and the X for Websites JavaScript to transform that code into a fully-rendered Post.</q> The script is now served from <code>https://platform.x.com/widgets.js</code> (confirmed by reading the <code>html</code> field of a live oEmbed response with <code>omit_script</code> off).</p>
+<p>Two ways to do it in the existing <code>EmbedPlayer</code> WebView:</p>
+<ul>
+<li><b>Supported route.</b> Load a tiny local HTML document containing the oEmbed <code>html</code> blockquote plus the <code>widgets.js</code> script tag. This is exactly what X asks third parties to do, it satisfies the Display Requirements automatically (§7), and it happens to fit the existing player: <code>EmbedPlayer</code>'s height-measuring script already looks for <code>blockquote</code> among its selectors. It does mean <code>embed.ts</code> would return <i>markup</i> for X rather than a <i>URL</i>, which is a small shape change to an interface that currently returns <code>string | null</code>.</li>
+<li><b>Undocumented shortcut.</b> <code>https://platform.twitter.com/embed/Tweet.html?id=&lt;status id&gt;</code> returns <code>200 text/html</code> (verified live; <code>platform.x.com/embed/Tweet.html</code> redirects to it). This is the iframe widgets.js itself creates, and it would drop straight into <code>embedUrl()</code> with no interface change. <b>It is not in X's documentation</b>, so it can change or disappear without notice, and building on it is the sort of thing §7's "public, documented endpoints only" rule exists to prevent. I would not use it.</li>
+</ul>
+<p>Note the ceiling: many X posts are text with no media at all, so "play in place" for X really means "show the post as X renders it" — quote tweets, images, threads and video included. That is arguably more valuable than video playback alone, because it is also the fix for the missing picture (§5).</p>
+
+<h3>(f) What is forbidden or not possible on X</h3>
+<div class="tbl"><table>
+<tr><th>Door</th><th>Possible?</th><th>Why</th></tr>
+<tr><td class="f">Read a person's likes</td><td><span class="b no">NOT POSSIBLE</span></td><td><q>Following, Likes, and Quote-Posts via the API have been removed from all self-serve tiers.</q> (X changelog, 16 Apr 2026). Enterprise only.</td></tr>
+<tr><td class="f">A free tier to build on</td><td><span class="b no">NOT POSSIBLE</span></td><td>Pay-per-use replaced it in February 2026. Free scaled access survives only for <q>Public Utility Apps</q>.</td></tr>
+<tr><td class="f">An "@allkeptapp on X" bot like the Instagram one</td><td><span class="b no">NOT POSSIBLE</span> in practice</td><td>Technically the API has DM endpoints, and the pricing page lists <code>dm.received</code> webhook events at <b>$0.010 each</b> and <code>DM Interaction: Create</code> at <b>$0.015 per request</b>. So every single save through a DM bot would cost 2.5 cents before Allkept's own costs. Against a WhatsApp door that costs nothing, this is not a product decision, it is arithmetic.</td></tr>
+<tr><td class="f">Scraping x.com for previews</td><td><span class="b no">NOT POSSIBLE</span> — and forbidden</td><td>Verified: <code>x.com</code> serves no preview tags to a non-browser client anyway. And the legal plan's first rule is public, documented endpoints only.</td></tr>
+<tr><td class="f">Storing a tweet's text indefinitely</td><td><span class="b verify">VERIFY</span></td><td>Allowed, but conditionally: X's policy requires stored Content to be kept in sync and deleted within 24 hours of deletion or a request. Allkept does neither today. See §7.</td></tr>
+</table></div>
+
+<div class="eng"><b>In plain English.</b> Saving an X link works today and always will — it is free and needs no account. Making the card look good needs a day of work. Playing the post inside Allkept needs a few days and should be done X's official way. Importing someone's bookmarks means signing users in with X and paying X half a cent per bookmark. Importing their likes cannot be bought at all any more — the only possible route is their downloaded archive, and I could not confirm from X's own site whether likes are in it.</div>
+
+<!-- ============================================================ -->
+<h2 id="xcard">5. What an X card actually looks like today</h2>
+
+<p>This is worth spelling out because it is the difference between "X is supported" and "X feels supported", and because the unit test hides it.</p>
+
+<pre>What publish.x.com returns for a real post
+------------------------------------------
+  author_name   "U.S. Department of the Interior"
+  author_url    "https://x.com/Interior"
+  html          "&lt;blockquote…&gt;…&lt;/blockquote&gt;"
+  width         550        height  null
+  cache_age     3153600000
+  (no title)   (no thumbnail_url)
+
+What enrich.ts does with it
+---------------------------
+  title                 -> never set          (there is no title field)
+  author_name           -> set                OK
+  author_handle         -> set from author_url
+  thumbnail_url_remote  -> never set          (there is no thumbnail field)
+  text                  -> stripTags(html)
+  askThePage            -> TRUE, always       (because the thumbnail is missing)
+    -> fetches x.com/&lt;handle&gt;/status/&lt;id&gt;
+    -> 37 KB of JavaScript, no og: tags, no &lt;title&gt;
+    -> learns nothing, logs "link-preview tags absent"
+  status                -> "ready"
+
+The text that lands in the database
+-----------------------------------
+  "Happy 50th anniversary to the Wilderness Act! Here's a great wilderness photo
+   from @YosemiteNPS. #Wilderness50 pic.twitter.com/HMhbyTg18X&amp;mdash; U.S.
+   Department of the Interior (@Interior) September 3, 2014"
+                                             ^^^^^^^^^ literal, and no space</pre>
+
+<p>Three separate defects, all fixable in the same change:</p>
+<ol>
+<li><b>No picture, ever.</b> Not a bug in Allkept — X's oEmbed simply does not carry one. The fix is either to render the official embed (§4e) or to accept a text card and design it to look deliberate rather than broken.</li>
+<li><b>A wasted fetch on every X save.</b> <code>askThePage</code> can never succeed for X, so the second request is pure latency and pure cost. Guarding it (<code>platform !== "x"</code>, or better: only ask the page when the platform's own page is known to serve preview tags) removes it.</li>
+<li><b>A literal <code>&amp;mdash;</code> glued to the caption.</b> <code>decodeEntities</code> knows six named entities. X uses a seventh. And the author byline is arguably not "text the person saved" at all — Allkept already stores <code>author_name</code> separately, so stripping the trailing byline would leave the tweet, which is what belongs in the card.</li>
+</ol>
+<div class="note"><b>Why the tests did not catch this.</b> <code>supabase/functions/tests/enrich.test.ts:64</code> mocks <code>publish.twitter.com/oembed</code> with <code>{ author_name: "Naval", html: "&lt;blockquote&gt;&lt;p&gt;Seek wealth, not money&lt;/p&gt;&lt;/blockquote&gt;" }</code> — a response with no <code>&amp;mdash;</code>, no byline, and no expectation about a thumbnail. The mock is kinder than reality. A fixture captured from the live endpoint would have failed.</div>
+
+<div class="eng"><b>In plain English.</b> Right now, every X link you save turns into a grey card with the tweet's words, the author's name, and a stray "&amp;mdash;" in the middle of the sentence. It also quietly makes a second trip to x.com that always comes back empty. About a day of work makes X cards look like they belong.</div>
+
+<!-- ============================================================ -->
+<h2 id="costs">6. Costs</h2>
+<p><small>Every figure below was read from the linked official page on <b>12 September 2026</b> and is quoted verbatim. Nothing here is estimated.</small></p>
+
+<h3>X</h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Tier / name, verbatim</th><th>Price, verbatim</th><th>Source</th></tr>
+<tr><td class="f">oEmbed (what Allkept uses now)</td><td>"oEmbed API"</td><td>Free. <q>Requires authentication? No</q> · <q>Rate limited: No</q></td><td>docs.x.com/x-for-websites/oembed-api</td></tr>
+<tr><td class="f">Embedded Posts (widgets.js)</td><td>"Embedded Posts"</td><td>Free; no API key mentioned or required</td><td>docs.x.com/x-for-websites/embedded-posts/overview</td></tr>
+<tr><td class="f">API pricing model</td><td>"pay-per-usage"</td><td><q>No subscriptions—pay only for what you use.</q> Credits purchased up front in the Developer Console.</td><td>docs.x.com/x-api/getting-started/pricing</td></tr>
+<tr><td class="f">Reading a bookmarked Post</td><td>"Posts: Read"</td><td><b>$0.005 per resource</b></td><td>same</td></tr>
+<tr><td class="f">Reading your own data</td><td>"Owned Reads"</td><td><b>$0.001 per resource</b> — but only <q>when <code>{id}</code> matches the authenticated user and that user is the owner of the developer app</q>. <b>Does not apply to Allkept's users.</b></td><td>same, and docs.x.com/changelog (16 Apr 2026)</td></tr>
+<tr><td class="f">Reading a user object</td><td>"User: Read"</td><td>$0.010 per resource</td><td>same</td></tr>
+<tr><td class="f">Reading a Like</td><td>"Like: Read"</td><td>$0.001 per resource — <b>but see the row below</b></td><td>same</td></tr>
+<tr><td class="f">A user's liked Posts</td><td>—</td><td><b>Not available.</b> <q>Following, Likes, and Quote-Posts via the API have been removed from all self-serve tiers.</q></td><td>docs.x.com/changelog (16 Apr 2026)</td></tr>
+<tr><td class="f">Receiving a DM (bot door)</td><td>"dm.received"</td><td>$0.010 per event</td><td>docs.x.com/x-api/getting-started/pricing</td></tr>
+<tr><td class="f">Sending a DM (bot door)</td><td>"DM Interaction: Create"</td><td>$0.015 per request</td><td>same</td></tr>
+<tr><td class="f">Monthly ceiling</td><td>—</td><td><q>Pay-per-usage plans are capped at 3 million Post reads per monthly billing cycle.</q></td><td>same</td></tr>
+<tr><td class="f">Spending control</td><td>—</td><td><q>Set a maximum amount you can spend per billing cycle to control costs.</q> When credits run out, <q>API requests will be blocked until you add credits to cover the negative balance.</q></td><td>same</td></tr>
+<tr><td class="f">Above the cap</td><td>"Enterprise plan"</td><td><q>If you need higher volume, upgrade to an Enterprise plan.</q> <b>No price published on the page.</b> <span class="unv">[UNVERIFIED]</span> — widely reported as starting around $42,000/month; I found no official page confirming it.</td><td>same</td></tr>
+<tr><td class="f">Legacy subscriptions</td><td>"Basic", "Pro"</td><td><q>Basic and Pro plans remain available</q> (changelog, 16 Apr 2026). <b>Prices <span class="unv">[UNVERIFIED]</span></b> — the page that lists them is on <code>developer.x.com</code>, which answered <code>HTTP 402 Payment Required</code> to every request from this machine. Widely reported as $200/month and $5,000/month; I will not state that as fact.</td><td>docs.x.com/changelog</td></tr>
+<tr><td class="f">Free tier</td><td>"Public Utility Apps"</td><td>The pricing page mentions no free tier. The 6 Feb 2026 changelog says <q>Public Utility Apps continue to receive free scaled access</q> — a category a consumer product does not fall into.</td><td>docs.x.com/changelog</td></tr>
+<tr><td class="f">Developer account</td><td>—</td><td>No signup fee found on any page I could read. <span class="unv">[UNVERIFIED]</span></td><td>—</td></tr>
+</table></div>
+
+<h4>What a bookmarks import would actually cost</h4>
+<div class="tbl"><table>
+<tr><th>Scenario</th><th>Reads</th><th>Cost at $0.005/resource</th></tr>
+<tr><td class="f">One person, 100 bookmarks, first sync</td><td>100</td><td><b>$0.50</b></td></tr>
+<tr><td class="f">One person, 500 bookmarks, first sync</td><td>500</td><td><b>$2.50</b></td></tr>
+<tr><td class="f">One person, 2,000 bookmarks, first sync</td><td>2,000</td><td><b>$10.00</b></td></tr>
+<tr><td class="f">100 people averaging 500 bookmarks</td><td>50,000</td><td><b>$250.00</b></td></tr>
+<tr><td class="f">1,000 people averaging 500 bookmarks</td><td>500,000</td><td><b>$2,500.00</b></td></tr>
+<tr><td class="f">Re-checking one person for new bookmarks, daily</td><td>up to 100 per check</td><td>up to <b>$0.50</b> per person per day</td></tr>
+<tr><td class="f">Ceiling before Enterprise is forced</td><td>3,000,000 Post reads/cycle</td><td><b>$15,000</b>/month at the listed rate</td></tr>
+</table></div>
+<p><small>These are arithmetic on X's published per-resource price, not quotes. The per-resource price itself is quoted verbatim above. Whether a paginated bookmarks response bills one resource per Post returned or something else is the one thing I would confirm in the Developer Console before switching it on for real users — the pricing page says <q>Different endpoints have different costs, and current rates can be viewed in the Developer Console</q>. <span class="unv">[UNVERIFIED]</span></small></p>
+
+<div class="warn"><b>The shape of this cost is the problem, not the size.</b> $2.50 per importing user is survivable at a hundred users and uncomfortable at ten thousand. It is a <i>per-user variable cost on a free action</i>, incurred at the exact moment a new person is deciding whether to stay. In India, where the product is free and there are no ads, every rupee of it is unrecovered. Any bookmarks import needs a cap (a maximum number of bookmarks per user), a rate limit, and a hard spending ceiling in X's console — not as hardening afterwards, but as part of the first version.</div>
+
+<h3>WhatsApp</h3>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Category, verbatim</th><th>Price, verbatim</th><th>Source</th></tr>
+<tr><td class="f">A person sends Allkept a link</td><td>inbound</td><td><q>Messages sent from a WhatsApp user to a business are not charged.</q></td><td>developers.facebook.com/docs/whatsapp/pricing</td></tr>
+<tr><td class="f">Allkept replies "Saved"</td><td>"Service" / non-template</td><td><q>All non-template messages are free</q> inside an open customer service window. And: <q>We do not charge for service messages</q>.</td><td>same, and whatsappbusiness.com/products/platform-pricing</td></tr>
+<tr><td class="f">Service conversations generally</td><td>"Service"</td><td><q>Effective November 1, 2024 – Service conversations are now free for all businesses.</q></td><td>developers.facebook.com/docs/whatsapp/pricing</td></tr>
+<tr><td class="f">The window</td><td>"customer service window" (CSW)</td><td>A user message <q>opens a 24 hour customer service window</q>. Free inside it.</td><td>same</td></tr>
+<tr><td class="f">Free entry points (ads / FB buttons)</td><td>"FEP"</td><td><q>FEP windows remain open for 72 hours. While open, you can send any type of message to the user at no charge.</q> Not relevant to Allkept today.</td><td>same</td></tr>
+<tr><td class="f">Template message outside the window</td><td>"Marketing", "Utility", "Authentication"</td><td>Charged per message since <q>Effective July 1, 2025, Meta charges on a per-message basis</q>. Rates vary by country calling code and are published only as downloadable rate cards: <q>These rate cards reflect our current rates and volume tiers, effective July 1, 2026</q>. <b>Per-country figures <span class="unv">[UNVERIFIED]</span></b> — the CSV/PDF is behind an interactive selector I could not read. Allkept's flow needs none of these.</td><td>developers.facebook.com/docs/whatsapp/pricing/updates-to-pricing</td></tr>
+<tr><td class="f">Utility template answering a user</td><td>"Utility"</td><td>Free: <q>Utility templates delivered within an open customer service window are free</q>.</td><td>developers.facebook.com/docs/whatsapp/pricing</td></tr>
+<tr><td class="f">App Review</td><td>—</td><td>Not required: <q>If you are a direct developer and only access your own business data, you do not need to undergo App Review or obtain Advanced access for any permissions.</q></td><td>developers.facebook.com/documentation/business-messaging/whatsapp/permissions</td></tr>
+<tr><td class="f">Business verification</td><td>—</td><td>No fee stated on any page I read. It raises limits, it is not a paywall. <span class="unv">[UNVERIFIED]</span> as to fee.</td><td>—</td></tr>
+<tr><td class="f">Phone number</td><td>—</td><td>Allkept's own cost — a SIM or a number from a provider that can receive SMS or a voice call, never previously used on WhatsApp. Not a Meta charge.</td><td>developers.facebook.com/documentation/business-messaging/whatsapp/business-phone-numbers/phone-numbers</td></tr>
+<tr><td class="f">Chat-export import</td><td>—</td><td>Free. No API, no account, no Meta involvement — the person picks a file, exactly like the Instagram import.</td><td>—</td></tr>
+</table></div>
+
+<div class="eng"><b>In plain English.</b> WhatsApp costs you a phone number and nothing else. X costs nothing until you want people's bookmarks, at which point it costs you about $2.50 for a person with 500 of them — every time a new person signs up and taps import. That is a real bill arriving on your free tier.</div>
+
+<!-- ============================================================ -->
+<h2 id="legal">7. Platform terms — the exposure on each door</h2>
+<p>Same spirit as <code>docs/us-launch-legal-plan.html</code> §2: each of these is a contract the company can enforce without a court, by switching the app off.</p>
+
+<div class="tbl"><table>
+<tr><th>Door</th><th>What Allkept would do</th><th>The rule</th><th>Exposure</th></tr>
+<tr><td class="f">WhatsApp — number door</td><td>Receive links sent to Allkept's own business number; reply inside the 24-hour window</td><td>WhatsApp Business Solution Terms; WhatsApp Business Messaging Policy; the Business Platform policy-enforcement rules</td><td><b>Medium, and one clause deserves real attention.</b> See the warning below.</td></tr>
+<tr><td class="f">WhatsApp — share sheet</td><td>Nothing WhatsApp-specific; the OS hands over text</td><td>None. This is the operating system's own feature.</td><td><b>None.</b></td></tr>
+<tr><td class="f">WhatsApp — chat export</td><td>Read a file the person exported and picked</td><td>No Meta API is involved. The exposure is privacy law and store review, not platform terms.</td><td><b>Low on platform terms, real on privacy.</b> The file contains other people's messages. Needs a policy paragraph and honest copy.</td></tr>
+<tr><td class="f">X — paste and share sheet</td><td>Store a URL the person chose</td><td>None; storing a link is not using X's platform.</td><td><b>None.</b></td></tr>
+<tr><td class="f">X — oEmbed, then storing the text</td><td>Fetch a public tokenless endpoint; keep the tweet text, the author and a normalised copy in the person's library</td><td>X Developer Policy and Display Requirements</td><td><b>Medium — the biggest single finding in this document.</b> See below.</td></tr>
+<tr><td class="f">X — official embed in the app</td><td>Render X's own blockquote plus <code>platform.x.com/widgets.js</code></td><td>Display Requirements are <q>handled automatically when using X's tools</q></td><td><b>Low.</b> This is the sanctioned route, and it is the one that makes the display question go away.</td></tr>
+<tr><td class="f">X — undocumented Tweet.html iframe</td><td>Point a WebView at <code>platform.twitter.com/embed/Tweet.html?id=…</code></td><td>Not documented anywhere</td><td><b>Avoid.</b> Works today; no promise it works tomorrow; contradicts the legal plan's "public, documented endpoints only" rule.</td></tr>
+<tr><td class="f">X — bookmarks via the API</td><td>OAuth 2.0 user login, read and store the person's bookmarks</td><td>X Developer Agreement and Policy (agreement last updated 27 April 2026)</td><td><b>Medium, with an ongoing obligation Allkept does not currently meet.</b> See below.</td></tr>
+</table></div>
+
+<div class="warn"><b>WhatsApp: the AI-provider clause.</b> The WhatsApp Business Solution Terms (last modified <b>6 March 2026</b>) prohibit providers of <q>large language models, generative artificial intelligence platforms, general-purpose artificial intelligence assistants, or similar technologies</q> from using the WhatsApp Business Solution <q>for the purposes of providing, delivering, offering, selling, or otherwise making available such technologies when such technologies are the primary (rather than incidental or ancillary) functionality being made available for use, <b>as determined by Meta in its sole discretion</b></q>. There is a carve-out for users with EEA or Brazil numbers.<br><br>
+My reading: Allkept is a link locker whose AI sorts things after they arrive — ancillary, not primary. The bot answers "Saved. Filed under Food", it does not answer questions. But the determination is explicitly Meta's alone, and Allkept's own marketing concepts include an "AI recall" idea (<code>docs/design/welcome-concepts/concept-3-ai-recall.png</code>). If the WhatsApp bot ever becomes "ask Allkept a question and it answers", this clause is squarely in the way. <b>Decide the bot's scope before building it, and keep it a save-and-confirm bot.</b> Relatedly, Meta has published an <q>AI Providers</q> pricing policy charging such providers for non-template messages from 16 February 2026 — the free-inside-the-window arithmetic in §6 assumes Allkept is not classified as one.<br><br>
+Also: a search result indicated WhatsApp's business terms are being updated <b>effective 23 September 2026</b>, eleven days from now. <span class="unv">[UNVERIFIED]</span> — re-read the terms on that date before building.</div>
+
+<div class="warn"><b>X: the Display Requirements apply to the card Allkept already ships.</b> X's Display Requirements state that when showing a Post you must show the author's profile picture, @username and display name (each linking to the profile), the timestamp linking to the permalink, and the Post action icons or a "View on X" link; that <q>The post text must be displayed on a line below the author's display name and @username, and may not be altered or modified</q>; and that the X logo <q>must always be reasonably visible</q>. They apply to <q>anyone</q> displaying Posts, not only API users. The Developer Policy adds: <q>If you don't use X for Websites to display content, then you must use the X API to retrieve the most current version available for display.</q><br><br>
+Allkept's X card today shows the logo and the author name, and shows the tweet text <i>altered</i> — stripped of its links, with a literal <code>&amp;mdash;</code> in it. On a strict reading that is a Post displayed outside X for Websites without the API, with modified text. Nobody is going to sue over a personal bookmarking app, and Allkept is not a public site — but this is exactly the class of thing the US-launch platform-terms audit exists to find, and it has a clean fix: <b>render the official embed</b> (§4e), which X says handles the requirements automatically, and keep the plain text only as the search index, never as the display.</div>
+
+<div class="warn"><b>X: the 24-hour deletion obligation.</b> <q>If you store X Content offline, you must keep it up to date with the current state of that content on X</q>, and <q>you must delete or modify any content you have if it is deleted or modified on X. This must be done as soon as reasonably possible, or within 24 hours after receiving a request to do so by X or the applicable X account owner.</q> The Policy also allows distributing up to 1,500,000 Post IDs to any entity in 30 days, and displaying up to 500 public Post objects per person per day by non-automated means — neither of which Allkept would come near. The deletion duty is the one that bites, and Allkept has no such job for any platform today. It becomes a genuine obligation the moment a bookmarks import stores hundreds of tweets per user. <b>Do not ship a bookmarks import without a refresh-or-expire job.</b> (This is the same shape of problem as <code>forlater.md</code> item 17, YouTube's 30-day storage rule — worth solving once, generically, for every platform.)</div>
+
+<h4>Brand and store listings</h4>
+<p>The logos come from <code>packages/platform-assets</code> ("official platform artwork", 9 Sep) with provenance recorded. Naming X and WhatsApp in a store listing is the same trademark question as Instagram and YouTube, already open in <code>docs/store-submission.html</code> §7. One extra note for WhatsApp: if Allkept ever publishes its own WhatsApp number, that number and its display name go through Meta's display-name review, and the name people see in WhatsApp is Meta's to approve, not Allkept's to choose.</p>
+
+<div class="eng"><b>In plain English.</b> The WhatsApp door is fine as long as the bot stays a bot that says "saved" and never becomes a chatbot that answers questions — Meta has a rule about that and decides on its own what counts. On X, the real issue is that X has rules about how you are allowed to show a tweet, and Allkept's current card does not follow them. The fix is the same as the fix for the missing picture: show X's own embed. And if you ever import someone's bookmarks, you take on a duty to delete a tweet from your database within a day of it being deleted on X.</div>
+
+<!-- ============================================================ -->
+<h2 id="plan">8. The plan, in phases</h2>
+
+<h3>Phase 1 — make X cards look like they belong <small>(about a day)</small></h3>
+<ul>
+<li>Point <code>oembedUrl</code>'s <code>x</code> case at <code>https://publish.x.com/oembed</code>, removing a redirect hop from every X save.</li>
+<li>Stop the pointless second fetch: <code>askThePage</code> must not fire for X, where it can never learn anything. (Consider generalising this — the condition that matters is "does this platform's own page serve preview tags", which is a per-platform fact, not a per-item one.)</li>
+<li>Fix the text: add <code>mdash</code> and <code>ndash</code> to <code>decodeEntities</code>, and strip X's trailing "— Author (@handle) Date" byline, which Allkept already stores in its own columns.</li>
+<li>Design decision: what an X card looks like with no picture. Today it is a grey box with a paragraph. It should look deliberate — the X mark, the author, the tweet, a quiet ground.</li>
+<li>Replace the hand-written test mock with a fixture captured from the live endpoint, so the next surprise fails a test instead of shipping.</li>
+<li>Name X in the welcome copy, if the answer to decision 1 is yes.</li>
+</ul>
+
+<h3>Phase 2 — the WhatsApp number door <small>(four to six days, plus waiting on a number)</small></h3>
+<ul>
+<li><b>Before any code:</b> obtain a phone number that has never been on WhatsApp, and re-read the WhatsApp Business Solution Terms (§7) after their 23 September update.</li>
+<li>One migration widening the four check constraints in §2.</li>
+<li><code>supabase/functions/whatsapp-webhook</code>: verification handshake, signature check, <code>messages[]</code> loop, dedupe on message id, link-code pairing — all of it modelled on <code>instagram-webhook</code>, which already solves every one of these problems.</li>
+<li>Reuse <code>capture</code> → <code>runPipeline</code> unchanged. Nothing about enrichment or classification is platform-door-specific.</li>
+<li>Reply text inside the 24-hour window, using the existing <code>replies</code> table and its <code>not_after</code> guard.</li>
+<li>A "Connect WhatsApp" settings entry mirroring "Connect Instagram", and the same delete-by-message and "stop replying" controls the Instagram door has.</li>
+<li>Privacy policy and store data-safety entries: a new identifier (the sender's phone number) enters the system. Note that Pranav <i>just removed</i> phone-number collection from onboarding (<code>forlater.md</code> item 15) — this reintroduces phone numbers through a different door, for a different purpose, and the policy must say so plainly.</li>
+</ul>
+
+<h3>Phase 3 — the X archive spike <small>(half a day, then decide)</small></h3>
+<ul>
+<li>Request "Download an archive of your data" on a real X account and look inside. Answer three questions: are likes there, are bookmarks there, and what is the file shape.</li>
+<li>If likes are in the archive, that is the only route to them that exists, and it is free — a strong case for an X import that mirrors the Instagram one.</li>
+<li>If bookmarks are not there (which is what everything outside X's own site says), then bookmarks are API-or-nothing, and decision 4 below becomes real.</li>
+<li>Nothing gets built in this phase. It is a fact-finding exercise that costs half a day and unblocks a decision worth thousands of dollars.</li>
+</ul>
+
+<h3>Phase 4 — play X posts inside Allkept <small>(two to three days)</small></h3>
+<ul>
+<li>Extend <code>embed.ts</code> to return X's official embed. This changes its return shape from "a URL" to "a URL or a document", which touches <code>EmbedPlayer</code> — a deliberate, contained interface change, not a refactor.</li>
+<li>Use <code>platform.x.com/widgets.js</code> with the oEmbed <code>html</code>. Not the undocumented iframe.</li>
+<li><code>EmbedPlayer</code>'s existing "keep the tap inside the card" and height-measurement work carries over — its selector list already includes <code>blockquote</code>.</li>
+<li>This is also the Display Requirements fix (§7). Two problems, one change.</li>
+</ul>
+
+<h3>Phase 5 — WhatsApp chat-export import <small>(three to four days)</small> — only if Phase 2 lands well</h3>
+<ul>
+<li>A <code>.txt</code> reader beside the existing JSON reader in <code>import-saves</code>: same upload path, same size limits, same batching, same "wrong file" refusals.</li>
+<li>Parse date, sender and body; pull every URL out of every body; dedupe; run the cheap classifier tier used for back catalogues.</li>
+<li>Copy that is honest about what the file contains and what Allkept keeps from it (the links, and nothing else).</li>
+</ul>
+
+<h3>What this plan deliberately does not include</h3>
+<ul>
+<li><b>An X bookmarks import.</b> Not because it is impossible, but because it needs a decision about money first (decision 4). If it goes ahead it is a phase of its own — a third sign-in provider, a paged sync, a spend cap, a per-user bookmark cap, and the refresh-or-expire job from §7.</li>
+<li><b>An X DM bot.</b> $0.025 per save, against WhatsApp's $0.</li>
+<li><b>Anything requiring X Enterprise.</b></li>
+<li><b>Reading anyone's WhatsApp history.</b> It does not exist.</li>
+</ul>
+
+<div class="eng"><b>In plain English.</b> Day one: make X cards stop looking broken. Week one: give Allkept a WhatsApp number people can forward links to — free, and no waiting on Meta this time. Half a day somewhere in there: download your own X archive and look inside, because what is in it decides whether the expensive option is even needed. Then, if you want it, make X posts play inside the app — which also fixes the legal question about how you are allowed to show a tweet.</div>
+
+<!-- ============================================================ -->
+<h2 id="sources">9. Sources, and what I could not verify</h2>
+
+<h4>Official pages read (all on 12 September 2026)</h4>
+<div class="tbl"><table class="src">
+<tr><th>URL</th><th>What it gave</th></tr>
+<tr><td>https://docs.x.com/x-api/getting-started/pricing</td><td>The full pay-per-use price list, the Owned Reads definition and condition, the 3M Post-read cap, credits and spending controls, the Enterprise pointer.</td></tr>
+<tr><td>https://docs.x.com/changelog</td><td>16 Apr 2026: Owned Reads at $0.001, and Likes removed from all self-serve tiers. 6 Feb 2026: pay-per-use launch, Public Utility Apps free access, Basic and Pro remain.</td></tr>
+<tr><td>https://docs.x.com/x-api/introduction</td><td><q>The X API uses pay-per-usage pricing. No subscriptions—pay only for what you use.</q></td></tr>
+<tr><td>https://docs.x.com/x-for-websites/oembed-api</td><td>Endpoint <code>publish.x.com/oembed</code>; <q>Requires authentication? No</q>; <q>Rate limited: No</q>; parameters; response fields; the cache_age guidance.</td></tr>
+<tr><td>https://docs.x.com/x-for-websites/embedded-posts/overview</td><td>Embedded Posts = HTML snippet + X for Websites JavaScript; no API key; no documented iframe URL.</td></tr>
+<tr><td>https://docs.x.com/developer-terms/policy</td><td>Off-platform storage must be kept in sync; 24-hour deletion; <q>If you don't use X for Websites to display content, then you must use the X API…</q>; the 500-objects and 1.5M-IDs limits.</td></tr>
+<tr><td>https://docs.x.com/developer-terms/display-requirements</td><td>Logo placement, author picture/@username/display name, timestamp, action icons or "View on X", <q>may not be altered or modified</q>, applicability to <q>anyone</q>.</td></tr>
+<tr><td>https://docs.x.com/x-api/posts/bookmarks/introduction</td><td>The five bookmarks endpoints; <q>User Access Tokens via OAuth 2.0 PKCE or 3-legged OAuth</q>.</td></tr>
+<tr><td>https://docs.x.com/x-api/users/get-bookmarks</td><td>Path, scopes <code>tweet.read, bookmark.read, users.read</code>, <code>max_results</code> 1–100, pagination.</td></tr>
+<tr><td>https://docs.x.com/x-api/posts/bookmarks/quickstart/bookmarks-lookup</td><td>The three required scopes and what each is for.</td></tr>
+<tr><td>https://docs.x.com/x-api/users/get-liked-posts</td><td><code>/2/users/{id}/liked_tweets</code>, scopes <code>like.read, users.read, tweet.read</code>, <code>max_results</code> 5–100.</td></tr>
+<tr><td>https://developers.facebook.com/docs/whatsapp/pricing</td><td>Per-message from 1 Jul 2025; service conversations free from 1 Nov 2024; inbound not charged; the 24-hour CSW; 72-hour FEP windows; free utility templates inside the window.</td></tr>
+<tr><td>https://developers.facebook.com/docs/whatsapp/pricing/updates-to-pricing/</td><td>Rate cards are downloadable CSV/PDF by currency, <q>effective July 1, 2026</q>; no inline per-country figures.</td></tr>
+<tr><td>https://developers.facebook.com/documentation/business-messaging/whatsapp/pricing/ai-providers</td><td>Who counts as an "AI Provider"; charging for their non-template messages from 16 Feb 2026; the May 2026 change for certain markets.</td></tr>
+<tr><td>https://developers.facebook.com/docs/whatsapp/cloud-api/overview</td><td><q>The contents of any message sent from a WhatsApp user to your business phone number is communicated via webhook.</q>; 80 msg/sec; 1 msg / 6 sec per user.</td></tr>
+<tr><td>https://developers.facebook.com/docs/whatsapp/cloud-api/get-started</td><td>The seven setup steps; Meta app with the WhatsApp use case; business portfolio; webhook setup.</td></tr>
+<tr><td>https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/payload-examples</td><td>The inbound text payload shape: <code>entry → changes → value → messages[] → from / id / timestamp / type / text.body</code>.</td></tr>
+<tr><td>https://developers.facebook.com/documentation/business-messaging/whatsapp/permissions</td><td>What each WhatsApp permission covers, and <q>If you are a direct developer and only access your own business data, you do not need to undergo App Review or obtain Advanced access for any permissions.</q></td></tr>
+<tr><td>https://developers.facebook.com/documentation/business-messaging/whatsapp/business-phone-numbers/phone-numbers</td><td><q>Numbers already in use with WhatsApp cannot be registered unless they are deleted first.</q>; <q>be able to receive voice calls or SMS</q>; the two-number initial cap rising to 20.</td></tr>
+<tr><td>https://developers.facebook.com/docs/whatsapp/messaging-limits/</td><td>Messaging limits apply <q>outside of a customer service window</q>; the 250 → 2,000 → 10,000 → 100,000 → unlimited ladder.</td></tr>
+<tr><td>https://whatsappbusiness.com/products/platform-pricing/</td><td><q>Businesses using our platform are charged on a per-message basis…</q>; <q>We do not charge for service messages</q>; rate cards behind an interactive selector.</td></tr>
+<tr><td>https://www.whatsapp.com/legal/business-solution-terms</td><td>Last modified 6 March 2026; the AI Providers prohibition and its EEA/Brazil carve-out.</td></tr>
+</table></div>
+
+<h4>Live endpoint checks (read-only GETs, 12 September 2026, from India, with Allkept's own user agent)</h4>
+<div class="tbl"><table class="src">
+<tr><th>Request</th><th>Result</th></tr>
+<tr><td><code>publish.twitter.com/oembed?url=…</code></td><td><code>301</code> → <code>publish.x.com/oembed</code> → <code>200</code>, 0.53 s</td></tr>
+<tr><td><code>publish.x.com/oembed</code> with an <code>x.com/&lt;handle&gt;/status/&lt;id&gt;</code> URL</td><td><code>200</code>; keys listed in §5; no <code>title</code>, no <code>thumbnail_url</code></td></tr>
+<tr><td>the same without <code>omit_script</code></td><td>script host is <code>https://platform.x.com/widgets.js</code></td></tr>
+<tr><td><code>publish.x.com/oembed</code> with a profile URL</td><td><code>200</code>; <code>title: ""</code>, timeline anchor, no author</td></tr>
+<tr><td><code>publish.x.com/oembed</code> with a non-existent status</td><td><code>404</code> with an HTML body</td></tr>
+<tr><td><code>x.com/&lt;handle&gt;/status/&lt;id&gt;</code> as a bot</td><td><code>200</code>, 37 KB, <b>zero</b> <code>og:</code>/<code>twitter:</code> meta tags, no <code>&lt;title&gt;</code></td></tr>
+<tr><td><code>platform.twitter.com/embed/Tweet.html?id=…</code></td><td><code>200 text/html</code> (undocumented); <code>platform.x.com/embed/Tweet.html</code> redirects to it</td></tr>
+<tr><td>Allkept's own <code>stripTags</code>/<code>decodeEntities</code> over the real oEmbed html</td><td>Produces the literal <code>&amp;mdash;</code> shown in §5</td></tr>
+</table></div>
+
+<h4>What I could not verify, and why</h4>
+<div class="tbl"><table class="src">
+<tr><th>Claim</th><th>Why it is unverified</th><th>How to close it</th></tr>
+<tr><td class="f">X Basic and Pro monthly prices</td><td><code>developer.x.com</code> answered <code>HTTP 402 Payment Required</code> to every request from this machine — the products page, the developer terms page, the oEmbed page, all of them. Only <code>docs.x.com</code> responded.</td><td>Open <code>developer.x.com/en/portal/products</code> in a browser, ideally on a US network.</td></tr>
+<tr><td class="f">X Enterprise price</td><td>The pricing page names Enterprise and links an interest form; it publishes no figure.</td><td>The interest form, or a browser check of the products page.</td></tr>
+<tr><td class="f">Whether the X archive contains bookmarks and/or likes</td><td><code>help.x.com</code> answered <code>HTTP 403</code>. Every claim I found was third-party.</td><td>Phase 3: request the archive on a real account. Half a day, zero cost.</td></tr>
+<tr><td class="f">How long X takes to produce an archive</td><td>Same 403.</td><td>Same.</td></tr>
+<tr><td class="f">Whether bookmarks go back only 800 posts</td><td>Neither X documentation page I read stated a ceiling.</td><td>The Developer Console, or a test call once an app exists.</td></tr>
+<tr><td class="f">Exactly how a paginated bookmarks response is billed</td><td>The pricing page says rates are per resource and that <q>current rates can be viewed in the Developer Console</q>; it does not work an example.</td><td>The Developer Console before switching it on for real users.</td></tr>
+<tr><td class="f">WhatsApp chat-export message limits (10,000 / 40,000)</td><td>The official Help Center article renders entirely in JavaScript; 1.2 MB of script and not one readable sentence. Only blogs carry the numbers.</td><td>Export a long chat on a real phone.</td></tr>
+<tr><td class="f">Whether iOS offers "Share" on a WhatsApp text message</td><td>Not documented; needs a device.</td><td>One minute on an iPhone.</td></tr>
+<tr><td class="f">WhatsApp per-country template rates for India and the US</td><td>Published only as downloadable CSV/PDF behind an interactive market selector.</td><td>Download the rate card. Not needed unless Allkept ever sends a template.</td></tr>
+<tr><td class="f">The 23 September 2026 WhatsApp business-terms update</td><td>Surfaced in a search result; I did not find the effective-date sentence on a page I loaded directly.</td><td>Re-read <code>whatsapp.com/legal/business-terms</code> on or after that date.</td></tr>
+<tr><td class="f">Whether X's oEmbed behaves the same from Singapore</td><td>I could only test from India. Two <i>other</i> X hosts refused this machine outright, so the possibility of network-dependent behaviour is not theoretical.</td><td>One call from the edge function after the region fix lands.</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="decisions">10. Decisions for Pranav</h2>
+<ol>
+<li><b>Is X a platform Allkept promises, or one it merely handles?</b> Today the welcome screen says "Instagram, YouTube, TikTok and the web" — X links work, but nothing tells anyone so. Naming X costs a line of copy and a Phase 1 that makes the card worth showing.</li>
+<li><b>WhatsApp number door: yes or no?</b> It is free, it needs no App Review, and it is the one door here that no competitor has bothered with. It costs a phone number, about a week, and a phone-number line in the privacy policy you removed one eleven days ago. My recommendation: yes, after Phase 1.</li>
+<li><b>Same Meta app as Instagram, or a second one?</b> Reusing it is less setup; a second one means a WhatsApp problem can never put the Instagram App Review at risk while that review is still in flight (<code>forlater.md</code> item 8). I would use a second app until Instagram is approved.</li>
+<li><b>X bookmarks import: build it, or wait?</b> $0.005 per bookmark, roughly $2.50 for a typical person, charged on a free action, unrecoverable in India. It also drags in a third sign-in provider and a 24-hour deletion job. My recommendation: do Phase 3 first — if likes turn out to be in the free archive, the API may be unnecessary.</li>
+<li><b>Phase 4 (play X posts) before or after the store submission?</b> It is the fix for the Display Requirements finding as well as for the missing picture, which argues for before. It is also two to three days of native-adjacent work on a WebView, which argues for after.</li>
+<li><b>WhatsApp chat-export import: do we want it at all?</b> It works, it is free, and it hands Allkept a file full of other people's private messages. That is a principles question before it is an engineering one.</li>
+<li><b>The 24-hour deletion job.</b> X needs it for stored Posts; YouTube needs something like it within 30 days (<code>forlater.md</code> item 17). Build one generic refresh-or-expire mechanism for every platform, or keep deferring both?</li>
+</ol>
+
+<p><small>Allkept · WhatsApp and X plan · 12 September 2026 · companion to <code>docs/tiktok-plan.html</code>, <code>docs/us-launch-legal-plan.html</code> and <code>docs/store-submission.html</code>. Read-only research: no repository file other than this one was created or changed.</small></p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allkept — TikTok Plan</title>
+<style>
+  :root{--bg:#F6F7FA;--card:#FFFFFF;--line:#DFE3EC;--ink:#14161C;--muted:#5F6675;--accent:#6D46F2;
+        --done:#0E7A4F;--done-bg:#E4F5EC;--gap:#8A5200;--gap-bg:#FFF3DF;--no:#A32020;--no-bg:#FBE7E7;--verify:#1F4E9C;--verify-bg:#E6EEFB}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+  h2{font-size:21px;margin:44px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:24px 0 6px}
+  p{margin:8px 0}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0 8px}
+  .toc ol{margin:6px 0 0;padding-left:20px;columns:2;column-gap:28px}
+  .toc li{margin:2px 0;break-inside:avoid}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0 16px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+  th{background:#F1F2F7;font-weight:600;font-size:13px;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  td.f{font-weight:600;white-space:nowrap}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#EEF0F6;padding:1px 5px;border-radius:4px}
+  pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;background:var(--card);color:var(--ink);border:1px solid var(--line);padding:14px 16px;border-radius:10px;overflow-x:auto;white-space:pre-wrap}
+  .b{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:5px;vertical-align:1px;white-space:nowrap}
+  .done{color:var(--done);background:var(--done-bg)} .gap{color:var(--gap);background:var(--gap-bg)} .no{color:var(--no);background:var(--no-bg)} .verify{color:var(--verify);background:var(--verify-bg)}
+  .note{background:var(--card);border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .warn{background:var(--no-bg);border-left:4px solid var(--no);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  small{color:var(--muted)}
+  @media print{body{background:#fff;font-size:12px}.wrap{max-width:none;padding:0}.tbl,.toc,.note{border-color:#999;break-inside:avoid}h2{break-after:avoid}a{color:#000}.toc ol{columns:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>TikTok on Allkept — plan</h1>
+<p class="sub">Written 11 September 2026 from the code as it stands. Purpose: TikTok is the platform US users save from most, so the US launch needs it to feel first-class.</p>
+
+<p><span class="b done">DONE</span> already in the code &nbsp; <span class="b gap">GAP</span> to build &nbsp; <span class="b verify">VERIFY</span> believed to work, not yet proven end to end &nbsp; <span class="b no">NOT POSSIBLE</span> no route exists today</p>
+
+<div class="toc"><b>Contents</b>
+<ol>
+<li><a href="#summary">The short version</a></li>
+<li><a href="#state">What exists today, file by file</a></li>
+<li><a href="#doors">The doors TikTok leaves open — and closed</a></li>
+<li><a href="#plan">The plan, in phases</a></li>
+<li><a href="#legal">Platform terms and the US situation</a></li>
+<li><a href="#decisions">Decisions for Pranav</a></li>
+</ol></div>
+
+<!-- ============================================================ -->
+<h2 id="summary">1. The short version</h2>
+<p>TikTok is not a new door to build — it is a door that is three-quarters built and never advertised. The system already recognises TikTok links (long, short and photo posts), strips their tracking keys, expands short links, files them as short videos or images, and fetches title, author and picture from TikTok's public oEmbed endpoint. The logo is in the app and the welcome screen already promises TikTok.</p>
+<p>What is missing is what makes it <i>feel</i> integrated: <b>playing the video inside Allkept</b> (today only Instagram and YouTube play in place), <b>bringing in a person's existing TikTok favourites</b> from their data export (the way Instagram history comes in), and an <b>end-to-end proof</b> that a link shared from the TikTok app arrives as a full card. Roughly a week of focused work across three phases, none of which needs a TikTok developer account.</p>
+<p>What is <b>not</b> possible: a "Connect TikTok" door that reads a person's favourites live. TikTok publishes no API for favourites or saved videos to third parties; its Login Kit and Display API expose only a person's <i>own posted</i> videos, which is not what Allkept is for.</p>
+
+<!-- ============================================================ -->
+<h2 id="state">2. What exists today, file by file</h2>
+<div class="tbl"><table>
+<tr><th>Piece</th><th>State</th><th>Where</th><th>Notes</th></tr>
+<tr><td class="f">Platform detection</td><td><span class="b done">DONE</span></td><td><code>packages/normalize/src/index.ts</code> <code>detectPlatform</code></td><td><code>tiktok.com</code> and subdomains → <code>tiktok</code></td></tr>
+<tr><td class="f">Tracking keys stripped</td><td><span class="b done">DONE</span></td><td>same, <code>SHARE_KEYS.tiktok</code></td><td><code>is_from_webapp, sender_device, share_id, _t, _r</code></td></tr>
+<tr><td class="f">Short links</td><td><span class="b done">DONE</span> <span class="b verify">VERIFY</span></td><td>same, <code>tiktok()</code></td><td><code>vm.tiktok.com</code>, <code>vt.tiktok.com</code>, <code>/t/…</code> flagged <code>needsExpansion</code>; the pipeline follows redirects (<code>fetchFollowing</code> in <code>enrich.ts</code>). Believed to work; not proven with a real share.</td></tr>
+<tr><td class="f">Kinds and canonical URLs</td><td><span class="b done">DONE</span></td><td>same</td><td><code>/@user/video/&lt;id&gt;</code> → <code>short_video</code>; <code>/@user/photo/&lt;id&gt;</code> → <code>image</code>; <code>/@user</code> → <code>profile</code>; external id captured. Tests in <code>normalize.test.ts</code> and <code>profiles-and-stories.test.ts</code>.</td></tr>
+<tr><td class="f">Title, author, picture</td><td><span class="b done">DONE</span> <span class="b verify">VERIFY</span></td><td><code>supabase/functions/_shared/enrich.ts</code> <code>oembedUrl</code></td><td><code>https://www.tiktok.com/oembed?url=…</code> — public, tokenless. Returns title (the caption), author name and handle, thumbnail. Photo posts and region-locked videos need checking.</td></tr>
+<tr><td class="f">AI category, search</td><td><span class="b done">DONE</span></td><td>pipeline</td><td>Platform-agnostic: works from the caption and link.</td></tr>
+<tr><td class="f">Share from the TikTok app</td><td><span class="b done">DONE</span> <span class="b verify">VERIFY</span></td><td>share extension (iOS), share intent (Android)</td><td>TikTok's share sheet → "More" → Allkept. Generic link path; never exercised with TikTok specifically.</td></tr>
+<tr><td class="f">Logo and copy</td><td><span class="b done">DONE</span></td><td><code>packages/platform-assets/assets/tiktok.png</code>, <code>PlatformLogo.tsx</code>, <code>welcome.tsx</code></td><td>Welcome screen already says "Instagram, YouTube, TikTok and the web".</td></tr>
+<tr><td class="f">Play inside Allkept</td><td><span class="b gap">GAP</span></td><td><code>apps/mobile/lib/embed.ts</code>, <code>EmbedPlayer.tsx</code></td><td>Only Instagram and YouTube embed pages are wired. A TikTok card opens the original instead of playing in place.</td></tr>
+<tr><td class="f">Bring in existing favourites</td><td><span class="b gap">GAP</span></td><td><code>supabase/functions/import-saves</code>, <code>packages/normalize/src/saved-export.ts</code>, <code>apps/mobile/lib/import.ts</code></td><td>The importer reads Meta's export only. TikTok's "Download your data" (JSON) contains the person's favourite and liked videos with links and dates.</td></tr>
+<tr><td class="f">Open in the TikTok app</td><td><span class="b verify">VERIFY</span></td><td>open-original path</td><td>Canonical <code>https://www.tiktok.com/@user/video/…</code> links open the app when installed (universal links). Believed to work.</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="doors">3. The doors TikTok leaves open — and closed</h2>
+<div class="tbl"><table>
+<tr><th>Door</th><th>Possible?</th><th>Why</th></tr>
+<tr><td class="f">Share sheet from TikTok</td><td><span class="b done">DONE</span></td><td>TikTok's share → system share sheet → Allkept. The same path as any link. The one caveat: TikTok often hands the share sheet a <code>vm.tiktok.com</code> short link, hence the expansion step.</td></tr>
+<tr><td class="f">Paste a link</td><td><span class="b done">DONE</span></td><td>Same normaliser.</td></tr>
+<tr><td class="f">Data export import</td><td><span class="b gap">GAP</span></td><td>Settings → Account → Download your data → JSON. The file holds "Favorite Videos" and "Like List" with links and timestamps. Same shape of job as the Instagram import; no API involved.</td></tr>
+<tr><td class="f">Play in place</td><td><span class="b gap">GAP</span></td><td>TikTok publishes an embed page for exactly this (the one its oEmbed HTML points at). Same approach as the Instagram embed in <code>embed.ts</code>.</td></tr>
+<tr><td class="f">"Connect TikTok" (live favourites)</td><td><span class="b no">NOT POSSIBLE</span></td><td>No third-party API for favourites, saves or likes. Login Kit + Display API expose a person's own posted videos only; the Research API is for vetted academics; the Content Posting API is for publishing. Building on scraping is off the table (platform terms, and the legal plan's first item).</td></tr>
+<tr><td class="f">A TikTok "bot" like @allkeptapp</td><td><span class="b no">NOT POSSIBLE</span></td><td>TikTok has no messaging API for third parties.</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="plan">4. The plan, in phases</h2>
+
+<h3>Phase 1 — prove and polish the door that exists <small>(about a day)</small></h3>
+<ul>
+<li>End-to-end check with real links: a long video link, a <code>vm.tiktok.com</code> share, a photo post, a profile, a region-locked or deleted video. Each must arrive as a card with title, author, picture and the right kind — or a calm "preview unavailable", never a wrong page (the <code>isWrongPage</code> guard in <code>enrich.ts</code> already exists for this).</li>
+<li>Fix whatever that turns up (the oEmbed response for photo posts is the likely surprise).</li>
+<li>Filter and library copy: make sure "TikTok" appears as a platform pill wherever Instagram and YouTube do.</li>
+</ul>
+
+<h3>Phase 2 — play inside Allkept <small>(two to three days)</small></h3>
+<ul>
+<li>Add TikTok to <code>embed.ts</code>: build the embed page URL from the external id, the way the Instagram branch does; give <code>EmbedPlayer</code> the same tap-to-play and "keep the tap inside the card" treatment it gives Instagram (TikTok's embed is also eager to open new windows).</li>
+<li>Verify on both platforms with the mobile preset: autoplay/inline behaviour, the aspect ratio (9:16, so the "video in a box of its own shape" fix from 10 Sep applies), and that a removed video degrades to the card rather than an error frame.</li>
+<li>Photo posts: TikTok's photo-mode embed behaves differently; decide whether to embed or show the snapshot.</li>
+</ul>
+
+<h3>Phase 3 — bring in existing favourites <small>(three to four days)</small></h3>
+<ul>
+<li>Extend the importer to recognise TikTok's export: a JSON (or the zip that holds it) with the favourite-videos list, and optionally the like list — same size limits and the same "wrong file" refusals as the Instagram import.</li>
+<li>Normalise each entry through the existing TikTok normaliser; dedupe against the library; run the cheaper classifier tier already used for imported back catalogues.</li>
+<li>Copy on the "Bring in your older saves" screen to explain where the TikTok export lives and that it can take TikTok a day or two to produce it.</li>
+</ul>
+
+<h3>What this does not include</h3>
+<ul>
+<li>A TikTok developer account, Login Kit or any TikTok API — none is needed for the three phases, and none would add a door that matters.</li>
+<li>Downloading or storing the videos themselves. Allkept keeps the link, the caption and a snapshot of the picture, as it does for every platform.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="legal">5. Platform terms and the US situation</h2>
+<ul>
+<li><b>oEmbed and embed pages</b> are TikTok's public tooling for third parties and carry no API agreement. Using them as designed — fetch the metadata for a link the person chose, show the official embed — is the conservative path. The <code>[UNVERIFIED]</code> item to close in the platform-terms audit (legal plan §2): whether TikTok's Terms restrict storing the thumbnail snapshot; every other platform's snapshot sits on the same reasoning, so it belongs in the same review.</li>
+<li><b>No scraping.</b> Everything above stays on public, documented endpoints. If oEmbed withholds something for a post, the answer is "preview unavailable", not a page fetch.</li>
+<li><b>TikTok's US corporate arrangement.</b> As of mid-2026 TikTok's US operations sit in a US joint venture under the 2025 divest-or-ban settlement. I am not certain how, or whether, that changes the public oEmbed/embed endpoints for US users; Phase 1's end-to-end check should be run on a US-region device or network before launch. <span class="b verify">VERIFY</span></li>
+<li><b>Brand use.</b> The logo comes from <code>packages/platform-assets</code> ("official platform artwork", 9 Sep). TikTok's brand guidelines allow the logo to indicate the platform a link comes from; naming TikTok in store listings is the same trademark question as Instagram and YouTube (worksheet §7).</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="decisions">6. Decisions for Pranav</h2>
+<ol>
+<li>Phase order as written (prove → play → import), or import before playback?</li>
+<li>Phase 3: favourites only, or favourites and likes? (Likes are far more numerous and noisier; favourites are the closer match to "saved".)</li>
+<li>Photo posts in Phase 2: embed or snapshot?</li>
+<li>Run Phase 1's end-to-end check now (it needs nothing but a few real links), or after the store submission work?</li>
+</ol>
+
+<p><small>Allkept · TikTok plan · 11 September 2026 · companion to <code>docs/store-submission.html</code> and <code>docs/us-launch-legal-plan.html</code>.</small></p>
+
+</div>
+</body>
+</html>
