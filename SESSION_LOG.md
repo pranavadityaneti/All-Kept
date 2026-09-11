@@ -106,7 +106,105 @@ written after the fact from git history, not live — treat details as approxima
   name"). Not touched: `profiles.phone` column (drop later), privacy policy text (item 15).
 - Found while linking: the Supabase project is in **ap-southeast-1 (Singapore)**; the privacy
   policy says Mumbai. Added to forlater item 15.
-- Uncommitted, awaiting Pranav's review of the diff.
+- ~17:10 Committed: `afb0cd3` (onboarding change + migration + DB test), `8078b7e` (docs).
+- Pranav's next asks: TikTok plan for the US (→ `docs/tiktok-plan.html`: detection, short links,
+  kinds, oEmbed enrichment, logo and copy already exist; gaps are in-app playback, TikTok
+  data-export import, and an end-to-end proof; no live "connect" door exists — TikTok has no
+  favourites API); then the paid-tier tech (brainstorm started — nothing purchase-related exists
+  in the code yet); and a **Fable 5.1 subagent launched in the background** to draft US Terms of
+  Service with primary-source research → will write `docs/legal/terms-us-draft.html` +
+  `terms-us-annotations.html` (not committed by the agent; review when it reports).
+- ~17:40 Share-from-Instagram friction: root cause = design (save.tsx waits for a tap; the
+  hand-off works — screenshot shows the link pre-filled). Wrote a RED test for in-app auto-save;
+  **Pranav redirected mid-turn to the Pocket-style extension save** ("Saved to Allkept" inside
+  the share sheet, all platforms). Test parked in scratchpad; brainstorm started (item 18).
+- ~18:25 **Terms agent finished** (43 min, 181 tool calls): `docs/legal/terms-us-draft.html`
+  (27 sections) + `terms-us-annotations.html`; 8 [COUNSEL] items; findings: YouTube 30-day data
+  retention gap (item 17), privacy-policy contradictions (item 15 extended), build dependencies
+  for the terms to be true (acceptance logging, manage/restore subscription controls, DMCA
+  mailbox). Not committed yet.
+- ~18:50 Share-sheet save designed and approved (banner only; offline → queue + "Saved to
+  Allkept. Syncs when you're online"; approach 1 native/owned): spec
+  `docs/superpowers/specs/2026-09-11-share-extension-save-design.md`, plan
+  `docs/superpowers/plans/2026-09-11-share-extension-save.md` (14 tasks; gates: migration push,
+  function deploy, file deletions, Team ID, EAS builds). Awaiting go.
+
+## 2026-09-12 — share-sheet save, execution (live)
+
+### Timeline
+- Pranav: go; asked where the Apple Team ID lives (developer.apple.com → Membership details).
+- Tasks 1–5 (server) done test-first: `83a416a` rate_limited/429, `a6b0007` token helpers,
+  `cdf1528` share-token function, `dd5c2b8` save-link token path. 163 function tests green.
+  Task 1's first commit slipped past a grep that matched npm's own "failed" line — the contracts
+  package has no test script; the real drift test (`packages/normalize/test/sync.test.ts`) passed.
+- Task 2: migration `20260912090000_share_tokens.sql` + DB test written; RED confirmed against
+  the hosted project (42P01) — **push awaits Pranav**. Task 6: config.toml `verify_jwt = false`
+  for save-link (was true) and share-token (new) — **deploy awaits Pranav**.
+- Task 7 `9fc9a36` (app library, 5 tests). Tasks 8–10 `9102e61` `b626a69` `284f3c0` (Swift
+  module, Kotlin module + ShareActivity + ShareWorker, iOS extension target). Task 11 wiring
+  `9d4c471` (layout mint/flush, save.tsx = paste only, sign-out/delete revoke, app.config plugin +
+  app group; lazy native handle in the module JS). **Deletions of the five hand-off files await
+  Pranav; `appleTeamId` awaits the ID.** Mobile suite 19 files / 99 tests; tsc clean.
+- Task 12 Android: prebuild OK (dropped its rewrite of the ios/android npm scripts); first Gradle
+  run failed on a missing ANDROID_HOME (env, not code); re-running with the SDK path exported.
+- Second Gradle run: our module's build.gradle used the old apply-from helpers → "does not
+  specify compileSdk". Rewritten to the SDK 57 `expo-module-gradle-plugin` pattern (copied from
+  expo-secure-store); podspec aligned (swift_version, DEFINES_MODULE). Plan corrected. `9fa8374`.
+- iOS prebuild OK (extension target generated; Team ID warning as expected); `pod install` OK
+  with a UTF-8 locale — `Installing ShareSave (1.0.0)`. Unsigned simulator `xcodebuild` and the
+  Gradle recompile running in the background.
+- Pranav: yes to all three gates. **Migration pushed** (`20260912090000`), DB test passes on the
+  hosted project; **functions deployed** (save-link, share-token, gateway JWT off) — probes: bad
+  token 401, no auth 401; **five hand-off files deleted** (`a0a082a`), suite 17 files / 93 tests.
+- The unanchored `ios/`/`android/` ignore rules also hid the module's folders — anchored to the
+  app root (`/ios/`, `/android/`); module files confirmed tracked (12 + 4).
+- **Android compiles.** `assembleDebug` exit 0 with the SDK 57 gradle pattern: APK 245 MB
+  (debug), ShareActivity/ShareWorker/SaveClient/ShareSaveModule classes present, merged manifest
+  carries the activity with the SEND text/plain filter, translucent, noHistory.
+- Team ID `9DBGLY5BVP` → app.config (`9aa9f38`).
+- **Android runtime proven on the Pixel_9 emulator:** share intent → ShareActivity → toast "Open
+  Allkept to sign in", app never launched, no crash. Offline path with a planted throwaway
+  credential + airplane mode → toast "Saved to Allkept. Syncs when you're online", one queue
+  entry; network back → ShareWorker cleared it within 5 s (fake token → 401 → dropped). Test
+  files removed from the emulator afterwards.
+- **iOS compiles unsigned for the simulator:** exit 0, `Allkept.app` embeds `AllkeptShare.appex`
+  (`app.allkept.mobile.share`, activation rules + principal class present). Built display name
+  is "AllkeptShare" — to be corrected to "Allkept" in the target config.
+- `displayName: "Allkept"` added to the target config (`dfebdb0`).
+- iOS simulator share test: app installed on a booted iPhone 17 Pro, Safari open — but the
+  Claude Code iOS Simulator panel crash-loops (every screenshot/tap), no cliclick/idb, and
+  AppleScript has no Accessibility permission. Left Simulator.app open on Pranav's Mac for a
+  manual tap; otherwise the runtime banner check moves to the device build.
+- Android emulator stopped after its checks.
+- Re-prebuild iOS: `INFOPLIST_KEY_CFBundleDisplayName = Allkept`, `DEVELOPMENT_TEAM = 9DBGLY5BVP`
+  on all configurations. Fingerprint after all native changes: `bf0d224f` (pre-feature
+  `b5f76d81`).
+- **iOS runtime proven by Pranav on the simulator:** Share → Allkept → "a black sheet with
+  'Open Allkept to sign in' for about a second and the sheet close." The sheet is black because
+  the extension's own window has nothing behind it; a compact bottom card is the cosmetic option.
+- Pranav: rebuild the black sheet; asked for references → `docs/design/share-sheet-references.html`
+  (Apple forums: detents locked, `NSExtensionActionWantsFullScreenPresentation` is the sanctioned
+  route; Instapaper banner via MacStories; HIG). Proposed a bottom card; Pranav wants to see it in
+  the simulator first. Info.plist key + card `ShareViewController` written (uncommitted until he
+  approves the look); rebuild + install running in the background.
+- Card build shown: card renders, but on iOS 26 the sheet container stays opaque and full height
+  even with `NSExtensionActionWantsFullScreenPresentation` (matches open Apple forum thread
+  806121). Pranav: **no card at all** on success; Route 1 (clear the container) only if a flash
+  remains; use the brand logo. Rewrote the extension: enqueue → background URLSession upload
+  (survives the extension, waits for network) → complete at once; card only for "sign in" and
+  "not a link"; app icon via apple-targets `images`. Metro started so the debug build can sign in.
+- Sign-in in the simulator failed with `KeyChainException` (expo-secure-store): my simulator
+  builds had `CODE_SIGNING_ALLOWED=NO`, and an unsigned app carries no entitlements — no keychain,
+  no app group (which would also have starved the extension's credential read). Rebuilding with
+  Xcode's ad-hoc identity (`CODE_SIGN_IDENTITY=-`, manual style) embeds the entitlements without an
+  Apple account. Generated `targets/share/Assets.xcassets` (apple-targets `images`) is gitignored.
+- Ad-hoc simulator signing embeds entitlements in the binary's `__TEXT,__entitlements` (codesign
+  shows none — wrong probe); app group present in app and extension. Welcome screen clean.
+- **Silent path proven end to end on the simulator (Pranav signed in):** "The sheet closed with
+  nothing on it … vanished in a flash." Server: iOS token minted 19:41:23Z, used 3×; one `web`
+  item at 19:42:23Z (two seconds after the share; three shares deduped); queue cleared within
+  8 s of a cold launch, item count still 1. Committed `4d9e874`. Spec, references, worksheet and
+  queue updated. Remaining: EAS preview builds (gate), device checklist.
 
 ### Decisions
 - Logging files live at the repo root: `SESSION_LOG.md`, `forlater.md`, `ERRORS.md`.
@@ -253,3 +351,26 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
   global CLI.
 - ERRORS.md entries from this day: Instagram preview fallbacks; EAS build logs are
   Brotli-compressed.
+
+---
+
+## 2026-09-11 (late evening) — audit of an external repo: github.com/yc-software/qm
+
+- Pranav asked for an extremely detailed audit of `yc-software/qm` (open-source "multiplayer agent
+  harness for work"). Not Allkept code; no Allkept files changed except this log.
+- Method: cloned at `32b38ce` into the session scratchpad; installed all six packages; ran every
+  gate (typecheck, ESLint, oxlint, knip, Prettier, npm audit) and every test suite (root, Postgres
+  against local Postgres 17, plugins, CLI, e2e, stack contracts); five parallel read-only review
+  agents (auth, sandbox/egress/credentials, persistence, web UI/harness, code quality/tests/CLI/IaC);
+  every Critical/High claim spot-verified by hand with executed proofs of concept (command-policy
+  bypass, router/gate percent-encoding desync, boot crash without SESSION_STORE=postgres, Postgres
+  tests non-hermetic on a reused database).
+- Result: 1 Critical, 9 High, 29 Medium, 23 Low, 5 Info. All quality gates clean; 8,300+ tests run
+  with 6 failures (one root cause: test isolation) and 1 timing flake.
+- Deliverable: `~/projects/Random Tasks/docs/qm-repo-audit.html` (self-contained HTML, TOC, print
+  CSS), also published as a private artifact and sent in chat.
+- Side effects on this machine: four scratch databases on local Postgres (`qm_audit`, `qm_audit2`,
+  `qm_audit3`, `qm_audit4`) left in place pending Pranav's OK to drop; scratchpad clone will be
+  discarded with the session.
+- Open threads: none for Allkept. forlater.md unchanged (10 queued items, all blocked or awaiting a
+  decision; surfaced in chat).

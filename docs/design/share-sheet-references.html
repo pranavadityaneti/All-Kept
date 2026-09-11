@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allkept — Share Sheet Card References</title>
+<style>
+  :root{--bg:#F6F7FA;--card:#FFFFFF;--line:#DFE3EC;--ink:#14161C;--muted:#5F6675;--accent:#6D46F2}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+  h2{font-size:21px;margin:44px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:24px 0 6px}
+  p{margin:8px 0}
+  .sub{color:var(--muted);margin:0 0 18px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0 16px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+  th{background:#F1F2F7;font-weight:600;font-size:13px;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  td.f{font-weight:600;white-space:nowrap}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#EEF0F6;padding:1px 5px;border-radius:4px}
+  pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;background:#14161C;color:#E8EAF0;padding:14px 16px;border-radius:10px;overflow-x:auto;white-space:pre}
+  blockquote{margin:10px 0;padding:10px 14px;border-left:4px solid var(--accent);background:var(--card);border-radius:0 8px 8px 0;color:var(--ink)}
+  .note{background:var(--card);border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .mocks{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin:16px 0}
+  .phone{width:260px;height:540px;border-radius:38px;background:#111;padding:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);position:relative;flex:none}
+  .screen{width:100%;height:100%;border-radius:30px;overflow:hidden;position:relative;background:#0E0F14}
+  .host{position:absolute;inset:0;background:linear-gradient(180deg,#2a2d3a 0%,#1a1c26 100%)}
+  .host .bar{position:absolute;left:18px;right:18px;top:18px;height:14px;border-radius:7px;background:rgba(255,255,255,.18)}
+  .host .media{position:absolute;left:34px;right:34px;top:60px;bottom:120px;border-radius:14px;background:linear-gradient(160deg,#5b4a2e,#2f6b4f)}
+  .host .caption{position:absolute;left:18px;right:60px;bottom:84px;height:10px;border-radius:5px;background:rgba(255,255,255,.25)}
+  .host .caption.two{bottom:66px;right:120px}
+  .dim{position:absolute;inset:0;background:rgba(0,0,0,.28)}
+  .sheet{position:absolute;left:0;right:0;top:44px;bottom:0;border-radius:24px 24px 0 0;background:#171a17}
+  .pill{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#111318;color:#fff;font-weight:600;font-size:12px;padding:10px 16px;border-radius:14px;white-space:nowrap}
+  .cardwrap{position:absolute;left:14px;right:14px;bottom:26px}
+  .card{display:flex;align-items:center;gap:10px;background:rgba(17,19,24,.94);color:#fff;border-radius:18px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .card .icon{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#8F6BFF,#6D46F2);flex:none;position:relative}
+  .card .icon:after{content:"";position:absolute;left:8px;top:7px;width:12px;height:14px;border-radius:2px;background:#fff;opacity:.9}
+  .card .t{font-weight:600;font-size:12.5px;line-height:1.25}
+  .card .s{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
+  .label{font-size:12px;color:var(--muted);text-align:center;margin-top:8px;width:260px}
+  .light .card{background:rgba(255,255,255,.96);color:#14161C}
+  .light .card .s{color:#5F6675}
+  ul.check{list-style:none;padding-left:0}
+  ul.check li{padding:6px 0 6px 30px;position:relative;border-bottom:1px dashed var(--line)}
+  ul.check li:before{content:"";position:absolute;left:4px;top:10px;width:14px;height:14px;border:2px solid var(--muted);border-radius:4px}
+  small{color:var(--muted)}
+  @media print{body{background:#fff;font-size:12px}.wrap{max-width:none;padding:0}.tbl,.note{border-color:#999}pre{background:#f3f3f3;color:#000;border:1px solid #999}a{color:#000}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Share Sheet Card — References</h1>
+<div class="note"><b>Outcome (12 Sep):</b> the card route below was built and shown; on iOS 26 the sheet container stayed opaque and full height even under <code>NSExtensionActionWantsFullScreenPresentation</code> (Apple forums 806121). Pranav chose <b>no card at all</b>: the extension queues the link, hands the upload to a background URL session and closes at once — the sheet "vanished in a flash", and the save reached the server two seconds later. A small card remains only for "Open Allkept to sign in" and "That wasn't a link". Kept as the record of the research.</div>
+<p class="sub">Why the share extension shows a full black sheet, what the well-regarded apps do instead, the route Apple allows, and the card I propose. Written 12 September 2026.</p>
+
+<h2 id="problem">1. What you saw, and why</h2>
+<p>iOS presents every share extension inside a <b>system sheet fixed at full height</b> on iPhone. Our extension's view is transparent, so the sheet shows its own dark surface with the banner floating in the middle — the black sheet in your screenshot. Nothing in the extension can shrink that sheet: Apple's Frameworks Engineer, answering exactly this question on the developer forums, said the detents are not customisable and that the alternative is a plist key that removes the sheet entirely:</p>
+<blockquote>"Are you asking if there is a way to customize the detents on the UISheetPresentationController instance used to present your extension? If so, unfortunately the answer is no … Alternatively, you can specify <code>NSExtensionActionWantsFullScreenPresentation</code> in your extension's Info.plist, which will present your extension over the full screen with no additional chrome (e.g. the shadow, dimming, or corner radius provided by UISheetPresentationController). Then you can size your extension however you want within that full screen view. However, this is not recommended, as this approach loses the standard look and pull to dismiss behavior."<br><small>— Apple Frameworks Engineer, <a href="https://developer.apple.com/forums/thread/694643">developer.apple.com/forums/thread/694643</a></small></blockquote>
+<p>The "not recommended" caveat is about losing pull-to-dismiss. A card that closes itself after a second has nothing to pull down, so the caveat does not apply to us. This is the same mechanism the banner-style extensions below use.</p>
+
+<h2 id="refs">2. Design references</h2>
+<div class="tbl"><table>
+<tr><th>App</th><th>What it does after you tap it in the share sheet</th><th>Why it works</th><th>Source</th></tr>
+<tr><td class="f">Instapaper (6.1 onward)</td><td>A small banner at the top of the screen — "takes up less space and lets you see more content underneath" — replacing an earlier centred modal. Saves immediately; a folder can be chosen without launching the app.</td><td>The host app stays visible; the confirmation is glanceable; no modal to dismiss.</td><td><a href="https://www.macstories.net/ios/instapaper-6-1-brings-redesigned-share-extension/">MacStories</a> (verified)</td></tr>
+<tr><td class="f">Pocket</td><td>Historically a compact "Saved to Pocket" confirmation over the current app, gone in about a second; tags optional afterwards.</td><td>The reference you named. Same principle: save first, confirm briefly, get out of the way.</td><td>From memory — I could not fetch a primary description; treat the exact look as unverified.</td></tr>
+<tr><td class="f">Apple's own actions (Copy, Add to Reading List)</td><td>No UI at all beyond a brief system confirmation; the sheet simply closes.</td><td>Sets the expectation: a save should feel instantaneous.</td><td>Behaviour of iOS itself</td></tr>
+<tr><td class="f">Apple HIG — Sharing and Actions</td><td>"The best extensions let people perform a task in just a few steps. For example, a share extension might immediately post an image to a social media account with a single tap."</td><td>Apple's guidance endorses the one-tap, no-form pattern.</td><td><a href="https://codershigh.github.io/guidelines/ios/human-interface-guidelines/extensions/sharing-and-actions/index.html">HIG mirror</a>; current HIG: <a href="https://developer.apple.com/design/human-interface-guidelines/activity-views">Activity views</a></td></tr>
+</table></div>
+<p><small>Also read: the archived <a href="https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/Share.html">App Extension Programming Guide — Share</a> (custom UI instead of the standard compose view; completing the request), and Henri Bredt's <a href="https://medium.com/@henribredtprivat/create-an-ios-share-extension-with-custom-ui-in-swift-and-swiftui-2023-6cf069dc1209">custom-UI share extension walkthrough (2023)</a>.</small></p>
+
+<h2 id="proposal">3. The card I propose</h2>
+<div class="mocks">
+  <div>
+    <div class="phone"><div class="screen"><div class="host"><div class="bar"></div><div class="media"></div><div class="caption"></div><div class="caption two"></div></div><div class="dim"></div><div class="sheet"></div><div class="pill">Open Allkept to sign in</div></div></div>
+    <div class="label">Today: full-height sheet, banner in the middle</div>
+  </div>
+  <div>
+    <div class="phone"><div class="screen"><div class="host"><div class="bar"></div><div class="media"></div><div class="caption"></div><div class="caption two"></div></div><div class="cardwrap"><div class="card"><div class="icon"></div><div><div class="t">Saved to Allkept ✓</div></div></div></div></div></div>
+    <div class="label">Proposed: compact card over the app you were in</div>
+  </div>
+  <div class="light">
+    <div class="phone"><div class="screen"><div class="host" style="background:linear-gradient(180deg,#f2f2f6,#e6e7ee)"><div class="bar" style="background:rgba(0,0,0,.12)"></div><div class="media"></div><div class="caption" style="background:rgba(0,0,0,.15)"></div><div class="caption two" style="background:rgba(0,0,0,.15)"></div></div><div class="cardwrap"><div class="card"><div class="icon"></div><div><div class="t">Saved to Allkept.</div><div class="s">Syncs when you're online</div></div></div></div></div></div>
+    <div class="label">Offline variant, light appearance</div>
+  </div>
+</div>
+
+<h3>Specification</h3>
+<div class="tbl"><table>
+<tr><th>Aspect</th><th>Decision</th></tr>
+<tr><td class="f">Presentation</td><td><code>NSExtensionActionWantsFullScreenPresentation = true</code>; the root view is fully transparent, so the app you shared from stays visible and undimmed. No sheet, no grabber.</td></tr>
+<tr><td class="f">Card</td><td>Bottom-anchored, 16 pt from the side edges, sitting above the home indicator; corner radius 18; the app icon at 28 pt on the left; title in semibold 15 pt; an optional second line in 13 pt at 70 % opacity (only the offline message uses it). Width fits the text, capped at the screen width minus 32.</td></tr>
+<tr><td class="f">Colours</td><td>Follows the system appearance: near-black at 94 % opacity with white text in dark mode; near-white at 96 % with ink text in light mode. Uses the brand purple only in the icon.</td></tr>
+<tr><td class="f">Motion</td><td>Slides up 12 pt and fades in over 180 ms while the request is in flight (shows "Saving…"); the text swaps in place to the result; holds 1.1 s; fades out over 200 ms; then the extension completes. Total on screen ≈ 1.5 s online.</td></tr>
+<tr><td class="f">States</td><td>"Saving…" → "Saved to Allkept ✓" · "Saved to Allkept." + "Syncs when you're online" · "Open Allkept to sign in" · "That wasn't a link" · "Too many saves at once. Try again soon." Same texts as approved; only the container changes.</td></tr>
+<tr><td class="f">Tap</td><td>Tapping anywhere dismisses immediately (the whole transparent view is the hit area). Nothing else is interactive.</td></tr>
+<tr><td class="f">Accessibility</td><td>The result is posted as a VoiceOver announcement; text scales with Dynamic Type up to the accessibility sizes, wrapping to two lines.</td></tr>
+<tr><td class="f">Android</td><td>Already a toast over the host app (proven on the emulator). Unchanged.</td></tr>
+</table></div>
+
+<h2 id="change">4. The exact change</h2>
+<ul class="check">
+<li><code>targets/share/Info.plist</code>: add <code>NSExtensionActionWantsFullScreenPresentation = true</code> under <code>NSExtensionAttributes</code>.</li>
+<li><code>targets/share/ShareViewController.swift</code>: root view <code>.clear</code>; replace the centred label with a bottom-anchored card view (icon + title + optional subtitle), the fade/slide animations, the tap-to-dismiss recogniser, the VoiceOver announcement. The request logic, the queue and the messages are untouched.</li>
+<li>Local rebuild (unsigned simulator build, ~6 min) → you tap Share → Allkept once more and see the card over Safari.</li>
+<li>Then the EAS preview builds.</li>
+</ul>
+<div class="note"><b>One thing to verify on the first run:</b> that with the full-screen presentation the app underneath is actually visible through our transparent view on iOS 26 — the forum answer says the presentation has no dimming or chrome, and Instapaper's banner relies on exactly that, but I have not seen it on this OS version myself. If it turns out black, the fallback is a translucent dark scrim behind the card, which still beats today's sheet.</div>
+
+<p><small>Allkept · share sheet card references · 12 September 2026 · sources verified today unless marked otherwise.</small></p>
+</div>
+</body>
+</html>

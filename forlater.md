@@ -101,7 +101,7 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Originated from:** launch questions, 11 Sep 2026
 
 ### 15. Privacy policy content after the onboarding change
-- **What + why:** Phone collection has stopped and the photo is optional (11 Sep), so the policy's data inventory must say so. It still mentions gender (removed 10 Sep). It should state plainly that there are no ads. **And it names the wrong region:** it says the backend is in Mumbai (ap-south-1), but the Supabase project `yurbmcqoqyehbpoqplcr` is in **ap-southeast-1 (Singapore)** — a factual error on a legal page, to fix in the same pass. Content change to a public page → needs Pranav's approval; then re-run `npm run extract` in `apps/website` so the site copy follows.
+- **What + why:** Phone collection has stopped and the photo is optional (11 Sep), so the policy's data inventory must say so. It still mentions gender (removed 10 Sep). It should state plainly that there are no ads. It also says Allkept "takes no payments" (wrong once the US tier ships) and lacks the three statements YouTube's API terms require (Terms agent, 11 Sep). **And it names the wrong region:** it says the backend is in Mumbai (ap-south-1), but the Supabase project `yurbmcqoqyehbpoqplcr` is in **ap-southeast-1 (Singapore)** — a factual error on a legal page, to fix in the same pass. Content change to a public page → needs Pranav's approval; then re-run `npm run extract` in `apps/website` so the site copy follows.
 - **Scope:** `docs/privacy.html` (+ `apps/website/content/privacy.html` via extract).
 - **Status:** queued — after the onboarding change lands.
 - **Date added:** 2026-09-11
@@ -113,6 +113,20 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued.
 - **Date added:** 2026-09-11
 - **Originated from:** onboarding change audit, 11 Sep 2026
+
+### 17. YouTube API data retention — 30-day limit
+- **What + why:** Found by the Terms agent (11 Sep): YouTube API Services Developer Policies III.E.4(d) limit storage of non-authorised API data (titles, thumbnails fetched with the API key) to 30 days unless refreshed. Allkept stores playlist/video titles and thumbnails indefinitely. Needs a decision: periodic refresh, expiry, or storing only the link for YouTube items. Also: the privacy policy must carry the three YouTube-required statements. Verify the current policy text before building.
+- **Scope:** pipeline (`enrich.ts`, `youtube-poll`), items retention, privacy policy.
+- **Status:** queued — platform-terms compliance; pairs with legal plan §2.
+- **Date added:** 2026-09-11
+- **Originated from:** US Terms draft annotations §29–30
+
+### 18. Share extension that saves without leaving the app (Pocket-style)
+- **What + why:** Pranav's direction, 11 Sep: sharing to Allkept should save on the spot and show "Saved to Allkept" inside the share sheet, on iOS and Android, without opening the app. Native work on both platforms plus a server-side scoped save token (the extension cannot safely share the app's refresh-rotating session). Brainstorm → spec → plan.
+- **Scope:** iOS share extension, Android share target activity, `save-link` auth path, app-group/shared storage, new native build on both platforms.
+- **Status:** built and proven on the simulator (12 Sep): silent save on iOS via background upload; Android toast. Remaining: EAS preview builds, then Pranav's device checklist; then archive.
+- **Date added:** 2026-09-11
+- **Originated from:** share-from-Instagram friction, 11 Sep 2026
 
 ---
 

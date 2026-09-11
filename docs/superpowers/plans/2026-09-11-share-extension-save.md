@@ -1194,7 +1194,9 @@ cmp modules/share-save/ios/SharedStore.swift targets/share/SharedStore.swift && 
 
 - [ ] **Step 4: The extension**
 
-`targets/share/ShareViewController.swift`:
+> **Superseded 12 Sep:** the centred-label version below shipped as a full-height black sheet (iOS locks share-extension sheets to the large detent). The file now draws a compact bottom card over the host app under `NSExtensionActionWantsFullScreenPresentation` — see `docs/design/share-sheet-references.html` §3–4 and the committed `targets/share/ShareViewController.swift`. The request, queue and messages are unchanged.
+
+`targets/share/ShareViewController.swift` (original):
 ```swift
 import UIKit
 import UniformTypeIdentifiers
