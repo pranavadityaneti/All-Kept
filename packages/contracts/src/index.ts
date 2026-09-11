@@ -93,7 +93,7 @@ export interface ItemAiOutput {
   confidence: number;
 }
 
-export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "internal";
+export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "rate_limited" | "internal";
 export interface ApiError {
   error: string;
   code: ApiErrorCode;

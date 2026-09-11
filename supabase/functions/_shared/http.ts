@@ -1,6 +1,6 @@
 import type { ApiError, ApiErrorCode } from "./contracts.ts";
 
-const STATUS: Record<ApiErrorCode, number> = { bad_request: 400, unauthorized: 401, not_found: 404, internal: 500 };
+const STATUS: Record<ApiErrorCode, number> = { bad_request: 400, unauthorized: 401, not_found: 404, rate_limited: 429, internal: 500 };
 
 export function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8" } });
