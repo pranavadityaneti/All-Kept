@@ -14,7 +14,8 @@
     "doctor": "npx expo-doctor",
     "build:ios": "npx --yes eas-cli@latest build --profile testflight --platform ios",
     "build:android": "npx --yes eas-cli@latest build --profile preview --platform android",
-    "submit:ios": "npx --yes eas-cli@latest submit --platform ios --latest --non-interactive"
+    "submit:ios": "npx --yes eas-cli@latest submit --platform ios --latest --non-interactive",
+    "check:shared-store": "bash scripts/check-shared-store.sh"
   },
   "dependencies": {
     "@allkept/contracts": "*",
