@@ -10,19 +10,21 @@ type Native = {
   peekQueue(): string;
   dropQueued(requestId: string): void;
 };
-const native = requireNativeModule<Native>("ShareSave");
+let handle: Native | null = null;
+// Resolved on first use, not at import: a test, or a build without the native side, can import this safely.
+const native = (): Native => (handle ??= requireNativeModule<Native>("ShareSave"));
 
 /** What the share extension needs to save on its own: the token, where to send it, and the anon key. */
-export function setCredential(credential: ShareCredential): void { native.setCredential(JSON.stringify(credential)); }
-export function clearCredential(): void { native.clearCredential(); }
-export function hasCredential(): boolean { return native.hasCredential(); }
+export function setCredential(credential: ShareCredential): void { native().setCredential(JSON.stringify(credential)); }
+export function clearCredential(): void { native().clearCredential(); }
+export function hasCredential(): boolean { return native().hasCredential(); }
 /** What the extension queued while offline. Read-only: drop each entry once it has been delivered. */
 export function peekQueue(): QueuedShare[] {
   try {
-    const parsed: unknown = JSON.parse(native.peekQueue() || "[]");
+    const parsed: unknown = JSON.parse(native().peekQueue() || "[]");
     if (!Array.isArray(parsed)) return [];
     return parsed.filter((q): q is QueuedShare =>
       typeof q === "object" && q !== null && typeof (q as QueuedShare).text === "string" && typeof (q as QueuedShare).requestId === "string");
   } catch { return []; }
 }
-export function dropQueued(requestId: string): void { native.dropQueued(requestId); }
+export function dropQueued(requestId: string): void { native().dropQueued(requestId); }

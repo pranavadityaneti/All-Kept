@@ -1,14 +1,12 @@
 import * as Clipboard from "expo-clipboard";
-import { pendingShare, clearPendingShare } from "../lib/pending-share";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { AppState, Text, TextInput } from "react-native";
+import { useRef, useState } from "react";
+import { Text, TextInput } from "react-native";
 import type { SaveLinkResponse } from "@allkept/contracts";
 import { saveLink } from "@allkept/normalize";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
-import { incomingLink } from "../lib/incoming-share";
 import { resolveForSave } from "../lib/resolve-link";
 import { invalidateLibrary } from "../lib/library";
 import { useSession } from "../lib/session";
@@ -18,7 +16,6 @@ import { radius, space, type, usePalette } from "../lib/theme";
 export default function SaveLink() {
   const p = usePalette();
   const router = useRouter();
-  const { incoming } = useLocalSearchParams<{ incoming?: string }>();
   const session = useSession();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
@@ -26,31 +23,7 @@ export default function SaveLink() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<SaveLinkResponse | null>(null);
   const running = useRef(false);
-  const seenShare = useRef<string | null>(null);
   const attempt = useRef<{ text: string; id: string } | null>(null);
-
-  useEffect(() => {
-    if (incoming !== "1") return;
-    let live = true;
-    const read = async () => {
-      if (running.current) return;
-      try {
-        const payloads = await pendingShare();
-        if (!live) return;
-        if (!payloads.length) return;
-        const fingerprint = JSON.stringify(payloads);
-        if (seenShare.current === fingerprint) return;
-        seenShare.current = fingerprint;
-        const url = incomingLink(payloads);
-        setText(url ?? "");
-        setSaved(null);
-        setError(url ? null : "That share didn't contain a single link. Copy the address and paste it here.");
-      } catch { setError("Could not read the share. Copy the address and paste it here."); }
-    };
-    read();
-    const sub = AppState.addEventListener("change", (state) => { if (state === "active") read(); });
-    return () => { live = false; sub.remove(); };
-  }, [incoming]);
 
   const save = async () => {
     if (running.current || session.status !== "ready") return;
@@ -70,13 +43,11 @@ export default function SaveLink() {
       if (failure || !data?.itemId) throw new Error("Could not save the link. Check your connection and try again.");
       setSaved(data);
       invalidateLibrary(queryClient);
-      if (incoming === "1") { await clearPendingShare(); seenShare.current = null; }
     } catch (e) { setError(e instanceof Error ? e.message : "Could not save the link."); }
     finally { running.current = false; setBusy(false); }
   };
 
   const close = async () => {
-    if (incoming === "1") await clearPendingShare();
     router.replace("/");
   };
 

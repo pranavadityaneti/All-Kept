@@ -9,6 +9,7 @@ import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { Icon } from "../../components/Icon";
 import { SettingsGroup, SettingsRow } from "../../components/SettingsRow";
 import { useDeleteAccount } from "../../lib/account";
+import { revokeShareToken } from "../../lib/share-save";
 import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/google";
 import { usePreferences, useSetPreference } from "../../lib/preferences";
 import { useProfile, useAvatar } from "../../lib/profile";
@@ -102,7 +103,7 @@ export default function Settings() {
   const confirmSignOut = () =>
     Alert.alert("Sign out?", "Your library stays safe and comes back when you sign in again.", [
       { text: "Stay signed in", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => { void supabase.auth.signOut({ scope: "local" }).then(({ error }) => { if (error) Alert.alert("Could not sign out", "Please try again."); }); } },
+      { text: "Sign out", style: "destructive", onPress: () => { void revokeShareToken().then(() => supabase.auth.signOut({ scope: "local" })).then(({ error }) => { if (error) Alert.alert("Could not sign out", "Please try again."); }); } },
     ]);
 
   const confirmDelete = () =>

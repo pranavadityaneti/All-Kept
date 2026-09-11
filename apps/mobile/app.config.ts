@@ -20,6 +20,8 @@ const config: ExpoConfig = {
     // the native sheet: the capability belongs to the App ID, and turning it off breaks the
     // Services ID the browser flow depends on.
     usesAppleSignIn: true,
+    // The share extension reads the save token and the offline queue through this group.
+    entitlements: { "com.apple.security.application-groups": ["group.app.allkept.mobile"] },
     // The app uses only standard HTTPS, which is exempt. Declaring it here saves answering the
     // encryption question by hand in App Store Connect for every single build.
     infoPlist: { ITSAppUsesNonExemptEncryption: false },
@@ -52,10 +54,9 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-secure-store",
     ["expo-image-picker", { photosPermission: "Choose a photo for your Allkept profile.", cameraPermission: false, microphonePermission: false }],
-    ["expo-sharing", {
-      ios: { enabled: true, activationRule: { supportsText: true, supportsWebUrlWithMaxCount: 1 } },
-      android: { enabled: true, singleShareMimeTypes: ["text/plain"] },
-    }],
+    // The share sheet is served by our own extension (targets/share) and Android share activity
+    // (modules/share-save); expo-sharing stays only for sharing *out*.
+    "@bacons/apple-targets",
     // The splash is the welcome screen's first frame, not a second thing before it. Same ground,
     // same lockup, so launching reads as one continuous moment instead of a white card cutting to a
     // dark one. The dark lockup carries a baked-in plate rather than transparency, which is invisible

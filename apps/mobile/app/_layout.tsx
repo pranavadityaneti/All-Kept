@@ -1,9 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { Stack, useRouter, useSegments } from "expo-router";
-import { pendingShare } from "../lib/pending-share";
+import { Stack, useRouter } from "expo-router";
+import { ensureShareToken, flushShareQueue } from "../lib/share-save";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, type PropsWithChildren } from "react";
 import { AppState, StyleSheet, Text, View } from "react-native";
@@ -62,12 +62,15 @@ function Shell() {
   // onto a screen someone has not signed in to yet would land them nowhere.
   const openSave = useCallback((itemId: string) => { if (unlocked) router.push(`/item/${itemId}`); }, [router, unlocked]);
   useNotificationRoute(openSave);
+  // The share extension's credential and its offline queue: minted once, delivered on every foreground.
+  const queryClient = useQueryClient();
   useEffect(() => {
-    const capture = () => { void pendingShare().catch(() => undefined); };
-    capture();
-    const sub = AppState.addEventListener("change", (state) => { if (state === "active") capture(); });
+    if (!unlocked) return;
+    const sync = () => { void ensureShareToken().then(() => flushShareQueue(queryClient)).catch(() => undefined); };
+    sync();
+    const sub = AppState.addEventListener("change", (state) => { if (state === "active") sync(); });
     return () => sub.remove();
-  }, []);
+  }, [unlocked, queryClient]);
   if (!updates.ready) return <View style={{ flex: 1, backgroundColor: p.bg }} />;
   if (configError) return <View style={[styles.centered, { backgroundColor: p.bg }]}><Text style={[type.title, { color: p.ink }]}>Allkept</Text><Text style={[type.body, { color: p.inkMuted }]}>{configError}</Text></View>;
   return <>
@@ -89,23 +92,7 @@ function Shell() {
       <Stack.Protected guard={destination === "onboarding"}><Stack.Screen name="onboarding" /></Stack.Protected>
       <Stack.Screen name="auth-callback" />
     </Stack>
-    <ResumeSharedLink enabled={unlocked} />
   </>;
 }
 /** Native payloads remain untouched during Google sign-in and profile setup. */
-function ResumeSharedLink({ enabled }: { enabled: boolean }) {
-  const router = useRouter(), segments = useSegments();
-  const route = segments.join("/");
-  useEffect(() => {
-    if (!enabled || route === "auth-callback" || route === "save") return;
-    let live = true;
-    const resume = () => {
-      void pendingShare().then((payloads) => { if (live && payloads.length) router.replace("/save?incoming=1"); }).catch(() => undefined);
-    };
-    resume();
-    const sub = AppState.addEventListener("change", (state) => { if (state === "active") resume(); });
-    return () => { live = false; sub.remove(); };
-  }, [enabled, route, router]);
-  return null;
-}
 const styles = StyleSheet.create({ centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: space.md, padding: space.xl } });

@@ -461,7 +461,7 @@ entrypoint = "./functions/youtube-poll/index.ts"
 
 [functions.save-link]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 entrypoint = "./functions/save-link/index.ts"
 
 [functions.search-library]
@@ -474,3 +474,8 @@ enabled = true
 # The handler verifies the bearer with auth.getUser and then checks admin membership.
 verify_jwt = false
 entrypoint = "./functions/admin-dashboard/index.ts"
+
+# Called with a session; auth is decided in code, on one rule with save-link.
+[functions.share-token]
+enabled = true
+verify_jwt = false

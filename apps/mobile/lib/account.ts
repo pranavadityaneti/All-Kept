@@ -1,4 +1,5 @@
 import type { DeleteAccountResponse } from "@allkept/contracts";
+import { clearCredential } from "../modules/share-save";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "./session";
 import { clearProfilePhotos } from "./profile-photo";
@@ -20,6 +21,7 @@ export function useDeleteAccount() {
         clearProfilePhotos(session.userId);
         await chunkedSecureStore.removeItem(`allkept.profile-draft.${session.userId}`).catch(() => undefined);
       }
+      clearCredential(); // the server side went with the account; the phone forgets too
       await supabase.auth.signOut({ scope: "local" }).catch(() => undefined); // the account is gone; drop the stored session
       queryClient.clear();
       return data ?? { deleted: true, thumbnails: 0, events: 0, replies: 0, items: 0, sources: 0 };
