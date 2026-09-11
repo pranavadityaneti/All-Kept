@@ -4,7 +4,7 @@ import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
 import { LINK_CODE_LENGTH } from "../_shared/contracts.ts";
 import { instagramPermalink, type NormalizedLink } from "../_shared/normalize.ts";
 
-export type ReplyKind = "linked" | "code_rejected" | "unlinked" | "unsupported" | "confirm" | "control";
+export type ReplyKind = "linked" | "code_rejected" | "unlinked" | "unsupported" | "confirm" | "control" | "delete";
 
 export interface LinkedSource {
   id: string;
@@ -34,6 +34,14 @@ export interface ProcessDeps {
   lookupProfile(igsid: string): Promise<{ username: string | null; name: string | null }>;
   capture(input: CaptureInput): Promise<CaptureResult>;
   deleteItemByEvent(userId: string, sourceEventId: string): Promise<boolean>;
+  /**
+   * The confirmation codes valid for this person right now: the one to quote at them, and the one
+   * issued in the previous window, still accepted so a code does not expire while it is being typed.
+   * Derived rather than stored, so asking to delete twice does not leave a row behind.
+   */
+  deleteCodes(userId: string, now: Date): Promise<{ current: string; previous: string }>;
+  /** Removes the account and everything in it. Irreversible; only ever called after a confirmation. */
+  deleteEverything(userId: string): Promise<void>;
   recentReply(igsid: string, kind: ReplyKind, since: Date): Promise<boolean>;
   sendReply(igsid: string, text: string, meta: ReplyMeta): Promise<void>;
   /** Resolves to the category once classification lands, or null after the timeout. */
@@ -46,7 +54,7 @@ export interface ProcessDeps {
 }
 
 export interface ProcessOutcome {
-  action: "echo" | "ignored" | "deleted" | "linked" | "code_rejected" | "unlinked" | "control" | "unsupported" | "captured" | "attached";
+  action: "echo" | "ignored" | "deleted" | "linked" | "code_rejected" | "unlinked" | "control" | "unsupported" | "captured" | "attached" | "delete_offered" | "erased";
   itemIds?: string[];
 }
 
@@ -54,6 +62,8 @@ type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
 const CODE_RE = new RegExp(`^[A-Z2-9]{${LINK_CODE_LENGTH}}$`);
+/** Deliberately unlike a link code, so neither can ever be mistaken for the other. */
+export const DELETE_CODE_RE = /^DELETE-[0-9]{4}$/;
 const HOUR = 3_600_000;
 const REPLY_WINDOW_MS = 23 * HOUR;
 /** How long the confirmation waits for the sort. Reels take 8 to 11 s (preview page, image, model); past this the reply says "sorting" and the library still gets the category. */
@@ -67,6 +77,10 @@ export const REPLY_TEXT = {
   unsupported: "I can keep posts, reels and links for now, not photos or stories.",
   repliesOff: "Replies off. Send \"start replies\" to turn them back on.",
   repliesOn: "Replies on.",
+  deleteConfirm: (code: string) =>
+    `This removes your Allkept account and everything in it — every save, every preview, every note. It cannot be undone.\n\nTo go ahead, send ${code}\n\nNothing is deleted unless you do. Ignore this message to keep everything.`,
+  deleteDone: "Everything has been deleted. Your Allkept account is gone and nothing of it remains. Thank you for trying it.",
+  deleteExpired: "That confirmation has expired or does not match. Send \"delete my data\" again for a new one. Nothing has been deleted.",
   alreadySaved: "Already saved.",
   saved: (category: string | null) => (category ? `Saved · ${category}` : "Saved, sorting…"),
   note: "Saved as a note.",
@@ -122,6 +136,30 @@ export async function processEvent(row: EventRow, deps: ProcessDeps): Promise<Pr
   }
 
   const lower = text.toLowerCase();
+
+  // What docs/delete.html tells people to send. It reached here and was kept as a save, so somebody
+  // asking to be forgotten got one more row in the library instead. Two steps rather than one: the
+  // request is deliberate, but a single message should not be able to destroy a library, and the
+  // code proves the person read what it was going to do.
+  if (lower === "delete my data") {
+    const { current } = await deps.deleteCodes(source.userId, now);
+    await deps.sendReply(igsid, REPLY_TEXT.deleteConfirm(current), { kind: "delete", userId: source.userId, sourceId: source.id, itemId: null, notAfter });
+    return { action: "delete_offered" };
+  }
+  if (DELETE_CODE_RE.test(text.trim().toUpperCase())) {
+    const given = text.trim().toUpperCase();
+    const { current, previous } = await deps.deleteCodes(source.userId, now);
+    if (given === current || given === previous) {
+      await deps.deleteEverything(source.userId);
+      // The account no longer exists, so nothing about the reply may point at it.
+      await deps.sendReply(igsid, REPLY_TEXT.deleteDone, { kind: "delete", userId: null, sourceId: null, itemId: null, notAfter });
+      return { action: "erased" };
+    }
+    // A stale or mistyped code is not a save. Saying so beats silently keeping it as a note.
+    await deps.sendReply(igsid, REPLY_TEXT.deleteExpired, { kind: "delete", userId: source.userId, sourceId: source.id, itemId: null, notAfter });
+    return { action: "delete_offered" };
+  }
+
   if (lower === "stop replies" || lower === "start replies") {
     const enabled = lower === "start replies";
     await deps.setRepliesEnabled(source.id, enabled);

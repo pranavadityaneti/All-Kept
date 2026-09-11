@@ -6,7 +6,7 @@ export const profileKey = (userId: string | null) => ["profile", userId] as cons
 export function useProfile(userId: string | null) {
   return useQuery({ queryKey: profileKey(userId), enabled: !!userId,
     queryFn: async (): Promise<Profile> => {
-      const { data, error } = await supabase.from("profiles").select("user_id,display_name,gender,gender_custom,phone,avatar_path,onboarding_completed_at").eq("user_id", userId!).single();
+      const { data, error } = await supabase.from("profiles").select("user_id,display_name,phone,avatar_path,onboarding_completed_at").eq("user_id", userId!).single();
       if (error) throw new Error("Could not load your profile. Please try again.");
       return data as Profile;
     },

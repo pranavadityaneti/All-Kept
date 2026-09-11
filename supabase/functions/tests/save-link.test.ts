@@ -60,3 +60,20 @@ Deno.test("Instagram redirect shares retain their original address", async () =>
   assertEquals((await handleSaveLink(req({ text: url, requestId: "request-123" }), f.deps)).status, 200);
   assertEquals(f.captured[0]!.sharedUrl, url);
 });
+
+Deno.test("a pasted Instagram story is refused, the way the DM door already refuses one", async () => {
+  const f = fake();
+  const res = await handleSaveLink(req({ text: "https://www.instagram.com/stories/natgeo/3512/", requestId: "request-story" }), f.deps);
+  assertEquals(res.status, 400);
+  const body = await res.json() as { message?: string; error?: string };
+  // The reason matters: "that doesn't look like a link" would be untrue and unhelpful.
+  assertEquals(String(body.message ?? body.error ?? "").includes("24 hours"), true);
+  assertEquals(f.captured.length, 0);
+});
+
+Deno.test("a profile is still saved — a page worth keeping, just not a post", async () => {
+  const f = fake();
+  const res = await handleSaveLink(req({ text: "https://www.instagram.com/natgeo/", requestId: "request-profile" }), f.deps);
+  assertEquals(res.status, 200);
+  assertEquals(f.captured.length, 1);
+});

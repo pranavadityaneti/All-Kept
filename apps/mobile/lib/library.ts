@@ -22,8 +22,9 @@ export interface LibraryItem {
   summary: string | null;
 }
 
-export interface Filters { platforms: string[]; categories: string[] }
-export const NO_FILTERS: Filters = { platforms: [], categories: [] };
+// The groups themselves live in filter-groups.ts, which stays free of runtime imports.
+export { FILTER_GROUPS, NO_FILTERS, countFilters, type Facet, type Facets, type Filters } from "./filter-groups";
+import type { Facet, Facets, Filters } from "./filter-groups";
 
 const PAGE = 30;
 type Row = Record<string, unknown>;
@@ -51,9 +52,11 @@ export const toItem = (r: Row): LibraryItem => ({
 interface LibraryCursor { savedAt: string; id: string }
 
 async function fetchPage(filters: Filters, before: LibraryCursor | null): Promise<{ items: LibraryItem[]; nextCursor: LibraryCursor | null }> {
-  const { data, error } = await supabase.rpc("library_query_v2", {
+  const { data, error } = await supabase.rpc("library_query_v3", {
     platforms: filters.platforms.length ? filters.platforms : null,
     categories: filters.categories.length ? filters.categories : null,
+    shapes: filters.shapes.length ? filters.shapes : null,
+    flags: filters.flags.length ? filters.flags : null,
     before,
     lim: PAGE,
   });
@@ -66,7 +69,7 @@ async function fetchPage(filters: Filters, before: LibraryCursor | null): Promis
 
 export function useLibrary(filters: Filters, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: ["library", "v2", filters],
+    queryKey: ["library", "v3", filters],
     enabled,
     initialPageParam: null as LibraryCursor | null,
     queryFn: ({ pageParam }) => fetchPage(filters, pageParam),
@@ -80,7 +83,7 @@ interface SearchPage { items: LibraryItem[]; nextCursor: SearchCursor | null; mo
 export function useSearch(q: string, filters: Filters, enabled: boolean) {
   const term = q.trim();
   return useInfiniteQuery({
-    queryKey: ["search", "v2", term, filters],
+    queryKey: ["search", "v3", term, filters],
     enabled: enabled && term.length > 0,
     initialPageParam: null as SearchCursor | null,
     queryFn: async ({ pageParam, signal }): Promise<SearchPage> => {
@@ -101,18 +104,19 @@ export function invalidateLibrary(queryClient: QueryClient): void {
   for (const key of LIBRARY_KEYS) void queryClient.invalidateQueries({ queryKey: key });
 }
 
-export interface Facets { platforms: { value: string; n: number }[]; categories: { value: string; n: number }[] }
-
 export function useFacets(enabled: boolean) {
   return useQuery({
     queryKey: ["facets"],
     enabled,
     queryFn: async (): Promise<Facets> => {
-      const { data, error } = await supabase.rpc("library_facets");
+      const { data, error } = await supabase.rpc("library_facets_v2");
       if (error) throw new Error(error.message);
-      const rows = (data ?? []) as { facet: string; value: string; n: number }[];
-      const pick = (facet: string) => rows.filter((r) => r.facet === facet).map((r) => ({ value: r.value, n: Number(r.n) })).sort((a, b) => b.n - a.n);
-      return { platforms: pick("platform"), categories: pick("category") };
+      const rows = (data ?? []) as { kind: string; value: string; n: number }[];
+      // A flag is only counted where it holds, so one that matches nothing never becomes a control
+      // that does nothing — and appears on its own the day it starts meaning something.
+      const pick = (kind: string): Facet =>
+        rows.filter((r) => r.kind === kind && r.value).map((r) => ({ value: r.value, n: Number(r.n) })).sort((a, b) => b.n - a.n);
+      return { platforms: pick("platform"), categories: pick("category"), shapes: pick("shape"), flags: pick("flag") };
     },
   });
 }

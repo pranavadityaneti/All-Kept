@@ -6,14 +6,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { IconButton } from "../../components/IconButton";
 import { SearchOverlay } from "../../components/SearchOverlay";
-import { Wordmark } from "../../components/Wordmark";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { Card } from "../../components/Card";
 import { FilterBar } from "../../components/FilterBar";
 import { FilterSheet } from "../../components/FilterSheet";
 import { ItemCard } from "../../components/ItemCard";
 import { activeFilters, exactMatches, type Matches } from "../../lib/filter-options";
 import { useFilters } from "../../lib/filters";
-import { useFacets, useLibrary, type LibraryItem } from "../../lib/library";
+import { NO_FILTERS, useFacets, useLibrary, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
@@ -37,7 +37,7 @@ export default function Library() {
     const wanted = params.category;
     if (!loaded || !wanted || applied.current === wanted) return;
     applied.current = wanted;
-    set({ platforms: [], categories: [wanted] });
+    set({ ...NO_FILTERS, categories: [wanted] });
   }, [loaded, params.category, set]);
   const library = useLibrary(filters, ready && loaded);
   const facets = useFacets(ready);
@@ -60,10 +60,9 @@ export default function Library() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
-      <View style={styles.header}>
-        <Wordmark height={24} />
+      <ScreenHeader>
         {(items.length > 0 || hasFilters) && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
-      </View>
+      </ScreenHeader>
 
       <FilterBar facets={facets.data} filters={filters} matches={matches} onOpen={() => setFiltering(true)} onRemove={toggle} onClear={clear} />
 
@@ -148,7 +147,6 @@ export default function Library() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md },
   list: { padding: space.lg, paddingBottom: TAB_BAR_CLEARANCE },
   cell: { flex: 1 },
   cellLeft: { paddingRight: space.sm },

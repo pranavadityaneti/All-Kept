@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "490364764834",
+    "project_id": "allkept-6a042",
+    "storage_bucket": "allkept-6a042.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:490364764834:android:763adacf5cc375e58ccdfb",
+        "android_client_info": {
+          "package_name": "app.allkept.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALE7sf5OgU7oyNfV8hNODEbpZc-0lmi_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

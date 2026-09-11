@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>All Kept Saved fan</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { color-scheme: light; font-family: Garet, "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+    body { margin: 0; width: 560px; height: 980px; display: grid; place-items: center; background: #e9edf4; color: #17151b; }
+    .concept { display: grid; gap: 16px; justify-items: center; }
+    .label { font-size: 14px; font-weight: 500; letter-spacing: .01em; }
+    .phone {
+      width: 390px; height: 844px; position: relative; overflow: hidden;
+      background:
+        linear-gradient(rgba(89,61,144,.042) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(89,61,144,.042) 1px, transparent 1px),
+        #fbfafc;
+      background-size: 92px 92px;
+      border: 7px solid #fff; border-radius: 50px;
+      box-shadow: 0 28px 70px rgba(54,56,76,.20), 0 3px 10px rgba(54,56,76,.09);
+    }
+    .status { height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 4px 24px 0; font-size: 13px; font-weight: 600; }
+    .island { width: 104px; height: 28px; border-radius: 18px; background: #09090b; position: absolute; top: 10px; left: 136px; }
+    .brand { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); width: 132px; height: 52px; object-fit: contain; }
+    .hero { position: absolute; top: 102px; left: 11px; width: 354px; height: 410px; overflow: hidden; }
+    .hero img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; transform: scale(1.11); }
+    .sheet {
+      position: absolute; z-index: 3; left: 13px; right: 13px; bottom: 13px; height: 326px;
+      padding: 27px 22px 17px; border: 1px solid rgba(35,27,48,.055); border-radius: 34px;
+      display: flex; flex-direction: column; align-items: center;
+      background: rgba(255,255,255,.97); box-shadow: 0 -4px 28px rgba(87,65,128,.075), 0 10px 22px rgba(37,31,49,.08);
+      backdrop-filter: blur(18px);
+    }
+    h1 { margin: 0; max-width: 310px; font-size: 31px; line-height: .98; letter-spacing: -.045em; text-align: center; font-weight: 400; }
+    h1 span { color: #7047f2; font-weight: 500; }
+    .sub { margin: 14px 0 0; max-width: 286px; color: #716b79; font-size: 13px; line-height: 1.35; text-align: center; }
+    .actions { width: 100%; margin-top: 21px; display: flex; flex-direction: column; align-items: center; gap: 9px; }
+    .signin { color: #716b79; font-size: 12px; line-height: 1; font-weight: 500; }
+    .providers { display: flex; align-items: center; justify-content: center; gap: 14px; }
+    .provider { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .provider.google { background: #fff; border: 1px solid #e6e1ec; box-shadow: 0 5px 12px rgba(43,32,55,.08); }
+    .provider.google img { width: 24px; height: 24px; object-fit: contain; }
+    .provider.apple img { width: 56px; height: 56px; object-fit: contain; }
+    .legal { margin-top: auto; color: #9a96a0; font-size: 9px; }
+    .homebar { position: absolute; z-index: 6; bottom: 3px; left: 137px; width: 102px; height: 4px; border-radius: 3px; background: #111; }
+  </style>
+</head>
+<body>
+  <main class="concept">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●●</span></div>
+      <div class="island"></div>
+      <img class="brand" src="../../../apps/mobile/assets/Home_All Kept_Logo.png" alt="All Kept" />
+      <div class="hero"><img src="./hero-1-platforms-v2.png" alt="Saved content cards from YouTube, Instagram and TikTok" /></div>
+      <div class="sheet">
+        <h1>Everything you save.<br><span>Kept together.</span></h1>
+        <p class="sub">Instagram, YouTube, TikTok and the web. Sorted and ready when you need it.</p>
+        <div class="actions">
+          <div class="signin">Sign in below</div>
+          <div class="providers">
+            <div class="provider google"><img src="../../../packages/platform-assets/assets/google.png" alt="Sign in with Google" /></div>
+            <div class="provider apple"><img src="../../../apps/mobile/assets/welcome/apple-signin-logo.png" alt="Sign in with Apple" /></div>
+          </div>
+        </div>
+        <div class="legal">By continuing, you agree to our Terms and Privacy Policy.</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="label">Saved fan</div>
+  </main>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import type { ClassificationStatus } from "@allkept/contracts";
+import { categoryDisplayName } from "./category-names";
 
 interface Sortable { status: string; classificationStatus?: ClassificationStatus; category: string | null }
 
@@ -7,7 +8,7 @@ export function canRetrySorting(item: Sortable): boolean {
 }
 
 export function categoryLabel(item: Sortable): string {
-  if (item.category) return item.category;
+  if (item.category) return categoryDisplayName(item.category);
   if (item.status === "failed" || item.classificationStatus === "failed") return "Needs attention";
   if (item.classificationStatus === "ready") return "Uncategorized";
   return "Sorting";

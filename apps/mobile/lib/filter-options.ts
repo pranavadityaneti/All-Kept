@@ -1,14 +1,68 @@
+import { categoryDisplayName } from "./category-names";
 import { FILTER_LABEL } from "./platforms";
-import type { Facets, Filters } from "./library";
+import { FILTER_GROUPS, type Facets, type Filters } from "./filter-groups";
 
 export type FilterGroup = keyof Filters;
+
+/**
+ * What a save is, in the words someone would use for it.
+ *
+ * "Reels & Shorts" is one bucket on purpose: a nine-by-sixteen video is the same thing to watch
+ * whichever app it came from, and splitting it by platform is what the platform pills are for.
+ */
+export const SHAPE_LABEL: Record<string, string> = {
+  vertical: "Reels & Shorts",
+  wide: "Videos",
+  post: "Posts & carousels",
+  note: "Notes",
+  link: "Links",
+  profile: "Profiles",
+  story: "Stories",
+  other: "Other",
+};
+
+export const SHAPE_ICON: Record<string, string> = {
+  vertical: "phone-portrait-outline",
+  wide: "tv-outline",
+  post: "images-outline",
+  note: "document-text-outline",
+  link: "link-outline",
+  profile: "person-circle-outline",
+  story: "time-outline",
+  other: "ellipsis-horizontal",
+};
+
+/** Standing questions about a save rather than descriptions of it. */
+export const FLAG_LABEL: Record<string, string> = {
+  needs_attention: "Needs attention",
+  repeated: "Saved more than once",
+  noted: "Has a note",
+};
+
+export const FLAG_ICON: Record<string, string> = {
+  needs_attention: "alert-circle-outline",
+  repeated: "copy-outline",
+  noted: "create-outline",
+};
 
 export interface FilterOption { value: string; label: string; n: number; selected: boolean }
 export interface ActiveFilter { group: FilterGroup; value: string; label: string }
 
-/** How a value reads on screen. A platform has a short name of its own; a category is already one. */
-export const filterLabel = (group: FilterGroup, value: string): string =>
-  group === "platforms" ? FILTER_LABEL[value] ?? value : value;
+/**
+ * How a value reads on screen, decided in one place.
+ *
+ * A category is stored as the long phrase the classifier works in — "Style & fashion" — and shown
+ * as the short one. The sheet used to shorten it itself, through a displayLabel prop, which left
+ * the bar's token chips and the "nothing under these filters" line still printing the long form: a
+ * filter you had just set from a button reading "Style" then described itself as "Style & fashion".
+ * Naming it here means every one of those reads the same, and a new surface gets it for free.
+ */
+export function filterLabel(group: FilterGroup, value: string): string {
+  if (group === "platforms") return FILTER_LABEL[value] ?? value;
+  if (group === "shapes") return SHAPE_LABEL[value] ?? value;
+  if (group === "flags") return FLAG_LABEL[value] ?? value;
+  return categoryDisplayName(value);
+}
 
 /**
  * Everything one group can offer.
@@ -20,7 +74,7 @@ export const filterLabel = (group: FilterGroup, value: string): string =>
  */
 export function filterOptions(group: FilterGroup, facets: Facets | undefined, filters: Filters): FilterOption[] {
   const chosen = filters[group];
-  const counted = (group === "platforms" ? facets?.platforms : facets?.categories) ?? [];
+  const counted = facets?.[group] ?? [];
   const known = new Set(counted.map((f) => f.value));
   return [
     ...counted.map((f) => ({ value: f.value, label: filterLabel(group, f.value), n: f.n, selected: chosen.includes(f.value) })),
@@ -30,10 +84,9 @@ export function filterOptions(group: FilterGroup, facets: Facets | undefined, fi
 
 /** What is switched on right now, in the order the sheet lists it. */
 export function activeFilters(filters: Filters): ActiveFilter[] {
-  return [
-    ...filters.platforms.map((v) => ({ group: "platforms" as const, value: v, label: filterLabel("platforms", v) })),
-    ...filters.categories.map((v) => ({ group: "categories" as const, value: v, label: filterLabel("categories", v) })),
-  ];
+  return FILTER_GROUPS.flatMap((group) =>
+    filters[group].map((value) => ({ group, value, label: filterLabel(group, value) })),
+  );
 }
 
 export interface Matches {
@@ -52,12 +105,14 @@ export interface Matches {
  */
 export function exactMatches(facets: Facets | undefined, filters: Filters): number | null {
   if (!facets) return null;
-  if (filters.platforms.length > 0 && filters.categories.length > 0) return null;
-  const total = (counts: { value: string; n: number }[], chosen: string[]) =>
-    counts.filter((f) => chosen.includes(f.value)).reduce((sum, f) => sum + f.n, 0);
-  if (filters.platforms.length > 0) return total(facets.platforms, filters.platforms);
-  if (filters.categories.length > 0) return total(facets.categories, filters.categories);
-  return facets.platforms.reduce((sum, f) => sum + f.n, 0);
+  const narrowed = FILTER_GROUPS.filter((g) => filters[g].length > 0);
+  // Two groups at once describes an overlap the counts know nothing about, so it has to be counted
+  // from the results as they arrive rather than guessed at from here.
+  if (narrowed.length > 1) return null;
+  const only = narrowed[0];
+  if (!only) return facets.platforms.reduce((sum, f) => sum + f.n, 0);
+  const chosen = filters[only];
+  return facets[only].filter((f) => chosen.includes(f.value)).reduce((sum, f) => sum + f.n, 0);
 }
 
 /** What the filters produced, said only as precisely as it is actually known. */

@@ -26,5 +26,6 @@ Deno.test("the user message carries the fields and clips long text; the system p
   const msg = buildUserMessage({ ...input, text: "x".repeat(2000) });
   assertEquals(msg.includes("platform: instagram"), true);
   assertEquals(msg.includes("x".repeat(1500) + "…"), true);
-  assertEquals(SYSTEM_PROMPT.includes("Food & recipes") && SYSTEM_PROMPT.includes("People & personal"), true);
+  assertEquals(SYSTEM_PROMPT.includes("Food & recipes") && SYSTEM_PROMPT.includes("Life & relationships"), true);
+  assertEquals(SYSTEM_PROMPT.includes("Beauty & self-care") && SYSTEM_PROMPT.includes("Home & living"), true);
 });

@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "jsr:@std/assert@1";
+import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
 import { CATEGORY_WAIT_MS, processEvent, REPLY_TEXT, type ProcessDeps, type LinkedSource, type ReplyMeta } from "../instagram-webhook/process.ts";
 import type { NormalizedLink } from "../_shared/normalize.ts";
 import type { EventRow } from "../instagram-webhook/handler.ts";
@@ -46,6 +46,9 @@ class Fake implements ProcessDeps {
     return { itemId: `item-${this.captures.length}`, deduplicated: this.dedupe, status: input.noLink ? "no_link" : "pending", platform, kind: input.kind ?? "video" };
   }
   async deleteItemByEvent(_u: string, id: string) { this.deleted.push(id); return true; }
+  erased: string[] = [];
+  async deleteCodes() { return { current: "DELETE-4821", previous: "DELETE-1109" }; }
+  async deleteEverything(userId: string) { this.erased.push(userId); }
   async recentReply(_i: string, kind: string) { return this.recent.has(kind); }
   async sendReply(_i: string, text: string, meta: ReplyMeta) { this.replies.push({ text, meta }); }
   waited: number[] = [];
@@ -298,4 +301,57 @@ Deno.test("a companion share that disagrees with the post's own permalink stays 
     { type: "share", payload: { url: "https://www.instagram.com/p/Second/" } },
   ] }), f);
   assertEquals(f.captures.map((c) => c.sharedUrl), ["https://www.instagram.com/p/First/", "https://www.instagram.com/p/Second/"]);
+});
+
+
+/** The message docs/delete.html has been telling people to send. */
+const dm = (text: string) => ev({ mid: `mid-${text}`, text });
+
+Deno.test("\"delete my data\" offers a confirmation and deletes nothing yet", async () => {
+  const f = new Fake();
+  const out = await processEvent(dm("delete my data"), f);
+  assertEquals(out.action, "delete_offered");
+  // The whole point: it must not become a save, which is what used to happen.
+  assertEquals(f.captures.length, 0);
+  assertEquals(f.erased, []);
+  assertStringIncludes(f.replies[0]!.text, "DELETE-4821");
+  assertStringIncludes(f.replies[0]!.text, "cannot be undone");
+});
+
+Deno.test("case and stray spacing still reach the command", async () => {
+  for (const text of ["Delete My Data", "DELETE MY DATA", "  delete my data  "]) {
+    const f = new Fake();
+    assertEquals((await processEvent(dm(text), f)).action, "delete_offered");
+    assertEquals(f.captures.length, 0);
+  }
+});
+
+Deno.test("the confirmation erases the account, and the reply points at nothing that is gone", async () => {
+  const f = new Fake();
+  const out = await processEvent(dm("DELETE-4821"), f);
+  assertEquals([out.action, f.erased], ["erased", [USER]]);
+  // The account no longer exists, so the reply record must not reference it.
+  assertEquals(f.replies[0]!.meta.userId, null);
+  assertEquals(f.replies[0]!.meta.sourceId, null);
+});
+
+Deno.test("the code issued in the previous window is still accepted", async () => {
+  const f = new Fake();
+  assertEquals((await processEvent(dm("delete-1109"), f)).action, "erased");
+  assertEquals(f.erased, [USER]);
+});
+
+Deno.test("a wrong code deletes nothing, and is not kept as a save either", async () => {
+  const f = new Fake();
+  const out = await processEvent(dm("DELETE-0000"), f);
+  assertEquals([out.action, f.erased, f.captures.length], ["delete_offered", [], 0]);
+  assertStringIncludes(f.replies[0]!.text, "Nothing has been deleted");
+});
+
+Deno.test("a message that merely mentions deleting is a save, not a deletion", async () => {
+  const f = new Fake();
+  // Someone sending a note about deleting things must not lose their library for it.
+  const out = await processEvent(dm("remind me to delete my data from that other app"), f);
+  assertEquals(f.erased, []);
+  assertEquals(out.action, "captured");
 });

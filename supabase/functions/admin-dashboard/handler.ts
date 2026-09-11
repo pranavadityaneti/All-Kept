@@ -11,6 +11,7 @@ export interface Dependencies {
 }
 const actions = new Set([
   "access",
+  "feedback",
   "overview",
   "users",
   "user",
@@ -111,6 +112,13 @@ export function createHandler(deps: Dependencies) {
               p_admin_id: userId,
               p_item_id: params.id,
               p_request_id: params.request_id,
+            })
+          // Its own function rather than another branch inside admin_dashboard_read, which is long
+          // and holds every other admin query. The membership check is the same one either way.
+          : body.action === "feedback"
+          ? await deps.rpc("admin_feedback_read", {
+              p_admin_id: userId,
+              p_params: params,
             })
           : await deps.rpc("admin_dashboard_read", {
               p_admin_id: userId,

@@ -10,7 +10,9 @@ import { CategoryTile } from "../../components/CategoryTile";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
-import { Wordmark } from "../../components/Wordmark";
+import { PlatformPills } from "../../components/PlatformPills";
+import { FILTER_LABEL } from "../../lib/platforms";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
 import { useRecentSaves } from "../../lib/home";
 import { useFacets, type LibraryItem } from "../../lib/library";
@@ -30,7 +32,11 @@ export default function Home() {
   const session = useSession();
   const ready = session.status === "ready";
   const linked = useLinkedSource(ready);
-  const recent = useRecentSaves(ready);
+  // Home's own narrowing, deliberately not shared with Library: filtering a glance should not quietly
+  // change what the other tab shows when you get there.
+  const [onlyFrom, setOnlyFrom] = useState<string[]>([]);
+  const toggleFrom = (v: string) => setOnlyFrom((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));
+  const recent = useRecentSaves(ready, onlyFrom);
   const facets = useFacets(ready);
   useTrackOnce(ready ? session.userId : null, "app_open");
   useTrackOnce(ready ? session.userId : null, "library_view");
@@ -53,17 +59,15 @@ export default function Home() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
+      <ScreenHeader>
+        <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />
+        <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />
+      </ScreenHeader>
+
       <ScrollView
         contentContainerStyle={styles.page}
         refreshControl={<RefreshControl refreshing={pulled} onRefresh={onRefresh} tintColor={p.inkMuted} />}
       >
-        <View style={styles.header}>
-          <Wordmark height={24} />
-          <View style={styles.headerActions}>
-            <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />
-            <IconButton name="bell" label="Activity" onPress={() => router.push("/activity")} />
-          </View>
-        </View>
 
 
         {session.status === "error" && (
@@ -83,9 +87,17 @@ export default function Home() {
         )}
 
         <View style={styles.section}>
+          <PlatformPills options={facets.data?.platforms} selected={onlyFrom} onToggle={toggleFrom} showCounts={false} inset={false} />
           <SectionHeader title="Recent saves" actionLabel={items.length > 0 ? "See all" : undefined} onAction={() => router.push("/library")} />
           {recent.isPending ? (
             <Text style={[type.body, { color: p.inkMuted }]}>Loading…</Text>
+          ) : items.length === 0 && onlyFrom.length > 0 ? (
+            // An empty row because of a pill is not an empty library, and telling someone to go and
+            // save their first reel when they have thirty is the kind of thing that reads as broken.
+            <Card>
+              <Text style={[type.body, { color: p.inkMuted }]}>Nothing recent from {onlyFrom.map((v) => FILTER_LABEL[v] ?? v).join(" or ")}.</Text>
+              <Button label="Show all" variant="secondary" onPress={() => setOnlyFrom([])} />
+            </Card>
           ) : items.length === 0 ? (
             <Card>
               <Text style={[type.body, { color: p.inkMuted }]}>Nothing saved yet. In Instagram, tap the paper plane under a reel and send it to @allkeptapp.</Text>
@@ -134,13 +146,11 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  page: { padding: space.lg, gap: space.xl, paddingBottom: TAB_BAR_CLEARANCE },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: space.sm },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  page: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.xl, paddingBottom: TAB_BAR_CLEARANCE },
   section: { gap: space.md },
   rail: { marginHorizontal: -space.lg },
   railInner: { paddingHorizontal: space.lg, gap: space.md },
   railCard: { width: 156 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: space.md },
-  cell: { flexBasis: "47.5%", flexGrow: 1 },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: space.md },
+  cell: { width: "31.5%" },
 });

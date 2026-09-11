@@ -12,6 +12,7 @@ const NAMES = {
   settings: "settings-outline",
   settingsActive: "settings",
   bell: "notifications-outline",
+  moon: "moon-outline",
   search: "search-outline",
   close: "close",
   chevron: "chevron-forward",
@@ -26,6 +27,7 @@ const NAMES = {
   download: "cloud-download-outline",
   web: "globe-outline",
   note: "document-text-outline",
+  apple: "logo-apple",
 } as const;
 
 export type IconName = keyof typeof NAMES | Brand;

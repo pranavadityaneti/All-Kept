@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NO_FILTERS, type Filters } from "./library";
+import { FILTER_GROUPS, NO_FILTERS, countFilters, type Filters } from "./library";
 
 const KEY = "allkept.filters";
 
@@ -18,11 +18,16 @@ export function useFilters() {
         if (!raw || chosen.current) return;
         const parsed: unknown = JSON.parse(raw);
         if (parsed && typeof parsed === "object") {
-          const p = parsed as Partial<Filters>;
-          setFilters({
-            platforms: Array.isArray(p.platforms) ? p.platforms.filter((v) => typeof v === "string") : [],
-            categories: Array.isArray(p.categories) ? p.categories.filter((v) => typeof v === "string") : [],
-          });
+          const p = parsed as Partial<Record<keyof Filters, unknown>>;
+          // Walked rather than named, so a group added to Filters is remembered without a second
+          // edit here. A value stored by an older build under a group this one does not know is
+          // simply not read, and one this build knows but the stored value lacks starts empty.
+          const next = { ...NO_FILTERS };
+          for (const g of FILTER_GROUPS) {
+            const v = p[g];
+            next[g] = Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+          }
+          setFilters(next);
         }
       })
       .catch(() => {})
@@ -50,5 +55,5 @@ export function useFilters() {
 
   const clear = useCallback(() => set(NO_FILTERS), [set]);
 
-  return { filters, loaded, set, toggle, clear, hasFilters: filters.platforms.length + filters.categories.length > 0 };
+  return { filters, loaded, set, toggle, clear, hasFilters: countFilters(filters) > 0 };
 }

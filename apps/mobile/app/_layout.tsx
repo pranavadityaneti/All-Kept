@@ -5,7 +5,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { Stack, useRouter, useSegments } from "expo-router";
 import { pendingShare } from "../lib/pending-share";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useRef, type PropsWithChildren } from "react";
+import { useCallback, useEffect, useMemo, useRef, type PropsWithChildren } from "react";
 import { AppState, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useRealtimeSync } from "../lib/realtime";
@@ -13,6 +13,7 @@ import { SessionProvider, useSession } from "../lib/session";
 import { configError } from "../lib/supabase";
 import { space, type, usePalette } from "../lib/theme";
 import { useOtaUpdates } from "../lib/updates";
+import { useNotificationRoute } from "../lib/push";
 import { useProfile } from "../lib/profile";
 import { profileComplete } from "../lib/profile-fields";
 import { authDestination } from "../lib/auth-state";
@@ -50,11 +51,17 @@ function AccountQueries({ children }: PropsWithChildren) {
 
 function Shell() {
   const p = usePalette(), updates = useOtaUpdates(), session = useSession();
+  const router = useRouter();
   const userId = session.status === "ready" && !session.anonymous ? session.userId : null;
   const profile = useProfile(userId);
   const destination = authDestination(session, profileComplete(profile.data));
   const unlocked = destination === "library";
   useRealtimeSync(unlocked);
+  // Held steady so the listener is not torn down and rebuilt on every render, which would lose the
+  // cold-start response it is attached to catch. Routed only once past the guard: pushing a save
+  // onto a screen someone has not signed in to yet would land them nowhere.
+  const openSave = useCallback((itemId: string) => { if (unlocked) router.push(`/item/${itemId}`); }, [router, unlocked]);
+  useNotificationRoute(openSave);
   useEffect(() => {
     const capture = () => { void pendingShare().catch(() => undefined); };
     capture();
@@ -70,6 +77,7 @@ function Shell() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="item/[id]" />
         <Stack.Screen name="activity" />
+        <Stack.Screen name="feedback" />
         <Stack.Screen name="setup/instagram" />
         <Stack.Screen name="setup/youtube" />
         <Stack.Screen name="save" />

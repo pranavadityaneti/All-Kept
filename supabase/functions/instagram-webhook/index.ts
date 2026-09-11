@@ -6,6 +6,8 @@ import { capture } from "../_shared/capture.ts";
 import { captureDeps } from "../_shared/capture-db.ts";
 import { instagramClient } from "../_shared/instagram.ts";
 import { runPipeline } from "../_shared/pipeline.ts";
+import { deleteAccount } from "../delete-account/delete.ts";
+import { realDeps } from "../delete-account/deps.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { TIMED_OUT, within } from "../_shared/timing.ts";
 
@@ -57,6 +59,25 @@ Deno.serve(async (req) => {
       },
       lookupProfile: (igsid) => ig.profile(igsid),
       capture: (input) => capture(input, cdeps),
+      // Derived from the person, the half-hour they are in, and a secret only the server holds —
+      // so nothing is stored, a request made twice leaves nothing behind, and a code cannot be
+      // guessed or replayed by anyone who does not have the secret. Two windows are live at once so
+      // a code issued at 10:29 is still good at 10:31.
+      async deleteCodes(userId, now) {
+        const secret = Deno.env.get("INTERNAL_SECRET") ?? "";
+        const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+        const at = async (window: number) => {
+          const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`delete:${userId}:${window}`));
+          const n = new DataView(sig).getUint32(0) % 10_000;
+          return `DELETE-${String(n).padStart(4, "0")}`;
+        };
+        const window = Math.floor(now.getTime() / 1_800_000);
+        return { current: await at(window), previous: await at(window - 1) };
+      },
+      async deleteEverything(userId) {
+        const summary = await deleteAccount(userId, realDeps(db));
+        log("webhook: account deleted by DM request", { user: userId, ...summary });
+      },
       async deleteItemByEvent(userId, sourceEventId) {
         const { data } = await db.from("captures").select("item_id").eq("user_id", userId).eq("source_kind", "instagram_dm").eq("source_event_id", sourceEventId).maybeSingle();
         if (!data) return false;

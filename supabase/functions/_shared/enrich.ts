@@ -39,6 +39,8 @@ export interface EnrichDeps {
   fetch: typeof fetch;
   /** Stores the image at `url` as the item's thumbnail and returns the storage path; throws with a short reason when nothing was stored. */
   snapshot(userId: string, itemId: string, url: string): Promise<string | null>;
+  /** Absent until YOUTUBE_API_KEY is configured, in which case a video's shape simply is not learned. */
+  youtubeKey?: string;
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
@@ -47,6 +49,62 @@ const TIMEOUT_MS = 8_000;
 const MAX_HTML_BYTES = 256_000;
 export const RETRY_LADDER_MS = [60_000, 300_000, 1_800_000, 7_200_000, 43_200_000];
 const UA = "Mozilla/5.0 (compatible; AllkeptBot/0.1; +https://allkept.app)";
+
+/**
+ * Asking YouTube for a player this tall makes it answer with the video's own proportions rather than
+ * a default box, which is the only way to learn the shape of a video. See `parseAspect`.
+ */
+const ASPECT_PROBE_PX = 8192;
+
+/**
+ * The true shape of a YouTube video, as width ÷ height, or null when YouTube will not say.
+ *
+ * Nothing else in the pipeline knows it. A Short saved from a playlist arrives as an ordinary
+ * `watch?v=` link, so its kind is `video` like everything else, and YouTube's oEmbed answers a flat
+ * 200x113 for a Short and a widescreen video alike — both were checked against real saves. Only the
+ * Data API distinguishes them. Without this the app has to guess, and it guesses 16:9, which is what
+ * put vertical videos inside black bars.
+ */
+/** A saved YouTube link that is a playlist rather than a video. Their ids and their APIs differ. */
+export const playlistId = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+  const m = /[?&]list=([A-Za-z0-9_-]+)/.exec(url);
+  return m && !/[?&]v=[A-Za-z0-9_-]/.test(url) ? m[1]! : null;
+};
+
+/**
+ * What YouTube says about a playlist.
+ *
+ * Their oEmbed answers "Unauthorized" for a playlist — it serves videos only — so a saved playlist
+ * arrived with no title, no picture and no text at all. The playlist page does carry preview tags,
+ * but reading it means scraping past whatever YouTube serves a datacentre, and we already hold a key
+ * that answers the question properly. This is the same call the register door makes.
+ */
+export function parsePlaylist(body: unknown): { title: string; channel: string | null; thumbnail: string | null; embeddable: boolean } | null {
+  const snippet = (body as { items?: { snippet?: Record<string, unknown>; status?: { privacyStatus?: unknown } }[] } | null)?.items?.[0]?.snippet;
+  const privacy = (body as { items?: { status?: { privacyStatus?: unknown } }[] } | null)?.items?.[0]?.status?.privacyStatus;
+  if (!snippet) return null;
+  const title = typeof snippet["title"] === "string" ? (snippet["title"] as string).trim() : "";
+  if (!title) return null;
+  const thumbs = snippet["thumbnails"] as Record<string, { url?: string }> | undefined;
+  // Widest first: the card wants the best it can get, and not every playlist has every size.
+  const thumbnail = ["maxres", "standard", "high", "medium", "default"]
+    .map((k) => thumbs?.[k]?.url).find((u): u is string => typeof u === "string" && !!u) ?? null;
+  const channel = typeof snippet["channelTitle"] === "string" ? (snippet["channelTitle"] as string).trim() || null : null;
+  // Only a public playlist plays in an embedded player. An unlisted one answers "This video is
+  // unavailable" inside the frame, however the embed address is written — so the app is told not to
+  // try, and shows the card and a way out to YouTube instead of a black box.
+  return { title, channel, thumbnail, embeddable: privacy === "public" };
+}
+
+export function parseAspect(body: unknown): number | null {
+  const player = (body as { items?: { player?: { embedWidth?: unknown; embedHeight?: unknown } }[] } | null)?.items?.[0]?.player;
+  // YouTube sends both as strings.
+  const w = Number(player?.embedWidth);
+  const h = Number(player?.embedHeight);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
+  return Math.round((w / h) * 1000) / 1000;
+}
 
 function oembedUrl(platform: Platform, url: string): string | null {
   const u = encodeURIComponent(url);
@@ -70,6 +128,43 @@ async function fetchWithTimeout(f: typeof fetch, url: string, init: RequestInit 
   const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try { return await f(url, { ...init, signal: ctrl.signal, headers: { "user-agent": UA, accept: "application/json, text/html;q=0.9, */*;q=0.5", ...(init.headers ?? {}) } }); }
   finally { clearTimeout(t); }
+}
+
+/** More hops than any honest link needs, few enough that a redirect loop ends quickly. */
+const MAX_HOPS = 5;
+
+/**
+ * Follows redirects ourselves, so an `http://` hop can be tried over `https://` first.
+ *
+ * A link shortener sent us to `http://inshorts.com/...`; that host answers nothing on port 80 and
+ * the connection was reset, so a page carrying a full set of preview tags over https read as a save
+ * with no title, no text and no picture. Letting fetch follow the chain internally gives no chance
+ * to intervene at the hop that matters, so the chain is walked here instead.
+ *
+ * Upgrade first, fall back second: https is tried, and only if that fails at the network level is
+ * the http address used as given. A site that genuinely has no https still works; one that has
+ * both, which is nearly all of them now, is read over the secure one.
+ */
+async function fetchFollowing(f: typeof fetch, url: string, init: RequestInit = {}): Promise<Response> {
+  let target = url;
+  for (let hop = 0; hop < MAX_HOPS; hop++) {
+    const secure = target.startsWith("http://") ? `https://${target.slice(7)}` : target;
+    let res: Response;
+    try {
+      res = await fetchWithTimeout(f, secure, { ...init, redirect: "manual" });
+    } catch (e) {
+      // Only worth a second try when we changed the address ourselves.
+      if (secure === target) throw e;
+      res = await fetchWithTimeout(f, target, { ...init, redirect: "manual" });
+    }
+    if (res.status < 300 || res.status >= 400) return res;
+    const location = res.headers.get("location");
+    if (!location) return res;
+    // The body of a redirect is never read; leaving it open holds the connection.
+    await res.body?.cancel().catch(() => undefined);
+    target = new URL(location, secure).toString();
+  }
+  throw new Error("too many redirects");
 }
 
 /** Reads at most `maxBytes` of a response body, then cancels the rest so a large page costs neither time nor memory. */
@@ -114,7 +209,55 @@ export function decodeEntities(s: string): string {
 const stripTags = (html: string) => decodeEntities(html.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")).trim();
 
 /** Reads Open Graph / Twitter Card / title tags from an HTML document. */
-export function parseOpenGraph(html: string): { title?: string; ogTitle?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string } {
+/**
+ * A title belonging to the wall in front of a page rather than to the page.
+ *
+ * parseOpenGraph falls back to the document's own <title> when a site declares no preview tags,
+ * which is right for an ordinary page and wrong for a block: Flipkart's wall is titled "Flipkart
+ * reCAPTCHA", Cloudflare's is "Just a moment...". Stored, those become a save that looks like it
+ * worked and is named after the thing that stopped it — worse than an honest failure, because
+ * nothing about it invites a retry. Only ever applied to the fallback; a site that declares
+ * og:title is taken at its word.
+ */
+/** Phrases that are only ever a wall. No real page is titled any of these. */
+const BLOCK_PHRASE = /^\s*(just a moment|attention required|access denied|forbidden|error 40\d|are you a human|security check|checking your browser|please wait|robot check|blocked|one more step|verify you are human)/i;
+
+/**
+ * Words that suggest a wall but also belong to real writing — an article about CAPTCHAs is titled
+ * after CAPTCHAs. They only count when the title is short enough to be a wall's own name rather
+ * than a piece about one; "Flipkart reCAPTCHA" is a wall, "How CAPTCHAs actually work — a deep
+ * dive into the arms race" is a Tuesday read.
+ */
+const BLOCK_WORD = /(recaptcha|captcha|cloudflare|ddos-guard|incapsula|bot detection)/i;
+const WALL_NAME_MAX = 32;
+
+export function looksLikeBlockTitle(title: string | undefined): boolean {
+  const t = title?.trim();
+  if (!t) return false;
+  if (BLOCK_PHRASE.test(t)) return true;
+  return t.length <= WALL_NAME_MAX && BLOCK_WORD.test(t);
+}
+
+/**
+ * Whether a page is the page we asked for.
+ *
+ * Facebook answers a video address it does not recognise with HTTP 200 and a perfectly good set of
+ * preview tags — for its generic Watch landing page, titled "Discover popular videos". Nothing about
+ * that reads as a failure, so the save would have been stored, marked ready, and named after a page
+ * nobody asked for. That is worse than an honest error, because nothing invites a second look.
+ *
+ * The test is the page's own declared address. Ask for /watch/?v=1234567890 and it says its address
+ * is /watch/ — the identifier is gone, so this is not that video. Ask for /nasa and it says /NASA/,
+ * which is the same page in different case. Only ever applied when we hold an identifier to look
+ * for, and only when the page declares an address at all, so a page that says nothing is trusted
+ * exactly as much as it was before.
+ */
+export function isWrongPage(declaredUrl: string | undefined, externalId: string | null): boolean {
+  if (!declaredUrl || !externalId) return false;
+  return !declaredUrl.toLowerCase().includes(externalId.toLowerCase());
+}
+
+export function parseOpenGraph(html: string): { title?: string; ogTitle?: string; twitterTitle?: string; description?: string; image?: string; siteName?: string; author?: string; url?: string } {
   const head = html.slice(0, 200_000);
   const meta = (names: string[]): string | undefined => {
     for (const n of names) {
@@ -135,6 +278,10 @@ export function parseOpenGraph(html: string): { title?: string; ogTitle?: string
   const image = meta(["og:image", "twitter:image"]); if (image) out.image = image;
   const siteName = meta(["og:site_name"]); if (siteName) out.siteName = siteName;
   const author = meta(["author", "article:author"]); if (author) out.author = author;
+  // What the page says its own address is. og:url first, then the canonical link.
+  const canonical = /<link[^>]+rel=["']canonical["'][^>]*?href=["']([^"']+)["']|<link[^>]+href=["']([^"']+)["'][^>]*?rel=["']canonical["']/i.exec(head);
+  const url = meta(["og:url"]) ?? (canonical?.[1] ?? canonical?.[2])?.trim();
+  if (url) out.url = url;
   return out;
 }
 
@@ -158,7 +305,7 @@ export function parseInstagramOpenGraph(html: string): { authorName?: string; au
 /** Fetches a page and reads its link-preview tags. Best effort: any failure returns null. */
 async function fetchOpenGraph(f: typeof fetch, url: string): Promise<{ html: string; og: ReturnType<typeof parseOpenGraph> } | null> {
   try {
-    const res = await fetchWithTimeout(f, url, { headers: { accept: "text/html, */*;q=0.5" } });
+    const res = await fetchFollowing(f, url, { headers: { accept: "text/html, */*;q=0.5" } });
     if (classifyHttp(res.status) !== "ok") return null;
     const html = await readHead(res, MAX_HTML_BYTES);
     return { html, og: parseOpenGraph(html) };
@@ -186,7 +333,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
   // 1. Expand short links, then re-normalise.
   if (item.needs_expansion && sourceUrl) {
     try {
-      const res = await fetchWithTimeout(deps.fetch, sourceUrl, { redirect: "follow" });
+      const res = await fetchFollowing(deps.fetch, sourceUrl);
       const finalUrl = res.url || sourceUrl;
       const link = normalize({ url: finalUrl });
       if (link.platform !== "note" && !link.needsExpansion) {
@@ -203,10 +350,30 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
   // 2. Metadata. No-link posts and notes have nothing to fetch.
   const target = canonical ?? sourceUrl;
   let status: ItemStatus = item.status === "no_link" ? "no_link" : "ready";
-  if (platform !== "note" && item.status !== "no_link" && target) {
+  const playlist = platform === "youtube" ? playlistId(target) : null;
+  if (playlist && deps.youtubeKey) {
+    try {
+      const q = new URLSearchParams({ part: "snippet,status", id: playlist, key: deps.youtubeKey });
+      const res = await fetchFollowing(deps.fetch, `https://www.googleapis.com/youtube/v3/playlists?${q.toString()}`);
+      const found = res.ok ? parsePlaylist(await res.json().catch(() => null)) : null;
+      if (found) {
+        if (!item.title) patch.title = found.title;
+        if (found.channel && !item.author_name) patch.author_name = found.channel;
+        if (found.thumbnail && !item.thumbnail_url_remote) patch.thumbnail_url_remote = found.thumbnail;
+        patch.media_meta = { ...(patch.media_meta ?? {}), youtube_playlist: true, embeddable: found.embeddable };
+        status = "ready";
+      } else {
+        // A playlist that has been made private, or deleted, is not a retryable failure.
+        deps.log("enrich: playlist unavailable", { item: item.id, status: res.status });
+        status = "preview_unavailable";
+      }
+    } catch (e) {
+      return retry(`playlist: ${String(e).slice(0, 200)}`);
+    }
+  } else if (platform !== "note" && item.status !== "no_link" && target) {
     const oe = oembedUrl(platform, target);
     try {
-      const res = await fetchWithTimeout(deps.fetch, oe ?? target);
+      const res = await fetchFollowing(deps.fetch, oe ?? target);
       const verdict = classifyHttp(res.status);
       if (verdict === "retry") return retry(`metadata ${res.status}`);
 
@@ -233,16 +400,31 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       } else {
         const html = await readHead(res, MAX_HTML_BYTES);
         const og = parseOpenGraph(html);
-        if (og.title && !item.title) patch.title = og.title;
+        if (isWrongPage(og.url, patch.external_id ?? item.external_id)) {
+          deps.log("enrich: page is not the one asked for", { item: item.id, declared: og.url?.slice(0, 80) });
+          status = "preview_unavailable";
+          return { status, patch };
+        }
+        // A declared og:title is trusted; a bare <title> is not, because that is where a block page
+        // puts its own name.
+        const declared = og.ogTitle ?? og.twitterTitle;
+        const usable = declared ?? (looksLikeBlockTitle(og.title) ? undefined : og.title);
+        if (usable && !item.title) patch.title = usable;
         if (og.description && !item.text) patch.text = og.description;
         if (og.image && !item.thumbnail_url_remote) patch.thumbnail_url_remote = og.image;
         if (og.author && !item.author_name) patch.author_name = og.author;
         if (og.siteName) patch.media_meta = { site_name: og.siteName };
-        if (!og.title && !og.description) status = "preview_unavailable";
+        if (!usable && !og.description) status = "preview_unavailable";
       }
 
       if (askThePage && /^https?:\/\//.test(target)) {
         const page = await fetchOpenGraph(deps.fetch, target);
+        // The fallback reads a page too, and can be handed the same substitute.
+        if (page && isWrongPage(page.og.url, patch.external_id ?? item.external_id)) {
+          deps.log("enrich: fallback page is not the one asked for", { item: item.id, declared: page.og.url?.slice(0, 80) });
+          if (verdict === "unavailable") status = "preview_unavailable";
+          return { status, patch };
+        }
         const ig = page && platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
         let learned = false;
         if (page) {
@@ -267,7 +449,22 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     }
   }
 
-  // 3. Thumbnail snapshot (never fails the item).
+  // 3. The shape of a YouTube video (never fails the item: without it the app falls back to 16:9,
+  //    which is exactly where it stood before this existed).
+  const videoId = patch.external_id ?? item.external_id;
+  if (platform === "youtube" && deps.youtubeKey && videoId) {
+    try {
+      const q = new URLSearchParams({ part: "player", id: videoId, maxHeight: String(ASPECT_PROBE_PX), key: deps.youtubeKey });
+      const res = await fetchWithTimeout(deps.fetch, `https://www.googleapis.com/youtube/v3/videos?${q.toString()}`);
+      const aspect = res.ok ? parseAspect(await res.json().catch(() => null)) : null;
+      if (aspect) patch.media_meta = { ...(patch.media_meta ?? {}), aspect };
+      else deps.log("enrich: youtube shape unavailable", { item: item.id, status: res.status });
+    } catch (e) {
+      deps.log("enrich: youtube shape failed", { item: item.id, reason: String(e).slice(0, 120) });
+    }
+  }
+
+  // 4. Thumbnail snapshot (never fails the item).
   const thumbUrl = patch.thumbnail_url_remote ?? item.thumbnail_url_remote;
   if (thumbUrl && !item.thumbnail_path) {
     try {

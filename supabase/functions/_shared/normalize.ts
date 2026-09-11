@@ -8,7 +8,12 @@ export const PLATFORMS = [
 ] as const;
 export type Platform = (typeof PLATFORMS)[number];
 
-export const KINDS = ["short_video", "video", "post", "image", "article", "text"] as const;
+/**
+ * "profile" is somebody's page rather than a thing they posted, and "story" is a post that will not
+ * be there tomorrow. Both used to be filed as "post", which made a channel look like a video someone
+ * had shared and made a story look like something we could keep.
+ */
+export const KINDS = ["short_video", "video", "post", "image", "article", "text", "profile", "story"] as const;
 export type Kind = (typeof KINDS)[number];
 
 export interface NormalizedLink {
@@ -149,6 +154,10 @@ const pathOnly = (base: string, u: URL, platform: keyof typeof SHARE_KEYS, kind:
   kind, canonicalUrl: base + trimSlash(u.pathname) + cleanQuery(u, SHARE_KEYS[platform]), externalId: null,
 });
 const CODE = /^[A-Za-z0-9_-]+$/;
+/** Paths X owns, so they are never mistaken for somebody's handle. */
+const X_ROUTES = new Set(["i", "home", "explore", "search", "notifications", "messages", "settings", "compose", "intent"]);
+/** Paths Instagram owns, so they are never mistaken for somebody's handle. */
+const IG_ROUTES = new Set(["p", "reel", "reels", "tv", "stories", "explore", "accounts", "direct", "share"]);
 const DIGITS = /^\d+$/;
 
 /** A post/reel permalink, never a profile, story, or temporary messaging CDN asset. */
@@ -199,7 +208,11 @@ function instagram(u: URL): Partial3 {
     }
   }
   if (s[0] === "stories" && s[1] && s[2]) {
-    return { kind: "post", canonicalUrl: `https://www.instagram.com/stories/${s[1]}/${s[2]}/`, externalId: s[2] };
+    return { kind: "story", canonicalUrl: `https://www.instagram.com/stories/${s[1]}/${s[2]}/`, externalId: s[2] };
+  }
+  // One segment that is not a known route is a username.
+  if (s.length === 1 && s[0] && CODE.test(s[0]) && !IG_ROUTES.has(s[0])) {
+    return { kind: "profile", canonicalUrl: `https://www.instagram.com/${s[0]}/`, externalId: null };
   }
   return pathOnly("https://www.instagram.com", u, "instagram");
 }
@@ -219,6 +232,12 @@ function youtube(u: URL): Partial3 {
   if ((s[0] === "playlist" || (s[0] === "watch" && !v)) && list && CODE.test(list)) {
     return { kind: "post", canonicalUrl: `https://www.youtube.com/playlist?list=${list}`, externalId: list };
   }
+  if (s[0]?.startsWith("@") && s.length === 1) {
+    return { kind: "profile", canonicalUrl: `https://www.youtube.com/${s[0]}`, externalId: null };
+  }
+  if ((s[0] === "channel" || s[0] === "c" || s[0] === "user") && s[1] && CODE.test(s[1])) {
+    return { kind: "profile", canonicalUrl: `https://www.youtube.com/${s[0]}/${s[1]}`, externalId: null };
+  }
   return pathOnly("https://www.youtube.com", u, "youtube");
 }
 
@@ -230,6 +249,10 @@ function x(u: URL): Partial3 {
   }
   if (s[0] === "i" && s[1] === "web" && s[2] === "status" && s[3] && DIGITS.test(s[3])) {
     return { kind: "post", canonicalUrl: `https://x.com/i/web/status/${s[3]}`, externalId: s[3] };
+  }
+  // One segment that is not a route X owns is a handle.
+  if (s.length === 1 && s[0] && CODE.test(s[0]) && !X_ROUTES.has(s[0])) {
+    return { kind: "profile", canonicalUrl: `https://x.com/${s[0]}`, externalId: null };
   }
   return pathOnly("https://x.com", u, "x");
 }
@@ -270,6 +293,9 @@ function tiktok(u: URL): Partial3 {
     const kind: Kind = s[1] === "video" ? "short_video" : "image";
     return { kind, canonicalUrl: `https://www.tiktok.com/${s[0]}/${s[1]}/${s[2]}`, externalId: s[2] };
   }
+  if (s.length === 1 && s[0]?.startsWith("@")) {
+    return { kind: "profile", canonicalUrl: `https://www.tiktok.com/${s[0]}`, externalId: null };
+  }
   return pathOnly("https://www.tiktok.com", u, "tiktok");
 }
 
@@ -278,14 +304,30 @@ function reddit(u: URL): Partial3 {
   const base = "https://www.reddit.com";
   if (bareHost(u) === "redd.it") return expand();
   if (s[0] === "r" && s[1] && s[2] === "s") return expand();
+  // A permalink to one comment carries the comment's own id after the slug, and it is a different
+  // thing from the post it sits under. Collapsing both to the post id made them the same save: the
+  // unique index on (user, platform, external_id) then deduplicated the comment away, and the person
+  // who saved a particular reply was told "Already saved" and given the thread instead.
   if (s[0] === "r" && s[1] && s[2] === "comments" && s[3] && CODE.test(s[3])) {
-    return { kind: "post", canonicalUrl: `${base}/r/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
+    const comment = s[5] && CODE.test(s[5]) ? s[5] : null;
+    return comment
+      ? { kind: "post", canonicalUrl: `${base}/r/${s[1]}/comments/${s[3]}/comment/${comment}/`, externalId: `${s[3]}_${comment}` }
+      : { kind: "post", canonicalUrl: `${base}/r/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
   }
   if (s[0] === "user" && s[1] && s[2] === "comments" && s[3] && CODE.test(s[3])) {
-    return { kind: "post", canonicalUrl: `${base}/user/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
+    const comment = s[5] && CODE.test(s[5]) ? s[5] : null;
+    return comment
+      ? { kind: "post", canonicalUrl: `${base}/user/${s[1]}/comments/${s[3]}/comment/${comment}/`, externalId: `${s[3]}_${comment}` }
+      : { kind: "post", canonicalUrl: `${base}/user/${s[1]}/comments/${s[3]}/`, externalId: s[3] };
   }
   if (s[0] === "comments" && s[1] && CODE.test(s[1])) {
     return { kind: "post", canonicalUrl: `${base}/comments/${s[1]}/`, externalId: s[1] };
+  }
+  if (s[0] === "r" && s[1] && s.length <= 2 && CODE.test(s[1])) {
+    return { kind: "profile", canonicalUrl: `${base}/r/${s[1]}`, externalId: null };
+  }
+  if ((s[0] === "user" || s[0] === "u") && s[1] && s.length <= 2 && CODE.test(s[1])) {
+    return { kind: "profile", canonicalUrl: `${base}/user/${s[1]}`, externalId: null };
   }
   return pathOnly(base, u, "reddit");
 }

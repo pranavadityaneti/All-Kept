@@ -5,7 +5,8 @@ export type Page =
   | "processing"
   | "sources"
   | "imports"
-  | "activity";
+  | "activity"
+  | "feedback";
 export type Row = {
   id: string;
   [key: string]: string | number | boolean | null;

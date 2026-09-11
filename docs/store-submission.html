@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allkept — Store Submission Worksheet</title>
+<style>
+  :root{--bg:#F6F7FA;--card:#FFFFFF;--line:#DFE3EC;--ink:#14161C;--muted:#5F6675;--accent:#6D46F2;
+        --ready:#0E7A4F;--ready-bg:#E4F5EC;--decide:#8A5200;--decide-bg:#FFF3DF;--verify:#1F4E9C;--verify-bg:#E6EEFB;--risk:#A32020;--risk-bg:#FBE7E7}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+  h2{font-size:21px;margin:44px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  h3{font-size:16px;margin:26px 0 8px}
+  p{margin:8px 0}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0 8px}
+  .toc ol{margin:6px 0 0;padding-left:20px;columns:2;column-gap:28px}
+  .toc li{margin:2px 0;break-inside:avoid}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;margin:10px 0 16px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+  th{background:#F1F2F7;font-weight:600;font-size:13px;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  td.f{font-weight:600;white-space:nowrap}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#EEF0F6;padding:1px 5px;border-radius:4px}
+  pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;background:#14161C;color:#E8EAF0;padding:14px 16px;border-radius:10px;overflow-x:auto;white-space:pre}
+  pre.copy{background:var(--card);color:var(--ink);border:1px solid var(--line);white-space:pre-wrap}
+  .b{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:5px;vertical-align:1px;white-space:nowrap}
+  .ready{color:var(--ready);background:var(--ready-bg)}
+  .decide{color:var(--decide);background:var(--decide-bg)}
+  .verify{color:var(--verify);background:var(--verify-bg)}
+  .risk{color:var(--risk);background:var(--risk-bg)}
+  .note{background:var(--card);border-left:4px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  .warn{background:var(--risk-bg);border-left:4px solid var(--risk);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+  ul.check{list-style:none;padding-left:0}
+  ul.check li{padding:6px 0 6px 30px;position:relative;border-bottom:1px dashed var(--line)}
+  ul.check li:before{content:"";position:absolute;left:4px;top:10px;width:14px;height:14px;border:2px solid var(--muted);border-radius:4px}
+  small{color:var(--muted)}
+  @media print{
+    body{background:#fff;font-size:12px}
+    .wrap{max-width:none;padding:0}
+    .tbl,.toc,.note{border-color:#999;break-inside:avoid}
+    pre{background:#f3f3f3;color:#000;border:1px solid #999}
+    h2{break-after:avoid}
+    a{color:#000}
+    .toc ol{columns:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Allkept — Store Submission Worksheet</h1>
+<p class="sub">Every App Store Connect and Google Play Console field, pre-answered from the code and the 8 Sep release guide. Written 11 September 2026 · inputs from Pranav: Play account is an <b>organisation</b>; availability is <b>United States and India</b>.</p>
+
+<p>
+<span class="b ready">READY</span> copy as-is — traced to code, config or an earlier decision. &nbsp;
+<span class="b decide">DECIDE</span> only you can answer; my recommendation is given. &nbsp;
+<span class="b verify">VERIFY</span> check the console — store requirements shift and I cannot see the consoles. &nbsp;
+<span class="b risk">RISK</span> something a reviewer may reject.
+</p>
+
+<div class="toc"><b>Contents</b>
+<ol>
+<li><a href="#facts">Facts the forms rely on</a></li>
+<li><a href="#data">What the app collects (from code)</a></li>
+<li><a href="#perms">Permissions the builds carry</a></li>
+<li><a href="#order">Order of operations</a></li>
+<li><a href="#asc">App Store Connect, field by field</a></li>
+<li><a href="#play">Google Play Console, field by field</a></li>
+<li><a href="#copy">Listing copy (drafts)</a></li>
+<li><a href="#review">Review notes (drafts)</a></li>
+<li><a href="#shots">Screenshot plan</a></li>
+<li><a href="#cmds">Build and submit commands</a></li>
+<li><a href="#risks">Risks worth knowing before you submit</a></li>
+<li><a href="#decisions">All open decisions, in one list</a></li>
+</ol></div>
+
+<!-- ============================================================ -->
+<h2 id="facts">1. Facts the forms rely on</h2>
+<div class="tbl"><table>
+<tr><th>Item</th><th>Value</th><th>Source</th></tr>
+<tr><td class="f">App name</td><td>Allkept <span class="b ready">READY</span></td><td><code>app.config.ts</code></td></tr>
+<tr><td class="f">Bundle ID / package</td><td><code>app.allkept.mobile</code> (both platforms) <span class="b ready">READY</span></td><td><code>app.config.ts</code></td></tr>
+<tr><td class="f">App Store Connect record</td><td>ASC app ID <code>6809901300</code> — exists; 5 TestFlight submissions since 9 Sep, latest build 25 <span class="b ready">READY</span></td><td><code>eas.json</code>, <code>eas submit:list</code> 11 Sep</td></tr>
+<tr><td class="f">Play Console account</td><td>Organisation account ⇒ the 12-tester / 14-day closed-test rule for new <i>personal</i> accounts does not apply <span class="b verify">VERIFY</span> the Production page shows no testing requirement</td><td>Pranav, 11 Sep</td></tr>
+<tr><td class="f">EAS project</td><td><code>55c2d8b3-…</code>; profiles <code>preview</code> (internal APK/TestFlight-less), <code>testflight</code> (store, TestFlight), <code>production</code> (store)</td><td><code>eas.json</code></td></tr>
+<tr><td class="f">Version today</td><td><code>0.1.0</code>; build numbers assigned by EAS (<code>appVersionSource: remote</code>). No <code>production</code> build exists on either platform yet.</td><td><code>app.config.ts</code>, EAS</td></tr>
+<tr><td class="f">Availability</td><td>United States and India only. No EU/UK ⇒ no EU trader (DSA) disclosure on the App Store; matches the privacy policy's Article 27 statement. <span class="b ready">READY</span></td><td>Pranav, 11 Sep; <code>docs/privacy.html</code></td></tr>
+<tr><td class="f">Price / monetisation</td><td>Free. No in-app purchases, no subscriptions, no ads, no tracking SDKs. <span class="b ready">READY</span></td><td><code>package.json</code> (no purchase/ads/analytics libraries)</td></tr>
+<tr><td class="f">Sign-in</td><td>Google or Apple, both through the browser OAuth flow (Supabase). No password login, no guest mode — an anonymous session is sent back to the welcome screen. <span class="b ready">READY</span></td><td><code>lib/auth-state.ts:12</code>, <code>app/welcome.tsx</code></td></tr>
+<tr><td class="f">Onboarding after sign-in</td><td>Name (prefilled from the provider, editable, required) · profile photo (<b>required</b>) · phone with country code (optional). Gender was removed 10 Sep.</td><td><code>components/ProfileForm.tsx</code></td></tr>
+<tr><td class="f">Age</td><td>18 and over</td><td><code>docs/terms.html</code></td></tr>
+<tr><td class="f">Legal entity / copyright</td><td>MECA Engineering Solutions (OPC) Private Limited, 4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru 560102, India</td><td><code>docs/privacy.html</code></td></tr>
+<tr><td class="f">Contact</td><td>Pranav Aditya · <code>hi@allkept.app</code> (also the in-app "Contact support" target) · phone: given by Pranav in chat on 11 Sep — <b>deliberately not written into this public repository</b>; type it into the consoles. Apple's App Review contact phone is private; Play's "Contact details" phone appears on the public listing, so leave that one blank unless you want it public. <span class="b ready">READY</span></td><td><code>lib/feedback.ts</code></td></tr>
+<tr><td class="f">Privacy policy URL</td><td><code>https://pranavadityaneti.github.io/All-Kept/privacy.html</code> — the URL the app itself links to. Highlights and draft banner removed 11 Sep (task A); the values Pranav gave on 10 Sep are unchanged. <span class="b ready">READY</span></td><td><code>app/(tabs)/settings.tsx</code></td></tr>
+<tr><td class="f">Terms URL</td><td><code>…/All-Kept/terms.html</code> — same treatment, 11 Sep. <span class="b ready">READY</span></td><td>same</td></tr>
+<tr><td class="f">Account-deletion URL</td><td><code>…/All-Kept/delete.html</code> — describes both the in-app path and the Instagram DM path <span class="b ready">READY</span></td><td><code>docs/delete.html</code></td></tr>
+<tr><td class="f">Support URL</td><td>None suitable yet. <code>testers.html</code> says "test phase"; Apple requires a support page. Proposal: new <code>docs/support.html</code> (what Allkept is, how to get help, links to the three policy pages). <span class="b decide">DECIDE</span></td><td>—</td></tr>
+<tr><td class="f">Marketing URL</td><td><code>https://pranavadityaneti.github.io/All-Kept/</code> is live (the app links into that site). <code>allkept.app</code>: the Next.js site is unmerged in the <code>website</code> worktree and I cannot tell from here whether the domain serves anything. <span class="b verify">VERIFY</span></td><td><code>docs/index.html</code>, <code>.worktrees/website</code></td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="data">2. What the app collects (from code)</h2>
+<p>This table is the source for the App Privacy labels (§5) and the Data safety form (§6). Everything is keyed by the Supabase user ID, so everything is "linked to the user". Nothing is sold, nothing is used for advertising, and there is no cross-app tracking.</p>
+<div class="tbl"><table>
+<tr><th>Data</th><th>Comes from</th><th>Stored in</th><th>Why</th><th>Required?</th></tr>
+<tr><td class="f">Email address</td><td>Google / Apple sign-in (Apple may relay a private address)</td><td><code>auth.users</code></td><td>Account</td><td>Yes</td></tr>
+<tr><td class="f">Name</td><td>Suggested by the provider, edited at onboarding</td><td><code>profiles.display_name</code></td><td>App functionality</td><td>Yes</td></tr>
+<tr><td class="f">Phone number</td><td>Onboarding / Edit profile</td><td><code>profiles.phone</code></td><td><span class="b decide">DECIDE</span> — nothing in the code uses it yet; the forms ask <i>why</i> it is collected. Either state a purpose or drop the field before submission.</td><td>No (optional)</td></tr>
+<tr><td class="f">Profile photo</td><td>Photo library (system picker)</td><td>Storage bucket <code>avatars</code> (private, JPEG ≤ 2 MB)</td><td>App functionality</td><td><b>Yes</b> — see <a href="#risks">risk 2</a></td></tr>
+<tr><td class="f">User ID</td><td>Supabase</td><td>every table</td><td>Account</td><td>Yes</td></tr>
+<tr><td class="f">OS, cohort</td><td>App</td><td><code>profiles.os</code>, <code>profiles.cohort</code></td><td>First-party analytics</td><td>Automatic</td></tr>
+<tr><td class="f">Instagram handle + Instagram-scoped ID</td><td>Link-code DM to @allkeptapp</td><td><code>connected_sources</code></td><td>App functionality</td><td>Only if you connect Instagram</td></tr>
+<tr><td class="f">Messages sent to @allkeptapp</td><td>Meta webhook (posts and text the user sends to the bot)</td><td><code>message_events</code>, <code>captures</code>, <code>replies</code></td><td>App functionality</td><td>Only if you use the Instagram door</td></tr>
+<tr><td class="f">YouTube playlist ID</td><td>User pastes a public playlist; read with an API key, <b>no Google account scope</b> ⇒ no Google OAuth verification needed</td><td><code>connected_sources</code></td><td>App functionality</td><td>Optional</td></tr>
+<tr><td class="f">Saved items</td><td>Any door: link, platform, kind, author handle, title/caption, a stored copy of the thumbnail (≤ 4 MB), category, your note, your corrections</td><td><code>items</code>, <code>item_ai</code>, <code>captures</code>, <code>thumbs</code> bucket</td><td>Core functionality</td><td>Core</td></tr>
+<tr><td class="f">Imported Instagram history</td><td>Meta data-export file the user picks</td><td><code>imports</code> + <code>items</code></td><td>App functionality</td><td>Optional</td></tr>
+<tr><td class="f">Search index</td><td>Embeddings of saved text, produced by OpenAI. Search <i>queries</i> are sent to OpenAI to embed and are <b>not stored</b>; only that a search happened, its length and result count are recorded.</td><td><code>item_search</code></td><td>Search</td><td>Automatic</td></tr>
+<tr><td class="f">Preferences</td><td>Settings switches: "A save has landed", "A save needs you", "Reply in the Instagram thread", "Sort saves automatically"</td><td><code>profiles</code></td><td>App functionality</td><td>Defaults on</td></tr>
+<tr><td class="f">Push token</td><td>Expo push service (APNs / FCM underneath)</td><td><code>device_push_tokens</code> (token, platform, timestamps)</td><td>Notifications</td><td>Only when a notification switch is on</td></tr>
+<tr><td class="f">Usage events</td><td>app_open, library_view, item_open, open_original, share_out, search, category_changed, note_saved, link_started, link_completed, paste_link, item_deleted</td><td><code>app_events</code></td><td>First-party analytics (owner-only views)</td><td>Automatic</td></tr>
+<tr><td class="f">Feedback</td><td>Settings → Send feedback (message, app version, platform)</td><td><code>feedback</code></td><td>Support</td><td>Optional</td></tr>
+</table></div>
+<p><b>Not collected:</b> location, contacts, calendar, health, financial data, browsing history (the in-app browser keeps nothing), crash logs or diagnostics (no crash SDK), advertising ID, hardware identifiers.</p>
+<p><b>Processors (act on your instructions, not "sharing" in Play's sense):</b> Supabase (database, storage, auth — Mumbai, ap-south-1) · Expo (push relay, over-the-air updates) · OpenAI (classification with the GPT-5.6 family, embeddings — the policy says retention is declined) · Google (sign-in, FCM delivery, YouTube Data API) · Apple (sign-in, APNs) · Meta (Instagram messaging API) · GitHub Pages / Vercel (web pages). The privacy policy names OpenAI, not Anthropic; the classifier picks the vendor from which API key is set (<code>_shared/classifiers.ts</code>) — <span class="b verify">VERIFY</span> production has only the OpenAI key, or the policy is wrong.</p>
+
+<!-- ============================================================ -->
+<h2 id="perms">3. Permissions the builds carry</h2>
+<p>From <code>npx expo config --type introspect</code> on 11 Sep, i.e. what the plugins actually emit.</p>
+<div class="tbl"><table>
+<tr><th>Platform</th><th>Permission / entry</th><th>Why it is there</th><th>Store consequence</th></tr>
+<tr><td>iOS</td><td><code>NSPhotoLibraryUsageDescription</code> = "Choose a photo for your Allkept profile."</td><td>Profile photo</td><td>Fine <span class="b ready">READY</span></td></tr>
+<tr><td>iOS</td><td>Notifications (no plist string needed)</td><td>Asked only when a Settings switch is turned on, never at launch</td><td>Fine — and worth saying in review notes</td></tr>
+<tr><td>iOS</td><td><code>NSFaceIDUsageDescription</code> = "Allow $(PRODUCT_NAME) to access your Face ID biometric data."</td><td>Default text added by <code>expo-secure-store</code>'s plugin; the app never prompts for Face ID</td><td>Harmless. Cosmetic option: set <code>["expo-secure-store", { faceIDPermission: "…" }]</code>. Not a blocker.</td></tr>
+<tr><td>iOS</td><td>Share extension (<code>ExpoShareIntoAppGroupId</code>, <code>NSUserActivityTypes</code>)</td><td>"Share to Allkept" from other apps</td><td>Fine</td></tr>
+<tr><td>iOS</td><td>Camera — <b>removed</b> (<code>cameraPermission: false</code>)</td><td>—</td><td>Fine</td></tr>
+<tr><td>Android</td><td><code>INTERNET</code>, <code>ACCESS_NETWORK_STATE</code>, <code>POST_NOTIFICATIONS</code>, <code>RECEIVE_BOOT_COMPLETED</code></td><td>Network, updates, push</td><td>Fine</td></tr>
+<tr><td>Android</td><td><code>READ_EXTERNAL_STORAGE</code>, <code>WRITE_EXTERNAL_STORAGE</code> — both <code>maxSdkVersion="32"</code></td><td><code>expo-image-picker</code> on Android 12 and below; Android 13+ uses the system photo picker</td><td>No <code>READ_MEDIA_IMAGES</code> ⇒ Play's "Photo and video permissions" declaration should not be triggered. <span class="b verify">VERIFY</span> on the App content page after the first upload — Play scans the real manifest then.</td></tr>
+<tr><td>Android</td><td>No <code>AD_ID</code> permission</td><td>—</td><td>Advertising ID declaration: <b>No</b>. <span class="b verify">VERIFY</span> after upload.</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="order">4. Order of operations</h2>
+<ul class="check">
+<li><b>Task A</b> — done 11 Sep: highlights, draft banners, "unreviewed draft" footers and their CSS removed from privacy and terms; text unchanged.</li>
+<li><b>Support page</b> — <code>docs/support.html</code>. Apple's Support URL must be a real support page. <span class="b decide">DECIDE</span> (say yes and I write it).</li>
+<li><b>Decisions</b> — answer §12. The phone-number purpose and the required photo change what the forms say.</li>
+<li><b>Reviewer test account</b> — create a Google account for reviewers (both stores ask for credentials; I never handle them — you type them into the consoles).</li>
+<li><b>Screenshots</b> — §9. I capture from the simulator and emulator once you approve the screen list.</li>
+<li><b>Version</b> — bump <code>version</code> in <code>app.config.ts</code> if you choose 1.0.0 (§12). Native change ⇒ needs the production builds anyway.</li>
+<li><b>Fill the consoles</b> from §5 and §6. I can drive the browser beside you while you are logged in.</li>
+<li><b>Production builds</b> — §10. iOS goes up with <code>eas submit</code>; Android's first upload is manual (drag the AAB into the console).</li>
+<li><b>Submit for review</b> — both stores. Meta's review (<code>forlater.md</code> item 8) runs in parallel; see <a href="#risks">risk 1</a> for why its timing matters.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="asc">5. App Store Connect, field by field</h2>
+
+<h3>App Information</h3>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">Name</td><td>Allkept</td><td><span class="b ready">READY</span> already on the record</td></tr>
+<tr><td class="f">Subtitle (≤ 30 chars)</td><td>"Your saves, in one place" (24) &nbsp;or&nbsp; "Everything you save, kept" (25)</td><td><span class="b decide">DECIDE</span>. The release guide's "Everything you save, in one place" is 33 characters — too long.</td></tr>
+<tr><td class="f">Primary language</td><td>English (U.S.)</td><td>ASC has no English (India) locale. <span class="b ready">READY</span></td></tr>
+<tr><td class="f">Bundle ID</td><td>app.allkept.mobile</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">SKU</td><td><code>allkept-mobile</code></td><td>Any unique string, permanent. <span class="b decide">DECIDE</span> (recommend this)</td></tr>
+<tr><td class="f">Primary category</td><td>Productivity</td><td><span class="b ready">READY</span> (release guide)</td></tr>
+<tr><td class="f">Secondary category</td><td>Utilities</td><td>Optional. <span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Content Rights</td><td>"Contains, shows, or accesses third-party content": <b>Yes</b> — previews (title, caption, thumbnail) of posts the user chose to save — and affirm you have the rights or permission.</td><td>Legal statement. <span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Age Rating questionnaire</td><td><b>Unrestricted Web Access: Yes</b> (the in-app browser opens any saved link). Violence, sexual content, profanity, drugs, gambling, contests, horror, medical: <b>None / No</b>. Content from other users: the app shows content the user saved from other platforms, not content other Allkept users post — answer to the questionnaire's exact wording.</td><td>"Unrestricted Web Access" alone produces the top rating (17+ on the old scale, 18+ on the 2025 scale). Consistent with the 18+ terms. <span class="b verify">VERIFY</span> the exact labels shown.</td></tr>
+<tr><td class="f">License Agreement</td><td>Apple's standard EULA</td><td><span class="b ready">READY</span> unless you want your own</td></tr>
+</table></div>
+
+<h3>Pricing and Availability</h3>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">Price</td><td>Free (Tier 0)</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">Availability</td><td>United States, India — deselect everything else</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">Pre-orders</td><td>No</td><td></td></tr>
+<tr><td class="f">Distribution methods</td><td>Public on the App Store</td><td></td></tr>
+</table></div>
+
+<h3>App Privacy</h3>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">Privacy Policy URL</td><td><code>https://pranavadityaneti.github.io/All-Kept/privacy.html</code></td><td><span class="b ready">READY</span> (task A done)</td></tr>
+<tr><td class="f">Do you collect data?</td><td>Yes</td><td></td></tr>
+<tr><td class="f">Data used to track you</td><td><b>None</b> — the label reads "Data Not Used to Track"</td><td><span class="b ready">READY</span> no tracking, no ad SDKs</td></tr>
+<tr><td class="f">Data linked to you — Contact Info</td><td>Email Address · Name · Phone Number</td><td>Phone only if you keep the field (§12). Purpose: App Functionality.</td></tr>
+<tr><td class="f">Data linked to you — Identifiers</td><td>User ID</td><td>App Functionality</td></tr>
+<tr><td class="f">Data linked to you — User Content</td><td>Photos or Videos (profile photo; stored thumbnails of saved posts) · Other User Content (saved links, captions, notes, imported history) · Customer Support (feedback)</td><td>App Functionality</td></tr>
+<tr><td class="f">Data linked to you — Usage Data</td><td>Product Interaction (the <code>app_events</code> list)</td><td>Purposes: Analytics <i>and</i> App Functionality</td></tr>
+<tr><td class="f">Search History</td><td><b>No</b> — query text is never stored, only that a search happened, its length and result count</td><td><span class="b decide">DECIDE</span>; the conservative answer is Yes</td></tr>
+<tr><td class="f">Device ID</td><td><b>No</b> — a push token is not a Device ID under Apple's definition (IDFV etc.)</td><td><span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Data not linked to you</td><td>None</td><td>Everything is keyed by user ID</td></tr>
+<tr><td class="f">Everything else</td><td>Not collected</td><td>Location, contacts, health, financial, browsing history, diagnostics, crash data, purchases, sensitive info</td></tr>
+</table></div>
+
+<h3>Version page (1.0)</h3>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">Screenshots</td><td>iPhone 6.9" display set (portrait 1320 × 2868). No iPad set — <code>supportsTablet: false</code>.</td><td>Apple accepts one required iPhone size and scales the rest. <span class="b verify">VERIFY</span> the current required size in the uploader. Plan in §9.</td></tr>
+<tr><td class="f">App preview video</td><td>None</td><td>Optional</td></tr>
+<tr><td class="f">Promotional text (≤ 170)</td><td>See §7</td><td>Editable without a new review</td></tr>
+<tr><td class="f">Description (≤ 4000)</td><td>See §7</td><td></td></tr>
+<tr><td class="f">Keywords (≤ 100 chars)</td><td>See §7</td><td></td></tr>
+<tr><td class="f">Support URL</td><td><code>https://pranavadityaneti.github.io/All-Kept/support.html</code> once written</td><td><span class="b decide">DECIDE</span> (the support page)</td></tr>
+<tr><td class="f">Marketing URL</td><td><code>https://pranavadityaneti.github.io/All-Kept/</code> or <code>https://allkept.app</code> if live</td><td><span class="b verify">VERIFY</span></td></tr>
+<tr><td class="f">Version</td><td><b>1.0.0</b> (recommended) — or keep 0.1.0</td><td><span class="b decide">DECIDE</span>. Must match <code>version</code> in <code>app.config.ts</code> at build time.</td></tr>
+<tr><td class="f">Copyright</td><td>2026 MECA Engineering Solutions (OPC) Private Limited</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">Build</td><td>Select the <code>production</code> build after it uploads (§10)</td><td></td></tr>
+<tr><td class="f">Export compliance</td><td>Already answered in the binary (<code>ITSAppUsesNonExemptEncryption: false</code>)</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">App Review — Sign-in required</td><td><b>Yes.</b> Reviewers can use <b>Sign in with Apple with any Apple ID</b>; also give the dedicated Google test account (username + password fields).</td><td>Google may challenge an unfamiliar device with 2-step verification, which reviewers cannot pass — that is why Apple sign-in is the primary path. <span class="b decide">DECIDE</span> (create the account)</td></tr>
+<tr><td class="f">App Review — Contact</td><td>Pranav Aditya · phone · <code>hi@allkept.app</code></td><td></td></tr>
+<tr><td class="f">App Review — Notes</td><td>See §8</td><td></td></tr>
+<tr><td class="f">Version release</td><td>Manually release this version</td><td>Recommended — lets you line up Android and Meta. <span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Phased release</td><td>Off</td><td></td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="play">6. Google Play Console, field by field</h2>
+
+<h3>Main store listing</h3>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">App name (≤ 30)</td><td>Allkept</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">Short description (≤ 80)</td><td>"Everything you save, in one place — sorted and searchable." (58)</td><td><span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Full description (≤ 4000)</td><td>See §7 (Android wording: "share from any app" instead of the iOS share sheet)</td><td></td></tr>
+<tr><td class="f">App icon</td><td>512 × 512 PNG, 32-bit, no alpha</td><td>I derive it from <code>assets/icon.png</code> (1024, no alpha). <span class="b ready">READY</span> on request</td></tr>
+<tr><td class="f">Feature graphic</td><td>1024 × 500 PNG/JPEG — <b>required</b>, none exists</td><td>Design task: the saved-fan artwork on the brand ground with the wordmark. <span class="b decide">DECIDE</span> (I draft it; you approve)</td></tr>
+<tr><td class="f">Phone screenshots</td><td>2–8, 16:9 or 9:16, 320–3840 px each side</td><td>§9</td></tr>
+<tr><td class="f">7" / 10" tablet screenshots</td><td>Skip</td><td>Optional; the app is phone-only</td></tr>
+<tr><td class="f">Video</td><td>None</td><td></td></tr>
+</table></div>
+
+<h3>Store settings</h3>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">App category</td><td>Application → Productivity</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">Tags</td><td>e.g. Bookmarks, Notes, Social</td><td>Optional. <span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Contact email</td><td><code>hi@allkept.app</code></td><td>Required, shown publicly. <span class="b ready">READY</span></td></tr>
+<tr><td class="f">Contact phone</td><td>Optional</td><td><span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Website</td><td>Landing page URL (see Marketing URL above)</td><td><span class="b verify">VERIFY</span></td></tr>
+</table></div>
+
+<h3>App content (every declaration must be done before a production release)</h3>
+<div class="tbl"><table>
+<tr><th>Declaration</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">Privacy policy</td><td><code>…/All-Kept/privacy.html</code></td><td><span class="b ready">READY</span> (task A done)</td></tr>
+<tr><td class="f">Ads</td><td>No, my app does not contain ads</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">App access</td><td>"All or some functionality is restricted" → add instructions: sign in with Google (test account below) or Apple; then paste any public link via the + button to see a save arrive.</td><td>Play wants a username + password it can type — the dedicated Google test account. <span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Content rating (IARC)</td><td>Category: Utility / Productivity. Violence, sexual content, language, controlled substances, gambling: <b>No</b>. Users interact or exchange content with each other: <b>No</b> (no user-to-user features). Shares location: <b>No</b>. Unrestricted internet access: <b>Yes</b> (in-app browser).</td><td>Expect a Teen / Mature rating from the internet-access answer. <span class="b verify">VERIFY</span> the wording; the questionnaire changes.</td></tr>
+<tr><td class="f">Target audience and content</td><td>Age group: <b>18 and over</b> only. Appeals to children: No.</td><td><span class="b ready">READY</span> matches the terms</td></tr>
+<tr><td class="f">News app</td><td>No</td><td></td></tr>
+<tr><td class="f">COVID-19 apps</td><td>Not a COVID-19 app</td><td></td></tr>
+<tr><td class="f">Government app</td><td>No</td><td></td></tr>
+<tr><td class="f">Financial features</td><td>None</td><td></td></tr>
+<tr><td class="f">Health</td><td>No health features</td><td></td></tr>
+<tr><td class="f">Advertising ID</td><td>No, the app does not use the advertising ID</td><td><span class="b verify">VERIFY</span> the manifest scan agrees after upload</td></tr>
+<tr><td class="f">Photo and video permissions</td><td>Should not appear (no <code>READ_MEDIA_IMAGES</code>). If it does: one-time / infrequent use for a profile photo.</td><td><span class="b verify">VERIFY</span></td></tr>
+</table></div>
+
+<h3>Data safety form</h3>
+<div class="tbl"><table>
+<tr><th>Question / data type</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">Does your app collect or share user data?</td><td>Yes</td><td></td></tr>
+<tr><td class="f">Is all data encrypted in transit?</td><td>Yes (HTTPS only)</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">Do you provide a way to request deletion?</td><td>Yes — in-app (Settings → Delete account and everything in it) and <code>…/All-Kept/delete.html</code></td><td>Also fill the <b>account-deletion URL</b> field with delete.html. <span class="b ready">READY</span></td></tr>
+<tr><td class="f">Personal info → Name</td><td>Collected · not shared · required · App functionality</td><td></td></tr>
+<tr><td class="f">Personal info → Email address</td><td>Collected · not shared · required · Account management</td><td></td></tr>
+<tr><td class="f">Personal info → Phone number</td><td>Collected · not shared · optional · <i>purpose?</i></td><td><span class="b decide">DECIDE</span> (§12)</td></tr>
+<tr><td class="f">Personal info → User IDs</td><td>Collected · not shared · required · Account management</td><td></td></tr>
+<tr><td class="f">Photos and videos → Photos</td><td>Collected · not shared · required (profile photo; stored thumbnails of saves) · App functionality</td><td></td></tr>
+<tr><td class="f">Files and docs</td><td>Collected · not shared · optional (the Instagram export you choose to import) · App functionality</td><td><span class="b decide">DECIDE</span> — conservative Yes</td></tr>
+<tr><td class="f">Messages → Other in-app messages</td><td>Collected · not shared · optional (posts and text you send to @allkeptapp; feedback) · App functionality</td><td><span class="b decide">DECIDE</span> — conservative Yes</td></tr>
+<tr><td class="f">App activity → App interactions</td><td>Collected · not shared · required · Analytics</td><td>The <code>app_events</code> list</td></tr>
+<tr><td class="f">App activity → In-app search history</td><td><b>No</b> (query text never stored)</td><td><span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">App activity → Other user-generated content</td><td>Collected · not shared · required · App functionality</td><td>Saved links, captions, notes</td></tr>
+<tr><td class="f">Device or other IDs</td><td>Collected · not shared · optional (push token) · App functionality</td><td>Conservative Yes. <span class="b decide">DECIDE</span></td></tr>
+<tr><td class="f">Everything else</td><td>Not collected</td><td>Location, financial, health, contacts, calendar, audio, web browsing, crash logs, diagnostics, installed apps</td></tr>
+<tr><td class="f">Data shared with third parties</td><td><b>None</b></td><td>Supabase, Expo, OpenAI, Google, Apple, Meta process data on your behalf; Play does not count service providers as "sharing". <span class="b verify">VERIFY</span> the current definition text in the form.</td></tr>
+</table></div>
+
+<h3>Release</h3>
+<div class="tbl"><table>
+<tr><th>Field</th><th>Answer</th><th>Notes</th></tr>
+<tr><td class="f">Countries / regions</td><td>United States, India</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">Pricing</td><td>Free</td><td>Free → paid cannot be reversed later; free is right. <span class="b ready">READY</span></td></tr>
+<tr><td class="f">Play App Signing</td><td>Enrol (default). The EAS-managed keystore already used for the preview APKs becomes the upload key.</td><td><span class="b ready">READY</span></td></tr>
+<tr><td class="f">First upload</td><td>Manual: build the AAB (§10), drag it into Internal testing or Production.</td><td>As I recall, EAS Submit needs the app to exist on Play first and a service-account JSON; set <code>submit.production.android.serviceAccountKeyPath</code> afterwards. <span class="b verify">VERIFY</span></td></tr>
+<tr><td class="f">Track</td><td>Internal testing first (instant), then promote to Production once the App content declarations pass</td><td>Recommended</td></tr>
+<tr><td class="f">Testing requirement</td><td>None expected for an organisation account</td><td><span class="b verify">VERIFY</span></td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="copy">7. Listing copy (drafts)</h2>
+<p>Adapted from the 8 Sep release guide, which was written for a test phase; this is the public version. Every claim checks out against the code.</p>
+
+<p><b>Subtitle (Apple, ≤ 30)</b> — pick one <span class="b decide">DECIDE</span></p>
+<pre class="copy">Your saves, in one place
+Everything you save, kept</pre>
+
+<p><b>Short description (Play, ≤ 80)</b></p>
+<pre class="copy">Everything you save, in one place — sorted and searchable.</pre>
+
+<p><b>Promotional text (Apple, ≤ 170)</b></p>
+<pre class="copy">Send a reel, post or link to Allkept and find it again in seconds — sorted by topic, searchable by word, opened where it came from.</pre>
+
+<p><b>Description (both stores)</b></p>
+<pre class="copy">You save things everywhere and find them nowhere. Allkept gathers what you keep into one library you can actually search.
+
+Send any reel or post to @allkeptapp in an Instagram message, share a link to Allkept from any app, or connect a public YouTube playlist. It appears in Allkept within seconds with a picture, the caption and a category chosen for you. Bring in your older Instagram saves from your Meta data export.
+
+• Sorted for you — every save gets a category, and you can correct it in a tap
+• Search by word, filter by topic or platform
+• Open the original where you found it, or share it on
+• Add a note so future you knows why you kept it
+• A notification when a save lands, or when one needs your attention
+
+Allkept never posts for you and never messages anyone on your behalf. Delete everything from Settings whenever you like.</pre>
+
+<p><b>Keywords (Apple, ≤ 100 chars, comma-separated, no spaces after commas)</b> — 87 characters</p>
+<pre class="copy">saved posts,bookmarks,reels,read later,library,organize,collect,links,instagram,youtube</pre>
+<p><small>Other companies' names as keywords are common but Apple can object under guideline 2.3.7 if they read as misleading. Dropping <code>instagram,youtube</code> leaves 69 characters. <span class="b decide">DECIDE</span></small></p>
+
+<p><b>What's New (1.0)</b></p>
+<pre class="copy">First release.</pre>
+
+<!-- ============================================================ -->
+<h2 id="review">8. Review notes (drafts)</h2>
+<p><b>App Store Connect → App Review Information → Notes</b></p>
+<pre class="copy">Allkept is a personal library for the things you save on social platforms. Sign-in is required because the library syncs to the account; there is no password login.
+
+SIGN IN: Sign in with Apple works with any Apple ID. A Google test account is also provided in the credentials fields above.
+
+TO SEE IT WORK (no Instagram needed):
+1. Complete the short profile step (name and a photo).
+2. Tap the + button, paste any public link (for example a YouTube video), and tap Save. A card appears with a preview and a category within a few seconds.
+3. Search by any word in the title, or filter by topic.
+4. Open the original from the card, or share it on.
+
+Sending posts to @allkeptapp from Instagram requires linking an Instagram account; the paste-a-link path exercises the same pipeline.
+
+Notifications are requested only when the user turns a switch on in Settings, never at launch.
+Account deletion: Settings → "Delete account and everything in it".</pre>
+
+<p><b>Play Console → App access → Instructions</b></p>
+<pre class="copy">Sign in with the Google account provided. Complete the profile step (name and a photo). Tap the + button, paste any public link and tap Save; a card with a preview and a category appears within a few seconds. Search and filters are on the Library tab. Account deletion is in Settings.</pre>
+<p><small>Line 4 of the Apple notes is deliberately vague about Meta. See <a href="#risks">risk 1</a> before deciding how much to say. <span class="b decide">DECIDE</span></small></p>
+
+<!-- ============================================================ -->
+<h2 id="shots">9. Screenshot plan</h2>
+<p>Captured from the iOS simulator (6.9" iPhone) and an Android emulator, with a seeded library so the cards are full. Same six frames on both, portrait, light theme (the store default), no device bezels, one short caption line per frame added in the artwork.</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>Screen</th><th>Caption</th></tr>
+<tr><td>1</td><td>Home — category grid with counts</td><td>Everything you save, sorted for you</td></tr>
+<tr><td>2</td><td>Library — cards from Instagram, YouTube and the web</td><td>One library for every platform</td></tr>
+<tr><td>3</td><td>Search over the screen with results</td><td>Find it by a word you remember</td></tr>
+<tr><td>4</td><td>Item — preview, category, note, open original</td><td>Open it where you found it</td></tr>
+<tr><td>5</td><td>Save a link (the + sheet) with a pasted link</td><td>Share or paste any link</td></tr>
+<tr><td>6</td><td>Welcome — the saved fan</td><td>Kept together</td></tr>
+</table></div>
+<p>Sizes: iPhone 6.9" = 1320 × 2868; Play phone = any 9:16 between 320 and 3840 px (the same 1320 × 2868 files work). <span class="b verify">VERIFY</span> Apple's required size in the uploader before I render. Approve the list and I produce them as a separate task.</p>
+
+<!-- ============================================================ -->
+<h2 id="cmds">10. Build and submit commands</h2>
+<p>Run from <code>apps/mobile</code>. Each is deploy-class: I run them only on an explicit yes.</p>
+<pre># 0. Bump the version first if you chose 1.0.0 (app.config.ts → version), then commit.
+#    Remember ERRORS.md: do not touch package.json or eas.json between the build and any OTA.
+
+# 1. Confirm the production environment points at the Supabase project you mean to run publicly
+npx --yes eas-cli@latest env:list --environment production
+
+# 2. iOS — build, then upload to App Store Connect (the submit profile already carries the ASC app ID)
+npx --yes eas-cli@latest build  --profile production --platform ios --non-interactive
+npx --yes eas-cli@latest submit --profile production --platform ios --latest --non-interactive
+
+# 3. Android — build the AAB; the first upload is manual in Play Console
+npx --yes eas-cli@latest build  --profile production --platform android --non-interactive
+#    download the .aab from the build page and drag it into Internal testing
+
+# 4. Later, once the app exists on Play and a service-account key is configured in eas.json:
+#    npx --yes eas-cli@latest submit --profile production --platform android --latest
+
+# After launch, JS-only changes go over the air on the production channel:
+npm run ota:production -- "what changed"</pre>
+<div class="note">The <code>production</code> profile uses the <code>production</code> update channel and environment. Nothing has ever been published to that channel; the first store builds start it clean.</div>
+
+<!-- ============================================================ -->
+<h2 id="risks">11. Risks worth knowing before you submit</h2>
+<ol>
+<li><b>The Instagram door will not complete for a reviewer.</b> <span class="b risk">RISK</span> Until Meta approves the app (~20 days from today's submission), DMs to @allkeptapp only work for accounts added as Meta testers. If an Apple or Google reviewer taps "Connect Instagram" and never gets the "Linked as @you" reply, it looks broken (Apple guideline 2.1). Options: (a) submit the stores after Meta approves; (b) submit now with notes steering reviewers to paste-a-link and make sure the connect screen shows a calm "waiting for Instagram" state rather than a spinner forever — <span class="b verify">VERIFY</span> what the screen does on no reply; (c) both. <span class="b decide">DECIDE</span></li>
+<li><b>A required profile photo at onboarding.</b> <span class="b risk">RISK</span> Apple 5.1.1(ii) frowns on demanding personal information that is not needed for the app to work; a bookmarking app does not need a face. Making the photo optional is a small change and removes the question. <span class="b decide">DECIDE</span></li>
+<li><b>Phone number with no visible purpose.</b> Both forms ask why. Nothing in the code reads it yet. State the purpose or remove the field. <span class="b decide">DECIDE</span></li>
+<li><b>Policy pages</b> — presentation fixed 11 Sep (task A). Whether to launch without a lawyer's pass remains your call; the pages no longer say so out loud.</li>
+<li><b>Google sign-in for Apple reviewers.</b> Google's device challenge often blocks reviewers; Sign in with Apple is the reliable path and the notes say so.</li>
+<li><b>Support URL.</b> Apple will not accept the testers page. Needs the support page.</li>
+<li><b>Brand names in keywords.</b> Usually tolerated; occasionally flagged. §7.</li>
+<li><b>Manual first Android upload.</b> Plan an hour in the Play Console the first time; the App content declarations gate the production release.</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="decisions">12. All open decisions, in one list</h2>
+<ol>
+<li>Subtitle: "Your saves, in one place" or "Everything you save, kept"?</li>
+<li>Version string for launch: 1.0.0 (recommended) or 0.1.0?</li>
+<li>SKU <code>allkept-mobile</code> — fine?</li>
+<li>Secondary category (Utilities) and Play tags — any?</li>
+<li>Content Rights: affirm the third-party-content statement?</li>
+<li>Phone number: purpose, or remove the field?</li>
+<li>Profile photo: keep it required, or make it optional? (risk 2)</li>
+<li>Search History label: No (accurate) or Yes (conservative)?</li>
+<li>Device ID / push token: No (Apple), Yes (Play conservative) — agree?</li>
+<li>Files and docs, Messages on Play: conservative Yes — agree?</li>
+<li>Keywords: keep <code>instagram,youtube</code>?</li>
+<li>Reviewer test account: you create a Google account; I never see the password.</li>
+<li>Support page <code>docs/support.html</code>: write it?</li>
+<li>Feature graphic 1024 × 500: I draft one?</li>
+<li>Screenshot list in §9: approved?</li>
+<li>Version release: manual (recommended)?</li>
+<li>Submit before or after Meta approval? (risk 1)</li>
+<li>Contact phone number — <i>answered 11 Sep (kept out of the repo).</i></li>
+<li>Marketing URL: GitHub Pages landing, or is <code>allkept.app</code> live?</li>
+</ol>
+
+<p><small>Allkept · Store submission worksheet · 11 September 2026 · written from commit <code>371e673</code>. Companion files: <code>SESSION_LOG.md</code>, <code>forlater.md</code>, <code>ERRORS.md</code>, and the 8 Sep <code>allkept-release-guide.html</code> in the spec folder.</small></p>
+
+</div>
+</body>
+</html>

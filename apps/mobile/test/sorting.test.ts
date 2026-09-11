@@ -14,7 +14,7 @@ describe("sorting states", () => {
   });
   it("keeps chosen categories visible while a retry is scheduled", () => {
     const item = { status: "no_link", classificationStatus: "retry_wait" as const, category: "Food & recipes" };
-    expect(categoryLabel(item)).toBe("Food & recipes");
+    expect(categoryLabel(item)).toBe("Food");
     expect(sortingNote(item)).toBe("Retry scheduled");
     expect(canRetrySorting(item)).toBe(true);
   });
