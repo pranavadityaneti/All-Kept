@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { UA, BROWSER_UA, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -460,4 +460,21 @@ Deno.test("a short link that lands on a platform's front door is unresolved, nev
   assertEquals(r.patch.platform, undefined);
   assertEquals(r.patch.needs_expansion, undefined);
   assert((r.error ?? "").includes("unrecognised"));
+});
+
+Deno.test("expansion follows the redirect as a browser; metadata is fetched as AllkeptBot", async () => {
+  const calls: { url: string; ua: string | undefined }[] = [];
+  const VIDEO = "https://www.tiktok.com/@tiktok/video/7532540099460893983";
+  const f: typeof fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    calls.push({ url, ua: (init?.headers as Record<string, string> | undefined)?.["user-agent"] });
+    if (url.startsWith("https://vm.tiktok.com/")) return Object.defineProperty(new Response("", { status: 200 }), "url", { value: VIDEO });
+    if (url.startsWith("https://www.tiktok.com/oembed")) return Response.json({ title: "current mood", author_name: "TikTok", author_url: "https://www.tiktok.com/@tiktok", thumbnail_url: "https://cdn/t.jpg" });
+    return new Response("not found", { status: 404 });
+  }) as typeof fetch;
+  const r = await enrich(base({ platform: "tiktok", kind: "short_video", source_url: "https://vm.tiktok.com/ZS9dHGEcApLyX", canonical_url: null, external_id: null, needs_expansion: true, text: null }), deps(f));
+  assertEquals(r.status, "ready");
+  assertEquals(r.patch.canonical_url, VIDEO);
+  assertEquals(calls[0]!.ua, BROWSER_UA);
+  assertEquals(calls.find((c) => c.url.startsWith("https://www.tiktok.com/oembed"))?.ua, UA);
 });

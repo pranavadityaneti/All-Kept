@@ -48,7 +48,13 @@ const TIMEOUT_MS = 8_000;
 /** Link-preview tags live in <head>; Instagram's sit within the first 15 KB of a 650 KB page. Reading stops here and the connection is closed. */
 const MAX_HTML_BYTES = 256_000;
 export const RETRY_LADDER_MS = [60_000, 300_000, 1_800_000, 7_200_000, 43_200_000];
-const UA = "Mozilla/5.0 (compatible; AllkeptBot/0.1; +https://allkept.app)";
+export const UA = "Mozilla/5.0 (compatible; AllkeptBot/0.1; +https://allkept.app)";
+/**
+ * The expansion hop only. Following a shortener's redirect is not scraping, but shorteners sit behind
+ * bot walls that answer a bot string with a "Please wait…" page (HTTP 200) and send it to the front
+ * door — TikTok's vm.tiktok.com did exactly that. Every metadata fetch keeps the honest UA above.
+ */
+export const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15";
 
 /**
  * Asking YouTube for a player this tall makes it answer with the video's own proportions rather than
@@ -333,7 +339,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
   // 1. Expand short links, then re-normalise.
   if (item.needs_expansion && sourceUrl) {
     try {
-      const res = await fetchFollowing(deps.fetch, sourceUrl);
+      const res = await fetchFollowing(deps.fetch, sourceUrl, { headers: { "user-agent": BROWSER_UA } });
       const finalUrl = res.url || sourceUrl;
       const link = normalize({ url: finalUrl });
       if (link.platform !== "note" && !link.needsExpansion && link.recognised) {
