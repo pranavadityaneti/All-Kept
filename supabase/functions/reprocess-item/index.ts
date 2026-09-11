@@ -1,6 +1,7 @@
 // POST: enriches and classifies one item the caller owns, right now. The app calls this after someone
 // pastes the missing link onto a no-link post, so the card fills in while they are looking at it.
-import { adminClient, userIdFromRequest } from "../_shared/supabase.ts";
+import { adminClient, env, userIdFromRequest } from "../_shared/supabase.ts";
+import { enqueueItem } from "../_shared/enqueue.ts";
 import { apiError, json, readJson } from "../_shared/http.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { runPipeline } from "../_shared/pipeline.ts";
@@ -29,7 +30,14 @@ Deno.serve(async (req) => {
       if (resetError) throw resetError;
     }
     const log = (message: string, meta?: Record<string, unknown>) => console.log(message, meta ?? {});
-    const category = await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log }, retry);
+    const hop = await enqueueItem(itemId, { retry }, { fetch, env, log });
+    let category: string | null;
+    if (hop.ok) category = hop.category;
+    else {
+      // The person is looking at the card; an answer now, from here, beats none. The log makes a broken hop visible.
+      log("reprocess-item: hop failed, running in-process", { item: itemId, reason: hop.reason });
+      category = await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log }, retry);
+    }
 
     const { data: after } = await db.from("items").select("status,classification_status").eq("id", itemId).maybeSingle();
     const body2: ReprocessItemResponse = { status: (after?.status ?? "pending") as ReprocessItemResponse["status"], category, classificationStatus: after?.classification_status };
