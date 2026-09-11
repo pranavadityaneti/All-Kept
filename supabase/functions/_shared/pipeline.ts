@@ -1,6 +1,8 @@
 // Runs enrichment and classification for one item against the database. Used by the webhook (right after capture), the poller and the sweeper.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { enrich, type EnrichableItem } from "./enrich.ts";
+import { duplicateDeps, foldDuplicate } from "./duplicate.ts";
+import type { ItemIdentity } from "./contracts.ts";
 import { PROMPT_VERSION, type ClassifyDeps, type ModelUsage } from "./classify.ts";
 import { runClassification, type ClassificationClaim } from "./classification-worker.ts";
 import { compose, notify, type PushDeps, type PushReason } from "./push.ts";
@@ -122,10 +124,10 @@ async function announce(db: SupabaseClient, deps: PipelineDeps, itemId: string, 
 
 /** Enriches (if pending/failed/no_link without thumbnail) and claims due classification work. Returns the category when known. */
 export async function runPipeline(db: SupabaseClient, itemId: string, deps: PipelineDeps, retryClassification = false): Promise<string | null> {
-  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta, captured_via").eq("id", itemId).maybeSingle();
+  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta, captured_via, saved_at").eq("id", itemId).maybeSingle();
   if (error) throw error;
   if (!item) return null;
-  const it = item as EnrichableItem & { note: string | null; media_meta: Record<string, unknown> | null; captured_via: string };
+  const it = item as EnrichableItem & { note: string | null; media_meta: Record<string, unknown> | null; captured_via: string; saved_at: string };
 
   const needsEnrich = it.status === "pending" || it.status === "failed";
   // A card whose remote image was not stored yet (first try for no-link posts, or a failed fetch) gets a bounded number of further tries.
@@ -159,8 +161,11 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
     const { error: e2 } = await db.from("items").update(patch).eq("id", itemId);
     if (e2) {
       if (e2.code === "23505") { // the expanded link turned out to be an item we already hold
+        const identity: ItemIdentity = { platform: r.patch.platform ?? it.platform, externalId: r.patch.external_id ?? null, canonicalUrl: r.patch.canonical_url ?? null };
+        const original = await foldDuplicate({ id: itemId, user_id: it.user_id, saved_at: it.saved_at }, identity, duplicateDeps(db));
+        if (original) { deps.log("pipeline: duplicate after expansion folded into the original", { item: itemId, original }); return null; }
         await db.from("items").update({ status: "failed", next_attempt_at: null, media_meta: { last_error: "duplicate after expansion" } }).eq("id", itemId);
-        deps.log("pipeline: duplicate after expansion", { item: itemId });
+        deps.log("pipeline: duplicate after expansion, original not found", { item: itemId });
         return null;
       }
       throw e2;
