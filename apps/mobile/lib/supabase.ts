@@ -5,6 +5,10 @@ import { chunkedSecureStore } from "./storage";
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
 const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
+/** Handed to the share extension at runtime, so nothing is compiled into native code. */
+export const supabaseUrl = url;
+export const supabaseAnonKey = anonKey;
+
 /**
  * Set when the build was made without its server settings. These are compiled in, so a build that
  * misses them can never work; the app says so on screen rather than closing itself, because a
