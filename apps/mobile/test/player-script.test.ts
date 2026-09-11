@@ -22,6 +22,11 @@ describe("the script every player runs", () => {
     expect(p).not.toContain(".play()");
     expect(p.trim().endsWith("true;")).toBe(true); // a WebView injection must evaluate to something serialisable
   });
+  it("leaves the desired state where a script that has not started yet will find it", () => {
+    // The state command and the player script race on first load; whichever runs second must win.
+    expect(stateScript({ playing: true, muted: true })).toContain("__allkeptDesired");
+    expect(PLAYER_SCRIPT).toContain("__allkeptDesired");
+  });
 });
 
 describe("what the player says back", () => {

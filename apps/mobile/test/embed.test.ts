@@ -25,6 +25,10 @@ describe("playing a save in the app", () => {
     expect(url).toContain("playsinline=1");
     expect(url).toContain("rel=0");
     expect(url).toContain(`origin=${encodeURIComponent(EMBED_ORIGIN)}`);
+    // Autoplay is asked of YouTube in its own words as well, so its controls start in agreement
+    // with the state the player script applies. Muted: sound is the speaker button's decision.
+    expect(url).toContain("autoplay=1");
+    expect(url).toContain("mute=1");
   });
 
   it("has nothing to play for a post with no link, a note or an unknown platform", () => {
@@ -86,6 +90,8 @@ describe("a saved YouTube playlist", () => {
     const url = embedUrl(yt({ canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", externalId: "PLxyz" }))!;
     expect(url).toContain(`origin=${encodeURIComponent(EMBED_ORIGIN)}`);
     expect(url).toContain("playsinline=1");
+    expect(url).toContain("autoplay=1");
+    expect(url).toContain("mute=1");
   });
 });
 

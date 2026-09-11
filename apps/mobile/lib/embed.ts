@@ -36,7 +36,7 @@ export function embedUrl(item: EmbeddableItem): string | null {
       // inside the player, so there is nothing to gain by asking — the card and its picture say more
       // than a black rectangle does. Enrichment records which it is.
       if (item.embeddable === false) return null;
-      return `https://www.youtube-nocookie.com/embed/videoseries?list=${list[1]}&playsinline=1&rel=0&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
+      return `https://www.youtube-nocookie.com/embed/videoseries?list=${list[1]}&playsinline=1&rel=0&autoplay=1&mute=1&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
     }
   }
   if (item.platform === "youtube" && item.externalId) {
@@ -44,7 +44,9 @@ export function embedUrl(item: EmbeddableItem): string | null {
     // origin is what stops YouTube answering with "Video player configuration error (153)": their
     // player refuses an embed that arrives with no referrer, and a WebView loading a bare address
     // sends none. The value must match the referrer the player is given (see EmbedPlayer).
-    return `https://www.youtube-nocookie.com/embed/${item.externalId}?playsinline=1&rel=0&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
+    // autoplay and mute are asked of YouTube in its own words too, so its controls start in
+    // agreement with the state the player script applies; the speaker button decides the sound.
+    return `https://www.youtube-nocookie.com/embed/${item.externalId}?playsinline=1&rel=0&autoplay=1&mute=1&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
   }
   if (item.platform === "tiktok" && item.externalId && (item.kind === "short_video" || item.kind === "video" || item.kind === "image")) {
     // TikTok's Embed Player. loop, and none of the chrome we draw ourselves. Our speaker button owns

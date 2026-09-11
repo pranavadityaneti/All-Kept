@@ -12,7 +12,8 @@ export const VIDEO_WAIT_MS = 8000;
 export const PLAYER_SCRIPT = `
   (function () {
     if (window.__allkeptPlayer) { return true; }
-    var state = { playing: false, muted: true };
+    // Whatever Allkept asked for before this script ran, if the state command got here first.
+    var state = window.__allkeptDesired || { playing: false, muted: true };
     var video = null;
     var started = Date.now();
     function post(m) { window.ReactNativeWebView.postMessage(JSON.stringify(m)); }
@@ -67,6 +68,7 @@ export function stateScript(state: PlayerState): string {
   return `
   (function () {
     var next = { playing: ${state.playing ? "true" : "false"}, muted: ${muted} };
+    window.__allkeptDesired = next;
     if (window.__allkeptPlayer) { window.__allkeptPlayer.set(next); return true; }
     var v = document.querySelector('video');
     if (v) { v.muted = ${muted}; ${state.playing ? "var p = v.play(); if (p && p.catch) { p.catch(function () {}); }" : "v.pause();"} }
