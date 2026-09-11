@@ -336,9 +336,14 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       const res = await fetchFollowing(deps.fetch, sourceUrl);
       const finalUrl = res.url || sourceUrl;
       const link = normalize({ url: finalUrl });
-      if (link.platform !== "note" && !link.needsExpansion) {
+      if (link.platform !== "note" && !link.needsExpansion && link.recognised) {
         platform = link.platform; canonical = link.canonicalUrl; sourceUrl = link.sourceUrl ?? finalUrl;
         Object.assign(patch, { platform, kind: link.kind, canonical_url: canonical, external_id: link.externalId, source_url: sourceUrl, needs_expansion: false });
+      } else if (link.platform !== "note" && !link.needsExpansion) {
+        // A bot wall or a dead link sends the follower to the platform's front door. That page is
+        // not what the person saved, so it is never adopted; the short link stays as it was shared.
+        deps.log("enrich: short link led to an unrecognised page", { item: item.id, platform: link.platform, at: finalUrl.slice(0, 80) });
+        return { status: "preview_unavailable", patch, error: "short link led to an unrecognised page" };
       } else {
         return { status: "preview_unavailable", patch, error: "short link did not resolve" };
       }

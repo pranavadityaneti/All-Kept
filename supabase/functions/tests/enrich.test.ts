@@ -449,3 +449,15 @@ Deno.test("the real page is still read when its address matches", async () => {
   assertEquals(r.status, "ready");
   assertEquals(r.patch.text, "Space");
 });
+
+Deno.test("a short link that lands on a platform's front door is unresolved, never adopted", async () => {
+  const f = fakeFetch({
+    "https://vm.tiktok.com/ZS9dHGEcApLyX": () => Object.defineProperty(new Response("<html><title>TikTok - Make Your Day</title></html>", { status: 200, headers: { "content-type": "text/html" } }), "url", { value: "https://www.tiktok.com/" }),
+  });
+  const r = await enrich(base({ platform: "tiktok", kind: "short_video", source_url: "https://vm.tiktok.com/ZS9dHGEcApLyX", canonical_url: null, external_id: null, needs_expansion: true, text: null }), deps(f));
+  assertEquals(r.status, "preview_unavailable");
+  assertEquals(r.patch.canonical_url, undefined);
+  assertEquals(r.patch.platform, undefined);
+  assertEquals(r.patch.needs_expansion, undefined);
+  assert((r.error ?? "").includes("unrecognised"));
+});
