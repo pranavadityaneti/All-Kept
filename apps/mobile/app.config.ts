@@ -20,6 +20,8 @@ const config: ExpoConfig = {
     // the native sheet: the capability belongs to the App ID, and turning it off breaks the
     // Services ID the browser flow depends on.
     usesAppleSignIn: true,
+    // Signs the share extension target alongside the app (apple-targets needs it explicitly).
+    appleTeamId: "9DBGLY5BVP",
     // The share extension reads the save token and the offline queue through this group.
     entitlements: { "com.apple.security.application-groups": ["group.app.allkept.mobile"] },
     // The app uses only standard HTTPS, which is exempt. Declaring it here saves answering the
