@@ -3,7 +3,8 @@ import { adminClient, env } from "../_shared/supabase.ts";
 import { MAX_SNAPSHOT_ATTEMPTS, runPipeline } from "../_shared/pipeline.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
-import { json } from "../_shared/http.ts";
+import { json, readJson } from "../_shared/http.ts";
+import { singleItemRequest } from "./single.ts";
 
 const BATCH = 50;
 
@@ -15,6 +16,21 @@ Deno.serve(async (req) => {
     const db = adminClient();
     const choice = classifierFromEnv();
     const deps = { fetch, classifier: choice?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
+    // One item, right now, for a door that captured it elsewhere. Answered when the item is done.
+    const single = singleItemRequest(await readJson(req));
+    if (single) {
+      const region = Deno.env.get("SB_REGION") ?? null;
+      try {
+        const category = await runPipeline(db, single.itemId, deps, single.retry);
+        const { data: after } = await db.from("items").select("status").eq("id", single.itemId).maybeSingle();
+        const status = typeof after?.status === "string" ? after.status : null;
+        console.log("sweeper: single item", { item: single.itemId, status, region });
+        return json({ item: single.itemId, status, category, region });
+      } catch (e) {
+        console.error("sweeper: single item failed", { item: single.itemId, region, error: String(e).slice(0, 200) });
+        return new Response("internal error", { status: 500 });
+      }
+    }
     const nowIso = new Date().toISOString();
     const twoMinAgo = new Date(Date.now() - 120_000).toISOString();
     // 1. Items still to enrich: pending or failed with a due retry, older than 2 minutes (the webhook path handles fresh ones).
