@@ -38,10 +38,18 @@ const SELECT = "id,platform,kind,status,classification_status,title,text,note,au
 
 type Row = Record<string, unknown>;
 
-/** Only a real, positive number counts. Anything else means we never learned the shape. */
-function readAspect(meta: Record<string, unknown> | null): number | null {
+/**
+ * The shape as width ÷ height. A learned aspect wins; failing that, the oEmbed frame size, which
+ * for a TikTok save made before enrichment wrote aspects is the video's own frame. Anything else
+ * means we never learned the shape.
+ */
+export function readAspect(meta: Record<string, unknown> | null): number | null {
   const a = meta?.["aspect"];
-  return typeof a === "number" && Number.isFinite(a) && a > 0 ? a : null;
+  if (typeof a === "number" && Number.isFinite(a) && a > 0) return a;
+  const oe = meta?.["oembed"] as Record<string, unknown> | undefined;
+  const w = oe?.["width"], h = oe?.["height"];
+  if (typeof w === "number" && typeof h === "number" && w > 0 && h > 0) return w / h;
+  return null;
 }
 
 function toDetail(r: Row): ItemDetail {
