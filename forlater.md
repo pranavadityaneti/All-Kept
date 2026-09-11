@@ -51,6 +51,13 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-11
 - **Originated from:** category card system spec, 10 Sep 2026
 
+### 8. Meta App Review — track the clock
+- **What + why:** Pranav is submitting Meta business verification + App Review (`instagram_business_manage_messages`, oEmbed Read) on 11 Sep 2026. Until approved, DMs to @allkeptapp work only for accounts added as Meta testers. Plan and materials list: `~/projects/Random Tasks/docs/allkept-meta-app-setup.html` (Part C). A rejection restarts the ~20-day clock — fix the screencast/description and resubmit fast.
+- **Scope:** external process; no code.
+- **Status:** queued — blocked on Meta. Check status around 1 Oct 2026, or sooner if Meta asks for changes.
+- **Date added:** 2026-09-11
+- **Originated from:** 11 Sep 2026 store-readiness review
+
 ---
 
 ## In progress
@@ -58,7 +65,7 @@ Each item records: what + why · scope · status · date added · originated fro
 ### 1. Android preview build with Firebase wired in
 - **What + why:** Commit `bc56813` (10 Sep) added `google-services.json` and the Firebase config so Android push can work. That changed the Android fingerprint (`d2eccbdb → 4d9d10aa`), so the installed APK can never receive it over the air — Android push only works after a fresh build (`npm run build:android` in `apps/mobile`, profile `preview`, APK). The EAS build list (11 Sep 12:40) confirms no build exists at `4d9d10aa`: the newest Android build (`8f43c44a`, fingerprint `d2eccbdb`, commit `5b3060a`, finished 19:25 on 10 Sep) predates Firebase and is the APK that crashed.
 - **Scope:** EAS build only, no code change. Then install the APK on the test device and confirm a push arrives.
-- **Status:** in progress — build launched 11 Sep 12:46 on Pranav's go (runtime `4d9d10aa` confirmed on EAS). Next: install the APK on the phone, verify a push arrives, then archive.
+- **Status:** in progress — build `faaded60` finished 11 Sep 13:07 (runtime `4d9d10aa`). APK: https://expo.dev/artifacts/eas/4g9NXIMBwi0c5-eegCrxSsAgEuOXixQsp9i7JPX-V7Q.apk — Pranav to install and verify a push arrives, then archive.
 - **Date added:** 2026-09-11
 - **Originated from:** 10 Sep 2026 Android push session
 

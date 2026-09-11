@@ -26,6 +26,47 @@ written after the fact from git history, not live — treat details as approxima
   --non-interactive --no-wait --json`. EAS reports runtime `4d9d10aa` on commit `bc56813` —
   matches the fingerprint the commit predicted. Background watcher polling every 2 min;
   ~50 min expected (last build took 50).
+- 12:55 Committed both log files (`371e673`).
+- ~13:05 Store-readiness review (Pranav: "how far from submitting for review?"). Findings:
+  - **iOS is on TestFlight.** Latest build `307a659e` (build 25, commit `5b3060a`, runtime
+    `ca4414a2`) submitted 10 Sep 19:18; five TestFlight submissions since 9 Sep. The two later
+    commits are reachable OTA on iOS (fingerprint unchanged).
+  - **Android has never had a store build** — every build so far is `preview` (APK, internal).
+  - No screenshots or store-listing assets exist anywhere in the repo.
+  - `docs/privacy.html` / `docs/terms.html`: Pranav's answers (given 10 Sep) are in the pages, but
+    still wrapped in 21 + 9 dashed `[decision]` highlights, under "Draft — not reviewed by a
+    lawyer" banners and "unreviewed draft" footers.
+  - Spec folder (`~/projects/Random Tasks/docs/`) holds `allkept-release-guide.html` (8 Sep
+    checklist + draft listing copy) and `allkept-meta-app-setup.html` (Meta review plan, ~20 days).
+- **Correction:** I had said a reviewer needs no login. Wrong — `lib/auth-state.ts`
+  `authDestination` sends anonymous sessions to *welcome*; Google or Apple sign-in is required to
+  enter. Anonymous auth exists only underneath (legacy guest libraries, `linkIdentity`). Store
+  forms therefore need an app-access explanation (any Google/Apple account works; no demo login).
+- Pranav: Meta App Review is being submitted today, 11 Sep. ~20-day clock from submission.
+- Watcher defect: `build:view` has no `--non-interactive` flag, so every poll errored and read
+  "unknown". Replaced with a watcher on the plain `Status` line.
+- 13:18 **Android build `faaded60` finished** (13:07, 21 min). Runtime `4d9d10aa`, commit
+  `bc56813`. APK: https://expo.dev/artifacts/eas/4g9NXIMBwi0c5-eegCrxSsAgEuOXixQsp9i7JPX-V7Q.apk
+  Next: Pranav installs it and confirms a push arrives.
+- ~13:30 Pranav: Play account is an **organisation**; availability **US + India**. Taken as go
+  for task B. Fact sweep for the worksheet: onboarding requires name + **profile photo**
+  (phone optional, unused by any code); `profiles` also holds `phone`, `avatar_path`, `os`,
+  `cohort`; `app_events` has 12 named events; evaluated Android permissions are INTERNET +
+  storage (maxSdk 32) only — no `READ_MEDIA_IMAGES`, CAMERA stripped; iOS carries a default
+  Face ID string from expo-secure-store (never prompted). YouTube uses an API key, no OAuth
+  scope. Classifier vendor is whichever key is set; privacy.html names only OpenAI.
+- ~13:50 Wrote `docs/store-submission.html` — every ASC + Play field pre-answered, 19 open
+  decisions collected in §12, 8 risks in §11 (top: the Instagram connect flow cannot complete
+  for a reviewer until Meta approves; the required profile photo vs Apple 5.1.1).
+- ~14:05 Pranav: contact phone given in chat (kept out of the public repo — consoles only);
+  approved task A ("fill it"); wants privacy, terms and support "on the website".
+- ~14:10 **Task A done.** `docs/privacy.html`: 20 highlights unwrapped, banner + footer + CSS
+  removed (−1421 B). `docs/terms.html`: 8 unwrapped (−1157 B). Text and "Last updated" untouched;
+  HTML balanced; no leftovers. Worksheet updated (policy URLs READY, phone answered).
+- Website: `apps/website` exists only on the `website` branch and is a **vinext + wrangler
+  (Cloudflare Workers)** project with a nested `.git` and `.openai/hosting.json` — not Vercel, not
+  on `main`. Which site "the website" means is the open question (GitHub Pages `docs/` is what the
+  app, Meta and the worksheet link to).
 
 ### Decisions
 - Logging files live at the repo root: `SESSION_LOG.md`, `forlater.md`, `ERRORS.md`.
@@ -34,17 +75,25 @@ written after the fact from git history, not live — treat details as approxima
 1. **Android build after Firebase** — `bc56813` moved the Android fingerprint
    `d2eccbdb → 4d9d10aa`; the installed APK cannot pick that up over the air. Android push
    works only on a fresh `preview` build. Confirmed not launched (EAS build list, 12:40);
-   **launched 12:46** on Pranav's go, runtime `4d9d10aa` confirmed. In progress. When it
-   finishes: install the APK on the phone, then verify a push actually arrives.
+   **launched 12:46, finished 13:07** (`faaded60`, runtime `4d9d10aa`). Waiting on Pranav to
+   install the APK and confirm a push arrives; then archive `forlater.md` item 1.
    Note: `fd8bb59` (welcome layout) is JS-only but also only reaches Android via this build,
    since any OTA published from HEAD targets `4d9d10aa`. iOS (`ca4414a2`) can still take OTA.
 2. Design leftovers uncommitted (food tile variants, welcome variants, `docs/design/*`) —
    see `forlater.md` items 2–4.
 3. `website` worktree mid-edit; `category-artwork` worktree dead — `forlater.md` 5–6.
+4. **Store submission (iOS + Android) — in progress.** Worksheet written:
+   `docs/store-submission.html`. Waiting on Pranav's answers to its §12 decisions; next tasks
+   in order: task A (policy markers), support page, screenshots, feature graphic, version bump,
+   production builds.
+5. **Support page + "policy pages on the website".** Waiting on Pranav: GitHub Pages (`docs/`,
+   live, linked everywhere) vs the Cloudflare `website`-branch site (deploy status unknown).
 
 ### Files modified this session
-- `forlater.md` — created
+- `forlater.md` — created; item 1 → In progress; item 8 (Meta review) added
 - `SESSION_LOG.md` — created
+- `docs/store-submission.html` — created (store worksheet)
+- `docs/privacy.html`, `docs/terms.html` — task A (presentation only)
 
 Nothing committed. Android `preview` build launched on EAS (internal distribution — not a store release).
 
