@@ -1,6 +1,7 @@
 import { saveLink } from "../_shared/normalize.ts";
 import { LIMITS, type CaptureInput, type CaptureResult } from "../_shared/contracts.ts";
 import { apiError, json, readJson } from "../_shared/http.ts";
+import { ShareTokenRateLimited } from "../_shared/share-token.ts";
 
 export interface SaveLinkDeps {
   userId(req: Request): Promise<string | null>;
@@ -10,7 +11,12 @@ export interface SaveLinkDeps {
 
 export async function handleSaveLink(req: Request, deps: SaveLinkDeps): Promise<Response> {
   if (req.method !== "POST") return apiError("bad_request", "POST only");
-  const userId = await deps.userId(req);
+  let userId: string | null;
+  try { userId = await deps.userId(req); }
+  catch (e) {
+    if (e instanceof ShareTokenRateLimited) return apiError("rate_limited", "That is a lot of saves at once. Try again in a little while.");
+    throw e;
+  }
   if (!userId) return apiError("unauthorized", "Sign in before saving a link.");
   const body = await readJson(req);
   const text = typeof body?.["text"] === "string" ? body["text"].trim() : "";

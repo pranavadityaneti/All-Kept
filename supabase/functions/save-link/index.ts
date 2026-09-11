@@ -1,4 +1,5 @@
 import { adminClient, userIdFromRequest } from "../_shared/supabase.ts";
+import { shareTokenLookup, userIdFromShareToken } from "../_shared/share-token.ts";
 import { capture } from "../_shared/capture.ts";
 import { captureDeps } from "../_shared/capture-db.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
@@ -12,7 +13,8 @@ Deno.serve(async (req) => {
   try {
     const db = adminClient();
     return await handleSaveLink(req, {
-      userId: userIdFromRequest,
+      // A session (the app) or a save token (the share extension). The token never carries a session.
+      userId: async (req) => (await userIdFromRequest(req)) ?? userIdFromShareToken(req, shareTokenLookup(db)),
       capture: (input) => capture(input, captureDeps(db)),
       enqueue(itemId) {
         const work = runPipeline(db, itemId, {

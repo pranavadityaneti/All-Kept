@@ -77,3 +77,12 @@ Deno.test("a profile is still saved — a page worth keeping, just not a post", 
   assertEquals(res.status, 200);
   assertEquals(f.captured.length, 1);
 });
+
+import { ShareTokenRateLimited } from "../_shared/share-token.ts";
+Deno.test("a flood from one token is answered 429, not 401", async () => {
+  const f = fake();
+  const deps: SaveLinkDeps = { ...f.deps, userId: async () => { throw new ShareTokenRateLimited(); } };
+  const res = await handleSaveLink(req({ text: URL, requestId: "request-123" }), deps);
+  assertEquals(res.status, 429);
+  assertEquals(f.captured.length, 0);
+});
