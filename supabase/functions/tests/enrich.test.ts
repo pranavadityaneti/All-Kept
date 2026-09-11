@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { UA, BROWSER_UA, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { UA, BROWSER_UA, isJustTheSiteName, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -477,4 +477,42 @@ Deno.test("expansion follows the redirect as a browser; metadata is fetched as A
   assertEquals(r.patch.canonical_url, VIDEO);
   assertEquals(calls[0]!.ua, BROWSER_UA);
   assertEquals(calls.find((c) => c.url.startsWith("https://www.tiktok.com/oembed"))?.ua, UA);
+});
+
+const TT_VIDEO = "https://www.tiktok.com/@tiktok/video/7532540099460893983";
+const tiktokVideo = (over: Partial<EnrichableItem> = {}) => base({ platform: "tiktok", kind: "short_video", source_url: TT_VIDEO, canonical_url: TT_VIDEO, external_id: "7532540099460893983", text: null, ...over });
+
+Deno.test("isJustTheSiteName: the platform's own name is not a description", () => {
+  assertEquals(isJustTheSiteName("TikTok", "tiktok", undefined), true);
+  assertEquals(isJustTheSiteName("  tiktok ", "tiktok", "TikTok"), true);
+  assertEquals(isJustTheSiteName("Instagram", "instagram", "Instagram"), true);
+  assertEquals(isJustTheSiteName("A recipe for the weekend", "tiktok", "TikTok"), false);
+  assertEquals(isJustTheSiteName(undefined, "tiktok", "TikTok"), false);
+});
+
+Deno.test("a provider that answers 2xx with nothing usable, and a page with no tags, is not a ready card", async () => {
+  const f = fakeFetch({
+    "https://www.tiktok.com/oembed": () => new Response("<html>Please wait...</html>", { status: 200, headers: { "content-type": "text/html" } }),
+    "https://www.tiktok.com/@tiktok/video/": () => new Response("<html><head><title>TikTok - Make Your Day</title></head></html>", { status: 200, headers: { "content-type": "text/html" } }),
+  });
+  const r = await enrich(tiktokVideo(), deps(f));
+  assertEquals(r.status, "preview_unavailable");
+  assertEquals([r.patch.title, r.patch.text, r.patch.author_name, r.patch.thumbnail_url_remote], [undefined, undefined, undefined, undefined]);
+});
+
+Deno.test("a description that is only the site's name teaches nothing", async () => {
+  const f = fakeFetch({
+    "https://www.tiktok.com/oembed": () => Response.json({}),
+    "https://www.tiktok.com/@tiktok/video/": () => new Response('<html><head><meta property="og:description" content="TikTok"><meta property="og:site_name" content="TikTok"></head></html>', { status: 200, headers: { "content-type": "text/html" } }),
+  });
+  const r = await enrich(tiktokVideo(), deps(f));
+  assertEquals(r.patch.text, undefined);
+  assertEquals(r.status, "preview_unavailable");
+});
+
+Deno.test("a full oEmbed answer is still a ready card", async () => {
+  const snaps: string[] = [];
+  const f = fakeFetch({ "https://www.tiktok.com/oembed": () => Response.json({ title: "current mood", author_name: "TikTok", author_url: "https://www.tiktok.com/@tiktok", thumbnail_url: "https://cdn/t.jpg", provider_name: "TikTok", type: "video" }) });
+  const r = await enrich(tiktokVideo(), deps(f, snaps));
+  assertEquals([r.status, r.patch.title, r.patch.author_name, r.patch.author_handle, r.patch.thumbnail_path], ["ready", "current mood", "TikTok", "https://www.tiktok.com/@tiktok", "u1/item-1.jpg"]);
 });

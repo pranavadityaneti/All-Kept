@@ -244,6 +244,13 @@ export function looksLikeBlockTitle(title: string | undefined): boolean {
   return t.length <= WALL_NAME_MAX && BLOCK_WORD.test(t);
 }
 
+/** "TikTok" as the description of a TikTok page says nothing about the page. */
+export function isJustTheSiteName(text: string | undefined, platform: string, siteName: string | undefined): boolean {
+  if (!text) return false;
+  const t = text.trim().toLowerCase();
+  return t === platform.toLowerCase() || (!!siteName && t === siteName.trim().toLowerCase());
+}
+
 /**
  * Whether a page is the page we asked for.
  *
@@ -420,12 +427,13 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         // puts its own name.
         const declared = og.ogTitle ?? og.twitterTitle;
         const usable = declared ?? (looksLikeBlockTitle(og.title) ? undefined : og.title);
+        const description = isJustTheSiteName(og.description, platform, og.siteName) ? undefined : og.description;
         if (usable && !item.title) patch.title = usable;
-        if (og.description && !item.text) patch.text = og.description;
+        if (description && !item.text) patch.text = description;
         if (og.image && !item.thumbnail_url_remote) patch.thumbnail_url_remote = og.image;
         if (og.author && !item.author_name) patch.author_name = og.author;
         if (og.siteName) patch.media_meta = { site_name: og.siteName };
-        if (!usable && !og.description) status = "preview_unavailable";
+        if (!usable && !description) status = "preview_unavailable";
       }
 
       if (askThePage && /^https?:\/\//.test(target)) {
@@ -437,12 +445,13 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
           return { status, patch };
         }
         const ig = page && platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
+        const description = page && !isJustTheSiteName(page.og.description, platform, page.og.siteName) ? page.og.description : undefined;
         let learned = false;
         if (page) {
           if (!(patch.author_name ?? item.author_name) && (ig.authorName ?? page.og.author)) { patch.author_name = ig.authorName ?? page.og.author; learned = true; }
           if (ig.authorHandle && !patch.author_handle) { patch.author_handle = ig.authorHandle; learned = true; }
           if (!(patch.thumbnail_url_remote ?? item.thumbnail_url_remote) && page.og.image) { patch.thumbnail_url_remote = page.og.image; learned = true; }
-          if (!item.text && !patch.text && (ig.caption ?? page.og.description)) { patch.text = ig.caption ?? page.og.description; learned = true; }
+          if (!item.text && !patch.text && (ig.caption ?? description)) { patch.text = ig.caption ?? description; learned = true; }
           // Only a declared preview title, never the page's own <title>, which on a login wall reads "Login".
           if (!item.title && !patch.title && !patch.text && page.og.ogTitle) { patch.title = page.og.ogTitle; learned = true; }
         }
@@ -458,6 +467,14 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     } catch (e) {
       return retry(`metadata: ${String(e).slice(0, 200)}`);
     }
+  }
+
+  // 2b. A provider that answered but said nothing has not made a card. Without this, an oEmbed 2xx
+  //     with no fields and a page with no tags left a "ready" save with nothing on it.
+  const known = !!(patch.title ?? item.title) || !!(patch.text ?? item.text) || !!(patch.author_name ?? item.author_name) || !!(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
+  if (status === "ready" && platform !== "note" && !known) {
+    deps.log("enrich: nothing learned", { item: item.id, platform });
+    status = "preview_unavailable";
   }
 
   // 3. The shape of a YouTube video (never fails the item: without it the app falls back to 16:9,
