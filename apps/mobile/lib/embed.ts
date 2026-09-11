@@ -5,7 +5,7 @@
  * never touched, which is what their terms require and what keeps the @allkeptapp account safe.
  */
 export interface EmbeddableItem {
-  platform: string; canonicalUrl: string | null; sourceUrl: string | null; externalId: string | null;
+  platform: string; kind: string; canonicalUrl: string | null; sourceUrl: string | null; externalId: string | null;
   /** False when the provider will not play this in a frame, whatever address we build. */
   embeddable?: boolean | null;
 }
@@ -46,6 +46,14 @@ export function embedUrl(item: EmbeddableItem): string | null {
     // sends none. The value must match the referrer the player is given (see EmbedPlayer).
     return `https://www.youtube-nocookie.com/embed/${item.externalId}?playsinline=1&rel=0&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
   }
+  if (item.platform === "tiktok" && item.externalId && (item.kind === "short_video" || item.kind === "video" || item.kind === "image")) {
+    // TikTok's Embed Player. loop, and none of the chrome we draw ourselves. Our speaker button owns
+    // the sound for a video, so TikTok's volume control is hidden; a photo post's sound is its
+    // music, which we never start, so TikTok keeps that control. `muted=1` is never sent: TikTok
+    // documents it as locking the volume for the viewer, not merely starting quiet.
+    const photo = item.kind === "image";
+    return `https://www.tiktok.com/player/v1/${item.externalId}?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=${photo ? 1 : 0}`;
+  }
   return null;
 }
 
@@ -61,11 +69,26 @@ export function embedUrl(item: EmbeddableItem): string | null {
 export type EmbedFit = "card" | "player";
 
 export function embedFit(platform: string): EmbedFit {
-  return platform === "youtube" ? "player" : "card";
+  return platform === "youtube" || platform === "tiktok" ? "player" : "card";
 }
 
 /** What a video is drawn as when its real shape was never learned. Most of the web is 16:9. */
 export const DEFAULT_ASPECT = 16 / 9;
+
+/** The shape a player starts at before enrichment has learned the real one. TikTok is tall; photo posts are usually 3:4. */
+export function initialAspect(platform: string, kind: string): number {
+  if (platform === "tiktok") return kind === "image" ? 3 / 4 : 9 / 16;
+  return DEFAULT_ASPECT;
+}
+
+/**
+ * Whether a page is one of the player pages this app shows, as opposed to the provider's site.
+ * The WebView refuses to navigate its top frame anywhere else, so a stray tap can never replace a
+ * save with instagram.com. Every provider's embed page has "/embed" in it; TikTok's player does not.
+ */
+export function isPlayerAddress(url: string): boolean {
+  return /\/embed\b/i.test(url) || /^https:\/\/www\.tiktok\.com\/player\/v1\//i.test(url);
+}
 
 /**
  * The box to draw a player in: the largest rectangle of the video's own shape that fits the space.

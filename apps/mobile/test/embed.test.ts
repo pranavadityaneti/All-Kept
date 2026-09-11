@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ASPECT, EMBED_ORIGIN, embedFit, embedUrl, fitBox, initialHeight } from "../lib/embed";
+import { DEFAULT_ASPECT, EMBED_ORIGIN, embedFit, embedUrl, fitBox, initialAspect, initialHeight, isPlayerAddress } from "../lib/embed";
 
 const item = (over: Partial<Parameters<typeof embedUrl>[0]> = {}) => ({
-  platform: "instagram", canonicalUrl: null, sourceUrl: null, externalId: null, ...over,
+  platform: "instagram", kind: "short_video", canonicalUrl: null, sourceUrl: null, externalId: null, ...over,
 });
 
 describe("playing a save in the app", () => {
@@ -93,19 +93,55 @@ describe("a playlist the provider will not play", () => {
   it("is not embedded at all, rather than embedded into an error", () => {
     // YouTube refuses an unlisted playlist in a frame and says "This video is unavailable" inside
     // it. A card with the playlist's own picture on it beats a black rectangle.
-    const item = { platform: "youtube", canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", sourceUrl: null, externalId: "PLxyz", embeddable: false };
+    const item = { platform: "youtube", kind: "post", canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", sourceUrl: null, externalId: "PLxyz", embeddable: false };
     expect(embedUrl(item)).toBeNull();
   });
 
   it("is embedded when the provider allows it, or when nothing is known either way", () => {
-    const base = { platform: "youtube", canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", sourceUrl: null, externalId: "PLxyz" };
+    const base = { platform: "youtube", kind: "post", canonicalUrl: "https://www.youtube.com/playlist?list=PLxyz", sourceUrl: null, externalId: "PLxyz" };
     expect(embedUrl({ ...base, embeddable: true })).toContain("videoseries?list=PLxyz");
     // Saves made before this was recorded must not lose their player on a guess.
     expect(embedUrl(base)).toContain("videoseries?list=PLxyz");
   });
 
   it("never blocks a video on a flag meant for playlists", () => {
-    const video = { platform: "youtube", canonicalUrl: "https://www.youtube.com/watch?v=abc123", sourceUrl: null, externalId: "abc123", embeddable: false };
+    const video = { platform: "youtube", kind: "video", canonicalUrl: "https://www.youtube.com/watch?v=abc123", sourceUrl: null, externalId: "abc123", embeddable: false };
     expect(embedUrl(video)).toContain("/embed/abc123?");
+  });
+});
+
+describe("a saved TikTok", () => {
+  const VIDEO = "https://www.tiktok.com/@tiktok/video/7532540099460893983";
+  it("plays through TikTok's player, looping, with our own sound button in charge", () => {
+    const url = embedUrl(item({ platform: "tiktok", kind: "short_video", canonicalUrl: VIDEO, externalId: "7532540099460893983" }));
+    expect(url).toBe("https://www.tiktok.com/player/v1/7532540099460893983?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=0");
+  });
+  it("opens a photo post in the same player and leaves TikTok's volume control to its music", () => {
+    const url = embedUrl(item({ platform: "tiktok", kind: "image", canonicalUrl: "https://www.tiktok.com/@tiktok/photo/7400000000000000000", externalId: "7400000000000000000" }));
+    expect(url).toContain("/player/v1/7400000000000000000?");
+    expect(url).toContain("volume_control=1");
+  });
+  it("has nothing to play for a profile, or for a short link that never learned its id", () => {
+    expect(embedUrl(item({ platform: "tiktok", kind: "profile", canonicalUrl: "https://www.tiktok.com/@tiktok" }))).toBeNull();
+    expect(embedUrl(item({ platform: "tiktok", kind: "short_video", sourceUrl: "https://vm.tiktok.com/ZS9dHGEcApLyX", externalId: null }))).toBeNull();
+  });
+  it("is laid out as a player, tall by default", () => {
+    expect(embedFit("tiktok")).toBe("player");
+    expect(initialAspect("tiktok", "short_video")).toBeCloseTo(9 / 16, 5);
+    expect(initialAspect("tiktok", "image")).toBeCloseTo(3 / 4, 5);
+    expect(initialAspect("youtube", "video")).toBe(DEFAULT_ASPECT);
+    expect(initialAspect("instagram", "short_video")).toBe(DEFAULT_ASPECT);
+  });
+});
+
+describe("addresses the player may stay on", () => {
+  it("accepts every provider's embed page and TikTok's player, and refuses the sites themselves", () => {
+    expect(isPlayerAddress("https://www.instagram.com/reel/DcVMQIIMa5-/embed/")).toBe(true);
+    expect(isPlayerAddress("https://www.instagram.com/reel/DcVMQIIMa5-/embed/captioned/")).toBe(true);
+    expect(isPlayerAddress("https://www.youtube-nocookie.com/embed/WfJPBVXPt8k?playsinline=1")).toBe(true);
+    expect(isPlayerAddress("https://www.tiktok.com/player/v1/7532540099460893983?loop=1")).toBe(true);
+    expect(isPlayerAddress("https://www.instagram.com/reel/DcVMQIIMa5-/")).toBe(false);
+    expect(isPlayerAddress("https://www.tiktok.com/@tiktok/video/7532540099460893983")).toBe(false);
+    expect(isPlayerAddress("https://www.youtube.com/watch?v=WfJPBVXPt8k")).toBe(false);
   });
 });
