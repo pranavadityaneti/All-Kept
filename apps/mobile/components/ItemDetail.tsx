@@ -7,7 +7,7 @@ import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
-import { DEFAULT_ASPECT, embedFit, embedUrl, fitBox, initialHeight } from "../lib/embed";
+import { embedFit, embedUrl, fitBox, initialAspect, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote, useRetrySorting } from "../lib/item";
 import { categoryDisplayName } from "../lib/category-names";
 import { track, useTrackOnce } from "../lib/metrics";
@@ -50,6 +50,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const [playerHeight, setPlayerHeight] = useState<number | null>(null);
   const [fullHeight, setFullHeight] = useState<number | null>(null);
   const [fullScreen, setFullScreen] = useState(false);
+  // The provider itself said there is nothing here to play (a removed TikTok post): the picture stands in.
+  const [unplayable, setUnplayable] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [footerHeight, setFooterHeight] = useState(150);
@@ -61,7 +63,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   if (!detail) return <Centered width={width} height={height} text="This item is no longer in your library." onBack={onBack} />;
 
   const url = openableUrl(detail);
-  const embed = embedUrl(detail);
+  const embed = unplayable ? null : embedUrl(detail);
   // A link whose page we could not read has no title and no caption, and "Web" as a heading tells
   // you nothing about which link it was. The address always exists — it is the thing that was
   // saved — so it stands in before the platform's own name does.
@@ -92,7 +94,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   // A card keeps the full width and is cut to the height it reported. A player is given a box of the
   // video's own shape instead: a Short gets a tall, narrow one rather than black bars either side of
   // a widescreen frame. Until enrichment has learned the shape, 16:9 is the assumption it always was.
-  const aspect = detail.aspect ?? DEFAULT_ASPECT;
+  const aspect = detail.aspect ?? initialAspect(detail.platform, detail.kind);
   const box = measured
     ? { width: playerWidth, height: Math.min(cardHeight, mediaMax) }
     : fitBox(aspect, playerWidth, mediaMax);
@@ -135,6 +137,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             {...(measured ? { onHeight: setPlayerHeight } : {})}
             interactive
             active={active && !fullScreen}
+            onUnplayable={() => setUnplayable(true)}
           />
         ) : thumbnail ? (
           <Pressable accessibilityRole="imagebutton" accessibilityLabel="View picture full screen" onPress={() => setZoomed(true)}>
