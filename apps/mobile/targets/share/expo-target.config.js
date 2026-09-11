@@ -1,5 +1,6 @@
 /** @type {import('@bacons/apple-targets/app.plugin').Config} */
 module.exports = {
+  // A share extension: "Allkept" with the app's own icon in the share sheet's app row.
   type: "share",
   name: "AllkeptShare",
   displayName: "Allkept", // what the share sheet shows; defaults to the target name otherwise

@@ -11,13 +11,13 @@
   <key>CFBundlePackageType</key><string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
   <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
   <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
+  <!-- A share extension (app row, colour icon). It draws nothing and completes on its first frame; iOS
+       still presents and dismisses its sheet, which is the brief flash no share extension can avoid.
+       Feedback is a notification banner; a small card appears only when a person must be told something. -->
   <key>NSExtension</key>
   <dict>
     <key>NSExtensionAttributes</key>
     <dict>
-      <!-- No system sheet: the extension draws a compact card over the app the person shared from.
-           Apple's documented alternative to the fixed full-height sheet (developer.apple.com/forums/thread/694643). -->
-      <key>NSExtensionActionWantsFullScreenPresentation</key><true/>
       <key>NSExtensionActivationRule</key>
       <dict>
         <key>NSExtensionActivationSupportsWebURLWithMaxCount</key><integer>1</integer>

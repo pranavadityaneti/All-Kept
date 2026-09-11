@@ -1,13 +1,16 @@
 import UIKit
 import UniformTypeIdentifiers
+import UserNotifications
 
-/// Saves the shared link to Allkept and gets out of the way — no card, no sheet to read. The link is
-/// queued in the app group, handed to a background URL session (iOS finishes the upload after this
-/// extension is gone, and waits for a connection if there is none), and the request completes at once.
-/// The app's next foreground re-delivers anything the system did not; the server dedupes by request id.
+/// Saves the shared link to Allkept and gets out of the way. The link is queued in the app group,
+/// handed to a background URL session (iOS finishes the upload after this extension is gone, and
+/// waits for a connection if there is none), and the request completes at once — iOS shows and
+/// dismisses its sheet in the same breath. The app's next foreground re-delivers anything the
+/// system did not; the server dedupes by request id.
 ///
-/// Only two outcomes need a person's attention, and only those show a small card for a second:
-/// there is no signed-in account on this phone, or what was shared was not a link.
+/// Feedback is a notification banner with the app icon ("Saved to Allkept · Sorting it now"), when
+/// notifications are allowed. Only two outcomes need a person's attention regardless, and those
+/// show a small card for a second: no signed-in account on this phone, or not a link.
 final class ShareViewController: UIViewController {
   private var card: SaveCard?
 
@@ -41,7 +44,7 @@ final class ShareViewController: UIViewController {
     let requestId = UUID().uuidString
     SharedStore.enqueue(text: text, requestId: requestId)
     BackgroundUpload.start(text: text, requestId: requestId, credential: credential)
-    complete()
+    Banner.post(title: "Saved to Allkept", body: "Sorting it now") { [weak self] in self?.complete() }
   }
 
   /// A small card for the cases that need a person, held for a second.
@@ -71,6 +74,28 @@ final class ShareViewController: UIViewController {
     guard let card else { return extensionContext?.completeRequest(returningItems: nil, completionHandler: nil) ?? () }
     UIView.animate(withDuration: 0.2, animations: { card.alpha = 0 }) { _ in
       self.extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
+    }
+  }
+}
+
+/// A local notification posted on the app's behalf: the banner with the app icon that stands in
+/// for a toast. Only when notifications are allowed; the caller continues either way, and never
+/// before the notification has been handed to the system.
+enum Banner {
+  static func post(title: String, body: String?, then done: @escaping () -> Void) {
+    let center = UNUserNotificationCenter.current()
+    var finished = false
+    let once = { DispatchQueue.main.async { if !finished { finished = true; done() } } }
+    // Never hold the share sheet hostage to the notification system.
+    DispatchQueue.global().asyncAfter(deadline: .now() + 1.5) { once() }
+    center.getNotificationSettings { settings in
+      guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return once() }
+      let content = UNMutableNotificationContent()
+      content.title = title
+      if let body { content.body = body }
+      content.threadIdentifier = "share-save"
+      content.interruptionLevel = .active
+      center.add(UNNotificationRequest(identifier: "share-save-\(UUID().uuidString)", content: content, trigger: nil)) { _ in once() }
     }
   }
 }
