@@ -7,5 +7,5 @@ dist/
 *.key
 *.mobileprovision
 # Prebuild output; regenerated from app.config.ts, modules/ and targets/
-ios/
-android/
+/ios/
+/android/
