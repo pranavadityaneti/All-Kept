@@ -15,6 +15,9 @@
   <dict>
     <key>NSExtensionAttributes</key>
     <dict>
+      <!-- No system sheet: the extension draws a compact card over the app the person shared from.
+           Apple's documented alternative to the fixed full-height sheet (developer.apple.com/forums/thread/694643). -->
+      <key>NSExtensionActionWantsFullScreenPresentation</key><true/>
       <key>NSExtensionActivationRule</key>
       <dict>
         <key>NSExtensionActivationSupportsWebURLWithMaxCount</key><integer>1</integer>
