@@ -444,6 +444,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/reprocess-item/index.ts"
 
+[functions.reddit-thumbnail]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/reddit-thumbnail/index.ts"
+
 [functions.import-saves]
 enabled = true
 verify_jwt = true

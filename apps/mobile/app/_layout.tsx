@@ -4,6 +4,7 @@ import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack, useRouter } from "expo-router";
 import { ensureShareToken, flushShareQueue } from "../lib/share-save";
+import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, type PropsWithChildren } from "react";
 import { AppState, StyleSheet, Text, View } from "react-native";
@@ -66,7 +67,11 @@ function Shell() {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!unlocked) return;
-    const sync = () => { void ensureShareToken().then(() => flushShareQueue(queryClient)).catch(() => undefined); };
+    const sync = () => {
+      void ensureShareToken().then(() => flushShareQueue(queryClient)).catch(() => undefined);
+      // Reddit tells only a phone where a post's picture is, so the phone looks while it is awake.
+      void backfillRedditThumbnails(backfillDeps()).catch(() => undefined);
+    };
     sync();
     const sub = AppState.addEventListener("change", (state) => { if (state === "active") sync(); });
     return () => sub.remove();
