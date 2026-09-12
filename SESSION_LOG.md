@@ -566,3 +566,18 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
   fallback is intermittent — likely Meta App Review (item 8), or the phone-side route we built for
   Reddit. Decision, not a bug.
 
+## 12 Sep 2026 (~10:20) — Both builds shipped
+- **Android APK** (build `ccc811e4`, preview): https://expo.dev/artifacts/eas/AjhKE3MvLsvRDtDKooU5DggRRHYOwcSU-nrqJlUhWuk.apk
+- **iOS** (build `58a50cbe`, testflight, 0.1.0 build 29): uploaded to App Store Connect, processing.
+  Submitted to **TestFlight only** — no App Review submission (listing unfinished, TikTok unverified).
+- **What it took:** five Android attempts. The real cause was never the app's code — a local Gradle
+  run had written 3.4GB of build output into `node_modules`, which the fingerprint policy hashes, so
+  this machine and EAS could never agree on a runtime version. Plus 172 such files committed inside
+  the share module, plus node_modules drift from the lockfile. All three in ERRORS.md (`24a9143`),
+  along with the iOS capability-sync trap (interactive vs API-key sessions behave differently;
+  `EXPO_NO_CAPABILITY_SYNC=1` is correct *only* once App Groups is enabled by hand).
+- **Repo fix en route:** `494cc1d` keeps a local module's build output out of git.
+- **Now unverified-on-device and waiting:** TikTok autoplay, TikTok photo carousels, the removed-post
+  fallback (all need Surfshark on); the share extension on both platforms; Reddit embeds and card
+  pictures; the autoplay sound rules; the squarer shape language.
+
