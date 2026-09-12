@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from "react-nat
 import { Icon, type IconName } from "./Icon";
 import { radius, usePalette } from "../lib/theme";
 
-/** A round tappable icon. Used wherever a label would only repeat what the icon already says. */
+/** A tappable icon in a rounded square. Used wherever a label would only repeat what the icon says. */
 export function IconButton({ name, label, onPress, size = 40, tone = "surface", disabled = false, style }: {
   name: IconName;
   /** Spoken by the screen reader, since there is no visible text. */
@@ -29,7 +29,7 @@ export function IconButton({ name, label, onPress, size = 40, tone = "surface", 
       onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
       style={({ pressed }) => [
         styles.button,
-        { width: size, height: size, borderRadius: radius.pill, backgroundColor: background, borderColor: tone === "plain" ? "transparent" : p.border },
+        { width: size, height: size, borderRadius: radius.md, backgroundColor: background, borderColor: tone === "plain" ? "transparent" : p.border },
         (pressed || disabled) && styles.pressed,
         style,
       ]}

@@ -73,9 +73,9 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row", alignItems: "center", gap: space.xs,
     height: TAB_BAR_HEIGHT, paddingHorizontal: space.sm,
-    borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden",
+    borderRadius: radius.xl, borderWidth: StyleSheet.hairlineWidth, overflow: "hidden",
     shadowColor: "#000", shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
-  tab: { width: 62, height: 48, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  tab: { width: 62, height: 48, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
   pressed: { opacity: 0.7 },
 });

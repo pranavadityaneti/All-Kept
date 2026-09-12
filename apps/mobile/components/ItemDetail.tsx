@@ -126,6 +126,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             label="Share"
             onPress={() => { track(userId, "share_out", { hasLink: !!url }); void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); }}
           />
+          {/* Beside share rather than down beside the buttons you tap often. Deleting still asks first. */}
+          <IconButton name="trash" label="Delete this save" tone="danger" disabled={remove.isPending} onPress={confirmDelete} />
         </View>
       </View>
 
@@ -174,19 +176,15 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
 
         {detail.status === "no_link" && <Button label="Add original link" variant="secondary" onPress={() => setSheet(true)} />}
         <View style={styles.actions}>
-          <View style={styles.actionsLeft}>
-            <Chip label={categoryLabel(detail)} selected={!!detail.category} onPress={() => setSheet(true)} />
-            {url && (
-              <IconButton
-                name={platformIcon(detail.platform)}
-                label={`Open in ${platformLabel(detail.platform)}`}
-                size={44}
-                onPress={() => { track(userId, "open_original", { platform: detail.platform }); void openLink(url); }}
-              />
-            )}
-          </View>
-          {/* At the far side, because next to the button you tap often it is one mis-tap away. */}
-          <IconButton name="trash" label="Delete this save" size={44} tone="danger" disabled={remove.isPending} onPress={confirmDelete} />
+          <Chip label={categoryLabel(detail)} selected={!!detail.category} boxed onPress={() => setSheet(true)} />
+          {url && (
+            <IconButton
+              name={platformIcon(detail.platform)}
+              label={`Open in ${platformLabel(detail.platform)}`}
+              size={44}
+              onPress={() => { track(userId, "open_original", { platform: detail.platform }); void openLink(url); }}
+            />
+          )}
         </View>
       </View>
 
@@ -317,8 +315,7 @@ const styles = StyleSheet.create({
   blankUrl: { textAlign: "center" },
   footer: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.lg, gap: space.md },
   meta: { marginTop: 2 },
-  actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  actionsLeft: { flexDirection: "row", alignItems: "center", gap: space.sm, flexShrink: 1 },
+  actions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: space.sm },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   block: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, padding: space.lg, gap: space.sm },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.md, minHeight: 48 },

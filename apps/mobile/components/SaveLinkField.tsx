@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   wrap: { gap: space.sm },
   row: {
     flexDirection: "row", alignItems: "center", gap: space.sm,
-    borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg,
     paddingLeft: space.lg, paddingRight: space.xs, paddingVertical: space.xs, minHeight: 52,
   },
   input: { flex: 1, paddingVertical: space.sm },
