@@ -1,40 +1,13 @@
 import { brandForPlatform, type Brand } from "../../../packages/platform-assets/catalog";
 import { PlatformLogo } from "./PlatformLogo";
 import { Ionicons } from "@expo/vector-icons";
+import { resolveGlyph, type Glyph, type SemanticName } from "../lib/icon-names";
 import type { ColorValue, StyleProp, TextStyle } from "react-native";
 
-/** Rounded, soft-cornered icons. One map, so a screen never reaches for a set directly. */
-const NAMES = {
-  home: "home-outline",
-  homeActive: "home",
-  library: "albums-outline",
-  libraryActive: "albums",
-  settings: "settings-outline",
-  settingsActive: "settings",
-  bell: "notifications-outline",
-  moon: "moon-outline",
-  search: "search-outline",
-  close: "close",
-  chevron: "chevron-forward",
-  share: "share-outline",
-  trash: "trash-outline",
-  open: "open-outline",
-  check: "checkmark",
-  camera: "camera-outline",
-  add: "add",
-  down: "chevron-down",
-  back: "arrow-back",
-  download: "cloud-download-outline",
-  web: "globe-outline",
-  note: "document-text-outline",
-  apple: "logo-apple",
-  sound: "volume-high-outline",
-  soundOff: "volume-mute-outline",
-} as const;
+export type { Glyph } from "../lib/icon-names";
+export type IconName = SemanticName | Brand;
 
-export type IconName = keyof typeof NAMES | Brand;
-
-export function Icon({ name, size = 22, color, style }: { name: IconName; size?: number; color: ColorValue; style?: StyleProp<TextStyle> }) {
+export function Icon({ name, size = 22, color, style }: { name: IconName | Glyph; size?: number; color: ColorValue; style?: StyleProp<TextStyle> }) {
   if (brandForPlatform(name)) return <PlatformLogo platform={name} size={size} style={style} />;
-  return <Ionicons name={NAMES[name as keyof typeof NAMES]} size={size} color={color as string} style={style} />;
+  return <Ionicons name={resolveGlyph(name)} size={size} color={color as string} style={style} />;
 }

@@ -107,7 +107,7 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
                       option={o}
                       hue={hue}
                       onPress={() => onToggle("categories", o.value)}
-                      mark={<Ionicons name={icon as never} size={15} color={hue} />}
+                      mark={<Icon name={icon} size={15} color={hue} />}
                     />
                   );
                 })}
