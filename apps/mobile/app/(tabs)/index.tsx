@@ -14,6 +14,7 @@ import { PlatformPills } from "../../components/PlatformPills";
 import { FILTER_LABEL } from "../../lib/platforms";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
+import { expandable } from "../../lib/expandable";
 import { useRecentSaves } from "../../lib/home";
 import { useFacets, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
@@ -44,10 +45,8 @@ export default function Home() {
   const items: LibraryItem[] = recent.data ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const categories = facets.data?.categories ?? [];
-  // Whether the grid is open, not how many tiles it holds: deriving the count from a flag is what
-  // lets the control say "Show less". Holding the count instead made expanding a one-way door —
-  // once shown equalled the total, the condition that draws the control stopped being true.
   const [allCategories, setAllCategories] = useState(false);
+  const grid = expandable(categories, CATEGORIES_SHOWN, allCategories);
   const [searching, setSearching] = useState(false);
 
 
@@ -122,11 +121,11 @@ export default function Home() {
           <View style={styles.section}>
             <SectionHeader
               title="Categories"
-              actionLabel={categories.length > CATEGORIES_SHOWN ? (allCategories ? "Show less" : "See all") : undefined}
+              actionLabel={grid.actionLabel}
               onAction={() => setAllCategories((open) => !open)}
             />
             <View style={styles.grid}>
-              {(allCategories ? categories : categories.slice(0, CATEGORIES_SHOWN)).map((c) => (
+              {grid.shown.map((c) => (
                 <View key={c.value} style={styles.cell}>
                   <CategoryTile name={c.value} count={c.n} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
                 </View>
