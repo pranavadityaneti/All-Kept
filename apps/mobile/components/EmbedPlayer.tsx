@@ -20,9 +20,14 @@ const MEASURE = `
     var current = 0;
 
     function measure() {
-      var card = document.querySelector('.EmbedFrame, .Embed, blockquote, body > div');
+      // shreddit-app is the element Reddit's embed puts its post in; the rest cover Instagram's card
+      // and the generic case. Without a match here the page below is measured instead.
+      var card = document.querySelector('.EmbedFrame, .Embed, blockquote, shreddit-app, body > div');
       var h = card ? Math.ceil(card.getBoundingClientRect().height) : 0;
-      if (!h) h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight || 0);
+      // The body is the content. The document's own scrollHeight is the frame we last set being read
+      // back to us, so trusting it leaves a card permanently as tall as the box it was given —
+      // Reddit's embed sat in 514pt of white that way, when its post is 316.
+      if (!h) h = document.body.scrollHeight || document.documentElement.scrollHeight || 0;
       return h;
     }
 

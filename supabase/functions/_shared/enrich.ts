@@ -421,7 +421,10 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
           const w = j["thumbnail_width"], h = j["thumbnail_height"];
           if (typeof w === "number" && typeof h === "number" && w > 0 && h > 0) patch.media_meta = { ...patch.media_meta, aspect: Math.round((w / h) * 1000) / 1000 };
         }
-        askThePage = !(patch.author_name ?? item.author_name) || !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
+        // Reddit answers our server 403 for the post page, and every non-browser client a JS
+        // challenge, so asking it is a wasted request on every single save. Its picture comes from
+        // the feed in step 3b instead. See ERRORS.md, 12 Sep.
+        askThePage = platform !== "reddit" && (!(patch.author_name ?? item.author_name) || !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote));
       } else {
         const html = await readHead(res, MAX_HTML_BYTES);
         const og = parseOpenGraph(html);
@@ -496,6 +499,27 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       else deps.log("enrich: youtube shape unavailable", { item: item.id, status: res.status });
     } catch (e) {
       deps.log("enrich: youtube shape failed", { item: item.id, reason: String(e).slice(0, 120) });
+    }
+  }
+
+  // 3b. Reddit's picture. Its oEmbed carries none — for image posts too — and its post page is shut
+  //     to us, so the public per-post feed is the only place it offers one. The URL is signed for
+  //     exactly the size it names, so it is taken verbatim; asking for a larger one is refused.
+  //     Never fails the item: a save without a picture is still a save.
+  if (platform === "reddit" && canonical && !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote)) {
+    try {
+      const res = await fetchWithTimeout(deps.fetch, `${canonical.replace(/\/$/, "")}/.rss`, { headers: { accept: "application/rss+xml, text/xml, */*;q=0.5" } });
+      if (res.ok) {
+        const xml = await readHead(res, MAX_HTML_BYTES);
+        const found = /<media:thumbnail[^>]*\burl="([^"]+)"/i.exec(xml);
+        if (found) patch.thumbnail_url_remote = decodeEntities(found[1]!);
+        else deps.log("enrich: reddit feed carries no picture", { item: item.id });
+      } else {
+        await res.body?.cancel().catch(() => undefined);
+        deps.log("enrich: reddit feed unavailable", { item: item.id, status: res.status });
+      }
+    } catch (e) {
+      deps.log("enrich: reddit feed failed", { item: item.id, reason: String(e).slice(0, 120) });
     }
   }
 
