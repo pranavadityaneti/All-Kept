@@ -1,10 +1,10 @@
-import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { PlatformLogo } from "../../components/PlatformLogo";
 import { Screen } from "../../components/Screen";
 import { connectPlaylist } from "../../lib/youtube";
 import { useSession } from "../../lib/session";
@@ -65,7 +65,10 @@ export default function ConnectYoutube() {
 
   return (
     <Screen>
-      <Text style={[type.title, { color: p.ink }]}>Connect a YouTube playlist</Text>
+      <View style={styles.header}>
+        <PlatformLogo platform="youtube" size={44} />
+        <Text style={[type.title, { color: p.ink }]}>Connect a YouTube playlist</Text>
+      </View>
       <Text style={[type.body, { color: p.inkMuted }]}>
         YouTube keeps Watch Later to itself, so a playlist is the way in. Save a video to it and it lands here.
       </Text>
@@ -93,9 +96,6 @@ export default function ConnectYoutube() {
         placeholderTextColor={p.inkMuted}
         style={[type.body, { color: p.ink, backgroundColor: p.surface, padding: space.md, borderRadius: radius.md }]}
       />
-      <Button label="Paste link" variant="secondary" disabled={busy} onPress={() => {
-        void Clipboard.getStringAsync().then((v) => { setText(v); setError(null); }).catch(() => setError("Could not read the clipboard. Paste into the field above."));
-      }} />
       <Button label="Connect playlist" busy={busy} disabled={session.status !== "ready" || !text.trim()} onPress={() => { void connect(); }} />
       {error && <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{error}</Text>}
       <Button label="Cancel" variant="secondary" disabled={busy} onPress={() => router.back()} />
@@ -104,6 +104,7 @@ export default function ConnectYoutube() {
 }
 
 const styles = StyleSheet.create({
+  header: { gap: space.sm, alignItems: "flex-start" },
   step: { flexDirection: "row", alignItems: "flex-start", gap: space.md, paddingVertical: space.xs },
   number: { width: 24, height: 24, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   stepText: { flex: 1 },
