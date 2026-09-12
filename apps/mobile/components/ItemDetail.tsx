@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { useRef, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Button } from "./Button";
+import { CategorySheet } from "./CategorySheet";
 import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
@@ -10,6 +11,7 @@ import { IconButton } from "./IconButton";
 import { embedFit, embedUrl, fitBox, initialAspect, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote, useRetrySorting } from "../lib/item";
 import { categoryDisplayName } from "../lib/category-names";
+import { ownCategories, useCreateCategory, useFacets } from "../lib/library";
 import { track, useTrackOnce } from "../lib/metrics";
 import { canRetrySorting, categoryLabel } from "../lib/sorting";
 import { openLink } from "../lib/open";
@@ -42,6 +44,12 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const userId = session.status === "ready" ? session.userId : null;
   useTrackOnce(userId, "item_open");
   const setCategory = useSetCategory(id, userId);
+  // The categories this person made sit beside the fifteen Allkept sorts into, and a new one can be
+  // made from here: this is the moment somebody notices a save has nowhere of their own to go.
+  const facets = useFacets(!!userId);
+  const mine = ownCategories(facets.data).map((c) => c.value);
+  const createCategory = useCreateCategory(userId);
+  const [naming, setNaming] = useState(false);
   const setNote = useSetNote(id);
   const retrySorting = useRetrySorting(id);
   const remove = useDeleteItem(id, detail?.thumbnailPath ?? null);
@@ -198,6 +206,23 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         </View>
       </View>
 
+      <CategorySheet
+        visible={naming}
+        existing={mine}
+        onClose={() => setNaming(false)}
+        onSubmit={async ({ name, icon }) => {
+          try {
+            await createCategory.mutateAsync({ name, icon });
+            // Made from inside a save, so the save goes into it — that is why they opened this.
+            await setCategory.mutateAsync(name);
+            track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: name });
+            return null;
+          } catch (e) {
+            return e instanceof Error ? e.message : "Could not make the category.";
+          }
+        }}
+      />
+
       <Modal visible={sheet} animationType="slide" onRequestClose={() => { saveNote(); setSheet(false); }} presentationStyle="pageSheet">
         <View style={[styles.sheet, { backgroundColor: p.bg }]}>
           <View style={styles.sheetBar}>
@@ -249,9 +274,10 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
 
             <Text style={[type.label, { color: p.inkMuted }]}>Put this under</Text>
             <View style={styles.wrap}>
-              {CATEGORIES.map((c) => (
+              {[...CATEGORIES, ...mine].map((c) => (
                 <Chip key={c} label={categoryDisplayName(c)} selected={detail.category === c} onPress={() => setCategory.mutate(c, { onSuccess: () => track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }) })} />
               ))}
+              <Chip label="+ New category" onPress={() => setNaming(true)} />
             </View>
 
             {detail.summary && <Text style={[type.body, { color: p.inkMuted }]}>{detail.summary}</Text>}

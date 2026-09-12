@@ -139,7 +139,15 @@ export default function Settings() {
         </View>
 
         <SettingsGroup>
-          <SettingsRow title="Edit profile" detail="Photo and name" onPress={() => router.push("/profile")} last />
+          <SettingsRow title="Edit profile" detail="Photo and name" onPress={() => router.push("/profile")} />
+          <SettingsRow
+            icon="grid"
+            title="Your categories"
+            detail="Make your own, rename them, remove them"
+            onPress={() => router.push("/categories")}
+            right={<Icon name="chevron" size={18} color={p.inkMuted} />}
+            last
+          />
         </SettingsGroup>
 
         <SettingsGroup>

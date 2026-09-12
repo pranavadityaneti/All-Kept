@@ -6,7 +6,8 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { IconButton } from "../../components/IconButton";
 import { ItemCard } from "../../components/ItemCard";
-import { CategoryTile } from "../../components/CategoryTile";
+import { AddCategoryTile, CategoryTile } from "../../components/CategoryTile";
+import { CategorySheet } from "../../components/CategorySheet";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
@@ -16,7 +17,7 @@ import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
 import { expandable } from "../../lib/expandable";
 import { useCategoryCovers, useRecentSaves } from "../../lib/home";
-import { useFacets, type LibraryItem } from "../../lib/library";
+import { ownCategories, useCreateCategory, useFacets, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
@@ -25,7 +26,7 @@ import { useThumbnails } from "../../lib/thumbnails";
 import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { radius, space, type, usePalette } from "../../lib/theme";
 
-const CATEGORIES_SHOWN = 6;
+const CATEGORIES_SHOWN = 5;
 
 export default function Home() {
   const p = usePalette();
@@ -50,6 +51,8 @@ export default function Home() {
   const coverPath = (category: string): string | null => covers.data?.[category] ?? null;
   const thumbnails = useThumbnails([...items.map((i) => i.thumbnailPath), ...categories.map((c) => coverPath(c.value))]);
   const [allCategories, setAllCategories] = useState(false);
+  const [naming, setNaming] = useState(false);
+  const createCategory = useCreateCategory(ready ? session.userId : null);
   const grid = expandable(categories, CATEGORIES_SHOWN, allCategories);
   const [searching, setSearching] = useState(false);
 
@@ -121,7 +124,7 @@ export default function Home() {
 
 
         <SaveLinkField />
-        {categories.length > 0 && (
+        {ready && (
           <View style={styles.section}>
             <SectionHeader
               title="Categories"
@@ -134,10 +137,25 @@ export default function Home() {
                   <CategoryTile name={c.value} count={c.n} cover={thumbnails[coverPath(c.value) ?? ""]} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
                 </View>
               ))}
+              <View style={styles.cell}><AddCategoryTile onPress={() => setNaming(true)} /></View>
             </View>
           </View>
         )}
       </ScrollView>
+
+      <CategorySheet
+        visible={naming}
+        existing={ownCategories(facets.data).map((c) => c.value)}
+        onClose={() => setNaming(false)}
+        onSubmit={async ({ name, icon }) => {
+          try {
+            await createCategory.mutateAsync({ name, icon });
+            return null;
+          } catch (e) {
+            return e instanceof Error ? e.message : "Could not make the category.";
+          }
+        }}
+      />
 
       <SearchOverlay
         visible={searching}

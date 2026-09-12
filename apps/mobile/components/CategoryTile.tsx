@@ -57,6 +57,33 @@ export function CategoryTile({ name, count, cover, onPress }: { name: string; co
   );
 }
 
+/**
+ * The tile that makes a new category, drawn as one of the set so it reads as a place in the grid
+ * rather than a button parked beside it. Dashed, because it is an opening rather than a category.
+ */
+export function AddCategoryTile({ onPress }: { onPress: () => void }) {
+  const p = usePalette();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="New category"
+      onPress={() => {
+        void Haptics.selectionAsync().catch(() => undefined);
+        onPress();
+      }}
+      style={({ pressed }) => [styles.addShadow, pressed && styles.pressed]}
+    >
+      <View style={[styles.tile, styles.add, { borderColor: p.border, backgroundColor: p.surfaceAlt }]}>
+        <View style={styles.picture}><Icon name="add" size={28} color={p.accent} /></View>
+        <View style={styles.body}>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.3} style={[styles.name, { color: p.ink }]}>New</Text>
+          <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={[styles.count, { color: p.inkMuted }]}>Your own</Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   shadow: {
     borderRadius: radius.lg,
@@ -67,6 +94,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tile: { borderRadius: radius.lg, overflow: "hidden", borderWidth: StyleSheet.hairlineWidth },
+  // No shadow: a card that is an invitation should not sit above the ones that hold things.
+  addShadow: { borderRadius: radius.lg },
+  add: { borderStyle: "dashed", borderWidth: 1 },
   pressed: { transform: [{ scale: 0.97 }], opacity: 0.94 },
   // Wider than tall, which keeps the whole tile shorter than the portrait cards these replaced
   // while still giving a cover enough room to be recognisable.

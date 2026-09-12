@@ -37,6 +37,8 @@ export const NAMES = {
   download: "cloud-download-outline",
   web: "globe-outline",
   note: "document-text-outline",
+  edit: "create-outline",
+  grid: "grid-outline",
   apple: "logo-apple",
   sound: "volume-high-outline",
   soundOff: "volume-mute-outline",
