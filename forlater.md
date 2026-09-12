@@ -157,6 +157,9 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-12
 - **Originated from:** Pranav, 12 Sep 2026
 
+### 23b. Reddit card pictures — DONE 12 Sep (`9bd0511`)
+- Resolved: the phone reads Reddit's feed and a validating endpoint stores the address; the sweeper snapshots it. Text posts keep the logo because they have no picture. See ERRORS.md for the four routes that do not work.
+
 ### 23. X cards are broken-looking — three defects found by the WhatsApp/X audit
 - **What + why:** the audit agent (12 Sep) checked X's live endpoints: (a) `enrich.ts` still calls `publish.twitter.com/oembed`, which now answers 301 → `publish.x.com` (we follow it, but it is a hop we need not make and a host that may stop redirecting); (b) X's oEmbed never returns a title or a picture, and `askThePage` is therefore always true for X — every X save makes a second fetch of `x.com` that returns a JS shell with no preview tags, pure waste; (c) `decodeEntities` lacks `mdash`, so `&mdash;` is stored glued to the caption. The existing test at `enrich.test.ts:64` mocks a kinder response than reality. Fix together: switch the host, skip the page fallback for platforms whose pages never carry tags (X, TikTok), add the entity. X's picture can only come from X's official embed (Phase 4 of the plan).
 - **Scope:** `supabase/functions/_shared/enrich.ts`, its tests. About a day.

@@ -530,3 +530,22 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
   settled it. Unit tests cannot see an egress difference — verify this class with a real deploy.
 - Deployed on Pranav's Yes: sweeper v24→v26, reprocess-item v16. Tests: 178 function + 120 app green.
 
+## 12 Sep 2026 (morning) — Reddit card pictures: the phone finds what the server cannot
+- **Shipped (`9bd0511`), deployed `reddit-thumbnail` v1.** Reddit names a post's picture only in its
+  feed, which answers the edge runtime 403 and an ordinary browser client 200. So: the app, on every
+  foreground, finds Reddit saves with no picture, reads each feed, and hands the address to a new
+  endpoint that checks ownership **and that the host is a Reddit image host** — the server fetches
+  what it is given, so a client must never be able to aim it elsewhere (tests cover
+  `preview.redd.it.evil.com`, plain http, 127.0.0.1). The sweeper's existing snapshot pass stores the
+  image; the endpoint nudges it so the card fills within seconds, not five minutes. Posts with no
+  picture are remembered on the phone, so a feed is asked once ever.
+- **Verified end to end, unattended:** cleared all three Reddit pictures, relaunched, and in under
+  20s the chain ran itself — feed → endpoint → sweeper → storage — and the card showed the real
+  640px image. The two text posts correctly got nothing.
+- **Key fact that made it simple:** the edge runtime *can* download `external-preview.redd.it`
+  images; it only cannot read the feed. Proven by putting a real URL on an item and letting the
+  existing snapshot step fetch it — no new code needed to find that out.
+- Design decision (Pranav): cover every save via a foreground backfill, not just saves that are
+  opened. Client write-grant on `items` deliberately left closed; no migration.
+- Tests: 182 function + 129 app green, tsc clean. Next: EAS builds (gated on Pranav's Yes).
+
