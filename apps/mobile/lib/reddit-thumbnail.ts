@@ -108,3 +108,13 @@ export function backfillDeps(): BackfillDeps {
     },
   };
 }
+
+/**
+ * Records the picture a page was showing, for a save that had none. Used where a platform will not
+ * say where its picture is — TikTok describes no photo post at all — so the only place to learn it
+ * is the page already displaying it. The server checks the address belongs to that save's platform.
+ */
+export async function storePicture(itemId: string, imageUrl: string): Promise<void> {
+  const { error } = await supabase.functions.invoke("reddit-thumbnail", { body: { itemId, imageUrl } });
+  if (error) throw new Error(String(error));
+}

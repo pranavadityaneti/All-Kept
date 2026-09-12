@@ -3,7 +3,7 @@ import { ActivityIndicator, AppState, Pressable, StyleSheet, View } from "react-
 import { WebView } from "react-native-webview";
 import { Icon } from "./Icon";
 import { EMBED_ORIGIN, isPlayerAddress } from "../lib/embed";
-import { PLAYER_SCRIPT, readPlayerMessage, shouldPlay, stateScript } from "../lib/player-script";
+import { PLAYER_SCRIPT, pictureScript, readPlayerMessage, shouldPlay, stateScript } from "../lib/player-script";
 import { onSoundChange, setSoundOn, soundOn } from "../lib/sound";
 import { radius, usePalette } from "../lib/theme";
 
@@ -71,7 +71,7 @@ const STAY = `
   })();
 `;
 
-export function EmbedPlayer({ url, width, height, onHeight, interactive = false, active = true, onUnplayable }: {
+export function EmbedPlayer({ url, width, height, onHeight, interactive = false, active = true, onUnplayable, onPicture }: {
   url: string;
   width: number;
   height: number;
@@ -83,6 +83,8 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
   active?: boolean;
   /** The provider said there is nothing here to play (a removed TikTok post). The screen decides what to show instead. */
   onUnplayable?: () => void;
+  /** Given only for a save with no picture of its own: the address of the one the page is showing. */
+  onPicture?: (url: string) => void;
 }) {
   const p = usePalette();
   const [loading, setLoading] = useState(true);
@@ -117,6 +119,14 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
     return () => sub.remove();
   }, []);
 
+  // A page shows its pictures a moment after it loads, so the ask waits for them. Once only: the
+  // save keeps the first answer, and the screen stops asking as soon as it has one.
+  useEffect(() => {
+    if (!loaded || !onPicture) return;
+    const t = setTimeout(() => web.current?.injectJavaScript(pictureScript()), 3500);
+    return () => clearTimeout(t);
+  }, [loaded, onPicture]);
+
   // The backstop behind STAY, for anything that asks to leave by some other route than a link. Only a
   // navigation of the page itself is ever refused, and only to somewhere that is not a player page.
   const stayOnEmbed = (request: { url: string; isTopFrame: boolean }) => !request.isTopFrame || isPlayerAddress(request.url);
@@ -148,6 +158,7 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
             const said = readPlayerMessage(event.nativeEvent.data);
             if (said?.kind === "player") { setHasVideo(said.hasVideo); return; }
             if (said?.kind === "tiktok") { if (said.type === "onError") onUnplayable?.(); return; }
+            if (said?.kind === "picture") { onPicture?.(said.url); return; }
             try {
               const m = JSON.parse(event.nativeEvent.data) as { h: number; w: number };
               const scale = m.w > 0 ? width / m.w : 1;
@@ -179,6 +190,7 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
           <Icon name={sound ? "sound" : "soundOff"} size={18} color="#FFFFFF" />
         </Pressable>
       )}
+
 
       {loading && (
         <View style={[StyleSheet.absoluteFill, styles.loading, { backgroundColor: "#FFFFFF" }]}>

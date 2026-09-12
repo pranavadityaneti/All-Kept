@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PLAYER_SCRIPT, VIDEO_WAIT_MS, shouldPlay, stateScript, readPlayerMessage } from "../lib/player-script";
+import { PLAYER_SCRIPT, VIDEO_WAIT_MS, pictureScript, shouldPlay, stateScript, readPlayerMessage } from "../lib/player-script";
 
 describe("the script every player runs", () => {
   it("is valid JavaScript", () => {
@@ -95,5 +95,24 @@ describe("driving TikTok's player", () => {
   });
   it("knows when it is inside that player", () => {
     expect(PLAYER_SCRIPT).toContain("player/v1");
+  });
+});
+
+describe("finding the picture only the page can see", () => {
+  it("is valid JavaScript, like everything else we inject", () => {
+    expect(() => new Function(pictureScript())).not.toThrow();
+  });
+  it("ignores avatars and icons, and takes the biggest real picture", () => {
+    const js = pictureScript();
+    expect(js).toContain("getBoundingClientRect");
+    expect(js).toContain("120");            // the smallest side worth calling a picture
+    expect(js).toContain("'picture'");
+    expect(js).toContain("https://");       // never a data: or blob: address
+  });
+  it("is read back as a picture, and anything else is not", () => {
+    expect(readPlayerMessage(JSON.stringify({ kind: "picture", url: "https://p19.tiktokcdn-us.com/a.jpeg" })))
+      .toEqual({ kind: "picture", url: "https://p19.tiktokcdn-us.com/a.jpeg" });
+    expect(readPlayerMessage(JSON.stringify({ kind: "picture" }))).toBeNull();
+    expect(readPlayerMessage(JSON.stringify({ kind: "picture", url: 42 }))).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { CATEGORIES } from "@allkept/contracts";
 import { Image } from "expo-image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { Button } from "./Button";
 import { Chip } from "./Chip";
@@ -17,6 +17,7 @@ import { hostLabel, platformIcon, platformLabel } from "../lib/platforms";
 import { useSession } from "../lib/session";
 import { shareItem } from "../lib/share";
 import { useThumbnails } from "../lib/thumbnails";
+import { storePicture } from "../lib/reddit-thumbnail";
 import { radius, space, type, usePalette } from "../lib/theme";
 
 const savedOn = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
@@ -56,6 +57,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const [fullScreen, setFullScreen] = useState(false);
   // The provider itself said there is nothing here to play (a removed TikTok post): the picture stands in.
   const [unplayable, setUnplayable] = useState(false);
+  // Asked at most once per screen, and only while the save still has no picture of its own.
+  const askedForPicture = useRef(false);
   const [zoomed, setZoomed] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [footerHeight, setFooterHeight] = useState(150);
@@ -144,6 +147,13 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             interactive
             active={active && !fullScreen}
             onUnplayable={() => setUnplayable(true)}
+            {...(detail.thumbnailPath ? {} : {
+              onPicture: (picture: string) => {
+                if (askedForPicture.current) return;
+                askedForPicture.current = true;
+                void storePicture(id, picture).catch(() => undefined);
+              },
+            })}
           />
         ) : thumbnail ? (
           <Pressable accessibilityRole="imagebutton" accessibilityLabel="View picture full screen" onPress={() => setZoomed(true)}>

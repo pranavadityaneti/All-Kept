@@ -6,25 +6,41 @@
 import { apiError, json, readJson } from "../_shared/http.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/** Where Reddit serves post pictures. Matched as whole hosts, never as suffixes. */
-const IMAGE_HOSTS = new Set([
-  "preview.redd.it", "external-preview.redd.it", "i.redd.it",
-  "a.thumbs.redditmedia.com", "b.thumbs.redditmedia.com",
-]);
+/**
+ * Where each platform serves post pictures. A save may only name a host belonging to its own
+ * platform: the server fetches whatever address it is handed, so this is the whole defence.
+ * Exact hosts where the set is known, and whole-domain suffixes where the subdomain varies —
+ * matched on a dot boundary, so "tiktokcdn-us.com.evil.com" and "eviltiktokcdn.com" are refused.
+ */
+const PICTURE_HOSTS: Record<string, { exact?: string[]; domains?: string[] }> = {
+  reddit: { exact: ["preview.redd.it", "external-preview.redd.it", "i.redd.it", "a.thumbs.redditmedia.com", "b.thumbs.redditmedia.com"] },
+  // TikTok names a different signing host per region and post — p16-common-sign, p19-…-us, and more.
+  tiktok: { domains: ["tiktokcdn.com", "tiktokcdn-us.com"] },
+};
 
-export function isRedditImageHost(url: string): boolean {
+export function isPictureHost(url: string, platform: string): boolean {
   try {
     const u = new URL(url);
-    return u.protocol === "https:" && IMAGE_HOSTS.has(u.hostname.toLowerCase());
+    if (u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    const allowed = PICTURE_HOSTS[platform];
+    if (!allowed) return false;
+    if (allowed.exact?.includes(host)) return true;
+    return (allowed.domains ?? []).some((d) => host === d || host.endsWith("." + d));
   } catch {
     return false;
   }
 }
 
+/** Kept for the Reddit path's own tests; the general rule above is what the handler uses. */
+export function isRedditImageHost(url: string): boolean {
+  return isPictureHost(url, "reddit");
+}
+
 export interface RedditThumbnailDeps {
   userId(req: Request): Promise<string | null>;
-  /** True only when this person owns the item, it is a Reddit save, and it has no stored picture yet. */
-  ownedRedditItemNeedingPicture(itemId: string, userId: string): Promise<boolean>;
+  /** The save's platform when this person owns it and it has no picture yet; null otherwise. */
+  platformOfItemNeedingPicture(itemId: string, userId: string): Promise<string | null>;
   storeRemoteThumbnail(itemId: string, url: string): Promise<void>;
 }
 
@@ -37,9 +53,13 @@ export async function handleRedditThumbnail(req: Request, deps: RedditThumbnailD
   const itemId = typeof body?.["itemId"] === "string" ? body["itemId"] : "";
   const imageUrl = typeof body?.["imageUrl"] === "string" ? body["imageUrl"] : "";
   if (!UUID.test(itemId)) return apiError("bad_request", "itemId must be a uuid");
-  if (!isRedditImageHost(imageUrl)) return apiError("bad_request", "imageUrl must be a Reddit image address");
 
-  if (!(await deps.ownedRedditItemNeedingPicture(itemId, userId))) return apiError("not_found", "no such Reddit save waiting for a picture");
+  // The platform is read from the save, never taken from the caller, so an address can only be
+  // accepted for the platform the save actually belongs to.
+  const platform = await deps.platformOfItemNeedingPicture(itemId, userId);
+  if (!platform) return apiError("not_found", "no such save waiting for a picture");
+  if (!isPictureHost(imageUrl, platform)) return apiError("bad_request", "imageUrl must be a picture address belonging to that save's platform");
+
   await deps.storeRemoteThumbnail(itemId, imageUrl);
   return json({ stored: true });
 }

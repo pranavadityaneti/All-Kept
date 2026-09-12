@@ -131,7 +131,11 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
 
   const needsEnrich = it.status === "pending" || it.status === "failed";
   // A card whose remote image was not stored yet (first try for no-link posts, or a failed fetch) gets a bounded number of further tries.
-  const needsSnapshot = !needsEnrich && (it.status === "ready" || it.status === "no_link") && !it.thumbnail_path && !!it.thumbnail_url_remote && it.enrich_attempts < MAX_SNAPSHOT_ATTEMPTS;
+  // preview_unavailable is included deliberately: a provider that describes nothing — TikTok answers
+  // 400 for every photo post — can still have a picture, found by the phone from the page itself.
+  // Whether we may store an address we already hold has nothing to do with who gave us the preview.
+  const canHoldPicture = it.status === "ready" || it.status === "no_link" || it.status === "preview_unavailable";
+  const needsSnapshot = !needsEnrich && canHoldPicture && !it.thumbnail_path && !!it.thumbnail_url_remote && it.enrich_attempts < MAX_SNAPSHOT_ATTEMPTS;
   if (needsSnapshot) {
     const meta: Record<string, unknown> = { ...(it.media_meta ?? {}) };
     let path: string | null = null;

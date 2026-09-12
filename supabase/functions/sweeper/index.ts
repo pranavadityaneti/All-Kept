@@ -39,9 +39,11 @@ Deno.serve(async (req) => {
     // 2. Classification work that is queued, due for retry, or has an expired lease.
     const { data: unclassified, error: e2 } = await db.rpc("items_without_ai", { lim: BATCH });
     if (e2) throw e2;
-    // 3. Cards whose remote image was not stored (too large, timeout, CDN error): retry while the signed link is fresh, a bounded number of times.
+    // 3. Cards whose remote image was not stored (too large, timeout, CDN error), and those whose
+    //    picture the phone found for a provider that would not describe the post at all: retry while
+    //    the signed link is fresh, a bounded number of times.
     const dayAgo = new Date(Date.now() - 24 * 3_600_000).toISOString();
-    const { data: noThumb, error: e3 } = await db.from("items").select("id").in("status", ["ready", "no_link"]).is("thumbnail_path", null).not("thumbnail_url_remote", "is", null).lt("enrich_attempts", MAX_SNAPSHOT_ATTEMPTS).gt("created_at", dayAgo).lt("created_at", twoMinAgo).limit(BATCH);
+    const { data: noThumb, error: e3 } = await db.from("items").select("id").in("status", ["ready", "no_link", "preview_unavailable"]).is("thumbnail_path", null).not("thumbnail_url_remote", "is", null).lt("enrich_attempts", MAX_SNAPSHOT_ATTEMPTS).gt("created_at", dayAgo).lt("created_at", twoMinAgo).limit(BATCH);
     if (e3) throw e3;
     const ids = [...new Set([...(due ?? []).map((r) => r.id as string), ...((unclassified ?? []) as { id: string }[]).map((r) => r.id), ...(noThumb ?? []).map((r) => r.id as string)])];
     let ok = 0, failed = 0;

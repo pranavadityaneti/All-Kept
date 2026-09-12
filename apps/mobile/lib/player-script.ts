@@ -100,6 +100,35 @@ export function shouldPlay(s: { active: boolean; loaded: boolean; paused: boolea
   return s.active && s.loaded && !s.paused && s.appForeground;
 }
 
+/** The smallest side, in points, that a picture must have before it is one rather than an avatar. */
+const PICTURE_MIN_SIDE = 120;
+
+/**
+ * Finds the picture a page is showing, for a save whose platform will not tell us where it is.
+ *
+ * TikTok describes no photo post at all — its oEmbed answers 400 for every one — so a carousel has
+ * no picture on its card unless it is taken from the page that is already displaying it. Injected
+ * only for a save that has none, and only once its images have had time to arrive.
+ */
+export function pictureScript(): string {
+  return `
+  (function () {
+    var best = null;
+    var imgs = document.querySelectorAll('img');
+    for (var i = 0; i < imgs.length; i++) {
+      var src = String(imgs[i].currentSrc || imgs[i].src || '');
+      if (src.indexOf('https://') !== 0) { continue; }
+      var r = imgs[i].getBoundingClientRect();
+      if (r.width < ${PICTURE_MIN_SIDE} || r.height < ${PICTURE_MIN_SIDE}) { continue; }
+      var area = r.width * r.height;
+      if (!best || area > best.area) { best = { area: area, src: src }; }
+    }
+    if (best) { window.ReactNativeWebView.postMessage(JSON.stringify({ kind: 'picture', url: best.src })); }
+    true;
+  })();
+  true;`;
+}
+
 export interface PlayerState { playing: boolean; muted: boolean }
 
 /** One idempotent command: the state to be in, applied now and remembered for a video that has not appeared yet. */
@@ -119,7 +148,8 @@ export function stateScript(state: PlayerState): string {
 
 export type PlayerMessage =
   | { kind: "player"; hasVideo: boolean; playing: boolean; muted: boolean }
-  | { kind: "tiktok"; type: string; value: unknown };
+  | { kind: "tiktok"; type: string; value: unknown }
+  | { kind: "picture"; url: string };
 
 /** What the bridge carried, when it was the player speaking; null for the height reports and anything else. */
 export function readPlayerMessage(data: string): PlayerMessage | null {
@@ -129,6 +159,7 @@ export function readPlayerMessage(data: string): PlayerMessage | null {
       return { kind: "player", hasVideo: m["hasVideo"] === true, playing: m["playing"] === true, muted: m["muted"] !== false };
     }
     if (m && m["kind"] === "tiktok" && typeof m["type"] === "string") return { kind: "tiktok", type: m["type"], value: m["value"] };
+    if (m && m["kind"] === "picture" && typeof m["url"] === "string") return { kind: "picture", url: m["url"] };
     return null;
   } catch {
     return null;
