@@ -11,6 +11,14 @@ describe("the script every player runs", () => {
     expect(PLAYER_SCRIPT).toContain("ReactNativeWebView.postMessage");
     expect(PLAYER_SCRIPT).toContain("x-tiktok-player");
   });
+
+  it("forces the download of a video the page left on preload=none, so a gesture-less play() has something to play", () => {
+    // Instagram (and TikTok's player) ship the video with preload="none"; without this a WebView
+    // sits on the poster at readyState 0 forever. Proven on the simulator 12 Sep.
+    expect(PLAYER_SCRIPT).toContain("preload = 'auto'");
+    expect(PLAYER_SCRIPT).toContain(".load()");
+    expect(PLAYER_SCRIPT).toContain("readyState < 2");
+  });
   it("turns a desired state into one idempotent command", () => {
     const s = stateScript({ playing: true, muted: false });
     expect(s).toContain("muted = false");

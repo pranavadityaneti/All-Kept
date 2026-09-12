@@ -15,6 +15,7 @@ export const PLAYER_SCRIPT = `
     // Whatever Allkept asked for before this script ran, if the state command got here first.
     var state = window.__allkeptDesired || { playing: false, muted: true };
     var video = null;
+    var forced = false;
     var started = Date.now();
     function post(m) { window.ReactNativeWebView.postMessage(JSON.stringify(m)); }
     function report() {
@@ -23,10 +24,16 @@ export const PLAYER_SCRIPT = `
     function apply() {
       if (!video) { return; }
       if (video.muted !== state.muted) { video.muted = state.muted; }
-      if (state.playing && video.paused) {
-        var p = video.play();
-        if (p && p.catch) { p.catch(function () { report(); }); }
-      } else if (!state.playing && !video.paused) { video.pause(); }
+      if (state.playing) {
+        // Instagram (and TikTok's player) ship the video with preload="none", so inside a WebView a
+        // gesture-less play() never fetches it and the poster sits there at readyState 0. Force the
+        // download once, when we first want it playing.
+        if (video.readyState < 2 && !forced) { forced = true; try { video.preload = 'auto'; video.load(); } catch (e) {} }
+        if (video.paused) {
+          var p = video.play();
+          if (p && p.catch) { p.catch(function () { report(); }); }
+        }
+      } else if (!video.paused) { video.pause(); }
     }
     function adopt(v) {
       if (video === v) { return; }
@@ -59,6 +66,7 @@ export const PLAYER_SCRIPT = `
     true;
   })();
 `;
+
 
 export interface PlayerState { playing: boolean; muted: boolean }
 
