@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PLAYER_SCRIPT, VIDEO_WAIT_MS, stateScript, readPlayerMessage } from "../lib/player-script";
+import { PLAYER_SCRIPT, VIDEO_WAIT_MS, shouldPlay, stateScript, readPlayerMessage } from "../lib/player-script";
 
 describe("the script every player runs", () => {
   it("waits for a video to appear rather than assuming one, for a bounded time", () => {
@@ -45,5 +45,25 @@ describe("what the player says back", () => {
       .toEqual({ kind: "tiktok", type: "onError", value: { code: 1001 } });
     expect(readPlayerMessage(JSON.stringify({ h: 640, w: 360 }))).toBeNull();
     expect(readPlayerMessage("not json")).toBeNull();
+  });
+});
+
+describe("when an on-screen video should be playing", () => {
+  const on = { active: true, loaded: true, paused: false, appForeground: true };
+  it("plays only when it is the active save, loaded, not hand-paused, and the app is in front", () => {
+    expect(shouldPlay(on)).toBe(true);
+  });
+  it("does not play once any of those stops being true", () => {
+    expect(shouldPlay({ ...on, active: false })).toBe(false);
+    expect(shouldPlay({ ...on, loaded: false })).toBe(false);
+    expect(shouldPlay({ ...on, paused: true })).toBe(false);
+    expect(shouldPlay({ ...on, appForeground: false })).toBe(false);
+  });
+  it("wants to play again the moment the app returns to the foreground", () => {
+    // The bug: backgrounding paused the video and nothing resumed it on return, because no input to
+    // the state effect had changed. Foreground is now one of those inputs, so it re-asserts play.
+    const backgrounded = { ...on, appForeground: false };
+    expect(shouldPlay(backgrounded)).toBe(false);
+    expect(shouldPlay({ ...backgrounded, appForeground: true })).toBe(true);
   });
 });

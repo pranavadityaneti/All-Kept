@@ -68,6 +68,15 @@ export const PLAYER_SCRIPT = `
 `;
 
 
+/**
+ * Whether an on-screen video should be playing right now. Every input that can change the answer is
+ * here, so the single effect that pushes state to the page re-fires on any of them — including the
+ * app returning to the foreground, which iOS had quietly paused the video behind.
+ */
+export function shouldPlay(s: { active: boolean; loaded: boolean; paused: boolean; appForeground: boolean }): boolean {
+  return s.active && s.loaded && !s.paused && s.appForeground;
+}
+
 export interface PlayerState { playing: boolean; muted: boolean }
 
 /** One idempotent command: the state to be in, applied now and remembered for a video that has not appeared yet. */

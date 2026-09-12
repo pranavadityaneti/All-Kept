@@ -3,7 +3,7 @@ import { ActivityIndicator, AppState, Pressable, StyleSheet, View } from "react-
 import { WebView } from "react-native-webview";
 import { Icon } from "./Icon";
 import { EMBED_ORIGIN, isPlayerAddress } from "../lib/embed";
-import { PLAYER_SCRIPT, readPlayerMessage, stateScript } from "../lib/player-script";
+import { PLAYER_SCRIPT, readPlayerMessage, shouldPlay, stateScript } from "../lib/player-script";
 import { onSoundChange, setSoundOn, soundOn } from "../lib/sound";
 import { radius, usePalette } from "../lib/theme";
 
@@ -85,13 +85,16 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
   const [hasVideo, setHasVideo] = useState(false);
   const [sound, setSound] = useState(soundOn());
   const [paused, setPaused] = useState(false); // a tap on a non-interactive player
+  // iOS pauses a WebView's video the moment the app leaves the front and does not resume it on return,
+  // so the app must: foreground is an input to the state below, not a thing handled off to one side.
+  const [appForeground, setAppForeground] = useState(true);
   const web = useRef<WebView>(null);
 
   useEffect(() => onSoundChange(setSound), []);
 
   // The state this player should be in, applied whenever any of its inputs change. Sent before the
   // page's video exists too: the script keeps the last state and applies it on arrival.
-  const playing = active && loaded && !paused;
+  const playing = shouldPlay({ active, loaded, paused, appForeground });
   useEffect(() => {
     if (!loaded) return;
     web.current?.injectJavaScript(stateScript({ playing, muted: !sound }));
@@ -102,13 +105,10 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
   // above goes false with `active`. Coming back starts it again, so a pause is forgotten with it.
   useEffect(() => { if (active) setPaused(false); }, [active]);
 
-  // Leaving Allkept is the same thing as scrolling past: sound outlives the screen otherwise. The
-  // sound module resets itself on the same signal; this stops the picture.
+  // Leaving Allkept pauses the video (through `playing` above going false); returning resumes it,
+  // silently, because the sound module reset the choice on the way out. Both are one signal.
   useEffect(() => {
-    const sub = AppState.addEventListener("change", (next) => {
-      if (next === "active") return;
-      web.current?.injectJavaScript(stateScript({ playing: false, muted: true }));
-    });
+    const sub = AppState.addEventListener("change", (next) => setAppForeground(next === "active"));
     return () => sub.remove();
   }, []);
 
