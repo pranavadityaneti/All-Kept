@@ -48,7 +48,7 @@ export default function Activity() {
           return (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`${cardTitle(item)}. ${describe(item.status, item.category)}`}
+              accessibilityLabel={`${cardTitle(item)}. ${describe(item.status, item.category, !!item.thumbnailPath)}`}
               onPress={() => router.push(`/item/${item.id}`)}
               style={styles.row}
             >
@@ -63,7 +63,7 @@ export default function Activity() {
               <View style={styles.rowText}>
                 <Text numberOfLines={1} style={[type.body, styles.rowTitle, { color: p.ink }]}>{cardTitle(item)}</Text>
                 <Text numberOfLines={1} style={[type.label, { color: p.inkMuted }]}>
-                  {describe(item.status, item.category)} · {when(item.lastSavedAt)}
+                  {describe(item.status, item.category, !!item.thumbnailPath)} · {when(item.lastSavedAt)}
                 </Text>
               </View>
 

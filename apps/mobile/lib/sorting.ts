@@ -14,6 +14,22 @@ export function categoryLabel(item: Sortable): string {
   return "Sorting";
 }
 
+/**
+ * What a card says about itself in the corner, or nothing when there is nothing to say.
+ *
+ * "No preview" is a statement about the card, not about what the platform told us. A save can carry
+ * a picture the platform never described — TikTok describes no photo post at all, and the phone
+ * reads the picture from the page instead — and a card showing that picture must not also claim
+ * there is none.
+ */
+export function statusNote(item: Sortable & { status: string; thumbnailPath?: string | null }): string | null {
+  const sorting = sortingNote(item);
+  if (sorting) return sorting;
+  if (item.status === "no_link") return "No link";
+  if (item.status === "preview_unavailable" && !item.thumbnailPath) return "No preview";
+  return null;
+}
+
 export function sortingNote(item: Sortable): string | null {
   if (item.status === "failed") return "Could not load";
   if (item.classificationStatus === "failed") return "Sorting failed";

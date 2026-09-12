@@ -3,10 +3,11 @@
 import type { LibraryItem } from "./library";
 
 /** What has happened lately, read from the saves themselves: there is nothing else to notify about yet. */
-export function describe(status: string, category: string | null): string {
+export function describe(status: string, category: string | null, hasPicture = false): string {
   if (status === "pending" || status === "failed") return "Saved, still sorting";
   if (status === "no_link") return category ? `Saved as ${category}, no link yet` : "Saved, no link yet";
-  if (status === "preview_unavailable") return category ? `Saved as ${category}, no preview` : "Saved, no preview";
+  // Same rule as the card: a save with a picture is not a save with no preview.
+  if (status === "preview_unavailable" && !hasPicture) return category ? `Saved as ${category}, no preview` : "Saved, no preview";
   return category ? `Saved as ${category}` : "Saved";
 }
 
