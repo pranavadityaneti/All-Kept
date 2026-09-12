@@ -46,7 +46,11 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const remove = useDeleteItem(id, detail?.thumbnailPath ?? null);
   const attach = useAttachLink(id, detail?.status === "no_link" && detail.platform === "instagram" ? "instagram" : undefined, detail?.thumbnailPath ?? null);
 
-  const playerWidth = width - space.lg * 2;
+  // The embed is given the whole width of the screen. The inset it used to sit in was ours, not the
+  // platform's, and on a card whose content scales to its width every point of it was content lost.
+  const playerWidth = width;
+  /** The "nothing to play" card is a card of ours, so it keeps the page's margins. */
+  const blankWidth = width - space.lg * 2;
   const [playerHeight, setPlayerHeight] = useState<number | null>(null);
   const [fullHeight, setFullHeight] = useState<number | null>(null);
   const [fullScreen, setFullScreen] = useState(false);
@@ -86,7 +90,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   // Whatever the header and footer leave. The embed is capped to it rather than shrunk to fit:
   // an Instagram card carries its picture at the top and its own chrome underneath, so trimming
   // the bottom loses the chrome and keeps the thing you came to watch.
-  const mediaMax = Math.max(160, height - footerHeight - 56 - space.lg * 2);
+  const mediaMax = Math.max(160, height - footerHeight - 56 - space.md);
   // Only a card is asked how tall it is. A player fills its box, so a height reported back by one is
   // just the box read aloud — taking it as the new box is what made a playing video close up.
   const measured = embedFit(detail.platform) === "card";
@@ -146,7 +150,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             <Image source={{ uri: thumbnail }} style={[styles.hero, { width: playerWidth, height: mediaMax }]} contentFit="contain" transition={150} accessibilityIgnoresInvertColors />
           </Pressable>
         ) : (
-          <View style={[styles.blank, { width: playerWidth, maxHeight: mediaMax, backgroundColor: p.surfaceAlt }]}>
+          <View style={[styles.blank, { width: blankWidth, maxHeight: mediaMax, backgroundColor: p.surfaceAlt }]}>
             <Icon name={platformIcon(detail.platform)} size={36} color={p.inkMuted} />
             <Text style={[type.label, { color: p.inkMuted }]}>{blankNote}</Text>
             {url && (
@@ -305,7 +309,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.lg, height: 56 },
   headerActions: { flexDirection: "row", gap: space.sm },
   back: { transform: [{ rotate: "180deg" }] },
-  media: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: space.lg },
+  media: { flex: 1, alignItems: "center", justifyContent: "center" },
   hero: { borderRadius: radius.lg },
   // No fixed ratio any more: it now holds an address of unknown length and a button, and a box that
   // cannot grow either clips them or leaves them floating in the middle of nothing.
