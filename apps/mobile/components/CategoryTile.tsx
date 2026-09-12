@@ -2,7 +2,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "./Icon";
-import { categoryStyle, tint } from "../lib/categories";
+import { categoryStyle } from "../lib/categories";
 import { categoryDisplayName } from "../lib/category-names";
 import { radius, space, type, usePalette } from "../lib/theme";
 
@@ -17,8 +17,7 @@ import { radius, space, type, usePalette } from "../lib/theme";
  */
 export function CategoryTile({ name, count, cover, onPress }: { name: string; count: number; cover?: string; onPress: () => void }) {
   const p = usePalette();
-  const dark = p.blur === "dark";
-  const { icon, hue } = categoryStyle(name);
+  const { icon } = categoryStyle(name);
   const label = categoryDisplayName(name);
   const saves = `${count} ${count === 1 ? "save" : "saves"}`;
 
@@ -30,12 +29,15 @@ export function CategoryTile({ name, count, cover, onPress }: { name: string; co
         void Haptics.selectionAsync().catch(() => undefined);
         onPress();
       }}
-      style={({ pressed }) => [styles.shadow, { backgroundColor: dark ? "#1B1530" : "#F1ECFA" }, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.shadow, { backgroundColor: p.surfaceAlt }, pressed && styles.pressed]}
     >
       {/* The shadow and the clipping cannot share a view: overflow "hidden" sets masksToBounds on
           the layer, and a masked layer draws no shadow at all on iOS. Outer carries the shadow,
           inner does the clipping. */}
-      <View style={[styles.tile, !cover && { borderWidth: StyleSheet.hairlineWidth, borderColor: tint(hue, dark ? 0.34 : 0.16), backgroundColor: tint(hue, dark ? 0.16 : 0.07) }]}>
+      {/* A grey card with the mark in the accent: the colour belongs to the mark, so fifteen cards
+          read as one set rather than fifteen purple panels, and a cover dropped in later is the
+          only colour on the tile. Both greys come from the palette, so dark follows on its own. */}
+      <View style={[styles.tile, !cover && { borderWidth: StyleSheet.hairlineWidth, borderColor: p.border, backgroundColor: p.surfaceAlt }]}>
         {cover ? <>
           <Image source={{ uri: cover }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} />
           {/* Text over somebody's photograph cannot rely on the photograph. The strip under the copy
@@ -47,7 +49,7 @@ export function CategoryTile({ name, count, cover, onPress }: { name: string; co
             <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={[styles.count, styles.countOnCover]}>{saves}</Text>
           </View>
         </> : <>
-          <View pointerEvents="none" style={styles.mark}><Icon name={icon} size={27} color={dark ? "#C9B8FF" : hue} /></View>
+          <View pointerEvents="none" style={styles.mark}><Icon name={icon} size={27} color={p.accent} /></View>
           <View pointerEvents="none" style={styles.copy}>
             {/* One line, shrinking to fit. Given two lines iOS breaks the word instead of shrinking
                 — "Entertainment" came out as "Entertainmen / t", which reads as a fault rather than
