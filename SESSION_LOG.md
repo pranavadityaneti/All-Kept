@@ -790,3 +790,41 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
   checkout is riskier than a misfiled diff. Two sessions share this checkout: `git reset` moves
   whatever HEAD is at that moment, not "your" commit.
 - Pushed main (7 commits: 2 privacy, 5 categories/home). None touch apps/admin.
+
+## 12 Sep 2026 (evening) — category tiles rebuilt so a person can invent their own
+Pranav asked for three things: categories a person creates themselves, a category confirmation when
+a save arrives from the share sheet, and a "See all" that can close again. The share-sheet modal is
+deferred (forlater 31) — **the category does not exist yet at the moment that sheet is open**, so it
+can only ask, not show. The tiles came first, because the old ones could not survive user
+categories.
+
+- **The paintings are gone (`7caa8e4`, `c6bf1e7`, `95f72a8`).** Nineteen PNGs, 1.5 MB. Every new
+  name would have needed a drawing, and until one existed the tile fell back to Other's artwork and
+  was indistinguishable from Other. Now: a cover from the newest pictured save inside the category,
+  else the category's own mark. **1,357 Ionicons glyphs were already in the bundle** in a font we
+  ship regardless — a category costs its name, not an image.
+- **`category_covers()`** returns one row per category, `distinct on` the category ordered by newest
+  — not a page of saves folded on the phone, so it holds at any library size. Pranav applied it
+  (`db push`); the `supabase` CLI is blocked for me by the permission classifier.
+- **Grey card, purple mark**, both from palette tokens, so dark follows without a second set of
+  values.
+- **Caught by my own audit mid-flight:** the name laid over the cover was unreadable — thumbnails
+  are other people's screenshots with text burnt in, and the Career tile printed another post's
+  "…rlier, but" through "16 saves". Moved the words under the picture, the way the save cards above
+  already do. No scrim can be tuned for every picture.
+- **`See all` now closes**, and the rule is a tested function rather than screen logic: it used to
+  set the shown count to the total, and the control only draws while the total exceeds the shown
+  count, so expanding removed the only way back.
+- **A glyph is now typed against the font** instead of `as never`, so a misspelt mark is a compile
+  error rather than a blank tile. 161 tests, tsc clean.
+- **Two mistakes of mine worth remembering,** both in ERRORS.md: I stamped the migration with a
+  version `share_tokens` already held (two files, one version — which is why `db push` named the
+  wrong file), and `git reset --soft HEAD~1` destroyed a **parallel session's** commit because it
+  had committed between my commit and my reset. Nothing was lost; one commit carries the wrong
+  message and was left standing rather than rewriting a live session's history.
+- **Not verified by eye:** the mark-only tile in the new layout (every category currently has a
+  cover), and dark mode. The simulator MCP server crashed for this whole session — screenshots via
+  `simctl`, no taps.
+- **Next:** Part 2, the categories a person makes. Design agreed and written down in
+  `docs/superpowers/specs/2026-09-12-categories-tiles-and-user-categories-design.md`.
+
