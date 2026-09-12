@@ -120,7 +120,7 @@ describe("a saved TikTok", () => {
   const VIDEO = "https://www.tiktok.com/@tiktok/video/7532540099460893983";
   it("plays through TikTok's player, looping, with our own sound button in charge", () => {
     const url = embedUrl(item({ platform: "tiktok", kind: "short_video", canonicalUrl: VIDEO, externalId: "7532540099460893983" }));
-    expect(url).toBe("https://www.tiktok.com/player/v1/7532540099460893983?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=0&autoplay=1");
+    expect(url).toBe("https://www.tiktok.com/player/v1/7532540099460893983?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&rel=0&volume_control=0&autoplay=1");
   });
   it("asks TikTok's player to start on its own, in TikTok's own words", () => {
     // The player defaults to autoplay=0, so without this it waits for a tap however we drive it.
@@ -139,6 +139,31 @@ describe("a saved TikTok", () => {
   it("has nothing to play for a profile, or for a short link that never learned its id", () => {
     expect(embedUrl(item({ platform: "tiktok", kind: "profile", canonicalUrl: "https://www.tiktok.com/@tiktok" }))).toBeNull();
     expect(embedUrl(item({ platform: "tiktok", kind: "short_video", sourceUrl: "https://vm.tiktok.com/ZS9dHGEcApLyX", externalId: null }))).toBeNull();
+  });
+  it("never offers TikTok's recommendations in place of the save", () => {
+    // Asked for a video it will not serve, TikTok's player fills the space with other people's
+    // videos. rel=0 keeps any such suggestion to the author of the save, which is at least related
+    // to what was kept — Allkept shows nobody a feed of strangers.
+    const url = embedUrl(item({ platform: "tiktok", kind: "short_video", canonicalUrl: VIDEO, externalId: "7532540099460893983" }))!;
+    expect(url).toContain("rel=0");
+  });
+  it("does not open TikTok's player for a post TikTok has already said is not there", () => {
+    // Enrichment marks a TikTok preview_unavailable only when its oEmbed refused outright, which for
+    // TikTok means the post is gone. Loading the player then shows their error page and its carousel.
+    const gone = embedUrl(item({ platform: "tiktok", kind: "short_video", canonicalUrl: VIDEO, externalId: "7532540099460893900", status: "preview_unavailable" }));
+    expect(gone).toBeNull();
+  });
+  it("still opens the player for a photo post, whose oEmbed always refuses", () => {
+    // TikTok answers 400 for every photo post, not only missing ones — it simply does not describe
+    // them. Treating that as "the post is gone" would keep every carousel out of its own player.
+    const url = embedUrl(item({ platform: "tiktok", kind: "image", canonicalUrl: "https://www.tiktok.com/@lior/photo/7663185415209258253", externalId: "7663185415209258253", status: "preview_unavailable" }));
+    expect(url).toContain("/player/v1/7663185415209258253");
+  });
+  it("still opens Instagram's embed for a post we merely could not read", () => {
+    // Instagram answers our server with a login wall, which says nothing about whether the post
+    // embeds — and it does. So the same status must not lock Instagram out of its player.
+    const url = embedUrl(item({ platform: "instagram", kind: "post", canonicalUrl: "https://www.instagram.com/p/DcVMQIIMa5-/", status: "preview_unavailable" }));
+    expect(url).toContain("/embed/");
   });
   it("is laid out as a player, tall by default", () => {
     expect(embedFit("tiktok")).toBe("player");

@@ -5,10 +5,12 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { Stack, useRouter } from "expo-router";
 import { ensureShareToken, flushShareQueue } from "../lib/share-save";
 import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
+import { backfillUnresolvedLinks, resolveDeps } from "../lib/resolve-backfill";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, type PropsWithChildren } from "react";
 import { AppState, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { invalidateLibrary } from "../lib/library";
 import { useRealtimeSync } from "../lib/realtime";
 import { SessionProvider, useSession } from "../lib/session";
 import { configError } from "../lib/supabase";
@@ -71,6 +73,8 @@ function Shell() {
       void ensureShareToken().then(() => flushShareQueue(queryClient)).catch(() => undefined);
       // Reddit tells only a phone where a post's picture is, so the phone looks while it is awake.
       void backfillRedditThumbnails(backfillDeps()).catch(() => undefined);
+      // And only a phone may follow the short links the share sheet posts straight to the server.
+      void backfillUnresolvedLinks(resolveDeps()).then((r) => { if (r.resolved > 0) invalidateLibrary(queryClient); }).catch(() => undefined);
     };
     sync();
     const sub = AppState.addEventListener("change", (state) => { if (state === "active") sync(); });

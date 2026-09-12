@@ -6,6 +6,8 @@
  */
 export interface EmbeddableItem {
   platform: string; kind: string; canonicalUrl: string | null; sourceUrl: string | null; externalId: string | null;
+  /** What enrichment concluded. Only TikTok reads it, and only to stay out of its player (see below). */
+  status?: string;
   /** False when the provider will not play this in a frame, whatever address we build. */
   embeddable?: boolean | null;
 }
@@ -65,12 +67,20 @@ export function embedUrl(item: EmbeddableItem): string | null {
     // the sound for a video, so TikTok's volume control is hidden; a photo post's sound is its
     // music, which we never start, so TikTok keeps that control. `muted=1` is never sent: TikTok
     // documents it as locking the volume for the viewer, not merely starting quiet.
+    // A TikTok video is marked preview_unavailable only when its oEmbed refused outright, and for a
+    // video that means the post is not there. A photo post is exempt: TikTok answers 400 for every
+    // one of them, describing none, so the same status there says nothing about whether it exists. Opening the player then shows TikTok's own error page — which
+    // fills the space with a carousel of other people's videos. Allkept shows nobody a feed of
+    // strangers, so the save keeps its own card instead. Instagram is deliberately not treated this
+    // way: it earns the same status from a login wall, which says nothing about whether it embeds.
     const photo = item.kind === "image";
+    if (item.status === "preview_unavailable" && !photo) return null;
     // autoplay defaults to 0 in TikTok's player, so it must be asked in its own words as well as
     // driven through its message API — without this a TikTok save waited for a tap. Never asked of a
     // photo post, whose "play" means starting its music.
     const autoplay = photo ? "" : "&autoplay=1";
-    return `https://www.tiktok.com/player/v1/${item.externalId}?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=${photo ? 1 : 0}${autoplay}`;
+    // rel=0: should TikTok ever suggest anything anyway, keep it to this save's own author.
+    return `https://www.tiktok.com/player/v1/${item.externalId}?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&rel=0&volume_control=${photo ? 1 : 0}${autoplay}`;
   }
   return null;
 }
