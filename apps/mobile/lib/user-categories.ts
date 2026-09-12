@@ -9,6 +9,7 @@
  * built-in tile rather than break anything.
  */
 import { CATEGORIES } from "@allkept/contracts";
+import { categoryDisplayName } from "./category-names";
 
 /** The names the database invents for a save that has no category — see item_category_label. */
 export const RESERVED_NAMES = ["Sorting", "Uncategorized", "Needs attention"] as const;
@@ -28,7 +29,11 @@ export function checkCategoryName(raw: string, existing: readonly string[]): { n
   if (!name) return { problem: "empty" };
   if (name.length > MAX_NAME) return { problem: "too-long" };
   if (RESERVED_NAMES.some((r) => fold(r) === fold(name))) return { problem: "reserved" };
-  const taken = [...CATEGORIES, ...existing].some((other) => fold(other) === fold(name));
+  // Against what a built-in is *drawn* as, not only what it is stored as: "Tech & tools" appears on
+  // the grid as "Tech", so a category called "Tech" would put two identically labelled tiles side by
+  // side with nothing to tell them apart.
+  const builtIn = CATEGORIES.flatMap((c) => [c, categoryDisplayName(c)]);
+  const taken = [...builtIn, ...existing].some((other) => fold(other) === fold(name));
   return taken ? { problem: "taken" } : { name };
 }
 

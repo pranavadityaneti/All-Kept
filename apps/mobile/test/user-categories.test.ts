@@ -42,6 +42,14 @@ describe("naming a category", () => {
     expect(problem("food & recipes")).toBe("taken");
   });
 
+  it("refuses a name that reads the same as a built-in on screen, not just in storage", () => {
+    // "Tech & tools" is drawn as "Tech". A category called "Tech" would put two tiles on the home
+    // grid with the same label and no way to tell which was which.
+    expect(problem("Tech")).toBe("taken");
+    expect(problem("Wellness")).toBe("taken");
+    expect(problem("Memes")).toBe("taken");
+  });
+
   it("refuses a name they already have, whatever the casing or spacing", () => {
     expect(problem("Wedding")).toBe("taken");
     expect(problem("  wedding ")).toBe("taken");
