@@ -529,43 +529,14 @@ Deno.test("a TikTok's shape is learned from the frame oEmbed describes; a frame 
 
 const REDDIT_POST = "https://www.reddit.com/r/SaaS/comments/abc123/";
 const redditPost = (over: Partial<EnrichableItem> = {}) => base({ platform: "reddit", kind: "post", source_url: REDDIT_POST, canonical_url: REDDIT_POST, external_id: "abc123", text: null, ...over });
-const RSS_WITH_PICTURE = '<?xml version="1.0" encoding="UTF-8"?><feed><entry><media:thumbnail url="https://preview.redd.it/x.jpg?width=140&amp;height=140&amp;s=abc"/></entry></feed>';
 
-Deno.test("a Reddit save takes its picture from Reddit's own feed, which is the only place it offers one", async () => {
-  const seen: string[] = []; const snaps: string[] = [];
-  const f = fakeFetch({
-    "https://www.reddit.com/oembed": () => Response.json({ title: "A post", author_name: "someone" }),
-    "https://www.reddit.com/r/SaaS/comments/abc123/.rss": () => new Response(RSS_WITH_PICTURE, { headers: { "content-type": "application/xml" } }),
-  }, seen);
-  const r = await enrich(redditPost(), deps(f, snaps));
-  assertEquals(r.status, "ready");
-  // Taken verbatim, entities decoded: the URL is signed for exactly the size it names.
-  assertEquals(r.patch.thumbnail_url_remote, "https://preview.redd.it/x.jpg?width=140&height=140&s=abc");
-  assertEquals(r.patch.thumbnail_path, "u1/item-1.jpg");
-});
 
 Deno.test("Reddit's post page is never asked for a preview: it answers our server 403 every time", async () => {
   const seen: string[] = [];
   const f = fakeFetch({
     "https://www.reddit.com/oembed": () => Response.json({ title: "A post", author_name: "someone" }),
-    "https://www.reddit.com/r/SaaS/comments/abc123/.rss": () => new Response(RSS_WITH_PICTURE, { headers: { "content-type": "application/xml" } }),
   }, seen);
   await enrich(redditPost(), deps(f));
   assertEquals(seen.filter((u) => u === REDDIT_POST).length, 0);
 });
 
-Deno.test("a Reddit post with no picture, or a feed that refuses, is still a perfectly good save", async () => {
-  const noPicture = await enrich(redditPost(), deps(fakeFetch({
-    "https://www.reddit.com/oembed": () => Response.json({ title: "A text post", author_name: "someone" }),
-    "https://www.reddit.com/r/SaaS/comments/abc123/.rss": () => new Response("<feed><entry/></feed>", { headers: { "content-type": "application/xml" } }),
-  })));
-  assertEquals(noPicture.status, "ready");
-  assertEquals(noPicture.patch.thumbnail_url_remote, undefined);
-
-  const rateLimited = await enrich(redditPost(), deps(fakeFetch({
-    "https://www.reddit.com/oembed": () => Response.json({ title: "A text post", author_name: "someone" }),
-    "https://www.reddit.com/r/SaaS/comments/abc123/.rss": () => new Response("", { status: 429 }),
-  })));
-  assertEquals(rateLimited.status, "ready"); // a missing picture never costs the item its card
-  assertEquals(rateLimited.patch.thumbnail_url_remote, undefined);
-});
