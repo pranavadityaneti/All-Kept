@@ -1,18 +1,757 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Privacy Policy · Allkept</title>
-<style>body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 20px;line-height:1.55;color:#1b2229}h1{font-size:28px}h2{font-size:20px;margin-top:28px}small{color:#5f6b75}</style></head>
-<body><h1>Privacy Policy</h1>
-<p>Allkept is a personal library for things you save on social platforms. This policy describes what we collect during the current test phase.</p>
-<h2>What we collect</h2>
-<ul><li>Messages you send to the Instagram account <strong>@allkeptapp</strong>: the text, any post or reel you share, the time, and your Instagram-scoped user id and username.</li>
-<li>Videos you add to a YouTube playlist you have connected to Allkept: the video id, title, channel and thumbnail.</li>
-<li>A device-bound account. During this test the app signs you in without asking for anything: no name, no email, no phone number. The account exists only on your phone until you choose to sign in with Google in a later version.</li>
-<li>What you do in the app: which screens you open and which actions you take, such as opening a saved item or changing its category. We record that a search happened, how many characters it had and how many results came back, <strong>never the words you typed</strong>.</li></ul>
-<h2>How we use it</h2>
-<p>To build your private library: we fetch public preview details of the links you send, sort them into categories, and show them to you in the Allkept app. We never post on your behalf, never message anyone who has not messaged us first, and never sell or share your data.</p>
-<h2>Retention</h2>
-<p>Raw message events are deleted automatically after 30 days. Your library and your in-app activity stay until you delete your account, which removes both.</p>
-<h2>Deleting your data</h2>
-<p>See the <a href="delete.html">data deletion page</a>. Deletion removes everything we hold about you within 24 hours.</p>
-<h2>Contact</h2>
-<p>Message <strong>@allkeptapp</strong> on Instagram.</p><p><small>Allkept · last updated 8 September 2026 · test-phase version of this page.</small></p></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy · Allkept</title>
+<meta name="description" content="What Allkept collects, why, who it goes to, how long it is kept, and how to get rid of it.">
+<meta name="robots" content="index,follow">
+<style>
+  /* Committed to a light ground, painted explicitly, to match allkept.app. No external fonts and no
+     external stylesheets: this page must render identically offline and inside an in-app browser. */
+  :root{
+    --bg:#F6F7FA; --surface:#FFFFFF; --surface-alt:#EEF0F6; --line:#DFE3EC;
+    --ink:#14161C; --muted:#5F6675; --accent:#6D46F2; --accent-soft:#EDE8FF;
+    --warn:#8A5200; --warn-bg:#FFF6E6; --warn-line:#F0D9A8;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:400 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 20px 72px}
+
+  nav{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:24px 0 8px}
+  .mark{font-weight:700; letter-spacing:-.02em; font-size:17px; color:var(--ink); text-decoration:none}
+  nav .links{display:flex; gap:18px; font-size:14px; flex-wrap:wrap}
+  nav a{color:var(--muted); text-decoration:none}
+  nav a:hover{color:var(--ink)}
+
+  h1{font-size:clamp(28px,5vw,38px); line-height:1.1; letter-spacing:-.03em; margin:26px 0 6px}
+  .stamp{color:var(--muted); font-size:14px; margin:0 0 22px}
+  h2{font-size:21px; letter-spacing:-.015em; margin:38px 0 10px; padding-top:14px; border-top:1px solid var(--line)}
+  h3{font-size:16.5px; margin:24px 0 6px; letter-spacing:-.01em}
+  p,li{font-size:15.5px}
+  ul,ol{padding-left:22px}
+  li{margin:5px 0}
+  a{color:var(--accent)}
+  strong{font-weight:600}
+  code{background:var(--surface-alt); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:13.5px}
+
+  .note{
+    background:var(--warn-bg); border:1px solid var(--warn-line); border-left:4px solid var(--warn);
+    border-radius:10px; padding:14px 16px; margin:20px 0; color:var(--warn); font-size:15px;
+  }
+  .note strong{color:var(--warn)}
+  .note p{margin:0 0 8px; font-size:15px}
+  .note p:last-child{margin:0}
+
+  .callout{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:18px 0}
+  .callout p:first-child,.callout ul:first-child{margin-top:0}
+  .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+
+
+  .toc{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:24px 0}
+  .toc h2{border:0; margin:0 0 8px; padding:0; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+  .toc ol{margin:0; padding-left:20px; columns:2; column-gap:28px}
+  .toc li{margin:3px 0; break-inside:avoid; font-size:14.5px}
+  .toc a{text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  @media (max-width:620px){ .toc ol{columns:1} }
+
+  .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:16px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px}
+  th,td{text-align:left; vertical-align:top; padding:10px 14px; border-bottom:1px solid var(--line)}
+  th{background:var(--surface-alt); font-weight:600; font-size:13.5px}
+  tr:last-child td{border-bottom:0}
+
+  footer{border-top:1px solid var(--line); margin-top:44px; padding-top:20px; color:var(--muted); font-size:13.5px}
+  footer a{color:var(--muted)}
+  footer .l{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px}
+
+  @media print{
+    :root{--bg:#fff; --surface:#fff; --surface-alt:#f4f4f4; --accent:#000; --accent-soft:#fff}
+    body{font-size:10.5pt; line-height:1.45}
+    .wrap{max-width:none; padding:0}
+    nav,.toc{display:none}
+    h1{font-size:22pt}
+    h2{font-size:13pt; page-break-after:avoid; border-top:1px solid #ccc}
+    h3{font-size:11.5pt; page-break-after:avoid}
+    p,li,table{font-size:10pt}
+    table,.scroll,.note,.callout{page-break-inside:avoid}
+    .scroll{overflow:visible; border:0}
+    table{min-width:0; border:1px solid #ccc}
+    a{color:#000; text-decoration:none}
+    a[href^="http"]::after,a[href^="mailto"]::after{content:" (" attr(href) ")"; font-size:8.5pt; color:#555}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <a class="mark" href="index.html">Allkept</a>
+  <span class="links">
+    <a href="index.html">Home</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="delete.html">Delete your data</a>
+  </span>
+</nav>
+
+<h1>Privacy Policy</h1>
+<p class="stamp">Last updated 12 September 2026</p>
+
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#who">Who this policy is from</a></li>
+    <li><a href="#short">The short version</a></li>
+    <li><a href="#collect">What we collect</a></li>
+    <li><a href="#doors">How your saves reach us</a></li>
+    <li><a href="#processing">What we do to a save</a></li>
+    <li><a href="#ai">AI processing</a></li>
+    <li><a href="#search">Search</a></li>
+    <li><a href="#embeds">Playing and opening saves</a></li>
+    <li><a href="#push">Notifications</a></li>
+    <li><a href="#analytics">Usage measurement</a></li>
+    <li><a href="#basis">Why we are allowed to do this</a></li>
+    <li><a href="#share">Who else touches your data</a></li>
+    <li><a href="#transfers">Where your data goes</a></li>
+    <li><a href="#retention">How long we keep it</a></li>
+    <li><a href="#rights">Your rights</a></li>
+    <li><a href="#eea">If you are in the EEA or UK</a></li>
+    <li><a href="#us">If you are in the United States</a></li>
+    <li><a href="#india">If you are in India</a></li>
+    <li><a href="#children">Children</a></li>
+    <li><a href="#creators">If your post is in someone's library</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#delete">Deleting everything</a></li>
+    <li><a href="#changes">Changes to this policy</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</div>
+
+<h2 id="who">1. Who this policy is from</h2>
+<p>Allkept is a mobile app that gathers the things you save on other platforms into one private
+library you can search. This policy covers the Allkept iOS and Android apps, the Allkept Instagram
+account <strong>@allkeptapp</strong>, the Allkept backend, and the pages on
+<strong>allkept.app</strong>.</p>
+<p>The controller of your personal data — the "Data Fiduciary" under India's DPDP Act and the
+"controller" under the GDPR — is MECA Engineering Solutions (OPC) Private Limited, 4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru, Bengaluru Urban District, Karnataka 560102, India, operating from India. You can reach us at
+<a href="mailto:hi@allkept.app">hi@allkept.app</a>.</p>
+<p>"We", "us" and "our" mean that entity. "You" means the person using the app.</p>
+
+<h2 id="short">2. The short version</h2>
+<div class="callout">
+  <ul>
+    <li>Your library is private to your account. Nobody else, including other Allkept users, can read it.</li>
+    <li>We do not sell your data and we do not share it for advertising. There is no ad network, no
+      tracking SDK and no third-party analytics SDK in the app.</li>
+    <li>To sort and search your saves we send the text of each save, and the words you type into the
+      search box, to <strong>OpenAI</strong>. Nothing else is sent to an AI provider, and you can turn
+      the sorting off in Settings.</li>
+    <li>Notifications are off until you turn them on, and we store nothing about your device until you
+      do.</li>
+    <li>We fetch the public preview of each link you save — title, description, author, thumbnail —
+      from our own servers, not from your phone.</li>
+    <li>Raw Instagram message events are deleted automatically after 30 days. Everything else stays
+      until you delete your account.</li>
+    <li>You can delete your account and everything in it from Settings inside the app. It is immediate
+      and permanent.</li>
+  </ul>
+</div>
+
+<h2 id="collect">3. What we collect</h2>
+<p>This is the complete list, taken from the database itself. There is nothing else.</p>
+
+<h3>3.1 Account and sign-in</h3>
+<div class="scroll"><table>
+<tr><th>What</th><th>Where it comes from</th></tr>
+<tr><td>An account identifier (a random UUID)</td><td>Created by us when you first sign in</td></tr>
+<tr><td>Your email address</td><td>Your Google Account or your Apple ID, depending on which you signed
+  in with</td></tr>
+<tr><td>The basic identity record from that provider — the provider name, your user id there, and the
+  basic profile fields it returns</td><td>Google or Apple, through our authentication provider</td></tr>
+<tr><td>When you created the account and when you last signed in</td><td>Recorded by us</td></tr>
+</table></div>
+<p>You sign in with <strong>Google</strong> or with <strong>Apple</strong>. Either way we ask only for
+basic identity, profile and email. We never receive your password, and we have no access to Gmail,
+iCloud, Drive, Contacts or any other service of theirs.</p>
+<p>If you sign in with Apple and choose <strong>Hide My Email</strong>, we receive Apple's private
+relay address rather than your real one. That address is all we have and all we will ever write to. It
+still reaches you, and you can switch it off at any time in your Apple ID settings.</p>
+<p>Some early test-phase installs hold a "guest" library that was created on the device without any
+sign-in. If your phone still has one, the app can restore it and then attach it to a Google or Apple
+account. That stored session lives in your phone's secure keychain, not on our servers.</p>
+
+<h3>3.2 Your profile</h3>
+<p>After signing in, the app asks you to complete a short profile before you can use the library.</p>
+<div class="scroll"><table>
+<tr><th>Field</th><th>Required?</th><th>Notes</th></tr>
+<tr><td>Display name</td><td>Required</td><td>Up to 80 characters. Whatever you choose to type.</td></tr>
+<tr><td>Profile photo</td><td>Required</td><td>A JPEG you pick from your photo library, cropped square
+  and reduced to at most 512&nbsp;&times;&nbsp;512 pixels on your phone before it is uploaded. Kept in
+  a private bucket only your account can read.</td></tr>
+<tr><td>Phone number</td><td>Optional</td><td>Stored in international format if you give one. It is not
+  used to sign you in and we do not send SMS.</td></tr>
+</table></div>
+<p>The app asks permission to open your photo library only at the moment you choose a profile photo.
+It never uses your camera or microphone, and it never reads your photo library in the background.</p>
+
+<h3>3.3 The doors you connect</h3>
+<div class="scroll"><table>
+<tr><th>Door</th><th>What we store</th></tr>
+<tr><td>Instagram</td><td>Your Instagram-scoped user id — an identifier Meta issues that is specific to
+  your conversation with us and cannot be used to look you up elsewhere — your Instagram username, when
+  the connection was made, when we last heard from it, and whether you want confirmation replies in the
+  thread.</td></tr>
+<tr><td>YouTube</td><td>The playlist id you gave us, the playlist's title, its channel title, how many
+  videos it holds, and when we last checked it. We never ask for or hold a Google or YouTube login for
+  this: a public or unlisted playlist is readable with our own API key.</td></tr>
+<tr><td>Linking codes</td><td>The six-character code the app shows you, when it expires (ten minutes)
+  and when it was used.</td></tr>
+</table></div>
+
+<h3>3.4 Your saves</h3>
+<div class="scroll"><table>
+<tr><th>What</th><th>Detail</th></tr>
+<tr><td>The link itself</td><td>Platform, the kind of thing it is, the URL you sent, the tidied
+  ("canonical") URL, and the platform's own id for it</td></tr>
+<tr><td>Public details about it</td><td>Title, caption or description, author name and author handle,
+  taken from the platform's public preview</td></tr>
+<tr><td>A thumbnail</td><td>Copied into a private storage bucket only your account can read — up to
+  4&nbsp;MB, JPEG, PNG, WebP or HEIC. We also keep the remote address it came from.</td></tr>
+<tr><td>Technical details about the media</td><td>The preview provider and type, the thumbnail's
+  dimensions, a YouTube video's aspect ratio, the publishing site's name, and the reason a fetch failed
+  when one did</td></tr>
+<tr><td>Your own words</td><td>Any note you type onto the card, and any text you sent alongside a link</td></tr>
+<tr><td>Timing</td><td>When you saved it, when you last saved it, how many times, and its processing
+  status</td></tr>
+<tr><td>A record of the capture</td><td>The exact instruction the door handed to us: the URL, caption,
+  title or media id. Free text you sent is replaced by a marker here and kept in the save's own text and
+  note fields instead, so it is not stored twice.</td></tr>
+</table></div>
+
+<h3>3.5 What the sorting produced</h3>
+<p>For each save we store the category it was filed under (one of fourteen), up to five tags, a
+one-sentence summary, the named entities found in it (places, products, recipes, tools, people,
+brands), a language code, an "actionability" label (watch, try, buy, go, read, reference, none), a
+confidence score, the model that produced it, the prompt version, and the token count and cost of the
+call. If you correct the category, your correction is stored separately and is never overwritten by
+the model. If sorting fails, the failure message is stored.</p>
+
+<h3>3.6 The search index</h3>
+<p>For each save we build one combined text document out of its platform, title, text, your note,
+author name and handle, its URLs, its category, tags, summary and entity names — and a 512-number
+vector ("embedding") of that document, which is what lets you search by meaning rather than by exact
+words. Both belong to your account and are readable only by you.</p>
+
+<h3>3.7 Instagram message events</h3>
+<p>When you message @allkeptapp, Meta sends us a webhook. We store the whole message event as Meta
+sent it, plus up to 20,000 characters of the raw request body, the sending and receiving
+Instagram-scoped ids, and the timestamps. This is the working record that lets us recover a save that
+failed to process. <strong>These rows are deleted automatically 30 days after they arrive</strong>, by
+a job that runs every day.</p>
+<p>We also store each confirmation message we send back into the thread: its text, the recipient's
+Instagram-scoped id, when it was due, when it went out, and any send error.</p>
+
+<h3>3.8 Bringing in older Instagram saves</h3>
+<p>If you use the import feature, you upload the "saved posts" export that Meta gives you. The file
+goes into a private folder only your account can write to and read. Our server downloads it, reads the
+Instagram post links out of it, and <strong>deletes the file immediately afterwards</strong>. We keep
+only a record of the run: how many saved posts were found, how many were added, how many were already
+there, any error, and the timestamps. We do not read, keep or index any other part of your Meta
+export.</p>
+
+<h3>3.9 Your switches</h3>
+<p>Four settings are stored on your profile: whether to send notifications at all, whether to tell you
+when a save lands, whether to tell you when a save needs you, and <strong>whether saves may be sorted
+automatically</strong>. Every one starts in the position the app already behaved in, so nothing changes
+for you until you move one.</p>
+
+<h3>3.10 Notification devices</h3>
+<p>If you turn notifications on, we store a push token for each device — see
+<a href="#push">section 9</a>. Nothing is stored while notifications are off.</p>
+
+<h3>3.11 Feedback you send us</h3>
+<p>If you use <strong>Send feedback</strong> in Settings, we store the message you wrote (up to 4,000
+characters), the app version and platform it was sent from, when you sent it, and your account, so we
+can reply. Nobody can read feedback back through the app — not even the person who wrote it.</p>
+<div class="note"><p><strong>One exception to deletion.</strong> If you later delete your account, we
+keep the message but <strong>detach it from you</strong>: your account link is cleared, and the address
+we could have replied to disappears with it. We keep it because it is a report about the product, not a
+record about a person. If you want a message you sent removed entirely as well, ask us at
+<a href="mailto:hi@allkept.app">hi@allkept.app</a> and we will delete it.</p></div>
+
+<h3>3.12 Usage measurement</h3>
+<p>See <a href="#analytics">section 10</a>. It is a short fixed list, and it never contains anything you
+typed.</p>
+
+<h3>3.13 The launch waitlist on allkept.app</h3>
+<p>If you join the waitlist on allkept.app we keep the email address you give us, which of the two
+sign-up boxes you used, when you gave it, your browser's name, and a hashed form of your network
+address to stop abuse. We use it to send you one email when Allkept opens, and to nothing else. You
+can ask us to remove it at <a href="mailto:hi@allkept.app">hi@allkept.app</a>.</p>
+
+<h3>3.14 What we do <em>not</em> collect</h3>
+<ul>
+  <li>No advertising identifier (IDFA or GAID), no device fingerprint, no ad network, no attribution SDK.</li>
+  <li>No third-party analytics or crash-reporting SDK. There is no Firebase, Sentry, Amplitude,
+    Mixpanel, PostHog or Segment in the app.</li>
+  <li>No location of any kind, precise or coarse.</li>
+  <li>No contacts, calendar, health, camera or microphone access.</li>
+  <li>No payment or card details. Allkept is free and takes no payments.</li>
+  <li>No passwords. Sign-in is handled by Google and we never see one.</li>
+  <li>No browsing history, and no reading of your other apps.</li>
+</ul>
+
+<h2 id="doors">4. How your saves reach us</h2>
+
+<h3>Instagram direct messages</h3>
+<p>You link your Instagram account by sending a six-character code to <strong>@allkeptapp</strong>.
+From then on, anything you send to that account — a reel, a post, a link, or a line of text — becomes a
+save. We only ever see the messages <em>you send to us</em>. We cannot see your Instagram feed, your
+followers, your other conversations, your stories or your own saved-posts collection, and we never post
+or message on your behalf. We reply only in the thread you started, and only to confirm a save; you can
+turn those replies off by sending <code>stop replies</code>, or from Settings in the app.</p>
+<p>Some Instagram post shares arrive without the original link, because Instagram does not include one.
+Those become a card with no link until you supply one.</p>
+
+<h3>A YouTube playlist</h3>
+<p>You give us the link to a playlist of your own. We check it on a schedule — every fifteen minutes
+while it is active, backing off to once a day when nothing changes — and anything new in it becomes a
+save. We read it with our own YouTube API key. We never ask for your Google or YouTube account, and we
+cannot see anything but that one playlist. YouTube does not let anyone read Watch Later or Liked
+videos, including us.</p>
+
+<h3>Links you paste or share</h3>
+<p>You can paste a link into the app, or share one into Allkept from another app's share sheet. That
+link, and any text you sent with it, becomes a save.</p>
+
+<h2 id="processing">5. What we do to a save</h2>
+<ol>
+  <li><strong>We fetch the public preview.</strong> Our server — not your phone — asks the platform's
+    public oEmbed endpoint, or reads the public Open Graph tags on the page, for the title, description,
+    author and thumbnail. The request identifies itself as <code>AllkeptBot/0.1</code>. Because this
+    happens on our server, <strong>the site you saved from never sees your IP address or your
+    device</strong>. If a post is private or the platform refuses, the card simply has no preview.</li>
+  <li><strong>We store the thumbnail</strong> in private storage, so your library still shows a picture
+    after the platform's temporary image link expires.</li>
+  <li><strong>We ask YouTube for a video's shape</strong> — its width and height only — so a vertical
+    video is not drawn inside black bars.</li>
+  <li><strong>We sort it.</strong> See <a href="#ai">section 6</a>.</li>
+  <li><strong>We index it for search.</strong> See <a href="#search">section 7</a>.</li>
+</ol>
+
+<h2 id="ai">6. AI processing</h2>
+<p>To put a save into a category, we send a single request to <strong>OpenAI</strong> containing:</p>
+<ul>
+  <li>the platform and the kind of thing it is,</li>
+  <li>its link,</li>
+  <li>its author,</li>
+  <li>its title, up to 300 characters,</li>
+  <li>its caption or text, up to 1,500 characters, and</li>
+  <li>your own note on it, up to 300 characters.</li>
+</ul>
+<p>We do not send your name, your email, your phone number, your photo, your account identifier, your
+other saves, or anything else about you. The model returns a category, tags, a summary, entities, a
+language code, an actionability label and a confidence score, and that is what we store.</p>
+<p>The model in use today is from OpenAI's GPT-5.6 family; a cheaper tier of the same family is used
+when someone imports a large back catalogue at once. We send these requests with OpenAI's
+<code>store</code> option switched off, which asks OpenAI not to retain the request. We do not control
+OpenAI's own handling of API data — see
+<a href="https://openai.com/policies/privacy-policy" rel="noopener">OpenAI's privacy policy</a>.</p>
+<div class="callout">
+  <p><strong>You can switch the sorting off.</strong> In Settings, turn <strong>Sort saves
+  automatically</strong> off. From that moment no save of yours is sent to the AI provider
+  <em>to be categorised</em>: the check happens on our server, immediately before the call would be
+  made, so it is a promise about what leaves our systems rather than about what the app chooses to ask
+  for. Saves still arrive and still appear in your library; they simply arrive uncategorised.
+  Categories worked out before you switched it off are kept, and deleting a save removes them.</p>
+  <p><strong>Be aware of what that switch does not cover.</strong> Building the search index is a
+  separate step, and it is not affected: the text of a save is still sent to OpenAI to produce its
+  search vector, so that meaning-based search keeps working. If you want nothing at all about a save
+  to reach OpenAI, do not save it — or delete it, which removes its vector with it.
+  the switch also stops search indexing</p>
+</div>
+<p>If we ever change AI provider, we will update this policy before the change goes live.</p>
+<p><strong>Sorting is automated, and it is not a decision about you.</strong> It produces a label on a
+saved link. It has no legal or similarly significant effect on you, and you can overrule any category
+by tapping a different one.</p>
+
+<h2 id="search">7. Search</h2>
+<p>Search works two ways at once. Keyword matching happens entirely inside our database. Meaning-based
+matching needs a numeric vector of what you typed, so <strong>the words you type into the search box
+are sent to OpenAI's embeddings API</strong> to produce that vector.</p>
+<p>We do not store your search terms. The vector is held in memory on the server for at most five
+minutes, so that paging through results and live refreshes do not repeat the call, and then it is
+gone. If OpenAI is unavailable, search quietly falls back to keyword matching and nothing leaves our
+servers at all.</p>
+<p>Every search runs as you, against your own library only. A search cannot return another person's
+saves.</p>
+<p>Building the search index is separate from sorting, and the <strong>Sort saves automatically</strong>
+switch does not turn it off: a save's text is still sent to OpenAI to produce its search vector. See
+the note in <a href="#ai">section 6</a>.</p>
+
+<h2 id="embeds">8. Playing and opening saves</h2>
+<p>When you open a save, Allkept shows the platform's own embed inside the app — Instagram's embed
+page, or YouTube's privacy-enhanced <code>youtube-nocookie.com</code> player. That page is loaded
+<strong>by your phone, directly from Instagram or YouTube</strong>. Those companies therefore see your
+IP address, your device's user agent and the fact that the embed was requested, and they may store
+data inside the app's web view, exactly as they would if you had opened the post in a browser. That is
+their processing, under their own privacy policies, not ours.</p>
+<p>The same applies when you tap through to the original: Instagram and YouTube links open in their own
+apps, and everything else opens in an in-app browser.</p>
+
+<h2 id="push">9. Notifications</h2>
+<p>Allkept can send you a push notification when a save has finished sorting, or when a save needs
+something from you. <strong>Notifications are off until you turn them on.</strong></p>
+<p>The app asks your phone for permission at the moment you turn the switch on in Settings, and never
+before — not on first launch, and not anywhere else. If you refuse, Allkept cannot ask again; only your
+phone's own settings can undo that.</p>
+<h3>What we store</h3>
+<p>When you turn notifications on, we store one row per device: the <strong>push token</strong> your
+phone's operating system issued for this app install, whether the device is iOS or Android, when it was
+registered, when it was last seen, and — if the push service later refuses the token — when and why. A
+push token identifies an app installation, not you, and it cannot be used to read anything on your
+phone.</p>
+<p>The row is keyed on the token, so a phone that signs out and signs in as somebody else moves to the
+new account rather than continuing to announce the previous owner's saves. Turning the switch off, and
+signing out, both delete the row.</p>
+<p>We also store your four switches on your profile: notifications on or off overall, whether to be
+told when a save lands, whether to be told when a save needs you, and whether saves may be sorted
+automatically at all (see <a href="#ai">section 6</a>).</p>
+<h3>What a notification contains, and who sees it on the way</h3>
+<p>A notification carries a short line of text and the identifier of the save it is about, so tapping
+it opens that save. The text names the save — for example, "<em>&lt;the save's title&gt;</em> is in
+Food &amp; recipes" — which means <strong>the title and category of something you saved can appear on
+your lock screen</strong>, and passes through the push infrastructure on the way to you:</p>
+<ul>
+  <li><strong>Expo's push service</strong>, which we send to;</li>
+  <li><strong>Apple's Push Notification service</strong> on an iPhone, or <strong>Google's Firebase
+    Cloud Messaging</strong> on an Android phone, which Expo forwards to.</li>
+</ul>
+<p>On Android, notifications are delivered on a channel set to hide their contents on a locked screen.
+On iPhone, whether a locked screen shows previews is your own iOS setting. If you would rather none of
+this leave your device, leave notifications off — nothing is sent, and no token is stored.</p>
+
+<h2 id="analytics">10. Usage measurement</h2>
+<p>The app records a short, fixed list of things you did, so we can tell whether Allkept is worth
+building. It is stored in our own database against your account — there is no third-party analytics
+service anywhere in the app — and only you and our administrators can read it.</p>
+<p>This is the entire list of events, and everything recorded alongside each one:</p>
+<div class="scroll"><table>
+<tr><th>Event</th><th>What is recorded with it</th></tr>
+<tr><td>App opened; library viewed; save opened</td><td>Nothing but the time</td></tr>
+<tr><td>Search</td><td><strong>How many characters</strong> you typed and how many results came back —
+  <strong>never the words themselves</strong></td></tr>
+<tr><td>Note saved</td><td>How many characters the note was — never the note</td></tr>
+<tr><td>Category changed</td><td>The category it was, and the category you chose</td></tr>
+<tr><td>Original opened</td><td>Which platform</td></tr>
+<tr><td>Save shared out</td><td>Whether it had a link</td></tr>
+<tr><td>Save deleted</td><td>Its processing status</td></tr>
+<tr><td>Link pasted onto a card</td><td>The resulting status</td></tr>
+<tr><td>Instagram linking started, and completed</td><td>Nothing but the time</td></tr>
+<tr><td>Import opened, started, finished or failed</td><td>The size of the file in bytes; how many posts
+  were found, added and skipped; or which step failed</td></tr>
+</table></div>
+<p>This log is append-only: once a row is written, not even we can edit it. It is deleted when you
+delete your account.</p>
+
+<h2 id="basis">11. Why we are allowed to do this</h2>
+<p>If the GDPR applies to you, these are the lawful bases we rely on. If you are in India, see
+<a href="#india">section 18</a>, where consent is the basis for everything.</p>
+<div class="scroll"><table>
+<tr><th>Purpose</th><th>Lawful basis</th></tr>
+<tr><td>Creating and running your account; storing your saves; showing and searching your library;
+  fetching public previews; sorting saves into categories; building the search index</td>
+  <td>Performance of a contract — Article 6(1)(b). This <em>is</em> the service.</td></tr>
+<tr><td>Keeping raw Instagram message events for 30 days so a failed save can be recovered, and keeping
+  a record of the replies we sent</td>
+  <td>Legitimate interests — Article 6(1)(f): running the service reliably and being able to explain
+  what happened to a save</td></tr>
+<tr><td>Usage measurement (section 9)</td>
+  <td>Legitimate interests — Article 6(1)(f): understanding whether the product works, on the minimum
+  possible data and with no third-party trackers
+  our legitimate interests in understanding how Allkept is used and keeping it working</td></tr>
+<tr><td>Profile fields — name, photo, optional phone</td>
+  <td>Performance of a contract — Article 6(1)(b): a name is how the app addresses you and how your
+  library is shown as yours. The photo and phone are yours to add or remove, and nothing depends on
+  them.</td></tr>
+<tr><td>Sending push notifications, and storing the device token that makes them possible</td>
+  <td>Consent — Article 6(1)(a). Notifications are off until you switch them on, and switching them
+  off withdraws it.</td></tr>
+<tr><td>Feedback you choose to send us, and keeping it after your account goes</td>
+  <td>Legitimate interests — Article 6(1)(f): improving the product. The message is detached from you
+  at deletion, and we will delete it outright on request.</td></tr>
+<tr><td>Security, preventing abuse of the Instagram door, and administering the service</td>
+  <td>Legitimate interests — Article 6(1)(f)</td></tr>
+<tr><td>Complying with a legal obligation, when one applies</td><td>Article 6(1)(c)</td></tr>
+</table></div>
+<p>Where we rely on legitimate interests, you have the right to object — see
+<a href="#rights">section 15</a>.</p>
+
+<h2 id="share">12. Who else touches your data</h2>
+<p>We do not sell your personal data and we do not share it for advertising. We do use the following
+service providers, who process data on our instructions:</p>
+<div class="scroll"><table>
+<tr><th>Who</th><th>What they do</th><th>What reaches them</th></tr>
+<tr><td><strong>Supabase</strong></td><td>Our database, authentication, file storage, background jobs
+  and server functions — the entire backend</td><td>Everything described in section 3</td></tr>
+<tr><td><strong>OpenAI</strong></td><td>Sorts saves into categories, and turns saves and search terms
+  into vectors for search</td><td>The content of a save (section 6), the text of its search document,
+  and the words you type into search</td></tr>
+<tr><td><strong>Meta (Instagram)</strong></td><td>Delivers the messages you send to @allkeptapp, tells
+  us your Instagram username, delivers our replies, and serves public post previews and embeds</td>
+  <td>Your Instagram-scoped id, the text of our replies, and the post links we ask for previews of</td></tr>
+<tr><td><strong>Google (YouTube Data API)</strong></td><td>Tells us what is in the playlist you
+  connected, and a video's dimensions</td><td>The playlist id and video ids — <em>not</em> your
+  identity</td></tr>
+<tr><td><strong>Google (Sign in with Google)</strong> and <strong>Apple (Sign in with Apple)</strong></td>
+  <td>Sign you in</td><td>Whatever they show you on their own consent screen; we receive your basic
+  identity and an email address — Apple's private relay address if you chose Hide My Email</td></tr>
+<tr><td><strong>Expo (EAS)</strong></td><td>Builds the app, delivers over-the-air updates, and — only if
+  you turn notifications on — delivers push notifications</td>
+  <td>Your device asks Expo whether a newer version exists. If notifications are on, Expo also receives
+  your push token and the text of each notification.</td></tr>
+<tr><td><strong>Apple Push Notification service</strong> and <strong>Google Firebase Cloud
+  Messaging</strong></td><td>Carry a notification the last step to your phone — only if you turn
+  notifications on</td><td>Your push token and the text of the notification, which names the save</td></tr>
+<tr><td><strong>Apple and Google Play</strong></td><td>Distribute the app</td><td>Whatever their own
+  store terms cover. We receive no personal data from them beyond aggregate figures.</td></tr>
+<tr><td><strong>The sites you save from</strong></td><td>Serve the public preview of the link</td>
+  <td>Our server's request for that public page — never your IP or your device. (Embeds are different:
+  see <a href="#embeds">section 8</a>.)</td></tr>
+<tr><td>Vercel Inc. (static hosting for allkept.app)</td><td>Serves this page and the
+  other pages on allkept.app</td><td>Ordinary web server logs for visits to these pages</td></tr>
+</table></div>
+<p>We may also disclose data where we are legally required to, or to establish or defend legal claims.
+If Allkept is ever sold or transferred, your data would move with it, and we would tell you before it
+did.</p>
+
+<h2 id="transfers">13. Where your data goes</h2>
+<p>We operate from India. Our providers are based outside India and outside the EEA, principally in the
+United States. Using Allkept therefore involves transferring your personal data internationally.</p>
+<p>Our backend is hosted in Mumbai, India (ap-south-1). For
+transfers out of the EEA or the UK we rely on the Standard Contractual Clauses, and the UK Addendum where applicable, as incorporated in each provider's data processing agreement. India's DPDP Act permits transfer to
+any country the Government has not restricted; we will update this section if that changes.</p>
+
+<h2 id="retention">14. How long we keep it</h2>
+<div class="scroll"><table>
+<tr><th>What</th><th>How long</th></tr>
+<tr><td>Raw Instagram message events</td><td><strong>30 days</strong>, then deleted automatically by a
+  job that runs daily</td></tr>
+<tr><td>An uploaded Instagram export file</td><td>Deleted as soon as it has been read, normally within
+  seconds. A file left behind by an interrupted run is removed within an hour.</td></tr>
+<tr><td>Instagram linking codes</td><td>Valid for ten minutes, and replaced whenever you ask for a new
+  one</td></tr>
+<tr><td>Your library, profile, switches, connections, categories, notes, thumbnails, search index and
+  usage log</td><td>Until you delete your account, which removes them immediately</td></tr>
+<tr><td>Confirmation replies we sent into your Instagram thread</td><td>Until you delete your account</td></tr>
+<tr><td>Notification device tokens</td><td>Until you turn notifications off, sign out, or delete your
+  account. A token the push service permanently refuses is marked dead and stops being used, and is
+  removed with your account.</td></tr>
+<tr><td>Feedback you sent us</td><td>Kept after your account goes, with your account link and reply
+  address removed — see 3.11. Ask us and we will delete it outright.
+  24 months</td></tr>
+<tr><td>Administrative audit records — which administrator queued which save for another attempt, and
+  when</td><td>Kept for accountability. They hold the identifier of the save, not your name, email or
+  account id; once your account is deleted, the save it points to no longer exists.
+  12 months</td></tr>
+<tr><td>Server logs and provider backups</td><td>Governed by our providers' own retention
+  backups and server logs are retained by Supabase for up to 7 days</td></tr>
+</table></div>
+
+<h2 id="rights">15. Your rights</h2>
+<p>Wherever you live, you can ask us to:</p>
+<ul>
+  <li><strong>Show you what we hold</strong> about you;</li>
+  <li><strong>Correct</strong> anything wrong — your name, phone and photo are editable in the
+    app at any time, and any category can be changed by tapping a different one;</li>
+  <li><strong>Delete everything</strong> — see <a href="#delete">section 22</a>;</li>
+  <li><strong>Restrict or object to</strong> processing we base on legitimate interests;</li>
+  <li><strong>Receive a copy</strong> of the data you gave us, in a portable form;</li>
+  <li><strong>Withdraw a consent</strong> you gave, without affecting what happened before you withdrew
+    it;</li>
+  <li><strong>Complain</strong> to your data protection authority.</li>
+</ul>
+<div class="note"><p><strong>Please note:</strong> Allkept does not yet have a self-service export
+button. Until it does, email <a href="mailto:hi@allkept.app">hi@allkept.app</a> from the address you
+signed in with and we will assemble a copy by hand. We will respond within
+30 days.</p></div>
+<p>We verify a request by checking that it comes from the email address on the account. We will not act
+on a request we cannot tie to an account.</p>
+
+<h2 id="eea">16. If you are in the EEA or UK</h2>
+<p>You have the rights in Articles 15 to 22 of the GDPR, as set out above, and the right to lodge a
+complaint with your national supervisory authority. Allkept is not offered to users in the European Economic Area or the United Kingdom: we do not make the app available in those App Store or Google Play territories, and we do not target or market it there. Because we do not offer goods or services to people in the EEA or UK, we have not appointed a representative under Article 27 of the GDPR or its UK equivalent. The rights described above are honoured for anyone who asks, wherever they are — if you believe we hold your data, write to us and we will act on your request. We
+have not appointed a Data Protection Officer under Article 37
+no Data Protection Officer is required.</p>
+<p>We do not carry out profiling that produces legal or similarly significant effects. Category sorting
+is automated, but has no such effect — see <a href="#ai">section 6</a>.</p>
+
+<h2 id="us">17. If you are in the United States</h2>
+<p>In the last twelve months we have collected the following categories of personal information under
+the CCPA as amended by the CPRA, for the purposes and from the sources described above:</p>
+<div class="scroll"><table>
+<tr><th>CCPA category</th><th>Collected?</th><th>Examples in Allkept</th></tr>
+<tr><td>Identifiers</td><td>Yes</td><td>Account id, email, name, optional phone, Instagram-scoped id, and
+  a push token if you turn notifications on</td></tr>
+<tr><td>Customer records information (Civ. Code § 1798.80(e))</td><td>Yes</td><td>Name, phone number</td></tr>
+<tr><td>Protected classification characteristics</td><td>No</td><td>—</td></tr>
+<tr><td>Commercial information</td><td>No</td><td>—</td></tr>
+<tr><td>Biometric information</td><td>No</td><td>—</td></tr>
+<tr><td>Internet or other network activity</td><td>Yes</td><td>The in-app events listed in section 9,
+  and the links you save</td></tr>
+<tr><td>Geolocation data</td><td>No</td><td>—</td></tr>
+<tr><td>Audio, visual or similar information</td><td>Yes</td><td>Your profile photo, and thumbnails of
+  the things you saved</td></tr>
+<tr><td>Professional or employment information</td><td>No</td><td>—</td></tr>
+<tr><td>Education information</td><td>No</td><td>—</td></tr>
+<tr><td>Inferences</td><td>Yes</td><td>The category, tags, summary and search vector produced for each
+  save</td></tr>
+<tr><td>Sensitive personal information</td><td>Limited</td><td>The contents of the messages you send to
+  @allkeptapp. We use them only to provide the service you asked for, never to infer anything about you
+  and never for advertising, so no right to limit under § 1798.121 arises.</td></tr>
+</table></div>
+<p><strong>We do not sell personal information, we have never sold it, and we do not share it for
+cross-context behavioural advertising.</strong> We do not knowingly sell or share the personal
+information of anyone under 16.</p>
+<p>You have the right to know, to delete, to correct, and to be free from discrimination for exercising
+those rights. Delete your account in Settings, or email
+<a href="mailto:hi@allkept.app">hi@allkept.app</a>. An authorised agent may act for you with written
+permission we can verify. We offer no financial incentives.</p>
+<p>Residents of other US states with comprehensive privacy laws — including Virginia, Colorado,
+Connecticut, Utah and Texas — have equivalent rights, including the right to appeal a refusal. To
+appeal, reply to our decision at <a href="mailto:hi@allkept.app">hi@allkept.app</a> with the word
+"appeal".</p>
+
+<h2 id="india">18. If you are in India</h2>
+<p>We are the <strong>Data Fiduciary</strong> for your personal data and you are the <strong>Data
+Principal</strong>. This policy is the notice required by section 5 of the Digital Personal Data
+Protection Act, 2023: it says what personal data we process, for what purposes, how to exercise your
+rights, and how to complain.</p>
+<p>We process your personal data on the basis of the consent you give when you create an account,
+connect a door and complete your profile. You may withdraw that consent at any time — by disconnecting
+a door in Settings, or by deleting your account, which withdraws it entirely. Withdrawing consent does
+not make what we did beforehand unlawful; after you withdraw it we stop processing and erase, except
+where a law requires us to keep something.</p>
+<p>Under the DPDP Act you have the right to a summary of your personal data and of our processing of
+it, the right to correction, completion, updating and erasure, the right to nominate someone to
+exercise your rights if you die or become incapacitated, and the right to grievance redressal.</p>
+<h3>Grievance Officer</h3>
+<p>The DPDP Act requires us to publish the contact details of the person who answers your grievances:</p>
+<div class="callout">
+  <p><strong>Grievance Officer:</strong> Pranav Aditya<br>
+  <strong>Designation:</strong> Grievance Officer<br>
+  <strong>Address:</strong> 4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru, Bengaluru Urban District, Karnataka 560102, India<br>
+  <strong>Email:</strong> hi@allkept.app</p>
+  <p>We will acknowledge a grievance within 30 days. You should use this
+  route first; if you are not satisfied, you may then approach the Data Protection Board of India.</p>
+</div>
+<p><strong>Your duties as a Data Principal.</strong> The DPDP Act asks you not to impersonate anyone
+else, not to suppress material information, and not to raise false or frivolous grievances.</p>
+
+<h2 id="children">19. Children</h2>
+<p>Allkept is not for children. You must be at least 18 years
+years old to have an Allkept account, and older where your country requires it.</p>
+<p>We do not knowingly collect personal data from anyone below that age. India's DPDP Act requires
+verifiable parental consent for anyone under 18 and prohibits tracking, behavioural monitoring and
+targeted advertising directed at children — we do none of those things for anyone, at any age. The
+GDPR sets a floor of 16, which member states may lower to 13. In the United States, COPPA applies
+below 13.</p>
+<p>The app has no age-verification step today 18 years. If we learn that
+we hold data about a child below the applicable age, we will delete it. A parent or guardian who
+believes their child has an account should write to
+<a href="mailto:hi@allkept.app">hi@allkept.app</a> and we will remove it.</p>
+
+<h2 id="creators">20. If your post is in someone's library</h2>
+<p>Everything in an Allkept library came from a public post that an Allkept user chose to save. If you
+posted something and it now sits in someone's private library, we hold its public link, its public
+title or caption, your public display name and handle, and a copy of the public thumbnail.</p>
+<p>We fetched all of that from the platform's own public preview. We do not build creator profiles, we
+do not aggregate anything across creators, and no Allkept user can see another user's library.</p>
+<p>If you want your content removed, write to <a href="mailto:hi@allkept.app">hi@allkept.app</a> with
+the link. We will remove the stored preview text and thumbnail from our systems. How we handle the
+underlying saved link is described in the takedown section of the <a href="terms.html">Terms</a>.</p>
+
+<h2 id="security">21. Security</h2>
+<ul>
+  <li>Every table in the database enforces row-level security: a signed-in client can read and write
+    only its own rows. The database enforces this, not the app code.</li>
+  <li>Thumbnails, profile photos and uploaded exports live in private buckets, reachable only through
+    short-lived signed links issued to their owner.</li>
+  <li>Your sign-in session is held in your phone's secure keychain, split into pieces so that a partial
+    write can never be read back as a whole session.</li>
+  <li>Instagram webhook requests are rejected unless they carry a valid Meta signature.</li>
+  <li>Internal background jobs require a shared secret held in the database vault.</li>
+  <li>Administrator access is an explicit, server-held membership list, re-checked on every single
+    read, with an audit record for every action taken.</li>
+  <li>All traffic is over HTTPS.</li>
+</ul>
+<p>A small number of Allkept administrators can see operational data, in order to keep the service
+working. To be precise about what that means, they can see: the email address and profile fields on an
+account; how many saves it holds and which platforms they came from; the connected Instagram handle and
+YouTube playlist; import runs; the in-app event log; any feedback you sent, with the address to reply
+to; and, for a save that <em>failed to process</em>, its title and the error, next to the email of the
+account it belongs to. There is no screen that
+browses a working library, administrators cannot read your notes or your categories, and the only
+action they can take on a save is to queue it for another attempt. Every such action is recorded in an
+audit log.</p>
+<p>No system is perfectly secure. If we discover a breach affecting your personal data, we will notify
+you and the relevant authorities as the law requires: within 72 hours under the GDPR, and to the Data
+Protection Board of India as the DPDP Act requires.</p>
+
+<h2 id="delete">22. Deleting everything</h2>
+<p>Open Allkept, go to <strong>Settings</strong>, and tap <strong>Delete account and everything in
+it</strong>. There is no waiting period and no soft-delete stage. It removes:</p>
+<ul>
+  <li>every save, category, tag, summary, note and search vector;</li>
+  <li>every stored thumbnail, and every profile photo you ever uploaded, including replaced ones;</li>
+  <li>your profile, your switches, your connected Instagram and YouTube doors, and any unused linking
+    codes;</li>
+  <li>every raw Instagram message event and every reply tied to your Instagram-scoped id, including
+    ones still inside the 30-day window;</li>
+  <li>every notification device token registered to you, so no phone can go on ringing;</li>
+  <li>your usage log and your import records; and</li>
+  <li>your login itself.</li>
+</ul>
+<p><strong>The one thing that is kept</strong> is any feedback you sent us, and it is kept without you:
+your account link and the address we could have replied to are removed with everything else. Ask us and
+we will delete the message too. See <a href="#collect">section 3.11</a>.</p>
+<p>If you cannot open the app, email <a href="mailto:hi@allkept.app">hi@allkept.app</a> from the
+address you signed in with and we will do it for you. There are fuller instructions on the
+<a href="delete.html">data deletion page</a>.</p>
+<p>Deleting your Allkept account does not delete anything on Instagram, YouTube or any other platform.
+Copies may persist briefly in our provider's routine backups before they age out
+backups and server logs are retained by Supabase for up to 7 days.</p>
+
+<h2 id="changes">23. Changes to this policy</h2>
+<p>We will change this page when the system changes, and the date at the top will change with it. If a
+change materially affects how we handle your data — a new AI provider, a new category of data, a new
+purpose — we will tell you in the app before it takes effect, and where the law requires consent, we
+will ask for it.</p>
+
+<h2 id="contact">24. Contact</h2>
+<p>Write to <a href="mailto:hi@allkept.app">hi@allkept.app</a> about anything in this policy: a
+question, a request to see or delete your data, or a complaint.</p>
+<p>Allkept is not affiliated with, endorsed by or sponsored by Meta, Instagram, YouTube, Google,
+OpenAI, Apple or any other platform named here.</p>
+
+<footer>
+  <span>Allkept · Privacy Policy · last updated 10 September 2026</span>
+  <span class="l">
+    <a href="index.html">Home</a>
+    <a href="terms.html">Terms</a>
+    <a href="delete.html">Delete your data</a>
+    <a href="mailto:hi@allkept.app">hi@allkept.app</a>
+  </span>
+</footer>
+
+</div>
+</body>
+</html>
