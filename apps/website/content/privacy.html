@@ -86,16 +86,16 @@ sign-in. If your phone still has one, the app can restore it and then attach it 
 account. That stored session lives in your phone's secure keychain, not on our servers.</p>
 
 <h3>3.2 Your profile</h3>
-<p>After signing in, the app asks you to complete a short profile before you can use the library.</p>
+<p>After signing in, the app asks for a display name and nothing else before you can use the library.</p>
 <div class="scroll"><table>
 <tr><th>Field</th><th>Required?</th><th>Notes</th></tr>
 <tr><td>Display name</td><td>Required</td><td>Up to 80 characters. Whatever you choose to type.</td></tr>
-<tr><td>Profile photo</td><td>Required</td><td>A JPEG you pick from your photo library, cropped square
-  and reduced to at most 512&nbsp;&times;&nbsp;512 pixels on your phone before it is uploaded. Kept in
-  a private bucket only your account can read.</td></tr>
-<tr><td>Phone number</td><td>Optional</td><td>Stored in international format if you give one. It is not
-  used to sign you in and we do not send SMS.</td></tr>
+<tr><td>Profile photo</td><td>Optional</td><td>Added from Settings if you want one. A JPEG you pick from
+  your photo library, cropped square and reduced to at most 512&nbsp;&times;&nbsp;512 pixels on your
+  phone before it is uploaded. Kept in a private bucket only your account can read.</td></tr>
 </table></div>
+<p>We do not ask for a phone number. Early test builds did, as an optional field; those numbers were
+deleted on 11 September 2026 and nothing accepts one any more.</p>
 <p>The app asks permission to open your photo library only at the moment you choose a profile photo.
 It never uses your camera or microphone, and it never reads your photo library in the background.</p>
 
@@ -254,7 +254,7 @@ link, and any text you sent with it, becomes a save.</p>
   <li>its caption or text, up to 1,500 characters, and</li>
   <li>your own note on it, up to 300 characters.</li>
 </ul>
-<p>We do not send your name, your email, your phone number, your photo, your account identifier, your
+<p>We do not send your name, your email, your photo, your account identifier, your
 other saves, or anything else about you. The model returns a category, tags, a summary, entities, a
 language code, an actionability label and a confidence score, and that is what we store.</p>
 <p>The model in use today is from OpenAI's GPT-5.6 family; a cheaper tier of the same family is used
@@ -375,10 +375,9 @@ delete your account.</p>
   <td>Legitimate interests — Article 6(1)(f): understanding whether the product works, on the minimum
   possible data and with no third-party trackers
   our legitimate interests in understanding how Allkept is used and keeping it working</td></tr>
-<tr><td>Profile fields — name, photo, optional phone</td>
+<tr><td>Profile fields — name, and a photo if you add one</td>
   <td>Performance of a contract — Article 6(1)(b): a name is how the app addresses you and how your
-  library is shown as yours. The photo and phone are yours to add or remove, and nothing depends on
-  them.</td></tr>
+  library is shown as yours. The photo is yours to add or remove, and nothing depends on it.</td></tr>
 <tr><td>Sending push notifications, and storing the device token that makes them possible</td>
   <td>Consent — Article 6(1)(a). Notifications are off until you switch them on, and switching them
   off withdraws it.</td></tr>
@@ -467,7 +466,7 @@ any country the Government has not restricted; we will update this section if th
 <p>Wherever you live, you can ask us to:</p>
 <ul>
   <li><strong>Show you what we hold</strong> about you;</li>
-  <li><strong>Correct</strong> anything wrong — your name, phone and photo are editable in the
+  <li><strong>Correct</strong> anything wrong — your name and photo are editable in the
     app at any time, and any category can be changed by tapping a different one;</li>
   <li><strong>Delete everything</strong> — see <a href="#delete">section 22</a>;</li>
   <li><strong>Restrict or object to</strong> processing we base on legitimate interests;</li>
@@ -496,17 +495,17 @@ is automated, but has no such effect — see <a href="#ai">section 6</a>.</p>
 the CCPA as amended by the CPRA, for the purposes and from the sources described above:</p>
 <div class="scroll"><table>
 <tr><th>CCPA category</th><th>Collected?</th><th>Examples in Allkept</th></tr>
-<tr><td>Identifiers</td><td>Yes</td><td>Account id, email, name, optional phone, Instagram-scoped id, and
-  a push token if you turn notifications on</td></tr>
-<tr><td>Customer records information (Civ. Code § 1798.80(e))</td><td>Yes</td><td>Name, phone number</td></tr>
+<tr><td>Identifiers</td><td>Yes</td><td>Account id, email, name, Instagram-scoped id, and a push token
+  if you turn notifications on</td></tr>
+<tr><td>Customer records information (Civ. Code § 1798.80(e))</td><td>Yes</td><td>Name</td></tr>
 <tr><td>Protected classification characteristics</td><td>No</td><td>—</td></tr>
 <tr><td>Commercial information</td><td>No</td><td>—</td></tr>
 <tr><td>Biometric information</td><td>No</td><td>—</td></tr>
 <tr><td>Internet or other network activity</td><td>Yes</td><td>The in-app events listed in section 9,
   and the links you save</td></tr>
 <tr><td>Geolocation data</td><td>No</td><td>—</td></tr>
-<tr><td>Audio, visual or similar information</td><td>Yes</td><td>Your profile photo, and thumbnails of
-  the things you saved</td></tr>
+<tr><td>Audio, visual or similar information</td><td>Yes</td><td>Your profile photo if you added one, and
+  thumbnails of the things you saved</td></tr>
 <tr><td>Professional or employment information</td><td>No</td><td>—</td></tr>
 <tr><td>Education information</td><td>No</td><td>—</td></tr>
 <tr><td>Inferences</td><td>Yes</td><td>The category, tags, summary and search vector produced for each
