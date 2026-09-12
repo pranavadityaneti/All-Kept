@@ -66,7 +66,11 @@ export function embedUrl(item: EmbeddableItem): string | null {
     // music, which we never start, so TikTok keeps that control. `muted=1` is never sent: TikTok
     // documents it as locking the volume for the viewer, not merely starting quiet.
     const photo = item.kind === "image";
-    return `https://www.tiktok.com/player/v1/${item.externalId}?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=${photo ? 1 : 0}`;
+    // autoplay defaults to 0 in TikTok's player, so it must be asked in its own words as well as
+    // driven through its message API — without this a TikTok save waited for a tap. Never asked of a
+    // photo post, whose "play" means starting its music.
+    const autoplay = photo ? "" : "&autoplay=1";
+    return `https://www.tiktok.com/player/v1/${item.externalId}?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=${photo ? 1 : 0}${autoplay}`;
   }
   return null;
 }

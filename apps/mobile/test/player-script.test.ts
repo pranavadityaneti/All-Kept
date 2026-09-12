@@ -67,3 +67,19 @@ describe("when an on-screen video should be playing", () => {
     expect(shouldPlay({ ...backgrounded, appForeground: true })).toBe(true);
   });
 });
+
+describe("driving TikTok's player", () => {
+  it("speaks TikTok's own control language rather than reaching for a video element", () => {
+    // TikTok's player is an application, not a bare <video>: it is asked to play, pause and unmute
+    // through the messages it documents. Touching the element did nothing, which is why a TikTok
+    // save needed a tap to start and went on playing after it was scrolled away from.
+    for (const method of ["'play'", "'pause'", "'mute'", "'unMute'"]) {
+      expect(PLAYER_SCRIPT).toContain(method);
+    }
+    expect(PLAYER_SCRIPT).toContain("postMessage");
+    expect(PLAYER_SCRIPT).toContain("onPlayerReady");
+  });
+  it("knows when it is inside that player", () => {
+    expect(PLAYER_SCRIPT).toContain("player/v1");
+  });
+});

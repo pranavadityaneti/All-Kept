@@ -120,7 +120,16 @@ describe("a saved TikTok", () => {
   const VIDEO = "https://www.tiktok.com/@tiktok/video/7532540099460893983";
   it("plays through TikTok's player, looping, with our own sound button in charge", () => {
     const url = embedUrl(item({ platform: "tiktok", kind: "short_video", canonicalUrl: VIDEO, externalId: "7532540099460893983" }));
-    expect(url).toBe("https://www.tiktok.com/player/v1/7532540099460893983?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=0");
+    expect(url).toBe("https://www.tiktok.com/player/v1/7532540099460893983?loop=1&description=0&music_info=0&fullscreen_button=0&native_context_menu=0&volume_control=0&autoplay=1");
+  });
+  it("asks TikTok's player to start on its own, in TikTok's own words", () => {
+    // The player defaults to autoplay=0, so without this it waits for a tap however we drive it.
+    const url = embedUrl(item({ platform: "tiktok", kind: "short_video", canonicalUrl: VIDEO, externalId: "7532540099460893983" }))!;
+    expect(url).toContain("autoplay=1");
+  });
+  it("does not ask a photo post to autoplay, since its sound is music we never start", () => {
+    const url = embedUrl(item({ platform: "tiktok", kind: "image", canonicalUrl: "https://www.tiktok.com/@tiktok/photo/7400000000000000000", externalId: "7400000000000000000" }))!;
+    expect(url).not.toContain("autoplay=1");
   });
   it("opens a photo post in the same player and leaves TikTok's volume control to its music", () => {
     const url = embedUrl(item({ platform: "tiktok", kind: "image", canonicalUrl: "https://www.tiktok.com/@tiktok/photo/7400000000000000000", externalId: "7400000000000000000" }));

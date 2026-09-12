@@ -15,13 +15,31 @@ export const PLAYER_SCRIPT = `
     // Whatever Allkept asked for before this script ran, if the state command got here first.
     var state = window.__allkeptDesired || { playing: false, muted: true };
     var video = null;
+    // TikTok's player is an application, not a bare <video>. It is told what to do through the
+    // messages it documents; reaching for the element inside it does nothing at all.
+    var isTikTokPlayer = /(^|\.)tiktok\.com$/.test(location.hostname) && location.pathname.indexOf('/player/v1') === 0;
+    var tiktokReady = false;
+    function tellTikTok(type, value) {
+      window.postMessage({ 'x-tiktok-player': true, type: type, value: value }, '*');
+    }
     var forced = false;
     var started = Date.now();
     function post(m) { window.ReactNativeWebView.postMessage(JSON.stringify(m)); }
     function report() {
+      if (isTikTokPlayer) {
+        // The speaker belongs on a TikTok video too, and its player is the only thing that knows.
+        post({ kind: 'player', hasVideo: tiktokReady, playing: tiktokReady && state.playing, muted: state.muted });
+        return;
+      }
       post({ kind: 'player', hasVideo: !!video, playing: !!video && !video.paused && !video.ended, muted: !video || video.muted });
     }
     function apply() {
+      if (isTikTokPlayer) {
+        if (!tiktokReady) { return; }
+        tellTikTok(state.muted ? 'mute' : 'unMute');
+        tellTikTok(state.playing ? 'play' : 'pause');
+        return;
+      }
       if (!video) { return; }
       if (video.muted !== state.muted) { video.muted = state.muted; }
       if (state.playing) {
@@ -51,7 +69,6 @@ export const PLAYER_SCRIPT = `
     window.__allkeptPlayer = {
       set: function (next) { state = next; apply(); report(); }
     };
-    if (!look()) {
       var observer = new MutationObserver(function () { if (look()) { observer.disconnect(); } });
       observer.observe(document.documentElement, { childList: true, subtree: true });
       var poll = setInterval(function () {
@@ -61,7 +78,12 @@ export const PLAYER_SCRIPT = `
     window.addEventListener('message', function (e) {
       var d = e.data;
       if (typeof d === 'string') { try { d = JSON.parse(d); } catch (err) { return; } }
-      if (d && d['x-tiktok-player']) { post({ kind: 'tiktok', type: d.type, value: d.value }); }
+      if (d && d['x-tiktok-player']) {
+        // Its own replies come back through this same channel. Ready means it will now take orders,
+        // and it is the only moment we get, since there is no element to watch for.
+        if (d.type === 'onPlayerReady') { tiktokReady = true; apply(); report(); }
+        post({ kind: 'tiktok', type: d.type, value: d.value });
+      }
     });
     true;
   })();
