@@ -489,3 +489,44 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
 - **Still to prove:** YouTube (autoplay params, mute-icon agreement), full screen, background reset,
   a no-video save shows no speaker. Then the gated steps: sweeper deploy + EAS builds + TikTok on a
   VPN device (all need Pranav's Yes).
+
+## 12 Sep 2026 (later still) — Autoplay verified on the simulator; two fixes from testing
+- Simulator proof (Pranav tapped, committed clean bundle, screenshots): Instagram reel and YouTube
+  Short both autoplay muted; speaker toggles sound; the choice carries across a flick; a no-video
+  save (web link) shows no speaker and no full-screen button (full-screen path is embed-gated and
+  code-verified intact).
+- **Bug found + fixed (`c71562c`):** iOS pauses a WebView's video on background and never resumes it;
+  the state effect only re-fired on an input change and none changed on foreground, so a returning
+  reel sat paused with the play button inert (only the speaker, flipping `sound`, revived it). Made
+  app-foreground a first-class input via `shouldPlay({active,loaded,paused,appForeground})` in
+  player-script.ts, wired into EmbedPlayer. Root cause traced from Metro logs, not guessed.
+- **Design refinement (`09495d4`), Pranav's call:** sound was resetting on *any* background, muting a
+  video after a 1-second glance at a notification. Now absence-based: `RESET_AFTER_MS = 30_000` in
+  sound.ts — under 30s keeps the unmute, longer resets. Confirmed on device-sim: quick glance keeps
+  audio (iOS restores WebView audio on programmatic resume), long absence resets.
+- Tests: 115 app + 177 function green, tsc clean throughout. Temporary diagnostics added then
+  stripped both times.
+- **Still gated on Pranav's Yes:** `sweeper` deploy (TikTok-aspect enrich), EAS iOS+Android builds,
+  then TikTok autoplay/photo-carousel/removed-post checks on the Surfshark (US VPN) phone.
+
+## 12 Sep 2026 (night) — Reddit: the post renders, the gap is closed, thumbnails are not possible
+- **Shipped (`c303f84`, `ab4c680`, `3d91e8d`):** Reddit posts and comments render through Reddit's
+  official embed (`redditmedia.com`), replacing an empty "Nothing to play" box; a saved comment
+  embeds as the comment, not its thread. **Verified by Pranav on the simulator** — text post and a
+  video post both render, white gap gone.
+- **Bug found and fixed (mine, from the embed work):** the frame sat in 514pt of white because
+  `measure()` matched none of its selectors (Reddit's container is `<shreddit-app>`) and then fell
+  back to `documentElement.scrollHeight` — the frame we had just set, read back to us, so it could
+  never shrink. Now it matches the element and prefers `body.scrollHeight`. Real height: 316.
+  Diagnosed from live candidate-height reporting, not guessed.
+- **Also:** Reddit's post page is no longer asked for a preview — a guaranteed 403 on every save.
+- **Thumbnails: not possible from where enrichment runs.** oEmbed carries no picture (image posts
+  too); the post page is 403 to the server and a JS bot-challenge to every non-browser client,
+  including a phone's fetch; the embed page has no og tags or selftext. The per-post **feed** does
+  carry a 640px thumbnail — and answers the **database's** pg_net 200 — but answers the **edge
+  runtime 403**. Built, tested green, failed in production, instrumented, and reverted. Full
+  evidence in ERRORS.md. Untried: pg_net proxy (ugly), phone-side fetch (needs a build).
+- **Honesty note:** I called thumbnails "blocked", then "achievable", before the deploy-time evidence
+  settled it. Unit tests cannot see an egress difference — verify this class with a real deploy.
+- Deployed on Pranav's Yes: sweeper v24→v26, reprocess-item v16. Tests: 178 function + 120 app green.
+
