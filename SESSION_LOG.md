@@ -549,3 +549,20 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
   opened. Client write-grant on `items` deliberately left closed; no migration.
 - Tests: 182 function + 129 app green, tsc clean. Next: EAS builds (gated on Pranav's Yes).
 
+## 12 Sep 2026 (~08:30) — Builds attempted, all three gates external; stopped for sleep
+- **Shipped and committed since the last entry:** `dea9d81` enrich settles through one exit (an
+  Instagram login wall was returning "ready" with nothing — that is why a save read
+  "Instagram · Instagram"); `54e7080` the squarer shape language and the save screen's rearranged
+  buttons. 184 function + 129 app tests green, tsc clean, tree clean.
+- **Builds: none succeeded.** Android errored in the "Configure expo-updates" phase; iOS needs an
+  interactive run for the share extension's profile and then hit a wrong capability sync. All three
+  are recorded in ERRORS.md with the leads. **Nothing is broken in the app's code** — the same
+  commit runs on the simulator.
+- **Open, for when Pranav is up:** (1) read the Android "Configure expo-updates" log; (2) declare
+  Apple sign-in in app.config.ts, or build with EXPO_NO_CAPABILITY_SYNC=1; (3) then TestFlight
+  upload and the APK. **No App Review submission** — the listing is unfinished and TikTok playback
+  is still unverified.
+- **Also still open:** Instagram gives us nothing through oEmbed (no author, no picture) and its page
+  fallback is intermittent — likely Meta App Review (item 8), or the phone-side route we built for
+  Reddit. Decision, not a bug.
+
