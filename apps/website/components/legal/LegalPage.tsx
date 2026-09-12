@@ -1,10 +1,15 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { LegalShell } from './LegalShell';
 
-// The fragments in content/ are our own static files, copied byte-for-byte from the website-pages
-// branch where scripts/verify-content.mjs proved them verbatim against the approved docs/ pages.
-// They are imported at build time (no filesystem on the Workers runtime) and rendered as HTML so
-// the text stays exactly what Pranav approved; nothing user-supplied ever reaches this component.
-export function LegalPage({ html }: { html: string }) {
+export type LegalName = 'privacy' | 'terms' | 'delete';
+
+// The fragments in content/ are our own static files, extracted from the approved docs/ pages and
+// proved verbatim by scripts/verify-content.mjs. Read here at build time (the site is a static
+// export, so this never runs on a request) and rendered as HTML so the text stays exactly what
+// Pranav approved; nothing user-supplied ever reaches this component.
+export function LegalPage({ name }: { name: LegalName }) {
+  const html = readFileSync(path.join(process.cwd(), 'content', `${name}.html`), 'utf8');
   return (
     <LegalShell>
       <article className="legal" dangerouslySetInnerHTML={{ __html: html }} />

@@ -1,5 +1,10 @@
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {};
+// Five static pages and nothing to render on request: the landing page, and the policy pages read
+// from content/ at build time. A static export makes that a build-time guarantee — any server-only
+// feature would fail the build instead of quietly shipping.
+const nextConfig: NextConfig = {
+  output: 'export',
+};
 
 export default nextConfig;
