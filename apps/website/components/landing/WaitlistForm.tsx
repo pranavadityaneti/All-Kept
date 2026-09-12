@@ -1,11 +1,19 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
+import type { WaitlistConfig } from '@/lib/waitlist';
 
 type Status = 'idle' | 'sending' | 'ok' | 'err';
 
-// Posts to /api/interest — the D1-backed waitlist already in this app.
-export function WaitlistForm() {
+type Props = {
+  config: WaitlistConfig;
+  /** Which pill this is — the server records it, so we learn which one converts. */
+  source: 'site-hero' | 'site-footer';
+};
+
+// Posts to the `waitlist` edge function. The function owns validation, the duplicate check and
+// the rate limit; this side only shows what it says.
+export function WaitlistForm({ config, source }: Props) {
   const id = useId();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
@@ -15,26 +23,38 @@ export function WaitlistForm() {
     e.preventDefault();
     if (status === 'sending') return;
 
+    if (!config) {
+      setStatus('err');
+      setMessage('Sign-up isn’t set up on this build yet. Email hi@allkept.app instead.');
+      return;
+    }
+
     const form = e.currentTarget;
     const website = (form.elements.namedItem('website') as HTMLInputElement | null)?.value ?? '';
 
     setStatus('sending');
     setMessage('');
     try {
-      const res = await fetch('/api/interest', {
+      const res = await fetch(config.endpoint, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, website }),
+        headers: {
+          'content-type': 'application/json',
+          apikey: config.anonKey,
+          authorization: `Bearer ${config.anonKey}`,
+        },
+        body: JSON.stringify({ email, website, source }),
       });
-      const data = (await res.json().catch(() => null)) as { message?: string } | null;
+      const data = (await res.json().catch(() => null)) as
+        | { joined?: boolean; message?: string; error?: string }
+        | null;
       if (!res.ok) {
         setStatus('err');
-        setMessage(data?.message ?? 'Something went wrong. Try again.');
+        setMessage(data?.error ?? 'Something went wrong. Try again.');
         return;
       }
       setStatus('ok');
       setMessage(data?.message ?? 'You’re in.');
-      setEmail('');
+      if (data?.joined) setEmail('');
     } catch {
       setStatus('err');
       setMessage('Could not reach the server. Try again.');
