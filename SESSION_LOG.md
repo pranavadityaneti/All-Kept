@@ -470,3 +470,22 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
   discarded with the session.
 - Open threads: none for Allkept. forlater.md unchanged (10 queued items, all blocked or awaiting a
   decision; surfaced in chat).
+
+
+## 12 Sep 2026 (later) — Autoplay + TikTok playback: built and simulator-proven (Instagram)
+- Spec `7d817e9`, plan `3fd35c9`. Tasks 1-7 committed inline, TDD, 110 app tests + 177 function tests green, tsc clean:
+  `9439c85` embed (TikTok player address, isPlayerAddress, initialAspect, kind on EmbeddableItem),
+  `b5e0517` sound (session memory, resets on background), `88b0e37` player-script (one script per embed),
+  `51cca27` item (aspect fallback to oEmbed frame size), `a0942d6` EmbedPlayer (autoplay + speaker),
+  `53a1ad4` ItemDetail (initialAspect + unplayable fallback), `c867b6e` enrich (TikTok aspect from oEmbed),
+  `671a731` YouTube autoplay params + early-state handoff.
+- **Root-cause fix found on the simulator (`b542edc`):** Instagram ships reels with `preload="none"`,
+  so inside a WebView a gesture-less `play()` never fetched the video — it sat on the poster at
+  `readyState 0` (the play-button frame). Fix: force `preload='auto'; load()` once when we first want
+  it playing. Diagnostic instrumentation added then stripped; a regression test guards the fix.
+- **Simulator proof (Pranav tapped, Instagram):** reel autoplays muted; speaker toggles sound; the
+  choice carries to the next save on flick; the save left behind pauses. Confirmed via Metro's own
+  per-frame playback-time logs (t advancing in real time) and screenshots.
+- **Still to prove:** YouTube (autoplay params, mute-icon agreement), full screen, background reset,
+  a no-video save shows no speaker. Then the gated steps: sweeper deploy + EAS builds + TikTok on a
+  VPN device (all need Pranav's Yes).
