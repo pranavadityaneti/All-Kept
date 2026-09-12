@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Allkept — Unit economics</title>
+<style>
+ :root{--ink:#15131c;--muted:#5d5a68;--line:#e3e0ea;--accent:#6d4aff;--bad:#c0392b;--good:#1e7a4d;--soft:#f7f6fb}
+ *{box-sizing:border-box} body{margin:0;background:#fff;color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+ main{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+ h1{font-size:30px;line-height:1.2;margin:0 0 6px} h2{font-size:21px;margin:40px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+ h3{font-size:17px;margin:24px 0 8px}
+ .sub{color:var(--muted);margin:0 0 22px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:15px}
+ th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+ th{font-weight:600;background:var(--soft)} td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+ .big{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:18px 0}
+ .big .fig{font-size:30px;font-weight:600;letter-spacing:-.5px}
+ .plain{background:#f4f1ff;border-left:3px solid var(--accent);padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+ .warn{background:#fdf3f2;border-left:3px solid var(--bad);padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+ code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:13.5px}
+ .tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px;vertical-align:middle}
+ .measured{background:#e7f5ee;color:var(--good)} .unver{background:#fdf1e3;color:#9a5b12}
+ ul{margin:8px 0 8px 20px;padding:0} li{margin:5px 0}
+ @media print{body{font-size:12pt} main{max-width:none;padding:0} h2{page-break-after:avoid} table{page-break-inside:avoid} .big,.plain,.warn{border:1px solid #999}}
+</style></head><body><main>
+
+<h1>Allkept — unit economics</h1>
+<p class="sub">12 September 2026 · costs per platform, per user, per save and per AI read.
+Figures marked <span class="tag measured">measured</span> come from the live database; <span class="tag unver">unverified</span> means I could not confirm it against a vendor's own page and it should be checked before it is relied on.</p>
+
+<h2>The short version</h2>
+<div class="big">
+  <div class="fig">$0.0051 per save</div>
+  <div>That is the whole marginal cost of a save today, and <strong>roughly 99% of it is one AI call</strong>. Storage, database, bandwidth and function invocations are rounding errors beside it.</div>
+</div>
+<div class="plain"><strong>In plain English.</strong> Every time somebody saves something, it costs you about half a cent — and almost all of that is asking the model to sort it. Nothing else you are paying for scales with usage in a way that matters yet. So the only number worth managing is the cost of one sorting call, and the only question that matters is who is making those calls for free.</div>
+
+<h2>Where the money actually goes, per save</h2>
+<p>Measured across <strong>131 real classifications</strong> of the 132 saves in the database: an average of <strong>629 input tokens and 129 output tokens</strong> per save, on <code>gpt-5.6-sol</code> at $4 / $20 per million tokens (the table in <code>pipeline.ts</code>, checked against both vendors on 8 Sep).</p>
+<table>
+  <tr><th>Component</th><th>What it is</th><th class="n">Per save</th><th class="n">Share</th></tr>
+  <tr><td>AI classification <span class="tag measured">measured</span></td><td>Category, tags, summary, entities — one call</td><td class="n">$0.005096</td><td class="n">~99%</td></tr>
+  <tr><td>Search embedding <span class="tag unver">unverified</span></td><td><code>text-embedding-3-small</code>, text clipped to 6 kB</td><td class="n">~$0.00001</td><td class="n">&lt;1%</td></tr>
+  <tr><td>Thumbnail storage <span class="tag measured">measured</span></td><td>62 kB average, 166 files holding 10.2 MB</td><td class="n">~$0.0000013/mo</td><td class="n">~0%</td></tr>
+  <tr><td>Database <span class="tag measured">measured</span></td><td>21 MB total for 132 saves and 1,429 events</td><td class="n">~0</td><td class="n">~0%</td></tr>
+  <tr><td>Edge invocations</td><td>2 per save (save, then the region-pinned worker)</td><td class="n">~0 in plan</td><td class="n">~0%</td></tr>
+</table>
+<p><strong>The embedding price is the one number I could not verify</strong> and it is listed from memory. It does not change any conclusion here: even if it were ten times what I have assumed it would still be under 2% of a save.</p>
+
+<h2>Per platform — it barely matters</h2>
+<p>The obvious guess is that a long Reddit post costs more to sort than a bare Instagram link. Measured, it does not:</p>
+<table>
+  <tr><th>Platform</th><th class="n">Saves</th><th class="n">Avg input tokens</th><th class="n">Avg output</th><th class="n">Cost per save</th></tr>
+  <tr><td>Instagram</td><td class="n">54</td><td class="n">691</td><td class="n">137</td><td class="n">$0.00550</td></tr>
+  <tr><td>Reddit</td><td class="n">4</td><td class="n">622</td><td class="n">141</td><td class="n">$0.00531</td></tr>
+  <tr><td>Web</td><td class="n">5</td><td class="n">634</td><td class="n">112</td><td class="n">$0.00478</td></tr>
+  <tr><td>TikTok</td><td class="n">10</td><td class="n">590</td><td class="n">121</td><td class="n">$0.00478</td></tr>
+  <tr><td>YouTube</td><td class="n">57</td><td class="n">578</td><td class="n">123</td><td class="n">$0.00477</td></tr>
+  <tr><td>Note</td><td class="n">1</td><td class="n">542</td><td class="n">101</td><td class="n">$0.00419</td></tr>
+</table>
+<p>The spread is <strong>±10%</strong> — Instagram is the dearest only because its captions are the longest. <strong>Platform is not a cost lever.</strong> What differs between platforms is work that is free: which endpoint is fetched, and how often it refuses.</p>
+<div class="plain"><strong>In plain English.</strong> It costs you the same to keep a TikTok as a Reddit post. Do not pick which platforms to support on cost grounds — pick on whether the door works and whether people use it.</div>
+
+<h2>Per user, per month</h2>
+<p>There is no real usage data yet — one account, 132 saves — so this is a rate card, not a forecast. Pick the row that matches what you think a real person does.</p>
+<table>
+  <tr><th>Saves per month</th><th class="n">gpt-5.6-sol (now)</th><th class="n">gpt-5.6-terra</th><th class="n">gpt-5.6-luna</th></tr>
+  <tr><td>30 — a couple a week</td><td class="n">$0.15</td><td class="n">$0.08</td><td class="n">$0.008</td></tr>
+  <tr><td>100 — a few a day</td><td class="n">$0.51</td><td class="n">$0.28</td><td class="n">$0.028</td></tr>
+  <tr><td>300 — heavy</td><td class="n">$1.53</td><td class="n">$0.84</td><td class="n">$0.084</td></tr>
+</table>
+<p>Against a paid US tier at almost any sane price, the gross margin is comfortable even for a heavy user. <strong>Paid users are not the problem.</strong></p>
+
+<h2>The number that should decide something</h2>
+<div class="warn">
+<p><strong>India is free, and free users cost the same as paid ones.</strong> The cost follows engagement, not revenue, and there is nothing between a keen user and your bill.</p>
+<table>
+  <tr><th>10,000 Indian users at 100 saves/month</th><th class="n">Monthly cost</th><th class="n">Yearly</th></tr>
+  <tr><td>Current model — <code>gpt-5.6-sol</code></td><td class="n">$5,096</td><td class="n">$61,000</td></tr>
+  <tr><td>Bulk model — <code>gpt-5.6-terra</code></td><td class="n">$2,806</td><td class="n">$34,000</td></tr>
+  <tr><td>Cheapest — <code>gpt-5.6-luna</code></td><td class="n">$281</td><td class="n">$3,400</td></tr>
+</table>
+<p>Same product, same behaviour, <strong>an 18× spread</strong> depending only on which model sorts a free user's save.</p>
+</div>
+<div class="plain"><strong>In plain English.</strong> Ten thousand enthusiastic Indian users could cost you sixty thousand dollars a year, or three thousand, and the difference is one setting. That is worth a deliberate decision rather than a default.</div>
+
+<h2>The levers, in the order I would pull them</h2>
+<ol>
+  <li><strong>A cheaper model for the free tier.</strong> The machinery already exists — <code>classifiers.ts</code> has a bulk tier (<code>BULK_MODEL = gpt-5.6-terra</code>) used for imported back catalogues, chosen per call. Routing free-tier saves through a cheaper tier is a configuration change, not a rebuild. <em>What it costs you:</em> sorting quality, which nobody has measured. Worth an honest A/B on real saves before committing.</li>
+  <li><strong>Shorten the input.</strong> 629 input tokens carries the prompt plus the save's text. The prompt is paid for on every single save; trimming it is a permanent saving with no quality cost, and caching it would cut the input charge tenfold on vendors that support it.</li>
+  <li><strong>Do not sort twice.</strong> "Sort again" re-runs a full call, and a failed classification retries up to five times. Both are correct behaviours, both cost again — worth a cap per item per period.</li>
+  <li><strong>A monthly ceiling for free accounts.</strong> Unpopular, but it turns an unbounded liability into a known one.</li>
+</ol>
+
+<h2>Fixed costs — what you pay before anybody saves anything</h2>
+<p>These do not move with usage, and I have not verified the plans you are actually on.</p>
+<table>
+  <tr><th>Item</th><th class="n">Cost</th><th>Note</th></tr>
+  <tr><td>Apple Developer Program</td><td class="n">$99/yr</td><td>Required to ship at all</td></tr>
+  <tr><td>Google Play</td><td class="n">$25 once</td><td>Organisation account</td></tr>
+  <tr><td>Supabase <span class="tag unver">unverified</span></td><td class="n">$0 or $25/mo</td><td>Which plan you are on is the single biggest unknown here. 21 MB of database and 10 MB of storage sit inside any free tier today.</td></tr>
+  <tr><td>Vercel <span class="tag unver">unverified</span></td><td class="n">likely $0</td><td>The website is a static export</td></tr>
+  <tr><td>Domain</td><td class="n">~$15/yr</td><td>allkept.app</td></tr>
+  <tr><td>EAS build minutes <span class="tag unver">unverified</span></td><td class="n">?</td><td>Free tier has a monthly build allowance; this week alone burned several</td></tr>
+  <tr><td>YouTube Data API</td><td class="n">$0</td><td>Free quota, 10,000 units/day. A playlist poll costs a handful of units, so the ceiling is thousands of playlists.</td></tr>
+  <tr><td>oEmbed / embeds (all platforms)</td><td class="n">$0</td><td>Public, tokenless — the deliberate design choice that keeps this column short</td></tr>
+</table>
+<p>Two standing costs exist <em>with zero users</em>: the sweeper runs every 5 minutes and the playlist poll every 15. Both are inside any plan's invocation allowance, but they are the floor.</p>
+
+<h2>What would change these numbers</h2>
+<ul>
+  <li><strong>X bookmarks</strong> would be the first door with a real per-use price: $0.005 per Post read, roughly $2.50 for a typical import — <em>per user, on a free action</em>. That is as much as a whole month of sorting for that person. See <code>whatsapp-x-plan.html</code>.</li>
+  <li><strong>WhatsApp</strong> would add none: inbound messages and in-window replies are free.</li>
+  <li><strong>Anything on the home screen that spends an AI call</strong> — "ask your saves", smarter resurfacing — converts a per-save cost into a per-visit one, which is a different and worse shape. The home-screen plan flags this.</li>
+</ul>
+
+<h2>What I could not verify</h2>
+<ul>
+  <li>The embedding price. Immaterial at any plausible value, but it is from memory.</li>
+  <li>Which Supabase plan the project is on, and therefore whether storage, egress and invocations are billed at all today.</li>
+  <li>EAS build allowance and whether this week's builds have exceeded it.</li>
+  <li>Real usage. Everything per-user here is a rate card against assumed behaviour; one test account is not data.</li>
+</ul>
+
+<p class="sub" style="margin-top:34px">Allkept · unit economics · 12 September 2026 · companion to <code>us-launch-legal-plan.html</code> and <code>whatsapp-x-plan.html</code>.</p>
+</main></body></html>
