@@ -151,3 +151,32 @@ describe("addresses the player may stay on", () => {
     expect(isPlayerAddress("https://www.youtube.com/watch?v=WfJPBVXPt8k")).toBe(false);
   });
 });
+
+describe("a saved Reddit post", () => {
+  const POST = "https://www.reddit.com/r/SaaS/comments/1wdmycf/";
+  const COMMENT = "https://www.reddit.com/r/SaaS/comments/abc123/comment/def456/";
+  it("shows the post itself through Reddit's own embed", () => {
+    // Reddit hands us a title and an author and nothing else: no picture, and its post pages answer
+    // our server 403, so the usual link-preview fallback can never fill the card. Its official embed
+    // can, and the phone loading it is an ordinary client rather than a datacentre.
+    const url = embedUrl(item({ platform: "reddit", kind: "post", canonicalUrl: POST, externalId: "1wdmycf" }))!;
+    expect(url).toContain("https://www.redditmedia.com/r/SaaS/comments/1wdmycf/");
+    expect(url).toContain("embed=true");
+  });
+  it("shows a saved comment as the comment, not the thread it sits under", () => {
+    const url = embedUrl(item({ platform: "reddit", kind: "post", canonicalUrl: COMMENT, externalId: "abc123_def456" }))!;
+    expect(url).toContain("/r/SaaS/comments/abc123/comment/def456/");
+    expect(url).toContain("embed=true");
+  });
+  it("has nothing to show for a subreddit or a link that is not a post", () => {
+    expect(embedUrl(item({ platform: "reddit", kind: "post", canonicalUrl: "https://www.reddit.com/r/SaaS" }))).toBeNull();
+    expect(embedUrl(item({ platform: "reddit", kind: "post", canonicalUrl: null, sourceUrl: null }))).toBeNull();
+  });
+  it("is a card that reports its own height, not a player filling a box", () => {
+    expect(embedFit("reddit")).toBe("card");
+  });
+  it("is a page the player may stay on", () => {
+    expect(isPlayerAddress("https://www.redditmedia.com/r/SaaS/comments/1wdmycf/?embed=true&theme=light")).toBe(true);
+    expect(isPlayerAddress("https://www.reddit.com/r/SaaS/comments/1wdmycf/")).toBe(false);
+  });
+});

@@ -11,6 +11,8 @@ export interface EmbeddableItem {
 }
 
 const INSTAGRAM = /instagram\.com\/(reel|reels|p|tv)\/([A-Za-z0-9_-]+)/i;
+/** A Reddit post, or one comment under it. Anything else on reddit.com is not a thing to embed. */
+const REDDIT_POST = /reddit\.com(\/(?:r|user)\/[^/]+\/comments\/[A-Za-z0-9]+(?:\/comment\/[A-Za-z0-9]+)?)\/?/i;
 
 /** The site the embeds are told they are running on. Our own, so it is honest and stable. */
 export const EMBED_ORIGIN = "https://pranavadityaneti.github.io";
@@ -47,6 +49,16 @@ export function embedUrl(item: EmbeddableItem): string | null {
     // autoplay and mute are asked of YouTube in its own words too, so its controls start in
     // agreement with the state the player script applies; the speaker button decides the sound.
     return `https://www.youtube-nocookie.com/embed/${item.externalId}?playsinline=1&rel=0&autoplay=1&mute=1&origin=${encodeURIComponent(EMBED_ORIGIN)}`;
+  }
+  if (item.platform === "reddit") {
+    // Reddit gives us a title and an author through oEmbed and nothing more — no picture — and it
+    // answers our server 403 for the post page itself, so the link-preview fallback can never fill
+    // the card either. Its own embed is the only way to show the post, and the phone loading it is
+    // an ordinary client rather than the datacentre Reddit refuses.
+    const m = REDDIT_POST.exec(item.canonicalUrl ?? item.sourceUrl ?? "");
+    if (!m) return null;
+    // Light to match the frame the embed is drawn in, as Instagram's card is.
+    return `https://www.redditmedia.com${m[1]}/?embed=true&theme=light&showtitle=true&showmedia=true`;
   }
   if (item.platform === "tiktok" && item.externalId && (item.kind === "short_video" || item.kind === "video" || item.kind === "image")) {
     // TikTok's Embed Player. loop, and none of the chrome we draw ourselves. Our speaker button owns
@@ -89,7 +101,7 @@ export function initialAspect(platform: string, kind: string): number {
  * save with instagram.com. Every provider's embed page has "/embed" in it; TikTok's player does not.
  */
 export function isPlayerAddress(url: string): boolean {
-  return /\/embed\b/i.test(url) || /^https:\/\/www\.tiktok\.com\/player\/v1\//i.test(url);
+  return /\/embed\b/i.test(url) || /^https:\/\/www\.tiktok\.com\/player\/v1\//i.test(url) || /^https:\/\/www\.redditmedia\.com\//i.test(url);
 }
 
 /**
