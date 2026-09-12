@@ -1,533 +1,296 @@
-'use client';
+import { Countdown } from '@/components/landing/Countdown';
+import { SlotImage } from '@/components/landing/SlotImage';
+import { WaitlistForm } from '@/components/landing/WaitlistForm';
 
-import { ArrowRight, Bookmark, Check, Search, Sparkles } from 'lucide-react';
-import Image from 'next/image';
-import { type SyntheticEvent, useEffect, useState } from 'react';
+// ── Hero tile field ──────────────────────────────────────────────────────
+// Positions are artboard pixels on a 1280×980 canvas; `--u` scales them.
+type Platform = 'ig' | 'yt' | 'tt' | 'pi' | 'x' | 'rd';
 
-const LAUNCH_DATE = new Date('2026-09-21T00:00:00+05:30');
-const DEFAULT_GOAL = 500;
-const productModes = [
-  { id: 'save', label: 'Save' },
-  { id: 'sort', label: 'Sort' },
-  { id: 'find', label: 'Find' },
-  { id: 'ask', label: 'Ask AI' },
-] as const;
+const PLATFORM = {
+  ig: { icon: '/design/platforms/instagram.png', name: 'Instagram', ph: 'Instagram reel' },
+  yt: { icon: '/design/platforms/youtube.png', name: 'YouTube', ph: 'YouTube video' },
+  tt: { icon: '/design/platforms/tiktok.png', name: 'TikTok', ph: 'TikTok' },
+  pi: { icon: '/design/platforms/pinterest.png', name: 'Pinterest', ph: 'Pin' },
+  x: { icon: '/design/platforms/x.png', name: 'X', ph: 'X post' },
+  rd: { icon: '/design/platforms/reddit.png', name: 'Reddit', ph: 'Reddit post' },
+} satisfies Record<Platform, { icon: string; name: string; ph: string }>;
 
-type ProductMode = (typeof productModes)[number]['id'];
-type InterestResponse = {
-  count: number;
-  goal: number;
-  joined?: boolean;
-  message?: string;
+type Tile = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  p: Platform;
+  o: number;
+  cat: string;
+  /** image basename under /design/saves, or 'post' for a text card */
+  img: string;
+  /** a picture dropped into this slot inside Claude Design — wins over `img` */
+  slot?: string;
 };
 
-type ModelContext = {
-  registerTool: (
-    tool: {
-      name: string;
-      title: string;
-      description: string;
-      inputSchema: object;
-      annotations: { readOnlyHint: boolean; untrustedContentHint: boolean };
-      execute: (input: unknown) => Promise<unknown>;
-    },
-    options?: { signal: AbortSignal },
-  ) => void | Promise<void>;
-};
+const TILES: Tile[] = [
+  { x: 90, y: 350, w: 160, h: 270, p: 'ig', o: 0.95, cat: 'Food', img: 'acai' },
+  { x: 280, y: 430, w: 150, h: 250, p: 'tt', o: 0.8, cat: 'Travel', img: 'alpine' },
+  { x: 860, y: 420, w: 150, h: 250, p: 'ig', o: 0.8, cat: 'Places', img: 'coast', slot: 'c-2' },
+  { x: 1020, y: 330, w: 210, h: 278, p: 'x', o: 0.8, cat: 'News', img: 'news-x' },
+  { x: 60, y: 670, w: 250, h: 150, p: 'yt', o: 0.75, cat: 'Tech', img: 'desk', slot: 'c-4' },
+  { x: 340, y: 730, w: 150, h: 200, p: 'ig', o: 0.85, cat: 'Food', img: 'pasta' },
+  { x: 810, y: 720, w: 160, h: 200, p: 'rd', o: 0.85, cat: 'Tech', img: 'post' },
+  { x: 1010, y: 650, w: 230, h: 150, p: 'pi', o: 0.75, cat: 'Travel', img: 'alpine' },
+];
 
-async function requestInterest(email: string, website = '') {
-  const response = await fetch('/api/interest', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, website }),
-  });
-  const data = (await response.json()) as InterestResponse;
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Please check your email and try again.');
-  }
-
-  return data;
-}
-
-function daysUntilLaunch() {
-  return Math.max(
-    0,
-    Math.ceil((LAUNCH_DATE.getTime() - Date.now()) / 86_400_000),
-  );
-}
-
-function PlatformLogo({ name }: { name: string }) {
+function RedditCard() {
   return (
-    <span className="platform-mark" aria-hidden="true">
-      <Image src={`/platforms/${name}.png`} alt="" width={32} height={32} />
-    </span>
-  );
-}
-
-function PhoneScreen({ mode }: { mode: ProductMode }) {
-  return (
-    <div className="phone-screen">
-      <div className="phone-status">
-        <span>9:41</span>
-        <span className="phone-island" />
-        <span>●●●</span>
+    <div className="reddit-card">
+      <div className="reddit-head">
+        <span className="reddit-avatar" />
+        <span className="reddit-sub">r/technology</span>
+        <span>· 5h</span>
       </div>
-      <div className="phone-appbar">
-        <div className="mini-brand">
-          <span className="mini-mark" />
-          <span>Allkept</span>
-        </div>
-        <span className="avatar">P</span>
-      </div>
-
-      {mode === 'save' && (
-        <div className="phone-view phone-library">
-          <p className="phone-kicker">Today</p>
-          <h2>Saved for you</h2>
-          <div className="phone-search">
-            <Search size={13} />
-            <span>Search all your saves</span>
-          </div>
-          <div className="save-grid">
-            <article className="save-tile tile-travel">
-              <PlatformLogo name="instagram" />
-              <strong>Slow days in Goa</strong>
-              <span>Travel</span>
-            </article>
-            <article className="save-tile tile-food">
-              <PlatformLogo name="youtube" />
-              <strong>15-min pasta</strong>
-              <span>Recipes</span>
-            </article>
-            <article className="save-tile tile-style">
-              <PlatformLogo name="reddit" />
-              <strong>Tokyo thrift map</strong>
-              <span>Style</span>
-            </article>
-            <article className="save-tile tile-work">
-              <PlatformLogo name="slack" />
-              <strong>Launch notes</strong>
-              <span>Work</span>
-            </article>
-          </div>
-        </div>
-      )}
-
-      {mode === 'sort' && (
-        <div className="phone-view">
-          <p className="phone-kicker">Sorted automatically</p>
-          <h2>Your saves, tidied up.</h2>
-          <div className="collection-list">
-            <article>
-              <span className="collection-art travel-art">✦</span>
-              <div>
-                <strong>Goa trip</strong>
-                <small>18 saves · 5 sources</small>
-              </div>
-              <span>›</span>
-            </article>
-            <article>
-              <span className="collection-art food-art">◌</span>
-              <div>
-                <strong>Things to cook</strong>
-                <small>31 saves · 4 sources</small>
-              </div>
-              <span>›</span>
-            </article>
-            <article>
-              <span className="collection-art ideas-art">⌁</span>
-              <div>
-                <strong>Big ideas</strong>
-                <small>12 saves · 6 sources</small>
-              </div>
-              <span>›</span>
-            </article>
-          </div>
-          <div className="sorting-note">
-            <Sparkles size={14} /> 4 new saves sorted
-          </div>
-        </div>
-      )}
-
-      {mode === 'find' && (
-        <div className="phone-view">
-          <p className="phone-kicker">Search everything</p>
-          <h2>Find the thing.</h2>
-          <div className="phone-search phone-search-active">
-            <Search size={13} />
-            <strong>quiet cafés in Goa</strong>
-          </div>
-          <p className="result-count">
-            7 results across Instagram, Reddit + web
-          </p>
-          <div className="search-results">
-            <article>
-              <span className="result-thumb tile-travel" />
-              <div>
-                <strong>3 cafés worth the detour</strong>
-                <small>Instagram · Fontainhas</small>
-              </div>
-            </article>
-            <article>
-              <span className="result-thumb tile-food" />
-              <div>
-                <strong>South Goa work-friendly cafés</strong>
-                <small>Reddit · saved in Travel</small>
-              </div>
-            </article>
-          </div>
-        </div>
-      )}
-
-      {mode === 'ask' && (
-        <div className="phone-view phone-ai">
-          <div className="ai-orb">
-            <Sparkles size={22} />
-          </div>
-          <p className="phone-kicker">Ask Allkept</p>
-          <h2>Your saves have answers.</h2>
-          <div className="chat-bubble user-bubble">
-            What were those cafés I saved for Goa?
-          </div>
-          <div className="chat-bubble ai-bubble">
-            You saved 7. Mojigao and Cafe Bodega match your quiet, outdoor brief
-            best.
-            <div className="source-row">
-              <PlatformLogo name="instagram" />
-              <PlatformLogo name="reddit" />
-              <span>7 sources</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="phone-tabs" aria-hidden="true">
-        <span className={mode === 'save' ? 'active' : ''}>
-          <Bookmark size={14} />
-        </span>
-        <span className={mode === 'sort' ? 'active' : ''}>▦</span>
-        <span className={mode === 'find' ? 'active' : ''}>
-          <Search size={14} />
-        </span>
-        <span className={mode === 'ask' ? 'active' : ''}>
-          <Sparkles size={14} />
-        </span>
-      </div>
+      <p className="reddit-body">
+        My saved posts are a graveyard. What do you use to actually search them?
+      </p>
+      <div className="reddit-foot">2.1k upvotes · 348 comments</div>
     </div>
   );
 }
 
-export default function Home() {
-  const [mode, setMode] = useState<ProductMode>('save');
-  const [email, setEmail] = useState('');
-  const [website, setWebsite] = useState('');
-  const [count, setCount] = useState(0);
-  const [goal, setGoal] = useState(DEFAULT_GOAL);
-  const [status, setStatus] = useState<
-    'idle' | 'loading' | 'success' | 'error'
-  >('idle');
-  const [message, setMessage] = useState('');
-  const [remainingDays] = useState(daysUntilLaunch);
-  const progress = Math.min(100, Math.max(0, (count / goal) * 100));
-
-  useEffect(() => {
-    fetch('/api/interest')
-      .then((response) => response.json() as Promise<InterestResponse>)
-      .then((data) => {
-        setCount(data.count);
-        setGoal(data.goal);
-      })
-      .catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setMode((current) => {
-        const index = productModes.findIndex((item) => item.id === current);
-        return productModes[(index + 1) % productModes.length].id;
-      });
-    }, 4200);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const modelContext = (
-      document as Document & { modelContext?: ModelContext }
-    ).modelContext;
-    if (!modelContext?.registerTool) return;
-
-    const lifecycle = new AbortController();
-    void Promise.resolve(
-      modelContext.registerTool(
-        {
-          name: 'join_launch_interest',
-          title: 'Join Allkept launch interest',
-          description:
-            'Add an email address to the Allkept September 21 launch list and update the visible interest meter.',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              email: {
-                type: 'string',
-                format: 'email',
-                maxLength: 254,
-                description: 'Email address to notify when Allkept launches.',
-              },
-            },
-            required: ['email'],
-            additionalProperties: false,
-          },
-          annotations: { readOnlyHint: false, untrustedContentHint: false },
-          async execute(input) {
-            const emailValue =
-              typeof input === 'object' &&
-              input !== null &&
-              'email' in input &&
-              typeof input.email === 'string'
-                ? input.email
-                : '';
-
-            if (!emailValue.trim())
-              throw new Error('A valid email is required.');
-            setStatus('loading');
-            setMessage('');
-
-            try {
-              const data = await requestInterest(emailValue);
-              setCount(data.count);
-              setGoal(data.goal);
-              setStatus('success');
-              setMessage(
-                data.message || 'You’re in. We’ll let you know first.',
-              );
-              return {
-                joined: data.joined,
-                message: data.message,
-                interestedPeople: data.count,
-                goal: data.goal,
-              };
-            } catch (error) {
-              setStatus('error');
-              setMessage(
-                error instanceof Error
-                  ? error.message
-                  : 'Something went wrong.',
-              );
-              throw error;
-            }
-          },
-        },
-        { signal: lifecycle.signal },
-      ),
-    ).catch(() => undefined);
-
-    return () => lifecycle.abort();
-  }, []);
-
-  async function submitInterest(event: SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setStatus('loading');
-    setMessage('');
-    try {
-      const data = await requestInterest(email, website);
-      setCount(data.count);
-      setGoal(data.goal);
-      setStatus('success');
-      setMessage(data.message || 'You’re in. We’ll let you know first.');
-      setEmail('');
-    } catch (error) {
-      setStatus('error');
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'Something went wrong. Try again.',
-      );
-    }
-  }
-
+function TileField() {
   return (
-    <main>
-      <nav className="site-nav" aria-label="Main navigation">
-        <a className="brand" href="#top" aria-label="Allkept home">
-          <Image
-            src="/brand/allkept-horizontal.png"
-            alt="Allkept"
-            width={1538}
-            height={610}
-            priority
-          />
-        </a>
-        <div className="nav-journey" aria-label="What Allkept does">
-          {productModes.map((item, index) => (
-            <span key={item.id}>
-              <b>{index + 1}</b>
-              {item.label}
-            </span>
-          ))}
-        </div>
-        <a className="nav-cta" href="#early-access">
-          Join early access
-        </a>
-      </nav>
-
-      <section className="hero" id="top">
-        <div className="hero-copy">
-          <div className="launch-pill">
-            <span className="live-dot" />
-            Launching September 21
-            <span className="pill-divider" />
-            {remainingDays} days
-          </div>
-          <h1>
-            Everything you save.
-            <br />
-            <em>Ready when you need it.</em>
-          </h1>
-          <p className="hero-subcopy">
-            Save from any app. Allkept sorts it, finds it and helps you use it.
-          </p>
-
-          <div className="interest-card" id="early-access">
-            <form onSubmit={submitInterest} className="interest-form">
-              <label htmlFor="interest-email">Get launch access</label>
-              <div className="form-row">
-                <input
-                  id="interest-email"
-                  type="email"
-                  name="email"
-                  placeholder="you@email.com"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                  maxLength={254}
-                  disabled={status === 'loading'}
+    <div className="tiles" aria-hidden="true">
+      {TILES.map((t, i) => {
+        const platform = PLATFORM[t.p];
+        return (
+          <div
+            key={i}
+            className="tile"
+            style={{
+              left: `calc(${t.x} * var(--u))`,
+              top: `calc(${t.y} * var(--u))`,
+              width: `calc(${t.w} * var(--u))`,
+              height: `calc(${t.h} * var(--u))`,
+              opacity: t.o,
+            }}
+          >
+            <div className="tile-card">
+              {t.img === 'post' ? (
+                <RedditCard />
+              ) : (
+                <SlotImage
+                  src={t.slot ? `/design/slots/${t.slot}.png` : `/design/saves/${t.img}.png`}
+                  alt=""
+                  placeholder={platform.ph}
                 />
-                <input
-                  className="honeypot"
-                  name="website"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  aria-hidden="true"
-                  value={website}
-                  onChange={(event) => setWebsite(event.target.value)}
-                />
-                <button type="submit" disabled={status === 'loading'}>
-                  {status === 'loading' ? 'Joining…' : 'I’m interested'}
-                  {status === 'success' ? (
-                    <Check size={17} />
-                  ) : (
-                    <ArrowRight size={17} />
-                  )}
-                </button>
-              </div>
-            </form>
-            <div
-              className="interest-meter"
-              aria-label={`${count} of ${goal} early access spots claimed`}
-            >
-              <div className="meter-copy">
-                <span>
-                  <strong>{count.toLocaleString()}</strong> people are
-                  interested
-                </span>
-                <span>{goal.toLocaleString()} launch circle</span>
-              </div>
-              <div className="meter-track">
-                <span style={{ width: `${progress}%` }} />
+              )}
+              <div className="tile-badge">
+                <SlotImage src={platform.icon} alt="" placeholder="" />
               </div>
             </div>
-            <p className={`form-message ${status}`} aria-live="polite">
-              {message || 'One email on launch day. No noise.'}
+            <span className="tile-tag">{t.cat}</span>
+          </div>
+        );
+      })}
+      <div className="tiles-fade" />
+    </div>
+  );
+}
+
+function Phone({
+  className,
+  screen,
+}: {
+  className: string;
+  screen: React.ReactNode;
+}) {
+  return (
+    <div className={`phone ${className}`}>
+      <div className="phone-shadow" />
+      <div className="phone-screen">{screen}</div>
+      <img
+        className="phone-frame"
+        src="/design/iphone-16-pro.png"
+        alt=""
+        width={872}
+        height={1804}
+      />
+    </div>
+  );
+}
+
+// The string-and-button closure that ties the library panel to the footer.
+function StringAndButtons() {
+  return (
+    <svg
+      className="string"
+      width="240"
+      height="320"
+      viewBox="0 0 240 320"
+      aria-hidden="true"
+    >
+      <defs>
+        <filter id="discShadow" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#14162a" floodOpacity="0.22" />
+        </filter>
+        <filter id="threadShadow" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="2" stdDeviation="1.6" floodColor="#14162a" floodOpacity="0.3" />
+        </filter>
+        <filter id="grainNoise" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncA type="discrete" tableValues="0 0.35 0 0.5 0 0.2 0.45 0" />
+          </feComponentTransfer>
+        </filter>
+        <pattern id="discGrain" width="120" height="120" patternUnits="userSpaceOnUse">
+          <rect width="120" height="120" fill="transparent" />
+          <rect width="120" height="120" filter="url(#grainNoise)" opacity="0.55" />
+        </pattern>
+        <radialGradient id="discSheen" cx="34%" cy="24%" r="80%">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.34" />
+          <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.05" />
+          <stop offset="1" stopColor="#2b2741" stopOpacity="0.2" />
+        </radialGradient>
+      </defs>
+      <g filter="url(#threadShadow)">
+        <path d="M118 70 C136 120 96 170 104 244" fill="none" stroke="var(--color-accent-700)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M104 70 C64 116 158 168 122 244" fill="none" stroke="var(--color-accent-700)" strokeWidth="3.4" strokeLinecap="round" />
+        <path d="M112 68 C168 118 58 172 100 246" fill="none" stroke="var(--color-accent-600)" strokeWidth="3.4" strokeLinecap="round" />
+        <path d="M115 72 C160 120 66 170 104 242" fill="none" stroke="var(--color-accent-500)" strokeWidth="1.3" strokeLinecap="round" opacity=".8" />
+        <path d="M107 72 C70 118 152 168 118 242" fill="none" stroke="var(--color-accent-500)" strokeWidth="1.3" strokeLinecap="round" opacity=".8" />
+      </g>
+      {[70, 244].map((cy) => (
+        <g key={cy} filter="url(#discShadow)">
+          <circle cx="110" cy={cy} r="46" fill="var(--color-accent-500)" />
+          <circle cx="110" cy={cy} r="46" fill="url(#discGrain)" />
+          <circle cx="110" cy={cy} r="46" fill="url(#discSheen)" />
+          <circle cx="110" cy={cy} r="46" fill="none" stroke="var(--color-accent-700)" strokeWidth="1" opacity=".55" />
+          <circle cx="110" cy={cy} r="13.5" fill="var(--color-neutral-900)" />
+          <circle cx="110" cy={cy} r="13.5" fill="none" stroke="var(--color-accent-200)" strokeWidth="3" />
+          <circle cx="110" cy={cy} r="10" fill="none" stroke="#000000" strokeWidth="1" opacity=".35" />
+        </g>
+      ))}
+      <g filter="url(#threadShadow)">
+        <path d="M110 70 C116 82 114 98 118 112" fill="none" stroke="var(--color-accent-700)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M110 70 C104 84 106 96 104 112" fill="none" stroke="var(--color-accent-600)" strokeWidth="3.2" strokeLinecap="round" />
+        <path d="M110 244 C104 232 106 216 104 202" fill="none" stroke="var(--color-accent-700)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M110 244 C118 230 116 216 120 202" fill="none" stroke="var(--color-accent-600)" strokeWidth="3.2" strokeLinecap="round" />
+        <path d="M110 244 C126 250 138 246 140 236" fill="none" stroke="var(--color-accent-700)" strokeWidth="2.6" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+export default function Home() {
+  return (
+    <main className="page">
+      {/* ── Hero ── */}
+      <div className="stage">
+        <section className="hero" id="top">
+          <TileField />
+
+          <nav className="nav" aria-label="Main navigation">
+            <a className="brand" href="#top" aria-label="All Kept home">
+              <img className="brand-mark" src="/design/mark.png" alt="" width={256} height={256} />
+              <img className="brand-word" src="/design/wordmark-light.png" alt="All Kept" width={519} height={150} />
+            </a>
+            <div className="launch">
+              <span className="launch-label">Launching 21 September 2026</span>
+              <Countdown />
+            </div>
+          </nav>
+
+          <div className="hero-copy">
+            <h1>Your saves, sorted.</h1>
+            <p className="hero-sub">
+              One library for everything you save across Instagram, YouTube and the web. AI files
+              it under food, travel, places and more. You just search.
+            </p>
+            <WaitlistForm />
+            <p className="hero-note">Coming to iOS and Android</p>
+          </div>
+
+          <Phone
+            className="phone-hero"
+            screen={
+              <SlotImage
+                src="/design/slots/c-screen.png"
+                alt=""
+                placeholder="Instagram reel screenshot"
+              />
+            }
+          />
+        </section>
+      </div>
+
+      {/* ── Library — the light band runs edge to edge; its contents stay in the stage ── */}
+      <section className="library" aria-labelledby="library-title">
+        <div className="stage library-stage">
+          <div className="library-head">
+            <span className="kicker">Your library</span>
+            <h2 id="library-title">
+              <img src="/design/wordmark-dark.png" alt="All Kept" width={519} height={150} /> turns
+              saves into a library.
+            </h2>
+            <p className="library-sub">
+              Filter the whole library in a tap:{' '}
+              <span className="hl">
+                <span className="hl-ink" aria-hidden="true" />
+                <span className="hl-text">by platform, type, category and status</span>
+              </span>
+              .
             </p>
           </div>
-        </div>
 
-        <div className="product-story" aria-label="Allkept product preview">
-          <div
-            className="story-switcher"
-            role="tablist"
-            aria-label="Preview Allkept features"
-          >
-            {productModes.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={mode === item.id}
-                onClick={() => setMode(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <article className="float-card float-card-one">
-            <span className="float-cover cover-goa" />
-            <div>
-              <PlatformLogo name="instagram" />
-              <strong>Quiet cafés in Goa</strong>
-              <small>saved to Travel</small>
-            </div>
-          </article>
-          <article className="float-card float-card-two">
-            <span className="float-cover cover-food" />
-            <div>
-              <PlatformLogo name="youtube" />
-              <strong>The perfect 15-min pasta</strong>
-              <small>sorted into Recipes</small>
-            </div>
-          </article>
-          <article className="float-card float-card-three">
-            <span className="float-cover cover-style" />
-            <div>
-              <PlatformLogo name="reddit" />
-              <strong>Tokyo thrift map</strong>
-              <small>found in 0.2 seconds</small>
-            </div>
-          </article>
-          <article className="float-card float-card-four">
-            <span className="float-cover cover-work" />
-            <div>
-              <PlatformLogo name="slack" />
-              <strong>Launch research</strong>
-              <small>ready to ask AI</small>
-            </div>
-          </article>
-          <div className="phone-photo">
-            <Image
-              src="/hero-hand-phone.png"
-              alt="A hand holding a phone showing the Allkept app"
-              width={1024}
-              height={1536}
-              priority
-            />
-            <div className="screen-overlay">
-              <PhoneScreen mode={mode} />
-            </div>
-          </div>
+          <Phone
+            className="phone-library"
+            screen={
+              <SlotImage
+                src="/design/app-library-shot.png"
+                alt="All Kept library screen"
+                placeholder="All Kept library screen"
+              />
+            }
+          />
         </div>
       </section>
 
-      <footer
-        className="source-ribbon"
-        aria-label="Save from supported platforms"
-      >
-        <span>Save from</span>
-        {[
-          'instagram',
-          'youtube',
-          'tiktok',
-          'x',
-          'reddit',
-          'facebook',
-          'slack',
-          'whatsapp',
-        ].map((name) => (
-          <PlatformLogo key={name} name={name} />
-        ))}
-        <span>+ anywhere on the web</span>
-      </footer>
+      {/* ── Footer ── */}
+      <div className="stage">
+        <footer className="footer">
+          <StringAndButtons />
+
+          <div className="footer-main">
+            <div className="footer-brand">
+              <span className="footer-lockup">
+                <img className="mark" src="/design/mark.png" alt="" width={256} height={256} />
+                <img className="word" src="/design/wordmark-light.png" alt="All Kept" width={519} height={150} />
+              </span>
+              <p>
+                Everything you save, in one place you can actually search. Captured automatically,
+                sorted by AI, found in seconds.
+              </p>
+            </div>
+
+            <div className="footer-join">
+              <h3>Join the waitlist</h3>
+              <p>One email when it opens. Nothing else.</p>
+              <WaitlistForm />
+            </div>
+          </div>
+
+          <div className="footer-rule" />
+
+          <div className="footer-bar">
+            <span>© 2026 All Kept</span>
+            <div className="footer-links">
+              <a href="/privacy">Privacy</a>
+              <a href="/terms">Terms</a>
+              <a href="mailto:hi@allkept.app">hi@allkept.app</a>
+            </div>
+          </div>
+        </footer>
+      </div>
     </main>
   );
 }
