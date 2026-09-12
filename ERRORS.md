@@ -140,3 +140,31 @@ Recipe: `initdb -D <dir> -A trust -U postgres` → `pg_ctl -D <dir> -o "-p 54999
 → create `anon`, `authenticated`, `service_role` (bypassrls) roles → `\i` the migration → exercise
 constraints and RLS under `set role` → stop and delete. Extensions the real stack has (pg_cron,
 pg_net, vector) are absent, so this only works for migrations that need none of them.
+
+## 2026-09-12 — Two Claude sessions in one repo: `git reset --soft HEAD~1` undid the *other* one's commit
+A second session was working in this repo at the same time (landing page, privacy policy). I
+noticed one commit of mine had bundled two changes and reached for the usual fix:
+`git reset --soft HEAD~1`, re-stage, commit twice. Between my commit and my reset, the other
+session committed. So `HEAD~1` was no longer my commit — it was theirs, and the reset destroyed it.
+My next `git commit` then re-committed *their* staged content under *my* message.
+- **What didn't work:** `git reset HEAD <path>` to unstage the deletions. The path was a directory
+  that no longer existed on disk, so the pathspec matched nothing and the command aborted with
+  `fatal:` — leaving everything still staged, which is why the next commit swept it all up. A
+  `git rm` has already staged its deletions; `git add` afterwards adds to that, it does not replace it.
+- **What the fix would have been:** the reflog still held their commit (`git reflog` → `commit:
+  privacy: …`), its parent was my commit, and its tree was identical to my bogus one — so
+  `git reset --soft <their hash>` would have restored it with its original hash, message and
+  author, working tree untouched.
+- **Why it was not applied:** by the time I had the hash, the other session had committed *again*
+  on top of my mislabelled commit. Resetting would now discard that newer commit too, and rewriting
+  the mislabelled one means rebasing a live session's work onto a new hash while it is still
+  running. **No content was lost in any of this** — every change is in the tree and in the right
+  order. What is wrong is one commit *message*: it describes category work and contains a
+  privacy-policy edit. That was left standing deliberately: a wrong message is cheap, and rewriting
+  history under a concurrently committing session is not.
+- **Remember:** in a repo where another session may be committing, `HEAD~1` is not a stable
+  reference to "my last commit" — resolve the hash first (`git log --format=%H -1`) and reset to
+  that, or do not rewrite history at all. A bundled commit is cosmetic; deleting somebody else's
+  commit is not. Check `git log --oneline -1` immediately before any history rewrite.
+- **Also:** to split a commit whose deletions are already staged, unstage by hash
+  (`git restore --staged --source=HEAD~1 -- <path>`) rather than by a path that may no longer exist.

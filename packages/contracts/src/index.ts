@@ -128,3 +128,8 @@ export interface ImportProgress { found: number; added: number; ready: number; w
 /** Direct share/paste of an Instagram permalink. requestId is reused when retrying a save. */
 export interface SaveLinkRequest { text: string; requestId: string }
 export type SaveLinkResponse = CaptureResult;
+
+/** waitlist: where a sign-up came from. The site sends the two pills; the rest are reserved. */
+export type WaitlistSource = "site-hero" | "site-footer" | "site" | "app" | "instagram";
+/** waitlist: 200 both ways — a repeat sign-up is not an error to the person typing it. */
+export interface WaitlistResponse { joined: boolean; message: string }

@@ -760,3 +760,33 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
     (navigates to Waitlist, sees metrics + 25 rows). vitest 7/7, tsc clean.
 - **Gates pending Pranav's Yes:** `db push` (migration), `functions deploy admin-dashboard`,
   commit on main, and `git push` (Vercel auto-deploys admin-web from git = a deploy).
+
+## 12 Sep 2026 (~21:00) — Gates 3–4 done; task 5 (policy) done on both branches
+- `4e63216` on main (waitlist table/function/admin page) and **pushed — the push carried 110
+  commits**, everything since `17d6810`; disclosed to Pranav. Only 4 touched apps/admin; no
+  migration pending on the hosted DB after the push. Vercel admin-web deploys from that.
+- Live admin verified via RPC: your own sign-up (`pranav@myemipay.com`, hero pill) is row 1.
+- **Task 5:** `c9d3681` on main — docs/privacy.html gets 3.13 "The launch waitlist on
+  allkept.app" (Pranav's sentence + the two extra stored fields, source and browser name, so the
+  "complete list" claim stays true — approved), date → 12 Sep. Also, on Pranav's ask, **gender
+  removed everywhere** (profile table, rights list, CCPA table) and the profile-fields lawful-basis
+  row — which had carried the placeholder note "we no longer collect gender" since e0049d3 — now
+  states Article 6(1)(b). `e490a8f` on website — docs/ synced from main, extractor + verifier
+  brought over, content re-extracted, verifier green. Live /privacy: 0 "gender", paragraph present.
+- **Still stale in the policy (flagged, not touched):** phone "optional" and photo "required" in
+  3.2 / 11 / 17 — `20260911110000_photo_optional_no_phone.sql` made the photo optional (set from
+  Settings) and stopped collecting phone entirely. Same class as gender.
+- Neither commit pushed. Website branch still needs the Vercel project (task 6).
+
+## 12 Sep 2026 (~21:30) — Phone/photo fixed in the policy; main pushed; a history tangle to know about
+- `ddc2947` on main + `7f4336e` on website: the profile is a name, photo optional (from Settings),
+  no phone — fixed in 3.2, the lawful-basis row, the rights list, the CCPA tables and the "not sent
+  to the AI provider" list. Verifier green; live /privacy confirms.
+- **History note for whoever reads this next:** my earlier `c9d3681` (waitlist 3.13 + gender out) is
+  NOT in main's history. The categories session ran `git reset HEAD~1` to redo its own commit while
+  `c9d3681` was HEAD, so the reset unpicked mine; its re-made `43cd1ed` then absorbed my
+  docs/privacy.html diff. Content intact (verified: HEAD's policy has 3.13 and zero "gender"), only
+  the attribution is off. Left as-is on purpose — rewriting a live session's commits in a shared
+  checkout is riskier than a misfiled diff. Two sessions share this checkout: `git reset` moves
+  whatever HEAD is at that moment, not "your" commit.
+- Pushed main (7 commits: 2 privacy, 5 categories/home). None touch apps/admin.
