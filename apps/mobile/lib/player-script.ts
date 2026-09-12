@@ -69,6 +69,7 @@ export const PLAYER_SCRIPT = `
     window.__allkeptPlayer = {
       set: function (next) { state = next; apply(); report(); }
     };
+    if (isTikTokPlayer) { report(); } else if (!look()) {
       var observer = new MutationObserver(function () { if (look()) { observer.disconnect(); } });
       observer.observe(document.documentElement, { childList: true, subtree: true });
       var poll = setInterval(function () {

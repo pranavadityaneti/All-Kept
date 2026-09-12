@@ -2,6 +2,20 @@ import { describe, expect, it } from "vitest";
 import { PLAYER_SCRIPT, VIDEO_WAIT_MS, shouldPlay, stateScript, readPlayerMessage } from "../lib/player-script";
 
 describe("the script every player runs", () => {
+  it("is valid JavaScript", () => {
+    // A script that does not parse does nothing at all, and says nothing about it: no autoplay, no
+    // pause when you scroll away, no speaker — on every platform at once. That is exactly how a
+    // stray edit shipped once, so the shape of the thing is checked, not just its contents.
+    expect(() => new Function(PLAYER_SCRIPT)).not.toThrow();
+  });
+  it("every command it is sent is valid JavaScript too", () => {
+    for (const playing of [true, false]) {
+      for (const muted of [true, false]) {
+        expect(() => new Function(stateScript({ playing, muted })), `playing=${playing} muted=${muted}`).not.toThrow();
+      }
+    }
+  });
+
   it("waits for a video to appear rather than assuming one, for a bounded time", () => {
     expect(PLAYER_SCRIPT).toContain("MutationObserver");
     expect(PLAYER_SCRIPT).toContain(String(VIDEO_WAIT_MS));
