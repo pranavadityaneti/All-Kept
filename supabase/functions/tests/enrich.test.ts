@@ -540,3 +540,27 @@ Deno.test("Reddit's post page is never asked for a preview: it answers our serve
   assertEquals(seen.filter((u) => u === REDDIT_POST).length, 0);
 });
 
+Deno.test("a post whose provider says nothing and whose page is a login wall is not a ready card", async () => {
+  // Instagram's oEmbed answers 200 with only a provider name, so the page is asked — and Instagram
+  // serves a login wall, whose own address is not the post's. That exit used to return before the
+  // nothing-learned rule could see it, leaving a save called "ready" with nothing on it at all.
+  const f = fakeFetch({
+    "https://graph.facebook.com/v23.0/instagram_oembed": () => Response.json({ provider_name: "Instagram", type: "rich" }),
+    "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response(
+      '<html><head><meta property="og:url" content="https://www.instagram.com/accounts/login/"><meta property="og:title" content="Login • Instagram"></head></html>',
+      { headers: { "content-type": "text/html" } }),
+  });
+  const r = await enrich(base({ kind: "post", text: null }), deps(f));
+  assertEquals(r.status, "preview_unavailable");
+  assertEquals([r.patch.title, r.patch.text, r.patch.author_name, r.patch.thumbnail_url_remote], [undefined, undefined, undefined, undefined]);
+});
+
+Deno.test("a short link that resolved to nothing readable is still reported as unresolved", async () => {
+  // The same rule must not swallow the reasons the other exits carry.
+  const f = fakeFetch({
+    "https://vm.tiktok.com/ZS9dHGEcApLyX": () => Object.defineProperty(new Response("", { status: 200 }), "url", { value: "https://www.tiktok.com/" }),
+  });
+  const r = await enrich(base({ platform: "tiktok", kind: "short_video", source_url: "https://vm.tiktok.com/ZS9dHGEcApLyX", canonical_url: null, external_id: null, needs_expansion: true, text: null }), deps(f));
+  assertEquals(r.status, "preview_unavailable");
+  assert((r.error ?? "").includes("unrecognised"));
+});

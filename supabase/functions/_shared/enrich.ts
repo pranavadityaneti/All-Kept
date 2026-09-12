@@ -339,6 +339,22 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     status: "failed", patch, error, retryAfterMs: item.enrich_attempts < RETRY_LADDER_MS.length ? RETRY_LADDER_MS[item.enrich_attempts]! : 0,
   });
 
+  /**
+   * Every way out of here but a retry. A provider that answered and taught us nothing has not made a
+   * card, whichever branch reached that conclusion — the rule used to sit at the end of the function,
+   * where two earlier exits walked straight past it and left saves called "ready" with nothing on them.
+   */
+  const settled = (final: ItemStatus, error?: string): EnrichResult => {
+    const known = !!(patch.title ?? item.title) || !!(patch.text ?? item.text)
+      || !!(patch.author_name ?? item.author_name) || !!(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
+    let out = final;
+    if (out === "ready" && platform !== "note" && !known) {
+      deps.log("enrich: nothing learned", { item: item.id, platform });
+      out = "preview_unavailable";
+    }
+    return error === undefined ? { status: out, patch } : { status: out, patch, error };
+  };
+
   let platform = item.platform;
   let canonical = item.canonical_url;
   let sourceUrl = item.source_url;
@@ -356,9 +372,9 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         // A bot wall or a dead link sends the follower to the platform's front door. That page is
         // not what the person saved, so it is never adopted; the short link stays as it was shared.
         deps.log("enrich: short link led to an unrecognised page", { item: item.id, platform: link.platform, at: finalUrl.slice(0, 80) });
-        return { status: "preview_unavailable", patch, error: "short link led to an unrecognised page" };
+        return settled("preview_unavailable", "short link led to an unrecognised page");
       } else {
-        return { status: "preview_unavailable", patch, error: "short link did not resolve" };
+        return settled("preview_unavailable", "short link did not resolve");
       }
     } catch (e) {
       return retry(`expand: ${String(e).slice(0, 200)}`);
@@ -430,8 +446,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         const og = parseOpenGraph(html);
         if (isWrongPage(og.url, patch.external_id ?? item.external_id)) {
           deps.log("enrich: page is not the one asked for", { item: item.id, declared: og.url?.slice(0, 80) });
-          status = "preview_unavailable";
-          return { status, patch };
+          return settled("preview_unavailable");
         }
         // A declared og:title is trusted; a bare <title> is not, because that is where a block page
         // puts its own name.
@@ -451,8 +466,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         // The fallback reads a page too, and can be handed the same substitute.
         if (page && isWrongPage(page.og.url, patch.external_id ?? item.external_id)) {
           deps.log("enrich: fallback page is not the one asked for", { item: item.id, declared: page.og.url?.slice(0, 80) });
-          if (verdict === "unavailable") status = "preview_unavailable";
-          return { status, patch };
+          return settled(verdict === "unavailable" ? "preview_unavailable" : status);
         }
         const ig = page && platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
         const description = page && !isJustTheSiteName(page.og.description, platform, page.og.siteName) ? page.og.description : undefined;
@@ -477,14 +491,6 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     } catch (e) {
       return retry(`metadata: ${String(e).slice(0, 200)}`);
     }
-  }
-
-  // 2b. A provider that answered but said nothing has not made a card. Without this, an oEmbed 2xx
-  //     with no fields and a page with no tags left a "ready" save with nothing on it.
-  const known = !!(patch.title ?? item.title) || !!(patch.text ?? item.text) || !!(patch.author_name ?? item.author_name) || !!(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
-  if (status === "ready" && platform !== "note" && !known) {
-    deps.log("enrich: nothing learned", { item: item.id, platform });
-    status = "preview_unavailable";
   }
 
   // 3. The shape of a YouTube video (never fails the item: without it the app falls back to 16:9,
@@ -515,5 +521,5 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     }
   }
 
-  return { status, patch };
+  return settled(status);
 }
