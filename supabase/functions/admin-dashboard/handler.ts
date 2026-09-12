@@ -20,6 +20,7 @@ const actions = new Set([
   "imports",
   "activity",
   "retry",
+  "waitlist",
 ]);
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -98,6 +99,7 @@ export function createHandler(deps: Dependencies) {
         (params.days !== undefined && ![7, 30, 90].includes(params.days)) ||
         (params.status !== undefined &&
           !["all", "failed", "stale"].includes(params.status)) ||
+        (params.export !== undefined && typeof params.export !== "boolean") ||
         (["retry", "user"].includes(body.action) &&
           (typeof params.id !== "string" || !uuid.test(params.id))) ||
         (body.action === "retry" &&
@@ -117,6 +119,11 @@ export function createHandler(deps: Dependencies) {
           // and holds every other admin query. The membership check is the same one either way.
           : body.action === "feedback"
           ? await deps.rpc("admin_feedback_read", {
+              p_admin_id: userId,
+              p_params: params,
+            })
+          : body.action === "waitlist"
+          ? await deps.rpc("admin_waitlist_read", {
               p_admin_id: userId,
               p_params: params,
             })

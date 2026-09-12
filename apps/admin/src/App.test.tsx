@@ -37,6 +37,13 @@ it("navigates from chart data to table data, back, and to the same page without 
   await navigate("Overview");
   expect(tree.root.findAllByType("table")).toHaveLength(0);
   expect(tree.root.findAllByProps({ className: "metrics" })).toHaveLength(1);
+  // The waitlist page carries both: a metrics strip with its chart, and the table beneath.
+  await navigate("Waitlist");
+  expect(tree.root.findAllByProps({ className: "metrics" })).toHaveLength(1);
+  expect(tree.root.findAllByType("table")).toHaveLength(1);
+  expect(tree.root.findAllByType("tbody")[0]?.findAllByType("tr")).toHaveLength(
+    25,
+  );
   await act(async () => {
     tree.unmount();
   });

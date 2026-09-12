@@ -581,3 +581,182 @@ See `git log --since=2026-09-10 --until=2026-09-11 --stat`.
   fallback (all need Surfshark on); the share extension on both platforms; Reddit embeds and card
   pictures; the autoplay sound rules; the squarer shape language.
 
+
+## 12 Sep 2026 (~15:40) — Landing page: the Claude Design hero, implemented
+- **Built** `apps/website` (worktree `.worktrees/website`, branch `website`) to the Claude Design page
+  "Allkept Hero" (project `ac757901-d313-4550-acfa-7f49025012a8`), read through the design MCP after
+  Pranav ran `/design-login`. Pranav's call: ignore the earlier half-finished landing edits and use
+  the new design only — the old diff is saved as `old-landing-edits.patch` in the session scratchpad,
+  not in git.
+- **Files:** `app/page.tsx` (rewritten: tile field, nav + countdown, hero, library panel, footer,
+  string-and-buttons SVG), `app/globals.css` (Nocturne tokens + page CSS, desktop exact to the
+  1280-wide artboard, stacked layout under 1024px), `app/layout.tsx` (Inter via next/font, new
+  metadata), `components/landing/{Countdown,WaitlistForm,SlotImage}.tsx`, `public/design/**` (assets).
+  Repo root `.claude/launch.json` (new) starts the dev server for the Browser pane.
+- **Assets:** the MCP caps reads at 256 KiB. Pulled: mark, iphone-16-pro, saves/acai, saves/desk.
+  Wordmarks derived (flat light/dark from the mobile app's wordmark via ImageMagick). Platform icons
+  reused from `public/platforms/`. **Still needed from a Claude Design export:** `saves/santorini`,
+  `alpine`, `coast`, `news-x`, `pasta`, `app-library-shot`, `pinterest.png` (+ optionally the design's
+  own wordmark-light/dark). The page shows a labelled gradient in each missing slot until then.
+- **Bugs found and fixed during verification:** (1) hero phone overlapped the library headline —
+  the artboard clips the hero container, so `.hero{overflow:hidden}`; (2) font tokens declared on
+  `:root` referenced `--font-inter`, which next/font sets on `<body>` — moved to `body`, otherwise
+  the whole page silently fell back to the system font; (3) `SlotImage` missed 404s that fired
+  before hydration — now checks `img.complete && naturalWidth===0` on mount; (4) mobile: tile field
+  sat behind the headline — now its own band after the copy with the phone over it.
+- **Pre-existing, not touched:** `tsc` reports ~200 errors, all in `components/ui/*` (shadcn
+  scaffold; duplicate `@types/react`). Local D1 has **no tables** — `drizzle/0000_*.sql` never
+  applied locally, so `/api/interest` 500s in dev; migration needs Pranav's Yes.
+- **Dev server:** killed a stale vinext (PID 71730, up 1d 22h, port 4173, from the old website
+  session) so the Inter font module would load; managed server now on http://localhost:3000.
+- Verified: headless Chrome full-page at 1280×2700 matches the artboard geometry (hero 980, panel
+  980–2160, footer 2160–2700, phones at 470/1396); no horizontal overflow at 375px; Inter loaded.
+
+## 12 Sep 2026 (afternoon) — TikTok playback proven on a VPN, and the bug I shipped while doing it
+- **Builds shipped this morning:** Android APK `ccc811e4`, iOS build 29 uploaded to TestFlight. Root
+  cause of five failed Android attempts was a local Gradle run writing 3.4GB into `node_modules`,
+  which the fingerprint policy hashes — see ERRORS.md.
+- **TikTok, verified on the iOS 26.5 simulator through a US VPN** (the first time TikTok has been
+  reachable from this machine): autoplay, speaker, scroll-away stopping, next-one-starting, photo
+  carousels rendering and swiping. Cause of the original failure: `autoplay` defaults to 0 in
+  TikTok's player and we never asked, and we drove `<video>` instead of the message API they
+  document (`05e3239`).
+- **A bug I shipped and Pranav caught (`d97fd51`):** stripping temporary tracing deleted a whole line
+  of PLAYER_SCRIPT, leaving a syntax error — so the script did nothing at all, silently, on every
+  platform. TikTok still looked fine because `autoplay=1` was doing it. Guarded now by a test that
+  parses the script. Process rule recorded: strip diagnostics, then verify, then commit.
+- **Reddit:** the phone now follows the `/s/` share links the server is refused (`612d9ae`) — a
+  marketplace link went from "no preview" to title and author. Share-extension saves were the gap:
+  `resolveForSave` only ran in the paste field.
+- **TikTok carousels keep their picture (`c7515f1`)** — read from the page, host-checked per platform
+  server-side. The broader bug it exposed: the sweeper refused to store a picture for any save
+  marked "no preview", even when we held the address.
+- **`2d698d2`:** a card with a picture no longer wears a "No preview" pill; `statusNote` moved into
+  `lib/sorting` so the rule is testable.
+- **Also:** `docs/unit-economics.html` (measured: $0.0051/save, ~99% of it one AI call) and
+  `docs/llm-options.html` (33 models priced; `gpt-5.6-luna` is 18× cheaper, already wired, no new
+  vendor or privacy change — gated on an A/B against the 131 existing saves).
+- **Simulator note:** iOS 26.2's runtime is broken for WebViews (dyld, then a JIT crash). Work on the
+  26.5 device `98B9B21B-…`. Both diagnoses in ERRORS.md.
+- **Not on any phone yet:** everything above. The installed builds predate all of it.
+- **Note:** another session is editing this file concurrently (landing page / Claude Design). Its
+  entry above is not mine and is left as found.
+
+
+## 12 Sep 2026 (~16:00) — Local D1 migrated; waitlist verified end to end
+- Pranav's Yes: applied `drizzle/0000_worried_strong_guy.sql` to the **local** D1. Wrangler has no
+  config file in this app (the Cloudflare vite plugin injects bindings), so it needed a throwaway
+  `wrangler.local.json` in the scratchpad with the same binding/name/id and `--persist-to
+  .wrangler/state` — that lands in the same miniflare sqlite the dev server reads. Verified:
+  `GET /api/interest` → `{"count":0,...}`; both forms POST → 200 → "You’re in." Two test rows
+  (`landing-test@`, `enter-key-test@`) left in the local DB.
+- Browser-pane note: its click/type never reached the input while the pane was hidden; verified
+  the Enter path with `form.requestSubmit()` instead.
+- No Chrome extension connected → the >256 KiB design images cannot be pulled by any route I have.
+  Blocked on Pranav exporting them from Claude Design.
+
+## 12 Sep 2026 (~16:20) — All design images in place; page matches the artboard
+- Pranav exported the Claude Design project as a zip (`~/Desktop/WORK/ALL PROJECTS/All Kept/Allkept
+  landing page mockups.zip`, 68 MB). Copied every asset the page uses into `public/design/`
+  (saves/*, app-library-shot, phone frame, mark, the design's own wordmarks — 519×150, replacing my
+  derived ones — and all six platform icons incl. Pinterest).
+- **Found in the export:** `.image-slots.state.json` holds the pictures Pranav dropped into slots by
+  hand inside Claude Design (`c-screen` hero phone, `c-2` Places tile, `c-4` Tech tile) as inline
+  webp. These are what the artboard actually shows, so they win over the stock `saves/*` defaults —
+  decoded to `public/design/slots/*.png`, wired via a `slot` field on the tile data. Note: they are
+  small (280×608 / 138×300 / 500×281) and will look a touch soft on 2× screens; the full-res
+  originals are probably among the export's `uploads/IMG_*.PNG` if crispness matters.
+- Verified against the export's `.thumbnail` (Claude Design's render) side by side: same layout,
+  same images. tsc clean in app/ + components/landing/. Nothing committed yet.
+
+## 12 Sep 2026 (~17:00) — Library band full-bleed; legal pages ported; Contact → email
+- Pranav's review: page looks right, but the light "Your library" panel must run edge to edge. The
+  library section now sits outside the centred 1280 `stage` (full width) with an inner
+  `stage.library-stage` keeping its contents where the artboard puts them.
+- Footer: "Contact (#)" → `mailto:hi@allkept.app`, shown as the address.
+- **Privacy / Terms / Delete pages** brought onto the `website` branch from `website-pages`
+  (ce303c6). That branch is a plain-Next static export that reads `content/*.html` from disk at
+  request time — not possible on this branch's Workers runtime — so: the three fragments were copied
+  **byte-identical** (verified with `cmp`, after running that branch's `verify-content.mjs`, which
+  proved them verbatim against docs/), imported at build time via Vite `?raw`, and rendered by
+  `components/legal/LegalPage.tsx` inside `LegalShell` (brand link home, footer links, email). House
+  style copied into `app/legal.css`, every selector scoped under `.legal-site` so the landing page's
+  dark theme and the light legal pages cannot bleed into each other. `/delete` came along because
+  the privacy text links to it three times. `/support` was NOT ported (not linked; ask Pranav).
+- Verified: `/`, `/privacy`, `/terms`, `/delete` → 200; anchors present; renders on 375px with no
+  overflow (a headless-Chrome shot suggested clipping — false alarm, real viewport is clean).
+
+## 12 Sep 2026 (~17:30) — Committed; support page; waitlist plan written
+- `/support` ported from website-pages (same text, plain links) and added to the legal shell's nav
+  and footer. **Committed `3aba2d7`** on `website`: landing page + privacy/terms/delete/support.
+  Not pushed. Leftovers `public/hero-saved-cards.png`, `tsconfig.tsbuildinfo` left untracked on
+  Pranav's call; local test emails left in place.
+- **Waitlist plan** → `docs/waitlist-integration-plan.html`. Recommendation: a `waitlist_signups`
+  table in Supabase behind a new `waitlist` edge function (site holds no DB credential; admin
+  dashboard gets a Waitlist page; launch send-list is a query); drop the D1/drizzle scaffold. Two
+  decisions for Pranav: emails in Supabase vs D1, and site hosting (Vercel vs Cloudflare — the
+  scaffold assumes Cloudflare Workers, which Vercel can't run). Flagged: the privacy policy does not
+  mention the waitlist email at all — needs an approved sentence. Launch email (Resend) is a later
+  plan of its own.
+
+## 12 Sep 2026 (~18:15) — Waitlist task 1: migration written and exercised
+- Pranav's decisions: emails in **Supabase**, site on **Vercel**, privacy sentence approved as
+  drafted. Go on task 1.
+- `supabase/migrations/20260912170000_waitlist_signups.sql`: table + unique email index + partial
+  index for the per-IP rate limit + created_at index; RLS on, no policies. Plain `text` email with
+  a `lower(btrim())` check rather than citext — no extension dependency, the function normalises.
+- No Docker on this machine → validated on a throwaway Postgres 17 (recipe in ERRORS.md):
+  service-role insert ok; duplicate ignored; three check violations as designed; anon and
+  authenticated see 0 rows and cannot insert. **Not pushed to the hosted project** — awaiting Yes.
+
+## 12 Sep 2026 (~18:45) — Task 1 pushed; task 2 (waitlist function) written and green
+- **Migration pushed** to the hosted project (`db push`, the only pending one). Confirmed via REST:
+  anon reads `[]`, anon insert → 401, service role sees the empty table. Reminder that bit again:
+  bare `supabase` (Homebrew) dies with exit 137 — use `node_modules/.bin/supabase` (ERRORS.md).
+- **Task 2 written, not deployed:** `supabase/functions/waitlist/{handler,deps,index}.ts`,
+  `_shared/contracts.ts` (+`WaitlistSource`, `WaitlistResponse`), `config.toml`
+  (`[functions.waitlist]`, `verify_jwt=false` — public endpoint), tests
+  `tests/waitlist.test.ts` (12 unit) + `tests/waitlist.hosted.test.ts` (1 round trip against the
+  real table, cleans up after itself). `npm run test:functions`: **199 passed, 0 failed**;
+  `check:functions` clean.
+- Design points: honeypot → 200 with nothing stored; email trimmed/lower-cased, shape-checked,
+  ≤254; unknown `source` → 'site'; per-network cap 5/hour on `sha256(WAITLIST_IP_SALT:date:ip)`;
+  duplicates via `upsert(ignoreDuplicates)` → `{joined:false}` with a 200; CORS list = prod, apex,
+  localhost:3000 + `WAITLIST_ORIGINS` env for previews; failures → plain 500, no detail leaked.
+- **Deploy needs:** `secrets set WAITLIST_IP_SALT=<random>` then `functions deploy waitlist` — both
+  on Pranav's Yes.
+
+## 12 Sep 2026 (~19:15) — Task 2 deployed and smoke-tested; task 3 done, awaiting approval
+- **Deployed** `waitlist` (secret `WAITLIST_IP_SALT` set to a random 32-byte hex). Live smoke from
+  the localhost origin: join 200 / repeat "already" 200 / honeypot 200-stored-nothing / bad email
+  400 / stranger origin 403 / preflight 204. Row carried source + 64-hex ip_hash + UA. Deleted after.
+- **Task 3 (website, uncommitted):** `lib/waitlist.ts` reads `NEXT_PUBLIC_SUPABASE_URL` /
+  `_ANON_KEY` on the server; `page.tsx` passes `{endpoint, anonKey}` + `source` ('site-hero' /
+  'site-footer') to `WaitlistForm`, which now posts to the edge function and just displays what it
+  says (falls back to a "not set up on this build" message if env is missing). Removed
+  `app/api/interest`, `db/`, `drizzle/`, `drizzle.config.ts`, the D1 binding in `vite.config.ts`,
+  `d1` in `.openai/hosting.json`, drizzle deps + `db:generate` in package.json. `.env.local`
+  (git-ignored) holds the two public values for dev; `.env.example` committed and un-ignored.
+  Convention followed from the mobile app: public keys in env, not in git.
+- Verified in the browser against the LIVE function: hero → joined, footer same address → already,
+  garbage → invalid; row stored with `source: site-hero`; deleted. tsc clean. Table empty.
+- Vercel will need the two `NEXT_PUBLIC_*` env vars in project settings (task 6).
+
+## 12 Sep 2026 (~20:00) — Task 3 committed; task 4 (admin Waitlist page) built, awaiting approval
+- `d45358a` on `website`: the site posts to the edge function, D1/drizzle gone.
+- **Task 4, all uncommitted on main:**
+  - `supabase/migrations/20260912190000_admin_waitlist_read.sql` — `admin_waitlist_read(admin, params)`:
+    total/today/week/notified, 30-day series (zero-filled), split by source, searchable page of
+    rows (`q` on email), `export:true` → all matches (cap 10 000) + `matched` count. Membership
+    check via `admin_members`, 42501 otherwise; execute only for service_role. Exercised on the
+    throwaway Postgres: counts, series length/placement, search+export, non-admin refused, anon
+    cannot call.
+  - `admin-dashboard/handler.ts`: `waitlist` action → `admin_waitlist_read`; `export` must be
+    boolean. `handler_test.ts` +1 (5/5 green). `check:functions` clean.
+  - `apps/admin`: Waitlist nav page — 4 metric tiles, 30-day chart (same markup as overview),
+    "Export as CSV" (all rows or the current search; CSV cells quoted + formula-injection guard),
+    table (email · came from · signed up · launch email), search by email, pagination over
+    `matched`. Demo data added. Tests: `waitlist.test.ts` (CSV), `App.test.tsx` extended
+    (navigates to Waitlist, sees metrics + 25 rows). vitest 7/7, tsc clean.
+- **Gates pending Pranav's Yes:** `db push` (migration), `functions deploy admin-dashboard`,
+  commit on main, and `git push` (Vercel auto-deploys admin-web from git = a deploy).

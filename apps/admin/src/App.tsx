@@ -18,6 +18,7 @@ import {
   type Params,
   type Role,
   type Row,
+  type Waitlist,
 } from "./api";
 import { demoRequest } from "./demo";
 
@@ -28,6 +29,8 @@ type IconName =
   | "sources"
   | "activity"
   | "feedback"
+  | "waitlist"
+  | "download"
   | "search"
   | "arrow"
   | "refresh"
@@ -45,6 +48,8 @@ const paths: Record<IconName, string> = {
   activity: "M3 12h4l3-8 4 16 3-8h4",
   feedback:
     "M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.2-.5L3 21l1.7-5a8.2 8.2 0 0 1-.7-3.4 8.4 8.4 0 0 1 8.4-8.5h.6a8.4 8.4 0 0 1 8 8Z",
+  waitlist: "M3 6h18v12H3z M3 7l9 6 9-6",
+  download: "M12 3v12 M7 10l5 5 5-5 M4 21h16",
   search: "M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   arrow: "M5 12h14 M13 6l6 6-6 6",
   refresh: "M20 7v5h-5 M4 17v-5h5 M6 6a8 8 0 0 1 13 2 M18 18A8 8 0 0 1 5 16",
@@ -249,6 +254,7 @@ const navigation: { id: Page; title: string; icon: IconName }[] = [
   { id: "sources", title: "Sources & imports", icon: "sources" },
   { id: "activity", title: "Activity", icon: "activity" },
   { id: "feedback", title: "Feedback", icon: "feedback" },
+  { id: "waitlist", title: "Waitlist", icon: "waitlist" },
 ];
 const copy: Record<Page, { title: string; description: string }> = {
   overview: {
@@ -281,6 +287,11 @@ const copy: Record<Page, { title: string; description: string }> = {
     title: "What people are telling you.",
     description:
       "Sent from inside the app, newest first, with the build it came from.",
+  },
+  waitlist: {
+    title: "Who’s waiting for launch.",
+    description:
+      "Every address given on allkept.app, newest first. One email when it opens.",
   },
 };
 function Dashboard({
@@ -485,7 +496,9 @@ function Dashboard({
                       ? "Search name, email or user ID…"
                       : page === "processing"
                         ? "Search title, email or item ID…"
-                        : "Search email or details…"
+                        : page === "waitlist"
+                          ? "Search email…"
+                          : "Search email or details…"
                   }
                   maxLength={120}
                   value={draft}
@@ -563,6 +576,16 @@ function Dashboard({
           ) : (
             data && (
               <>
+                {page === "waitlist" && (
+                  <WaitlistSummary
+                    data={data as Waitlist}
+                    q={q}
+                    demo={demo}
+                    fetchAll={() => api<Waitlist>("waitlist", { q, export: true })}
+                    onNotice={setNotice}
+                    onError={setError}
+                  />
+                )}
                 <DataTable
                   page={page}
                   data={data as ListData}
@@ -573,9 +596,9 @@ function Dashboard({
                 />
                 <div className="pagination">
                   <span>
-                    {formatNumber((data as ListData).total)} results
-                    {(data as ListData).total > 0 &&
-                      ` · ${(index - 1) * 25 + 1}–${Math.min(index * 25, (data as ListData).total)}`}
+                    {formatNumber(listCount(page, data as ListData))} results
+                    {listCount(page, data as ListData) > 0 &&
+                      ` · ${(index - 1) * 25 + 1}–${Math.min(index * 25, listCount(page, data as ListData))}`}
                   </span>
                   <div>
                     <button
@@ -586,7 +609,7 @@ function Dashboard({
                     </button>
                     <span>Page {index}</span>
                     <button
-                      disabled={index * 25 >= (data as ListData).total}
+                      disabled={index * 25 >= listCount(page, data as ListData)}
                       onClick={() => setIndex((i) => i + 1)}
                     >
                       Next
@@ -633,6 +656,143 @@ function Dashboard({
         />
       )}
     </div>
+  );
+}
+/** The waitlist page paginates over rows matching the search; every other list over its total. */
+function listCount(page: Page, data: ListData): number {
+  return page === "waitlist" ? ((data as Waitlist).matched ?? data.total) : data.total;
+}
+const sourceName = (source: string) =>
+  ({ "site-hero": "hero", "site-footer": "footer", site: "site" })[source] ?? source;
+/** One CSV cell: quoted when it holds a comma, quote or newline; a leading formula character is
+ *  neutralised so an address like =HYPERLINK(...) opens as text in a spreadsheet. */
+export function csvCell(value: unknown): string {
+  let v = value === null || value === undefined ? "" : String(value);
+  if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+  return /[",\n\r]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v;
+}
+export function waitlistCsv(rows: Row[]): string {
+  const head = ["email", "source", "signed_up", "notified"];
+  const lines = rows.map((r) =>
+    [r.email, r.source, r.created_at, r.notified_at ?? ""].map(csvCell).join(","),
+  );
+  return [head.join(","), ...lines].join("\r\n") + "\r\n";
+}
+function WaitlistSummary({
+  data,
+  q,
+  demo,
+  fetchAll,
+  onNotice,
+  onError,
+}: {
+  data: Waitlist;
+  q: string;
+  demo: boolean;
+  fetchAll: () => Promise<Waitlist>;
+  onNotice: (message: string) => void;
+  onError: (message: string) => void;
+}) {
+  const [exporting, setExporting] = useState(false);
+  const metrics = [
+    { title: "On the waitlist", value: data.total, detail: `${formatNumber(data.today)} joined today` },
+    { title: "This week", value: data.week, detail: "Signed up in the last 7 days" },
+    {
+      title: "Launch email sent",
+      value: data.notified,
+      detail: `${formatNumber(data.total - data.notified)} still waiting`,
+    },
+    {
+      title: "Which pill converts",
+      value: data.sources.find((s) => s.source === "site-hero")?.count ?? 0,
+      detail: `hero · ${formatNumber(data.sources.find((s) => s.source === "site-footer")?.count ?? 0)} from the footer`,
+    },
+  ];
+  const max = Math.max(1, ...data.series.map((s) => s.signups));
+  const points = data.series
+    .map(
+      (s, i) =>
+        `${(i / Math.max(1, data.series.length - 1)) * 800},${180 - (s.signups / max) * 155}`,
+    )
+    .join(" ");
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const all = await fetchAll();
+      const blob = new Blob([waitlistCsv(all.rows)], { type: "text/csv;charset=utf-8" });
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = `allkept-waitlist-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(href);
+      onNotice(`Exported ${formatNumber(all.rows.length)} addresses${q ? ` matching “${q}”` : ""}.`);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Export did not complete.");
+    } finally {
+      setExporting(false);
+    }
+  };
+  return (
+    <>
+      <div className="metrics">
+        {metrics.map((m) => (
+          <article key={m.title} className="metric">
+            <div className="metric-label">
+              {m.title}
+              <Icon name="waitlist" size={18} />
+            </div>
+            <strong>{formatNumber(m.value)}</strong>
+            <p>{m.detail}</p>
+          </article>
+        ))}
+      </div>
+      <section className="panel chart-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Sign-ups, day by day.</h2>
+            <p>The last 30 days</p>
+          </div>
+          <button
+            className="secondary"
+            disabled={exporting || demo}
+            title={demo ? "Export is disabled in demo mode" : undefined}
+            onClick={exportCsv}
+          >
+            <Icon name="download" size={16} />
+            {exporting ? "Exporting…" : q ? "Export matches as CSV" : "Export all as CSV"}
+          </button>
+        </div>
+        <div
+          className="chart"
+          role="img"
+          aria-label={`Waitlist sign-ups per day for the last 30 days. Peak ${formatNumber(max)} in a day.`}
+        >
+          <div className="chart-scale">
+            <span>{formatNumber(max)}</span>
+            <span>{formatNumber(Math.round(max / 2))}</span>
+            <span>0</span>
+          </div>
+          <svg viewBox="0 0 800 200" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="waitlist-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop stopOpacity=".25" />
+                <stop offset="1" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {[25, 102, 180].map((y) => (
+              <line key={y} x1="0" y1={y} x2="800" y2={y} strokeDasharray="4 6" />
+            ))}
+            {data.series.length > 0 && (
+              <>
+                <polygon points={`0,180 ${points} 800,180`} fill="url(#waitlist-fill)" />
+                <polyline points={points} fill="none" strokeWidth="2.5" />
+              </>
+            )}
+          </svg>
+        </div>
+      </section>
+    </>
   );
 }
 function OverviewPanel({
@@ -884,6 +1044,7 @@ function DataTable({
     ],
     activity: ["Event", "Account", "Origin", "Time"],
     feedback: ["Message", "From", "Build", "Sent"],
+    waitlist: ["Email", "Came from", "Signed up", "Launch email"],
   };
   return (
     <div className="panel table-wrap">
@@ -1046,6 +1207,23 @@ function DataTable({
                     )}
                   </td>
                   <td>{formatDate(r.created_at, true)}</td>
+                </>
+              ) : page === "waitlist" ? (
+                <>
+                  <td>
+                    <strong>{cell(r, "email")}</strong>
+                  </td>
+                  <td>
+                    <Badge value={sourceName(String(r.source))} />
+                  </td>
+                  <td>{formatDate(r.created_at, true)}</td>
+                  <td>
+                    {r.notified_at ? (
+                      formatDate(r.notified_at, true)
+                    ) : (
+                      <em>waiting</em>
+                    )}
+                  </td>
                 </>
               ) : page === "feedback" ? (
                 <>

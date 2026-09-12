@@ -124,3 +124,32 @@ Deno.test(
     );
   },
 );
+Deno.test(
+  "waitlist routes to its own SQL function with the verified admin id; export must be a boolean",
+  async () => {
+    const calls: { name: string; args: Record<string, unknown> }[] = [];
+    const handle = createHandler({
+      origins: ["https://admin.example.com"],
+      userId: async () => id,
+      rpc: async (name, args) => {
+        calls.push({ name, args });
+        return { data: { total: 0, rows: [] }, error: null };
+      },
+    });
+    const ok = await handle(
+      request({ action: "waitlist", params: { q: "ex", page: 2, export: true } }),
+    );
+    assert(ok.status === 200);
+    assert(calls.length === 1 && calls[0]!.name === "admin_waitlist_read");
+    assert(calls[0]!.args.p_admin_id === id);
+    assert(
+      JSON.stringify(calls[0]!.args.p_params) ===
+        JSON.stringify({ q: "ex", page: 2, export: true }),
+    );
+    const bad = await handle(
+      request({ action: "waitlist", params: { export: "yes" } }),
+    );
+    assert(bad.status === 400);
+    assert(calls.length === 1);
+  },
+);

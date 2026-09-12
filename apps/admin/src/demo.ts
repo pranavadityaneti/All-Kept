@@ -1,4 +1,4 @@
-import type { ListData, Overview, Params, Row } from "./api";
+import type { ListData, Overview, Params, Row, Waitlist } from "./api";
 const ago = (days: number) =>
   new Date(Date.now() - days * 86400000).toISOString();
 const people = [
@@ -91,6 +91,13 @@ const rows: Record<string, Row[]> = {
       handled_at: null,
     },
   ],
+  waitlist: Array.from({ length: 41 }, (_, i) => ({
+    id: `demo-wait-${i}`,
+    email: `${people[i % people.length]!.split(" ")[0]!.toLowerCase()}${i}@example.com`,
+    source: i % 3 === 0 ? "site-footer" : "site-hero",
+    created_at: ago(i / 3),
+    notified_at: null,
+  })),
   activity: Array.from({ length: 32 }, (_, i) => ({
     id: `demo-event-${i}`,
     action: [
@@ -148,6 +155,25 @@ export async function demoRequest<T>(
       (r) => r.status === "failed" || r.classification_status === "failed",
     );
   const start = ((params.page ?? 1) - 1) * 25;
+  if (action === "waitlist") {
+    const all = rows.waitlist!;
+    return {
+      rows: params.export ? filtered : filtered.slice(start, start + 25),
+      total: all.length,
+      matched: filtered.length,
+      today: 3,
+      week: 21,
+      notified: 0,
+      series: Array.from({ length: 30 }, (_, i) => ({
+        day: ago(29 - i).slice(0, 10),
+        signups: Math.max(0, Math.round(1 + i / 6 + Math.sin(i * 1.3) * 1.5)),
+      })),
+      sources: [
+        { source: "site-hero", count: 28 },
+        { source: "site-footer", count: 13 },
+      ],
+    } satisfies Waitlist as T;
+  }
   return {
     rows: filtered.slice(start, start + 25),
     total: filtered.length,

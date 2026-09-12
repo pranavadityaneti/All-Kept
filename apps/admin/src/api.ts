@@ -6,12 +6,22 @@ export type Page =
   | "sources"
   | "imports"
   | "activity"
-  | "feedback";
+  | "feedback"
+  | "waitlist";
 export type Row = {
   id: string;
   [key: string]: string | number | boolean | null;
 };
 export type ListData = { rows: Row[]; total: number };
+export type Waitlist = ListData & {
+  today: number;
+  week: number;
+  notified: number;
+  /** Rows matching the search; `total` is the whole list. */
+  matched: number;
+  series: { day: string; signups: number }[];
+  sources: { source: string; count: number }[];
+};
 export type Overview = {
   users: number;
   new_users: number;
@@ -29,6 +39,8 @@ export type Params = {
   status?: string;
   id?: string;
   request_id?: string;
+  /** waitlist: every matching row, for the CSV. */
+  export?: boolean;
 };
 export type Role = "viewer" | "operator";
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();

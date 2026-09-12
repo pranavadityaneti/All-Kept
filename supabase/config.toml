@@ -484,3 +484,8 @@ entrypoint = "./functions/admin-dashboard/index.ts"
 [functions.share-token]
 enabled = true
 verify_jwt = false
+
+[functions.waitlist]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/waitlist/index.ts"

@@ -126,3 +126,17 @@ Embeds went blank and macOS threw crash dialogs repeatedly. 27 reports. Reading 
 - **`JavaScriptCore` on the "JIT Worklist Helper Thread"** — `DFG::ByteCodeParser::parse` → `Plan::compileInThreadImpl`, `EXC_BAD_ACCESS/SIGBUS KERN_PROTECTION_FAILURE`. The JIT crashed *compiling* hot JavaScript, a known Apple-Silicon-simulator weakness with write-protected JIT memory. A heavy embed (Instagram's) merely triggers the optimiser. **Not fixable from our side**, and very unlikely on a real device, which has a properly entitled JIT.
 - **What to do:** move to a newer runtime. iOS 26.5 device `98B9B21B-438A-48C6-9039-8553633EDB38`; install with `xcrun simctl install <udid> apps/mobile/ios/build/Build/Products/Debug-iphonesimulator/Allkept.app`. A fresh device needs a sign-in; saves are server-side so nothing is lost.
 - **Remember:** read the .ips crash reports before theorising. The first guess here was memory pressure from several mounted WebViews, and the reports showed that was wrong twice over.
+
+## 2026-09-12 — Checking a migration without Docker: a throwaway Postgres 17 needs two flags
+No container runtime is installed on this Mac, so `supabase start` / `db reset` cannot run here; the
+repo's real gate has always been `db push` to the hosted project plus the hosted integration tests.
+To still exercise a migration before pushing, brew's `postgresql@17` works as a throwaway cluster —
+but two things bit on the first attempts:
+- **Socket path too long.** `pg_ctl -k <scratchpad>` fails because the session scratchpad path
+  exceeds the 103-byte Unix-socket limit. Use `-k /tmp/<short>`.
+- **"postmaster became multithreaded during startup".** The shell's locale is unset; set
+  `LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8` before `pg_ctl start`.
+Recipe: `initdb -D <dir> -A trust -U postgres` → `pg_ctl -D <dir> -o "-p 54999 -k /tmp/akpg" start`
+→ create `anon`, `authenticated`, `service_role` (bypassrls) roles → `\i` the migration → exercise
+constraints and RLS under `set role` → stop and delete. Extensions the real stack has (pg_cron,
+pg_net, vector) are absent, so this only works for migrations that need none of them.

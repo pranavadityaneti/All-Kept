@@ -30,12 +30,12 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-11
 - **Originated from:** 10 Sep 2026 design sessions
 
-### 5. Website landing page — finish or park the uncommitted edits
-- **What + why:** `.worktrees/website` (branch `website`) is 1 commit ahead of main ("Build Allkept launch interest page") and has uncommitted edits to `apps/website/app/page.tsx`, `layout.tsx`, `globals.css` plus a new `public/hero-saved-cards.png`. Left mid-edit; will go stale.
+### 5. Website landing page — implement the Claude Design hero
+- **What + why:** The Claude Design page "Allkept Hero" (project `ac757901…`) is now implemented in `apps/website` on the `website` worktree, replacing the earlier half-finished edits (those are preserved as a patch in the session scratchpad, not in git). All assets now in place from Pranav's export (12 Sep); local D1 migrated. Remaining: Contact link address; commit on Pranav's approval.
 - **Scope:** `apps/website/` in the `website` worktree.
-- **Status:** queued
+- **Status:** in progress (12 Sep 2026)
 - **Date added:** 2026-09-11
-- **Originated from:** website session (date unknown — before 10 Sep)
+- **Originated from:** website session (date unknown — before 10 Sep); re-scoped 12 Sep 2026 to the Claude Design hero
 
 ### 6. Remove the `category-artwork` worktree
 - **What + why:** `.worktrees/category-artwork` is 31 commits behind main with nothing ahead and a clean tree — its work landed via `8df1c78`. Dead weight; `git worktree remove` it (needs explicit OK — deletion).
@@ -174,19 +174,54 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-12
 - **Originated from:** Pranav's request for the audit, 12 Sep 2026
 
-### 25. Videos play automatically on the save screen
+### 25. Videos play automatically on the save screen — DONE 12 Sep (`05e3239`, `d97fd51`, `671a731`, `b542edc`)
 - **What + why:** Pranav (12 Sep): "I would rather want the video play automatically" for saved videos across platforms, instead of tapping Play. Today `EmbedPlayer` sets `mediaPlaybackRequiresUserAction` and a tap injects `play()`. Both iOS WebKit and Android WebView allow autoplay only when muted (or after a user gesture); YouTube's embed takes `autoplay=1&mute=1`, Instagram's embed is a card whose `<video>` can be started by injected script once loaded. Design questions: muted-first with a tap to unmute, or sound on (needs a gesture on iOS); only on the save screen or also in the library grid; data use on cellular; what "active" means when scrolling.
 - **Scope:** `apps/mobile/components/EmbedPlayer.tsx`, `apps/mobile/lib/embed.ts`, `ItemDetail.tsx`. App change — ships in a build (gated by the explicit-Yes rule).
-- **Status:** queued — brainstorm before code.
+- **Status:** DONE — muted autoplay with a speaker button; sound carries to the next video until the app is left for 30s. Verified on the simulator for Instagram, YouTube and TikTok. Not on any phone until the next build.
 - **Date added:** 2026-09-12
 - **Originated from:** Pranav, 12 Sep 2026
 
-### 26. TikTok Phase 2 — play TikTok inside Allkept
+### 26. TikTok Phase 2 — play TikTok inside Allkept — DONE 12 Sep (`53a1ad4`, `05e3239`, `c7515f1`)
 - **What + why:** TikTok cards now fill in (Phase 1 closed 12 Sep), but a TikTok video opens the original instead of playing in place. Add TikTok to `embed.ts` using TikTok's embed page (the one its oEmbed HTML points at) with the same stay-in-the-card treatment as Instagram; 9:16 box; photo posts embed-or-snapshot decision. Cannot be tested from India without a VPN.
 - **Scope:** `apps/mobile/lib/embed.ts`, `EmbedPlayer.tsx`, tests. App change (build-gated).
-- **Status:** queued — pair with item 25 so autoplay is designed once for all three embeds.
+- **Status:** DONE — TikTok's player, driven by the message API TikTok documents, not by `<video>`. Videos autoplay; photo carousels render, swipe and keep their first picture on the card. Proven through a US VPN on the simulator.
 - **Date added:** 2026-09-12
 - **Originated from:** `docs/tiktok-plan.html` Phase 2; Pranav's "wasn't able to play" on 12 Sep
+
+### 31. Category confirmation when a save arrives from the share sheet
+- **What + why:** Pranav (12 Sep): when someone shares a link into Allkept, show a bottom sheet with the category it has been filed under, and let them change it or create their own. The obstacle found while scoping it: **at the moment the share sheet is open the category does not exist yet** — the extension posts the link and the category arrives seconds later, after enrichment and one AI call. Both extensions are built to vanish (iOS hands the upload to a background URL session and dismisses immediately; Android's activity is invisible and never launches the app). So three routes: (A) the sheet asks instead of showing — a picker defaulting to "Let Allkept sort it", native UI in Swift and Kotlin, a build on both platforms, and a decision on every share; (B) an in-app bottom sheet on next open — "Saved — filed under Food. Change?" — pure React, no native work, batches several shares; (C) a second push once sorted — "Filed under Food · tap to change" — push already exists server-side. Recommendation on record: B, then C.
+- **Scope:** B is `apps/mobile` only. A is `targets/share/ShareViewController.swift` + `modules/share-save/.../ShareActivity.kt` + a native category list in the app group + a build.
+- **Status:** deferred by Pranav, 12 Sep 2026 — "save for later". Route not yet chosen.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav's three changes, 12 Sep 2026
+
+### 27. Rename the `reddit-thumbnail` function
+- **What + why:** the deployed edge function called `reddit-thumbnail` now stores pictures for TikTok carousels too (`c7515f1` generalised it to a per-platform host allow-list). The name is now a lie, and the next person reading the function list will draw the wrong conclusion. Rename to something like `store-picture`, deploy under the new name, update the two callers in the app, then delete the old one.
+- **Scope:** `supabase/functions/reddit-thumbnail/` → new folder, `apps/mobile/lib/reddit-thumbnail.ts`, `apps/mobile/lib/player-script.ts` caller. Needs a deploy and a delete, so two explicit Yeses. Half a day.
+- **Status:** queued — housekeeping, no user-visible effect.
+- **Date added:** 2026-09-12
+- **Originated from:** my own audit of `c7515f1`, 12 Sep 2026
+
+### 28. A save whose original was deleted should say so
+- **What + why:** five YouTube saves show "No preview" forever. They are not a bug — YouTube answers 404 (deleted) or 401 (private) for those videos, so there is nothing left to fetch, and the pipeline has already tried its allotted attempts. "No preview" reads like our failure. Distinguish the two at enrichment time and say "No longer on YouTube" / "Private on YouTube", so the card tells the truth and stops inviting a retry. Applies to every platform, not only YouTube.
+- **Scope:** `supabase/functions/_shared/enrich.ts` (record the HTTP status class on a dead original), a new status or a note column, `apps/mobile/lib/sorting.ts` wording, tests. Needs a migration if a new status is chosen. About a day.
+- **Status:** queued.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav's "how do we fix these no-preview cards?", 12 Sep 2026
+
+### 29. Decide the AI model — `gpt-5.6-luna` A/B against the 131 existing saves
+- **What + why:** `docs/unit-economics.html` measures sorting at $0.0051 a save, about 99% of it one OpenAI call, so the model choice is essentially the whole variable cost. `docs/llm-options.html` prices 33 alternatives: the cheapest sound option is `gpt-5.6-luna` — 18× cheaper, same vendor, already wired, no new privacy or policy surface. Before switching, run both models over the 131 saves we already have and compare categories; a cheaper model that sorts worse costs more than it saves. Three open decisions in the doc: how much agreement is enough, one vendor or two, and whether a free tier's rate ceiling is worth its terms.
+- **Scope:** a throwaway script against the existing saves, then one line in `pipeline.ts`. No migration.
+- **Status:** waiting on Pranav — the A/B is mine to run once he says which of the three he wants.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav's "can we sort without AI?" and the free-LLM research, 12 Sep 2026
+
+### 30. Two test saves of mine still in the library
+- **What + why:** `tiktok.com/about` and TikTok's own profile page, saved by me while proving the pipeline. Harmless but they are junk in Pranav's library. Deleting rows needs an explicit Yes.
+- **Scope:** two `items` rows in production.
+- **Status:** waiting on Pranav's Yes.
+- **Date added:** 2026-09-12
+- **Originated from:** my TikTok Phase 1 testing, 12 Sep 2026
 
 ---
 
