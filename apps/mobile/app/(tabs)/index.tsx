@@ -44,7 +44,10 @@ export default function Home() {
   const items: LibraryItem[] = recent.data ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const categories = facets.data?.categories ?? [];
-  const [shown, setShown] = useState(CATEGORIES_SHOWN);
+  // Whether the grid is open, not how many tiles it holds: deriving the count from a flag is what
+  // lets the control say "Show less". Holding the count instead made expanding a one-way door —
+  // once shown equalled the total, the condition that draws the control stopped being true.
+  const [allCategories, setAllCategories] = useState(false);
   const [searching, setSearching] = useState(false);
 
 
@@ -119,11 +122,11 @@ export default function Home() {
           <View style={styles.section}>
             <SectionHeader
               title="Categories"
-              actionLabel={categories.length > shown ? "See all" : undefined}
-              onAction={() => setShown(categories.length)}
+              actionLabel={categories.length > CATEGORIES_SHOWN ? (allCategories ? "Show less" : "See all") : undefined}
+              onAction={() => setAllCategories((open) => !open)}
             />
             <View style={styles.grid}>
-              {categories.slice(0, shown).map((c) => (
+              {(allCategories ? categories : categories.slice(0, CATEGORIES_SHOWN)).map((c) => (
                 <View key={c.value} style={styles.cell}>
                   <CategoryTile name={c.value} count={c.n} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
                 </View>
