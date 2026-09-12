@@ -15,7 +15,7 @@ import { FILTER_LABEL } from "../../lib/platforms";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
 import { expandable } from "../../lib/expandable";
-import { useRecentSaves } from "../../lib/home";
+import { useCategoryCovers, useRecentSaves } from "../../lib/home";
 import { useFacets, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
@@ -43,8 +43,12 @@ export default function Home() {
   useTrackOnce(ready ? session.userId : null, "library_view");
 
   const items: LibraryItem[] = recent.data ?? [];
-  const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const categories = facets.data?.categories ?? [];
+  const covers = useCategoryCovers(ready);
+  // Signed in one batch with the cards above them rather than in a second round trip, and keyed on
+  // every category rather than the visible six, so opening the grid needs no further signing.
+  const coverPath = (category: string): string | null => covers.data?.[category] ?? null;
+  const thumbnails = useThumbnails([...items.map((i) => i.thumbnailPath), ...categories.map((c) => coverPath(c.value))]);
   const [allCategories, setAllCategories] = useState(false);
   const grid = expandable(categories, CATEGORIES_SHOWN, allCategories);
   const [searching, setSearching] = useState(false);
@@ -127,7 +131,7 @@ export default function Home() {
             <View style={styles.grid}>
               {grid.shown.map((c) => (
                 <View key={c.value} style={styles.cell}>
-                  <CategoryTile name={c.value} count={c.n} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
+                  <CategoryTile name={c.value} count={c.n} cover={thumbnails[coverPath(c.value) ?? ""]} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
                 </View>
               ))}
             </View>

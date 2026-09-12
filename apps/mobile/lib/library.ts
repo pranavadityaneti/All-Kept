@@ -98,7 +98,7 @@ export function useSearch(q: string, filters: Filters, enabled: boolean) {
 }
 
 /** Every list that shows saves. One place, so a change to a save can never refresh some of them and miss others. */
-export const LIBRARY_KEYS = [["library"], ["facets"], ["recent-saves"], ["search"], ["item"]] as const;
+export const LIBRARY_KEYS = [["library"], ["facets"], ["recent-saves"], ["search"], ["item"], ["category-covers"]] as const;
 
 export function invalidateLibrary(queryClient: QueryClient): void {
   for (const key of LIBRARY_KEYS) void queryClient.invalidateQueries({ queryKey: key });
