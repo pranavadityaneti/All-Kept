@@ -30,6 +30,23 @@ describe("filter options", () => {
     expect(options.find((o) => o.value === "Travel & places")).toMatchObject({ n: 0, selected: true });
   });
 
+  it("does not offer an empty category of your own as a filter, since it can only show nothing", () => {
+    const withEmpty: Facets = { ...facets, categories: [...facets.categories, { value: "Wedding", n: 0, icon: "heart-outline", mine: true }] };
+    expect(filterOptions("categories", withEmpty, none).map((o) => o.value)).toEqual(["Food & recipes", "Money & career"]);
+  });
+
+  it("offers that same empty category once it is switched on, so it can be switched off again", () => {
+    const withEmpty: Facets = { ...facets, categories: [...facets.categories, { value: "Wedding", n: 0, icon: "heart-outline", mine: true }] };
+    const chosen: Filters = { ...none, categories: ["Wedding"] };
+    const options = filterOptions("categories", withEmpty, chosen);
+    expect(options.find((o) => o.value === "Wedding")).toMatchObject({ n: 0, selected: true });
+  });
+
+  it("keeps a platform counted zero, which is a count and not an empty category", () => {
+    const zero: Facets = { ...facets, platforms: [...facets.platforms, { value: "reddit", n: 0 }] };
+    expect(filterOptions("platforms", zero, none).map((o) => o.value)).toContain("reddit");
+  });
+
   it("offers what it can before the counts arrive rather than nothing at all", () => {
     const chosen: Filters = { ...none, platforms: ["instagram"], categories: [] };
     expect(filterOptions("platforms", undefined, chosen)).toEqual([{ value: "instagram", label: "Instagram", n: 0, selected: true }]);

@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery, type QueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { ClassificationStatus } from "@allkept/contracts";
 import { supabase } from "./supabase";
 
@@ -104,19 +104,91 @@ export function invalidateLibrary(queryClient: QueryClient): void {
   for (const key of LIBRARY_KEYS) void queryClient.invalidateQueries({ queryKey: key });
 }
 
+/**
+ * What the library can be narrowed by, and the categories a person made.
+ *
+ * The two are merged here, in one query, because four of the five places that list categories read
+ * exactly this — the home grid, the filter sheet, the sheet's button, and search. A category with
+ * nothing in it yet is counted zero rather than left out, which is what lets somebody set up
+ * "Wedding" before saving anything to it.
+ */
 export function useFacets(enabled: boolean) {
   return useQuery({
     queryKey: ["facets"],
     enabled,
     queryFn: async (): Promise<Facets> => {
-      const { data, error } = await supabase.rpc("library_facets_v2");
-      if (error) throw new Error(error.message);
-      const rows = (data ?? []) as { kind: string; value: string; n: number }[];
+      const [counted, own] = await Promise.all([
+        supabase.rpc("library_facets_v2"),
+        supabase.from("user_categories").select("name,icon").order("name"),
+      ]);
+      if (counted.error) throw new Error(counted.error.message);
+      // The counts are the library; a person's own list is additive. If that read fails — offline
+      // for a moment, a grant not yet in place — the grid and the filters still describe every save
+      // they have, and only categories holding nothing go missing. Failing the whole query instead
+      // would blank the category grid, the filter sheet and search at once.
+      const mine = own.error ? [] : ((own.data ?? []) as { name: string; icon: string }[]);
+      const rows = (counted.data ?? []) as { kind: string; value: string; n: number }[];
       // A flag is only counted where it holds, so one that matches nothing never becomes a control
       // that does nothing — and appears on its own the day it starts meaning something.
       const pick = (kind: string): Facet =>
         rows.filter((r) => r.kind === kind && r.value).map((r) => ({ value: r.value, n: Number(r.n) })).sort((a, b) => b.n - a.n);
-      return { platforms: pick("platform"), categories: pick("category"), shapes: pick("shape"), flags: pick("flag") };
+      return {
+        platforms: pick("platform"),
+        categories: mergeOwnCategories(pick("category"), mine),
+        shapes: pick("shape"),
+        flags: pick("flag"),
+      };
     },
+  });
+}
+
+/** A category of your own is marked as yours wherever it appears, with the mark you chose for it. */
+export function mergeOwnCategories(counted: Facet, mine: readonly { name: string; icon: string }[]): Facet {
+  const icons = new Map(mine.map((r) => [r.name, r.icon]));
+  const named = counted.map((c) => (icons.has(c.value) ? { ...c, icon: icons.get(c.value), mine: true } : c));
+  // Appended rather than sorted in: the counted ones are ordered by size, and a category holding
+  // nothing belongs after them however recently it was made.
+  const empty = mine
+    .filter((r) => !named.some((c) => c.value === r.name))
+    .map((r) => ({ value: r.name, n: 0, icon: r.icon, mine: true }));
+  return [...named, ...empty];
+}
+
+/** The categories this person made, in the order the list shows them. */
+export const ownCategories = (facets: Facets | undefined): Facet => (facets?.categories ?? []).filter((c) => c.mine);
+
+function useCategoryMutation<T>(run: (input: T) => Promise<void>) {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: run, onSuccess: () => invalidateLibrary(queryClient) });
+}
+
+export function useCreateCategory(userId: string | null) {
+  return useCategoryMutation<{ name: string; icon: string }>(async ({ name, icon }) => {
+    if (!userId) throw new Error("not signed in");
+    const { error } = await supabase.from("user_categories").insert({ user_id: userId, name, icon });
+    if (error) throw new Error(error.message);
+  });
+}
+
+/**
+ * Changing a category: the name through the function that moves the saves with it, the mark by an
+ * ordinary update, because nothing else refers to the mark. Renamed first, so the mark is set on
+ * the name the row now has.
+ */
+export function useEditCategory() {
+  return useCategoryMutation<{ from: string; name: string; icon: string }>(async ({ from, name, icon }) => {
+    if (name !== from) {
+      const { error } = await supabase.rpc("rename_user_category", { p_name: from, p_new_name: name });
+      if (error) throw new Error(error.message);
+    }
+    const { error } = await supabase.from("user_categories").update({ icon }).eq("name", name);
+    if (error) throw new Error(error.message);
+  });
+}
+
+export function useDeleteCategory() {
+  return useCategoryMutation<string>(async (name) => {
+    const { error } = await supabase.rpc("delete_user_category", { p_name: name });
+    if (error) throw new Error(error.message);
   });
 }

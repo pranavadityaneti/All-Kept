@@ -19,6 +19,10 @@ export const NO_FILTERS: Filters = { platforms: [], categories: [], shapes: [], 
 
 export const countFilters = (f: Filters): number => FILTER_GROUPS.reduce((n, g) => n + f[g].length, 0);
 
-export type Facet = { value: string; n: number }[];
+/**
+ * `icon` and `mine` are carried only by categories a person made: the mark they chose, and the fact
+ * that it is theirs to rename or remove. A built-in has neither — its mark is looked up by name.
+ */
+export type Facet = { value: string; n: number; icon?: string; mine?: boolean }[];
 /** One tally per value in each group, for saying how many a filter would show before it is tapped. */
 export interface Facets { platforms: Facet; categories: Facet; shapes: Facet; flags: Facet }

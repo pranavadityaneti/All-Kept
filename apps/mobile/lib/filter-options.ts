@@ -74,7 +74,10 @@ export function filterLabel(group: FilterGroup, value: string): string {
  */
 export function filterOptions(group: FilterGroup, facets: Facets | undefined, filters: Filters): FilterOption[] {
   const chosen = filters[group];
-  const counted = facets?.[group] ?? [];
+  // A category somebody made and has not filed anything into yet is real — it shows on the home
+  // grid, which is where an empty one belongs — but as a filter it could only ever show nothing.
+  // It reappears below the moment it is switched on, so it can always be switched off again.
+  const counted = (facets?.[group] ?? []).filter((f) => !(f.mine && f.n === 0) || chosen.includes(f.value));
   const known = new Set(counted.map((f) => f.value));
   return [
     ...counted.map((f) => ({ value: f.value, label: filterLabel(group, f.value), n: f.n, selected: chosen.includes(f.value) })),
