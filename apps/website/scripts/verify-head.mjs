@@ -1,7 +1,7 @@
 // Proves the exported site carries what the outside world reads before a person does: the share
 // preview, the canonical address, the App Store banner, the measurement tags, the sitemap and the
 // robots file. Runs against out/ after `next build`; any missing piece fails the build check.
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,5 +36,9 @@ for (const page of ['privacy', 'terms', 'support', 'delete']) {
 }
 existsSync(path.join(out, 'sitemap.xml')) ? must(read('sitemap.xml'), 'https://www.allkept.app/privacy', 'sitemap lists the pages') : fail('sitemap.xml missing');
 existsSync(path.join(out, 'robots.txt')) ? must(read('robots.txt'), 'Sitemap: https://www.allkept.app/sitemap.xml', 'robots points at the sitemap') : fail('robots.txt missing');
-existsSync(path.join(out, 'opengraph-image.png')) ? ok('share image file exported') : fail('opengraph-image.png missing from export');
+{
+  const img = path.join(out, 'opengraph-image.jpg');
+  if (!existsSync(img)) fail('opengraph-image.jpg missing from export');
+  else { const kb = Math.round(statSync(img).size / 1024); kb < 300 ? ok(`share image exported, ${kb} KB (WhatsApp previews need < 300 KB)`) : fail(`share image is ${kb} KB — WhatsApp will not show a preview above 300 KB`); }
+}
 process.exitCode ? console.error('head check failed') : console.log('head check passed');

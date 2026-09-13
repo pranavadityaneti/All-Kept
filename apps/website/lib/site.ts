@@ -17,7 +17,7 @@ export const APP_STORE_ID = '6809901300';
  * merging it with the layout's, so a page that sets its own canonical must spread this first or
  * lose the image and the site name with it.
  */
-export const SHARE_IMAGE = { url: '/opengraph-image.png', width: 1200, height: 630, alt: 'All Kept — one library for everything you save, sorted for you.' };
+export const SHARE_IMAGE = { url: '/opengraph-image.jpg', width: 1200, height: 630, alt: 'All Kept — one library for everything you save, sorted for you.' };
 export const openGraphBase = {
   type: 'website' as const,
   siteName: SITE_NAME,
