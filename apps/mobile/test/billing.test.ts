@@ -12,6 +12,9 @@ describe("where a person stands", () => {
   it("is free-region when the store is in India, whatever else is true", () => {
     expect(standing(row({ storefront: "IN", saves_used: 400, status: "expired" }), now)).toEqual({ kind: "free_region" });
   });
+  it("is not gated before the phone has said where it buys from — the server does not gate it either", () => {
+    expect(standing(row({ storefront: null, saves_used: 145 }), now)).toEqual({ kind: "free_region" });
+  });
   it("is subscribed when the period runs, renewing or not", () => {
     expect(standing(row({ status: "active", will_renew: true, current_period_end: later, product_id: "allkept_yearly" }), now))
       .toEqual({ kind: "subscribed", renews: true, until: later, product: "allkept_yearly" });

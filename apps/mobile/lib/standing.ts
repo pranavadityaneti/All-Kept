@@ -22,6 +22,7 @@ export interface EntitlementRow {
 }
 
 export type Standing =
+  /** A free region — or a phone that has not yet said where it buys from, which the server does not gate. */
   | { kind: "free_region" }
   | { kind: "subscribed"; renews: boolean; until: string | null; product: string | null }
   | { kind: "billing_issue"; until: string | null; product: string | null }
@@ -30,7 +31,7 @@ export type Standing =
 
 /** The server's row, as a screen shows it. */
 export function standing(row: EntitlementRow, now: Date): Standing {
-  if (row.storefront === "IN") return { kind: "free_region" };
+  if (row.storefront === null || row.storefront === "IN") return { kind: "free_region" };
   const running = !!row.current_period_end && new Date(row.current_period_end) > now;
   if (row.status === "active" && running) return { kind: "subscribed", renews: row.will_renew !== false, until: row.current_period_end, product: row.product_id };
   if (row.status === "billing_issue" && running) return { kind: "billing_issue", until: row.current_period_end, product: row.product_id };
