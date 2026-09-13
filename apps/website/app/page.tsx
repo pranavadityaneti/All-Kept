@@ -2,6 +2,7 @@ import { Countdown } from '@/components/landing/Countdown';
 import { SlotImage } from '@/components/landing/SlotImage';
 import { WaitlistForm } from '@/components/landing/WaitlistForm';
 import { waitlistConfig } from '@/lib/waitlist';
+import { ConsentChoiceLink } from '@/components/site/ConsentBanner';
 
 // ── Hero tile field ──────────────────────────────────────────────────────
 // Positions are artboard pixels on a 1280×980 canvas; `--u` scales them.
@@ -288,6 +289,7 @@ export default function Home() {
             <div className="footer-links">
               <a href="/privacy">Privacy</a>
               <a href="/terms">Terms</a>
+              <ConsentChoiceLink />
               <a href="mailto:hi@allkept.app">hi@allkept.app</a>
             </div>
           </div>

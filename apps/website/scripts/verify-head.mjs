@@ -26,6 +26,11 @@ must(home, 'name="apple-itunes-app" content="app-id=6809901300"', 'App Store ban
   must(chunks, '/_vercel/speed-insights/script.js', 'Vercel speed insights loader shipped');
 }
 must(home, 'googletagmanager.com/gtag/js?id=G-WZDX3LHXGB', 'GA4 tag');
+must(home, "gtag('consent','default'", 'GA consent default before config');
+if (home.indexOf("gtag('consent','default'") < home.indexOf("gtag('config'")) ok('consent default precedes config'); else fail('consent default must precede gtag config');
+must(home, "fbq('consent','revoke')", 'pixel consent revoke before init');
+if (home.indexOf("fbq('consent','revoke')") < home.indexOf("fbq('init'")) ok('pixel revoke precedes init'); else fail('pixel revoke must precede init');
+must(home, 'Cookie choices', 'footer link to change the choice');
 must(home, "gtag('config','G-WZDX3LHXGB')", 'GA4 config');
 for (const page of ['privacy', 'terms', 'support', 'delete']) {
   const html = read(`${page}.html`);
