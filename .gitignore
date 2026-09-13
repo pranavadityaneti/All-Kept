@@ -8,3 +8,6 @@ supabase/.branches/
 .DS_Store
 coverage/
 .expo/
+
+# Never published: audits and anything else that must not reach GitHub Pages or a public clone
+private/
