@@ -77,3 +77,37 @@ Deno.test({ name: "RLS, search and storage isolate users (hosted project)", igno
     await admin.auth.admin.deleteUser(b.id);
   }
 }});
+
+Deno.test({ name: "a push token follows the phone: the next person to sign in on it takes the row (hosted project)", ignore, async fn() {
+  const admin = createClient(URL_!, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
+  const a = await makeUser(admin);
+  const b = await makeUser(admin);
+  const token = `ExponentPushToken[test-${crypto.randomUUID()}]`;
+  try {
+    // A registers the device.
+    assertEquals((await a.client.rpc("claim_push_token", { p_token: token, p_platform: "ios" })).error, null);
+    assertEquals((await admin.from("device_push_tokens").select("user_id").eq("token", token).single()).data, { user_id: a.id });
+
+    // The plain upsert the client used to do cannot move it: RLS hides A's row from B, so the key collides.
+    const upsert = await b.client.from("device_push_tokens").upsert({ token, user_id: b.id, platform: "ios" }, { onConflict: "token" });
+    assert(upsert.error !== null, "the upsert should be refused — that refusal is the bug the function exists to get past");
+
+    // B signs in on the same phone and claims it: the row moves, and A can no longer see it.
+    assertEquals((await b.client.rpc("claim_push_token", { p_token: token, p_platform: "ios" })).error, null);
+    assertEquals((await admin.from("device_push_tokens").select("user_id,failed_at").eq("token", token).single()).data, { user_id: b.id, failed_at: null });
+    assertEquals((await a.client.from("device_push_tokens").select("token").eq("token", token)).data, []);
+
+    // Signing out forgets the device: B deletes its own row under RLS, as unregisterPush does.
+    assertEquals((await b.client.from("device_push_tokens").delete().eq("token", token)).error, null);
+    assertEquals((await admin.from("device_push_tokens").select("token").eq("token", token)).data, []);
+
+    // Nobody can claim without a session, and a stranger's session cannot claim with a bad platform.
+    const anon = createClient(URL_!, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
+    assert((await anon.rpc("claim_push_token", { p_token: token, p_platform: "ios" })).error !== null);
+    assert((await b.client.rpc("claim_push_token", { p_token: token, p_platform: "web" })).error !== null);
+  } finally {
+    await admin.from("device_push_tokens").delete().eq("token", token);
+    await admin.auth.admin.deleteUser(a.id);
+    await admin.auth.admin.deleteUser(b.id);
+  }
+}});

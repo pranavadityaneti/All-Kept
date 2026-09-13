@@ -103,7 +103,9 @@ export default function Settings() {
   const confirmSignOut = () =>
     Alert.alert("Sign out?", "Your library stays safe and comes back when you sign in again.", [
       { text: "Stay signed in", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => { void revokeShareToken().then(() => supabase.auth.signOut({ scope: "local" })).then(({ error }) => { if (error) Alert.alert("Could not sign out", "Please try again."); }); } },
+      // The device is forgotten first, while there is still a session allowed to forget it. Left
+      // behind, the row keeps this phone ringing with this library's saves for whoever holds it next.
+      { text: "Sign out", style: "destructive", onPress: () => { void Promise.all([unregisterPush(), revokeShareToken()]).then(() => supabase.auth.signOut({ scope: "local" })).then(({ error }) => { if (error) Alert.alert("Could not sign out", "Please try again."); }); } },
     ]);
 
   const confirmDelete = () =>

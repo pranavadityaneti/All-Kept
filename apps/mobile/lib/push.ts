@@ -61,9 +61,11 @@ export async function pushPermission(): Promise<"granted" | "denied" | "undeterm
  *
  * The row is keyed on the token, so the same device signing in as someone else moves rather than
  * duplicates — otherwise the previous owner keeps being told about a library that is no longer
- * theirs, on a phone that is no longer theirs.
+ * theirs, on a phone that is no longer theirs. That move goes through claim_push_token(): a plain
+ * upsert cannot do it, because row level security hides the old owner's row from the new one, and
+ * for months the upsert quietly failed on exactly the phone that mattered.
  */
-export async function registerForPush(userId: string): Promise<PushOutcome> {
+export async function registerForPush(_userId: string): Promise<PushOutcome> {
   if (!Device.isDevice) return { ok: false, reason: "simulator" };
   try {
     await ensureAndroidChannel();
@@ -74,18 +76,7 @@ export async function registerForPush(userId: string): Promise<PushOutcome> {
     if (status !== "granted") return { ok: false, reason: "denied" };
 
     const token = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : {})).data;
-    const { error } = await supabase.from("device_push_tokens").upsert(
-      {
-        token,
-        user_id: userId,
-        platform: Platform.OS === "android" ? "android" : "ios",
-        last_seen_at: new Date().toISOString(),
-        // A token that starts working again should stop being treated as dead.
-        failed_at: null,
-        fail_reason: null,
-      },
-      { onConflict: "token" },
-    );
+    const { error } = await supabase.rpc("claim_push_token", { p_token: token, p_platform: Platform.OS === "android" ? "android" : "ios" });
     if (error) return { ok: false, reason: "failed", detail: error.message };
     return { ok: true, token };
   } catch (e) {
