@@ -53,10 +53,14 @@ grant select, insert on public.billing_events to service_role;
 -- The one place the rule lives: a free region, an active subscription, or still inside the free
 -- saves. billing_issue counts as entitled while the period has not ended, which is how the stores
 -- treat a card that failed — they keep serving during the grace period and so do we.
+--
+-- A phone that has not reported a storefront yet is not gated at all. Until a build that can show
+-- the paywall is on that phone, refusing its twenty-sixth save would be a wall with no door in it —
+-- and every account that existed before this migration is exactly that phone on the day it ships.
 create or replace function public.entitled(p_user_id uuid)
 returns boolean language sql stable security definer set search_path = '' as $$
   select
-    coalesce((select p.storefront in ('IN') from public.profiles p where p.user_id = p_user_id), false)
+    coalesce((select p.storefront is null or p.storefront in ('IN') from public.profiles p where p.user_id = p_user_id), true)
     or exists (
       select 1 from public.subscriptions s
       where s.user_id = p_user_id

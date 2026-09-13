@@ -135,6 +135,11 @@ Deno.test({ name: "paid in the US: 25 free saves, then a subscription, unless th
     await admin.from("profiles").update({ storefront: "IN" }).eq("user_id", a.id);
     assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, true);
 
+    // A phone that has never reported a storefront — every account from before this shipped — is not gated.
+    await admin.from("profiles").update({ storefront: null }).eq("user_id", a.id);
+    assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, true);
+    await admin.from("profiles").update({ storefront: "IN" }).eq("user_id", a.id);
+
     // The phone may ask about itself, and sees the truth.
     const me = await a.client.rpc("my_entitlement");
     assertEquals(me.error, null);
