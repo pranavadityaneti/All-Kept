@@ -70,8 +70,11 @@ export default function Home() {
   const userId = ready ? session.userId : null;
   const prefs = usePreferences(userId);
   const setPref = useSetPreference(userId);
-  const wantsInterests = prefs.data?.interestsEnabled ?? null;
-  const interestRows = useInterests(ready && wantsInterests !== false);
+  // Undefined while the settings have not arrived — distinct from null, which means "never asked".
+  // Conflating the two would put the question to someone who already answered it whenever the
+  // settings read hiccups, and their answer is the one thing this card must respect.
+  const wantsInterests: boolean | null | undefined = prefs.data ? prefs.data.interestsEnabled : undefined;
+  const interestRows = useInterests(ready && wantsInterests !== false && wantsInterests !== undefined);
   const now = new Date();
   const interests = rankInterests(interestRows.data ?? [], { taken: ownCategories(facets.data).map((c) => c.value), now });
   const openInterest = (interest: Interest) => {
