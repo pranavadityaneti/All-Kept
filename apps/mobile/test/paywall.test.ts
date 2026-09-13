@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  disclosure, isPaymentRequired, MANAGE_URL, perMonthOf, plansFrom, savingsPercent, shortDate, standingLine, subscriptionRow,
+  disclosure, isPaymentRequired, keyAllowed, MANAGE_URL, perMonthOf, plansFrom, savingsPercent, shortDate, standingLine, subscriptionRow,
   type PriceLike,
 } from "../lib/paywall";
 import type { Standing } from "../lib/standing";
@@ -94,5 +94,17 @@ describe("recognising the twenty-sixth save's answer", () => {
     expect(isPaymentRequired(new Error("offline"))).toBe(false);
     expect(isPaymentRequired(null)).toBe(false);
     expect(isPaymentRequired(undefined)).toBe(false);
+  });
+});
+
+describe("which RevenueCat key a build may carry", () => {
+  it("lets a Test Store key work only in a development build, and a store key anywhere", () => {
+    expect(keyAllowed("test_SsoECHMuchtUEjvMnIapwvwLVxu", true)).toBe(true);
+    expect(keyAllowed("test_SsoECHMuchtUEjvMnIapwvwLVxu", false)).toBe(false);
+    expect(keyAllowed("appl_abc", false)).toBe(true);
+    expect(keyAllowed("goog_abc", false)).toBe(true);
+    expect(keyAllowed("appl_abc", true)).toBe(true);
+    expect(keyAllowed("", true)).toBe(false);
+    expect(keyAllowed(undefined, false)).toBe(false);
   });
 });

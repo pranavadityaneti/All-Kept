@@ -1,5 +1,19 @@
 import type { ExpoConfig } from "expo/config";
 
+/**
+ * RevenueCat's *public* SDK keys. A Test Store key (test_…) drives a pretend store and must never
+ * ship: a store build or an over-the-air bundle is exported with NODE_ENV=production, and refusing
+ * the key there means a stray line in a local .env cannot reach anyone's phone. The development
+ * key lives in .env.development, which only a development build reads.
+ */
+const revenuecatKey = (name: string): string => {
+  const key = process.env[name] ?? "";
+  if (process.env.NODE_ENV === "production" && key.startsWith("test_")) {
+    throw new Error(`${name} is a RevenueCat Test Store key; a production build or update may not carry it.`);
+  }
+  return key;
+};
+
 /** Identifiers are fixed in the Phase 0 spec: display name Allkept, bundle id and package app.allkept.mobile, scheme allkept. */
 const config: ExpoConfig = {
   name: "Allkept",
@@ -46,7 +60,7 @@ const config: ExpoConfig = {
     eas: { projectId: "55c2d8b3-2f30-462b-b052-2a685de0aa54" },
     // RevenueCat's *public* SDK keys — safe in the app; the secret key never leaves the dashboard.
     // Empty until Pranav creates the project; the app cannot sell until they are set.
-    revenuecat: { ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS ?? "", android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID ?? "" },
+    revenuecat: { ios: revenuecatKey("EXPO_PUBLIC_REVENUECAT_IOS"), android: revenuecatKey("EXPO_PUBLIC_REVENUECAT_ANDROID") },
   },
   updates: {
     url: "https://u.expo.dev/55c2d8b3-2f30-462b-b052-2a685de0aa54",

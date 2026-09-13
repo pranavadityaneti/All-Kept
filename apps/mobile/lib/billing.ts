@@ -16,7 +16,7 @@ import { useEffect } from "react";
 import { Linking, NativeModules, Platform } from "react-native";
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from "react-native-purchases";
 import { FREE_SAVES } from "@allkept/contracts";
-import { MANAGE_URL } from "./paywall";
+import { keyAllowed, MANAGE_URL } from "./paywall";
 import { regionFromLocale, standing, type EntitlementRow, type Standing } from "./standing";
 import { supabase } from "./supabase";
 
@@ -24,8 +24,8 @@ export { regionFromLocale, standing, type EntitlementRow, type Standing } from "
 
 const keys = (Constants.expoConfig?.extra as { revenuecat?: { ios?: string; android?: string } } | undefined)?.revenuecat;
 
-/** True when the native module is in this build. Everything else here is a no-op without it. */
-export const billingAvailable = (): boolean => !!NativeModules["RNPurchases"] && !!(Platform.OS === "ios" ? keys?.ios : keys?.android);
+/** True when the native module is in this build and the key is one this kind of build may use. Everything else here is a no-op without it. */
+export const billingAvailable = (): boolean => !!NativeModules["RNPurchases"] && keyAllowed(Platform.OS === "ios" ? keys?.ios : keys?.android, __DEV__);
 
 let configuredFor: string | null = null;
 

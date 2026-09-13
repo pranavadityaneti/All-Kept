@@ -123,3 +123,15 @@ export const httpStatus = (error: unknown): number | undefined => (error as { co
 
 /** True for the one answer that means "the free saves are used and nothing is subscribed": a 402 from save-link. */
 export const isPaymentRequired = (error: unknown): boolean => httpStatus(error) === 402;
+
+/**
+ * Whether a build may carry this RevenueCat key. A Test Store key (`test_…`) drives a pretend
+ * store with pretend purchases: fine in a development build, and never to be shipped — RevenueCat
+ * says so in as many words. A store key (`appl_…`, `goog_…`) is fine anywhere. Checked twice: at
+ * config time, where a store build or an over-the-air bundle would otherwise inherit whatever the
+ * local .env holds, and at run time, where a debug build is the only kind that may use it.
+ */
+export function keyAllowed(key: string | undefined, developmentBuild: boolean): boolean {
+  if (!key) return false;
+  return key.startsWith("test_") ? developmentBuild : true;
+}
