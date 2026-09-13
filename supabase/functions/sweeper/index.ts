@@ -5,6 +5,7 @@ import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
 import { json, readJson } from "../_shared/http.ts";
 import { singleItemRequest } from "./single.ts";
+import { safeFetch } from "../_shared/safe-address.ts";
 
 const BATCH = 50;
 
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
   try {
     const db = adminClient();
     const choice = classifierFromEnv();
-    const deps = { fetch, classifier: choice?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
+    const deps = { fetch: safeFetch(fetch), classifier: choice?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
     // One item, right now, for a door that captured it elsewhere. Answered when the item is done.
     const single = singleItemRequest(await readJson(req));
     if (single) {

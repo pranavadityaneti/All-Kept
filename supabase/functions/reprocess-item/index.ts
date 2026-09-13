@@ -6,6 +6,7 @@ import { apiError, json, readJson } from "../_shared/http.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { runPipeline } from "../_shared/pipeline.ts";
 import type { ReprocessItemResponse } from "../_shared/contracts.ts";
+import { safeFetch } from "../_shared/safe-address.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
     else {
       // The person is looking at the card; an answer now, from here, beats none. The log makes a broken hop visible.
       log("reprocess-item: hop failed, running in-process", { item: itemId, reason: hop.reason });
-      category = await runPipeline(db, itemId, { fetch, classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log }, retry);
+      category = await runPipeline(db, itemId, { fetch: safeFetch(fetch), classifier: classifierFromEnv()?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log }, retry);
     }
 
     const { data: after } = await db.from("items").select("status,classification_status").eq("id", itemId).maybeSingle();
