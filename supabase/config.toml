@@ -489,3 +489,9 @@ verify_jwt = false
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/waitlist/index.ts"
+
+# RevenueCat calls this with its own HMAC signature, not a Supabase token; the handler verifies the signature.
+[functions.billing-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/billing-webhook/index.ts"
