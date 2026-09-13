@@ -46,12 +46,18 @@ export async function handleBillingWebhook(req: Request, deps: WebhookDeps): Pro
     return text("ok", 200);
   }
 
+  // Recorded, and nothing else to do: a TEST, an experiment, a currency transaction. Answered
+  // before asking who the person is — RevenueCat wants its 200 quickly, and a lookup for an event
+  // that writes nothing is a round trip for nothing.
+  const rows = rowsFor(event, deps.now());
+  if (rows.length === 0) return text("ignored", 200);
+
   if (!isOurUserId(event.app_user_id) || !(await deps.userExists(event.app_user_id))) {
     // Recorded above for anyone investigating; not an error to RevenueCat, which would only retry.
     deps.log("billing: event for a user we do not know", { id: event.id, type: event.type });
     return text("unknown user", 200);
   }
 
-  for (const row of rowsFor(event, deps.now())) await deps.upsertSubscription(row);
+  for (const row of rows) await deps.upsertSubscription(row);
   return text("ok", 200);
 }

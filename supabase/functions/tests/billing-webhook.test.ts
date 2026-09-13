@@ -26,9 +26,10 @@ class Fake implements WebhookDeps {
   transfers: { from: string[]; to: string }[] = [];
   known = new Set([USER, OTHER]);
   logs: string[] = [];
+  lookups = 0;
   now() { return NOW; }
   async recordEvent(id: string, _t: string, _u: string | null, payload: unknown) { if (this.events.has(id)) return false; this.events.set(id, payload); return true; }
-  async userExists(id: string) { return this.known.has(id); }
+  async userExists(id: string) { this.lookups++; return this.known.has(id); }
   async upsertSubscription(row: SubscriptionRow) { this.rows.push(row); }
   async transfer(from: string[], to: string) { this.transfers.push({ from, to }); }
   log(m: string) { this.logs.push(m); }
@@ -123,6 +124,16 @@ Deno.test("an event we choose to ignore is still recorded, and answered 200 so R
   const f = new Fake();
   assertEquals((await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-test", type: "TEST" }) })), f)).status, 200);
   assertEquals([f.events.has("evt-test"), f.rows.length], [true, 0]);
+});
+
+Deno.test("an event that changes nothing is answered without asking who the person is — one round trip, not two", async () => {
+  const f = new Fake();
+  await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-test", type: "TEST" }) })), f);
+  await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-vc", type: "VIRTUAL_CURRENCY_TRANSACTION" }) })), f);
+  assertEquals(f.lookups, 0);
+  // Whereas an event that would write a row still checks the person first.
+  await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-buy" }) })), f);
+  assertEquals([f.lookups, f.rows.length], [1, 1]);
 });
 
 Deno.test("an event about someone we do not know is recorded, logged, and answered 200", async () => {
