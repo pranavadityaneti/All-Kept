@@ -9,6 +9,7 @@ import { ItemCard } from "../../components/ItemCard";
 import { AddCategoryTile, CategoryTile } from "../../components/CategoryTile";
 import { CategorySheet } from "../../components/CategorySheet";
 import { SaveLinkField } from "../../components/SaveLinkField";
+import { InterestPills } from "../../components/InterestPills";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
 import { PlatformPills } from "../../components/PlatformPills";
@@ -16,9 +17,12 @@ import { FILTER_LABEL } from "../../lib/platforms";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
 import { expandable } from "../../lib/expandable";
-import { useCategoryCovers, useRecentSaves } from "../../lib/home";
+import { useCategoryCovers, useInterests, useRecentSaves } from "../../lib/home";
+import { rankInterests, showInterests, type Interest } from "../../lib/interests";
+import { usePreferences, useSetPreference } from "../../lib/preferences";
+import { RESERVED_NAMES } from "../../lib/user-categories";
 import { ownCategories, useCreateCategory, useFacets, type LibraryItem } from "../../lib/library";
-import { useTrackOnce } from "../../lib/metrics";
+import { track, useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
 import { setCollection } from "../../lib/collection";
@@ -55,8 +59,26 @@ export default function Home() {
   const [allCategories, setAllCategories] = useState(false);
   const [naming, setNaming] = useState(false);
   const createCategory = useCreateCategory(ready ? session.userId : null);
-  const grid = expandable(categories, CATEGORIES_SHOWN, allCategories);
+  const places = categories.filter((c) => !(RESERVED_NAMES as readonly string[]).includes(c.value));
+  const grid = expandable(places, CATEGORIES_SHOWN, allCategories);
   const [searching, setSearching] = useState(false);
+  // A pill pulls its thread through search; a tap on the magnifier starts empty.
+  const [searchFor, setSearchFor] = useState<string | undefined>(undefined);
+
+  // Interests are counted before they are asked about — that is what says whether there is anything
+  // to ask. Nothing is shown until the answer is yes; "No thanks" ends the question for good.
+  const userId = ready ? session.userId : null;
+  const prefs = usePreferences(userId);
+  const setPref = useSetPreference(userId);
+  const wantsInterests = prefs.data?.interestsEnabled ?? null;
+  const interestRows = useInterests(ready && wantsInterests !== false);
+  const now = new Date();
+  const interests = rankInterests(interestRows.data ?? [], { taken: ownCategories(facets.data).map((c) => c.value), now });
+  const openInterest = (interest: Interest) => {
+    track(userId, "interest_opened", { kind: interest.kind, saves: interest.n });
+    setSearchFor(interest.name);
+    setSearching(true);
+  };
 
 
   // Only a pull the person actually made turns this indicator on. Binding it to isRefetching held it
@@ -126,6 +148,26 @@ export default function Home() {
 
 
         <SaveLinkField />
+
+        {ready && showInterests(interests) && wantsInterests === null && (
+          <Card>
+            <Text style={[type.heading, { color: p.ink }]}>Allkept noticed what you keep saving</Text>
+            <Text style={[type.body, { color: p.inkMuted }]}>
+              The people, places and things that turn up again and again — counted from the sorting it already does, shown only to you.
+              You can switch it off any time in Settings.
+            </Text>
+            <Button label="Show my interests" onPress={() => setPref.mutate({ name: "interestsEnabled", value: true })} />
+            <Button label="No thanks" variant="secondary" onPress={() => setPref.mutate({ name: "interestsEnabled", value: false })} />
+          </Card>
+        )}
+
+        {ready && showInterests(interests) && wantsInterests === true && (
+          <View style={styles.section}>
+            <SectionHeader title="Explore interests" actionLabel="See all" onAction={() => router.push("/interests")} />
+            <InterestPills interests={interests} now={now} onPress={openInterest} />
+          </View>
+        )}
+
         {ready && (
           <View style={styles.section}>
             <SectionHeader
@@ -163,7 +205,8 @@ export default function Home() {
         visible={searching}
         enabled={ready}
         userId={ready ? session.userId : null}
-        onClose={() => setSearching(false)}
+        initialQuery={searchFor}
+        onClose={() => { setSearching(false); setSearchFor(undefined); }}
         onOpenItem={(id) => { setSearching(false); router.push({ pathname: "/item/[id]", params: { id } }); }}
       />
     </SafeAreaView>

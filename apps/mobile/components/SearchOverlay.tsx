@@ -23,11 +23,13 @@ const IN_MS = 200, OUT_MS = 140;
  * Animated with React Native's own driver rather than Reanimated: Reanimated is here only as
  * somebody else's dependency, and a search box is not worth taking a native module on for.
  */
-export function SearchOverlay({ visible, enabled, userId, onClose, onOpenItem }: {
+export function SearchOverlay({ visible, enabled, userId, initialQuery, onClose, onOpenItem }: {
   visible: boolean;
   /** False until the library is ready, so no query is fired before there is an account to query. */
   enabled: boolean;
   userId: string | null;
+  /** A search to open with — an interest pill pulls its thread through here. Typed queries start empty. */
+  initialQuery?: string;
   onClose: () => void;
   onOpenItem: (id: string) => void;
 }) {
@@ -44,12 +46,15 @@ export function SearchOverlay({ visible, enabled, userId, onClose, onOpenItem }:
   useEffect(() => {
     if (visible) {
       setMounted(true);
+      // Straight to the term as well as the box: a query handed in is already a decision, so it
+      // should not wait out the pause-in-typing that a keystroke does.
+      if (initialQuery) { setText(initialQuery); setTerm(initialQuery); }
       Animated.timing(anim, { toValue: 1, duration: IN_MS, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       return;
     }
     Animated.timing(anim, { toValue: 0, duration: OUT_MS, easing: Easing.in(Easing.cubic), useNativeDriver: true })
       .start(({ finished }) => { if (finished) setMounted(false); });
-  }, [visible, anim]);
+  }, [visible, anim, initialQuery]);
 
   // Clearing on the way out rather than on the way in, so the closing frames do not flash an empty box.
   useEffect(() => {

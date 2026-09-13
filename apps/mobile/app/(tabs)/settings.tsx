@@ -236,6 +236,14 @@ export default function Settings() {
             title="Sort saves automatically"
             detail="Allkept reads a save's title and caption to file it and to match it by meaning when you search. Off, nothing is sent to be read: saves arrive uncategorised and search matches words only."
             toggle={{ value: prefs.data?.aiSortingEnabled ?? true, onChange: (v) => setPref.mutate({ name: "aiSortingEnabled", value: v }), disabled: !prefs.data }}
+          />
+          {/* Three-valued underneath — null until the home screen has asked — but a switch has two
+              positions, so "not asked yet" shows as off, and flipping it on is as good as a yes. */}
+          <SettingsRow
+            icon="search"
+            title="Interests from your saves"
+            detail="The people, places and things that keep turning up, counted from the sorting above. Shown only to you, never stored as a profile."
+            toggle={{ value: prefs.data?.interestsEnabled === true, onChange: (v) => setPref.mutate({ name: "interestsEnabled", value: v }), disabled: !prefs.data }}
             last
           />
         </SettingsGroup>
