@@ -28,7 +28,11 @@ must(home, 'name="apple-itunes-app" content="app-id=6809901300"', 'App Store ban
 must(home, 'googletagmanager.com/gtag/js?id=G-WZDX3LHXGB', 'GA4 tag');
 must(home, "gtag('config','G-WZDX3LHXGB')", 'GA4 config');
 for (const page of ['privacy', 'terms', 'support', 'delete']) {
-  must(read(`${page}.html`), `rel="canonical" href="https://www.allkept.app/${page}"`, `canonical on /${page}`);
+  const html = read(`${page}.html`);
+  must(html, `rel="canonical" href="https://www.allkept.app/${page}"`, `canonical on /${page}`);
+  must(html, 'property="og:image"', `share image on /${page}`);
+  must(html, 'property="og:site_name"', `site name on /${page}`);
+  must(html, `property="og:url" content="https://www.allkept.app/${page}"`, `share address on /${page}`);
 }
 existsSync(path.join(out, 'sitemap.xml')) ? must(read('sitemap.xml'), 'https://www.allkept.app/privacy', 'sitemap lists the pages') : fail('sitemap.xml missing');
 existsSync(path.join(out, 'robots.txt')) ? must(read('robots.txt'), 'Sitemap: https://www.allkept.app/sitemap.xml', 'robots points at the sitemap') : fail('robots.txt missing');

@@ -11,3 +11,26 @@ export const META_PIXEL_ID = '1608009750873679';
 export const GA_MEASUREMENT_ID = 'G-WZDX3LHXGB';
 /** The iOS app, for Safari's App Store banner. */
 export const APP_STORE_ID = '6809901300';
+
+/**
+ * The share preview every page carries. Next replaces a page's whole openGraph block rather than
+ * merging it with the layout's, so a page that sets its own canonical must spread this first or
+ * lose the image and the site name with it.
+ */
+export const SHARE_IMAGE = { url: '/opengraph-image.png', width: 1200, height: 630, alt: 'All Kept — one library for everything you save, sorted for you.' };
+export const openGraphBase = {
+  type: 'website' as const,
+  siteName: SITE_NAME,
+  locale: 'en_US',
+  description: SITE_DESCRIPTION,
+  images: [SHARE_IMAGE],
+};
+/** Title, canonical and a complete share preview for one page. */
+export function pageMetadata(title: string, path: string) {
+  return {
+    title,
+    alternates: { canonical: path },
+    openGraph: { ...openGraphBase, title, url: path },
+    twitter: { card: 'summary_large_image' as const, title, description: SITE_DESCRIPTION, images: [SHARE_IMAGE.url] },
+  };
+}

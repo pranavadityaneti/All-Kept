@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Tracking } from '@/components/site/Tracking';
-import { APP_STORE_ID, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from '@/lib/site';
+import { APP_STORE_ID, openGraphBase, SHARE_IMAGE, SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from '@/lib/site';
 import './globals.css';
 import './legal.css';
 
@@ -20,15 +20,8 @@ export const metadata: Metadata = {
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   alternates: { canonical: '/' },
-  openGraph: {
-    type: 'website',
-    siteName: SITE_NAME,
-    title: SITE_TITLE,
-    description: SITE_DESCRIPTION,
-    url: '/',
-    locale: 'en_US',
-  },
-  twitter: { card: 'summary_large_image', title: SITE_TITLE, description: SITE_DESCRIPTION },
+  openGraph: { ...openGraphBase, title: SITE_TITLE, url: '/' },
+  twitter: { card: 'summary_large_image', title: SITE_TITLE, description: SITE_DESCRIPTION, images: [SHARE_IMAGE.url] },
   itunes: { appId: APP_STORE_ID },
   robots: { index: true, follow: true },
 };
