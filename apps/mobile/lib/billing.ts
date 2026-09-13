@@ -10,12 +10,13 @@
  * is guarded on the module being present: the app keeps working, it just cannot sell anything
  * until the next build.
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import { useEffect } from "react";
-import { NativeModules, Platform } from "react-native";
+import { Linking, NativeModules, Platform } from "react-native";
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from "react-native-purchases";
 import { FREE_SAVES } from "@allkept/contracts";
+import { MANAGE_URL } from "./paywall";
 import { regionFromLocale, standing, type EntitlementRow, type Standing } from "./standing";
 import { supabase } from "./supabase";
 
@@ -100,17 +101,38 @@ export function useOfferings(enabled: boolean) {
 export function usePurchase() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (pkg: PurchasesPackage) => { await Purchases.purchasePackage(pkg); },
+    mutationFn: async (pkg: PurchasesPackage): Promise<CustomerInfo> => (await Purchases.purchasePackage(pkg)).customerInfo,
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: entitlementKey }); },
   });
 }
 
+/** What the store has on file for this account. Its entitlements say whether there was anything to restore. */
 export function useRestore() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => { await Purchases.restorePurchases(); },
+    mutationFn: async (): Promise<CustomerInfo> => Purchases.restorePurchases(),
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: entitlementKey }); },
   });
+}
+
+/**
+ * Whether the share sheet's queue is held up by a refused save. Set by whoever last flushed the
+ * queue, read by the home screen; kept in the query cache so every screen sees the same answer
+ * and the answer survives a relaunch until the next flush corrects it.
+ */
+export const shareQueueKey = ["share-queue-blocked"] as const;
+export const setShareQueueBlocked = (queryClient: QueryClient, blocked: boolean): void => { queryClient.setQueryData(shareQueueKey, blocked); };
+export function useShareQueueBlocked(): boolean {
+  return useQuery({ queryKey: shareQueueKey, queryFn: () => false, staleTime: Infinity }).data ?? false;
+}
+
+/**
+ * The store's own subscriptions page, opened by the system rather than in a web sheet: the App
+ * Store URL is one iOS routes to its subscription settings, and a browser sheet would only show
+ * a sign-in page.
+ */
+export function openManageSubscription(): void {
+  void Linking.openURL(MANAGE_URL[Platform.OS === "android" ? "android" : "ios"]).catch(() => undefined);
 }
 
 export const userCancelled = (e: unknown): boolean => !!(e as { userCancelled?: boolean } | null)?.userCancelled;

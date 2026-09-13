@@ -13,18 +13,17 @@ import { revokeShareToken } from "../../lib/share-save";
 import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/google";
 import { usePreferences, useSetPreference } from "../../lib/preferences";
 import { useProfile, useAvatar } from "../../lib/profile";
-import { logOutBilling } from "../../lib/billing";
+import { logOutBilling, openManageSubscription, useEntitlement } from "../../lib/billing";
 import { openSystemSettings, pushPermission, registerForPush, unregisterPush } from "../../lib/push";
 import { REVIEW_URL, SUPPORT_EMAIL } from "../../lib/feedback";
 import { openLink } from "../../lib/open";
+import { PRIVACY_URL, subscriptionRow, TERMS_URL } from "../../lib/paywall";
 import { useSession } from "../../lib/session";
 import { useLinkedSource, useSetReplies } from "../../lib/sources";
 import { supabase } from "../../lib/supabase";
 import { radius, space, type, usePalette, useThemeChoice } from "../../lib/theme";
 import { useOtaUpdates } from "../../lib/updates";
 
-const PRIVACY = "https://pranavadityaneti.github.io/All-Kept/privacy.html";
-const TERMS = "https://pranavadityaneti.github.io/All-Kept/terms.html";
 const since = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
 
 export default function Settings() {
@@ -95,6 +94,10 @@ export default function Settings() {
 
   const profile = useProfile(ready ? session.userId : null);
   const avatar = useAvatar(profile.data?.avatar_path);
+  // Absent where the app is free, and until the server has answered — a row that says "Free" to
+  // someone in India would only invite the question of what the alternative is.
+  const entitlement = useEntitlement(userId);
+  const subscription = entitlement.data ? subscriptionRow(entitlement.data, new Date()) : null;
   const backup = useQuery({ queryKey: ["guest-backup"], queryFn: hasGuestLibrary });
   const restorePreviousLibrary = () => Alert.alert("Restore this phone’s previous library?", "You will return to its Google connection screen. Your current Google library stays in your account.", [
     { text: "Cancel", style: "cancel" },
@@ -140,6 +143,18 @@ export default function Settings() {
             </Text>
           </View>
         </View>
+
+        {subscription && (
+          <SettingsGroup>
+            <SettingsRow
+              icon="card"
+              title="Subscription"
+              detail={subscription.detail}
+              onPress={subscription.action === "manage" ? openManageSubscription : () => router.push("/subscribe")}
+              last
+            />
+          </SettingsGroup>
+        )}
 
         <SettingsGroup>
           <SettingsRow title="Edit profile" detail="Photo and name" onPress={() => router.push("/profile")} />
@@ -273,8 +288,8 @@ export default function Settings() {
           />
           <SettingsRow icon="note" title="Send feedback" detail="Tell us what is broken or missing" onPress={() => router.push("/feedback")} />
           <SettingsRow icon="check" title="Rate Allkept" onPress={() => { void openLink(REVIEW_URL); }} />
-          <SettingsRow icon="open" title="Privacy" onPress={() => { void openLink(PRIVACY); }} />
-          <SettingsRow icon="open" title="Terms" onPress={() => { void openLink(TERMS); }} last />
+          <SettingsRow icon="open" title="Privacy" onPress={() => { void openLink(PRIVACY_URL); }} />
+          <SettingsRow icon="open" title="Terms" onPress={() => { void openLink(TERMS_URL); }} last />
         </SettingsGroup>
 
         <SettingsGroup>

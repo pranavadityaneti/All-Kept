@@ -5,7 +5,8 @@ export type EventName = | "app_open" | "library_view" | "item_open" | "open_orig
   | "search" | "category_changed" | "note_saved" | "link_started" | "link_completed"
   | "paste_link" | "item_deleted"
   | "import_opened" | "import_started" | "import_finished" | "import_failed"
-  | "interest_opened";
+  | "interest_opened"
+  | "paywall_open" | "subscribed";
 
 /**
  * Records what someone did, never what they wrote: a search records how long the term was and how

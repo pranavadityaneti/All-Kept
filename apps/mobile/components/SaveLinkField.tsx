@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -5,6 +6,7 @@ import type { SaveLinkResponse } from "@allkept/contracts";
 import { saveLink } from "@allkept/normalize";
 import { IconButton } from "./IconButton";
 import { invalidateLibrary } from "../lib/library";
+import { isPaymentRequired } from "../lib/paywall";
 import { resolveForSave } from "../lib/resolve-link";
 import { supabase } from "../lib/supabase";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -30,6 +32,7 @@ function outcome(r: SaveLinkResponse): string {
 /** Paste a link and keep it, without leaving the screen you are on. */
 export function SaveLinkField() {
   const p = usePalette();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,6 +66,8 @@ export function SaveLinkField() {
       const { data, error } = await supabase.functions.invoke<SaveLinkResponse>("save-link", {
         body: { text: value, requestId: attempt.current.id },
       });
+      // The free saves are used: the link stays in the field, and the paywall opens over it.
+      if (isPaymentRequired(error)) { router.push("/subscribe"); return; }
       if (error || !data?.itemId) throw new Error("Could not save that. Check your connection.");
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setText("");

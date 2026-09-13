@@ -3,7 +3,7 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack, useRouter } from "expo-router";
-import { configureBilling, reportStorefront } from "../lib/billing";
+import { configureBilling, entitlementKey, reportStorefront, setShareQueueBlocked } from "../lib/billing";
 import { ensureShareToken, flushShareQueue } from "../lib/share-save";
 import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
 import { backfillUnresolvedLinks, resolveDeps } from "../lib/resolve-backfill";
@@ -74,7 +74,10 @@ function Shell() {
       // The person is the customer, and the store they buy from is the server's business.
       if (session.status === "ready") configureBilling(session.userId);
       void reportStorefront().catch(() => undefined);
-      void ensureShareToken().then(() => flushShareQueue(queryClient)).catch(() => undefined);
+      // A subscription changes off the phone — a renewal, a lapse, a refund, the webhook landing
+      // late — so the server's answer is re-read each time the app comes back, not trusted for a day.
+      void queryClient.invalidateQueries({ queryKey: entitlementKey });
+      void ensureShareToken().then(() => flushShareQueue(queryClient)).then((r) => setShareQueueBlocked(queryClient, r.blocked)).catch(() => undefined);
       // Reddit tells only a phone where a post's picture is, so the phone looks while it is awake.
       void backfillRedditThumbnails(backfillDeps()).catch(() => undefined);
       // And only a phone may follow the short links the share sheet posts straight to the server.
@@ -100,6 +103,7 @@ function Shell() {
         <Stack.Screen name="search" />
         <Stack.Screen name="import" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="subscribe" options={{ presentation: "modal" }} />
       </Stack.Protected>
       <Stack.Protected guard={destination === "welcome"}><Stack.Screen name="welcome" /></Stack.Protected>
       <Stack.Protected guard={destination === "onboarding"}><Stack.Screen name="onboarding" /></Stack.Protected>

@@ -9,6 +9,7 @@ import { ItemCard } from "../../components/ItemCard";
 import { CategoryTile } from "../../components/CategoryTile";
 import { CategorySheet } from "../../components/CategorySheet";
 import { SaveLinkField } from "../../components/SaveLinkField";
+import { SavesStanding } from "../../components/SavesStanding";
 import { InterestPills } from "../../components/InterestPills";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
@@ -147,7 +148,10 @@ export default function Home() {
         </View>
 
 
-        <SaveLinkField />
+        <View style={styles.standing}>
+          <SaveLinkField />
+          <SavesStanding userId={userId} />
+        </View>
 
         {ready && showInterests(interests) && wantsInterests === null && (
           <Card>
@@ -226,6 +230,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   page: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.xl, paddingBottom: TAB_BAR_CLEARANCE },
   section: { gap: space.md },
+  standing: { gap: space.sm },
   rail: { marginHorizontal: -space.lg },
   railInner: { paddingHorizontal: space.lg, gap: space.md },
   railCard: { width: 156 },

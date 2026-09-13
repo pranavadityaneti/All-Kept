@@ -42,6 +42,7 @@ export const NAMES = {
   apple: "logo-apple",
   sound: "volume-high-outline",
   soundOff: "volume-mute-outline",
+  card: "card-outline",
 } as const satisfies Record<string, Glyph>;
 
 /** A semantic key wins over a glyph of the same spelling: "home" stays the outline the tab bar asks for. */

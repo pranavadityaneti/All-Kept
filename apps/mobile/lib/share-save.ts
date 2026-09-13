@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { Platform } from "react-native";
 import { clearCredential, dropQueued, hasCredential, peekQueue, setCredential } from "../modules/share-save";
 import { invalidateLibrary } from "./library";
+import { httpStatus } from "./paywall";
 import { supabase, supabaseAnonKey, supabaseUrl } from "./supabase";
 
 const platform = (): "ios" | "android" => (Platform.OS === "android" ? "android" : "ios");
@@ -20,8 +21,6 @@ export async function revokeShareToken(): Promise<void> {
   clearCredential();
 }
 
-const statusOf = (error: unknown): number | undefined => (error as { context?: { status?: number } } | null)?.context?.status;
-
 /**
  * Delivers what the extension queued while offline, each with the request id it was queued under,
  * so a retry can never double-save. Stops at the first network failure; runs again next foreground.
@@ -36,7 +35,7 @@ export async function flushShareQueue(queryClient: QueryClient): Promise<{ deliv
   for (const item of peekQueue()) {
     const { data, error } = await supabase.functions.invoke<{ itemId?: string }>("save-link", { body: { text: item.text, requestId: item.requestId } });
     if (error) {
-      const status = statusOf(error);
+      const status = httpStatus(error);
       if (status === 400) { dropQueued(item.requestId); continue; } // never going to be a link
       if (status === 402) { blocked = true; }
       break;

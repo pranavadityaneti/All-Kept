@@ -9,6 +9,7 @@ import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
 import { resolveForSave } from "../lib/resolve-link";
 import { invalidateLibrary } from "../lib/library";
+import { isPaymentRequired } from "../lib/paywall";
 import { useSession } from "../lib/session";
 import { supabase } from "../lib/supabase";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -40,6 +41,8 @@ export default function SaveLink() {
       const { data, error: failure } = await supabase.functions.invoke<SaveLinkResponse>("save-link", {
         body: { text: value, requestId: attempt.current.id },
       });
+      // The free saves are used: the link stays where it is, and the paywall opens over it.
+      if (isPaymentRequired(failure)) { router.push("/subscribe"); return; }
       if (failure || !data?.itemId) throw new Error("Could not save the link. Check your connection and try again.");
       setSaved(data);
       invalidateLibrary(queryClient);
