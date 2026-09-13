@@ -30,9 +30,14 @@ class ShareActivity : Activity() {
         SaveClient.Outcome.NOT_A_LINK -> "That wasn't a link"
         SaveClient.Outcome.SIGNED_OUT -> "Open Allkept to sign in"
         SaveClient.Outcome.RATE_LIMITED -> "Too many saves at once. Try again soon."
+        SaveClient.Outcome.PAYMENT_REQUIRED -> "Free saves used — open Allkept to subscribe. This one is waiting for you."
         SaveClient.Outcome.RETRY_LATER -> "Saved to Allkept. Syncs when you're online"
       }
-      if (outcome == SaveClient.Outcome.RETRY_LATER) ShareWorker.schedule(app) else SharedStore.drop(app, requestId)
+      when (outcome) {
+        SaveClient.Outcome.RETRY_LATER -> ShareWorker.schedule(app)
+        SaveClient.Outcome.PAYMENT_REQUIRED -> {} // stays queued for the app's next flush
+        else -> SharedStore.drop(app, requestId)
+      }
       Handler(Looper.getMainLooper()).post { done(message) }
     }.start()
   }

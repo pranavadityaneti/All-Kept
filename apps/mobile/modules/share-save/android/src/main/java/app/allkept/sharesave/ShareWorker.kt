@@ -20,6 +20,9 @@ class ShareWorker(context: Context, params: WorkerParameters) : Worker(context, 
     for (item in SharedStore.queue(app)) {
       when (SaveClient.save(credential, item.text, item.requestId)) {
         SaveClient.Outcome.RETRY_LATER -> retry = true
+        // Not ours to retry, and not to be thrown away: it waits for the app's next flush, which
+        // delivers it once there is a subscription.
+        SaveClient.Outcome.PAYMENT_REQUIRED -> {}
         else -> SharedStore.drop(app, item.requestId)
       }
     }

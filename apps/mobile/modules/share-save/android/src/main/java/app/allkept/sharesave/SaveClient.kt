@@ -6,7 +6,7 @@ import java.net.URL
 
 /** One POST to save-link. The outcome says what to tell the person and whether to keep the item queued. */
 object SaveClient {
-  enum class Outcome { SAVED, NOT_A_LINK, SIGNED_OUT, RATE_LIMITED, RETRY_LATER }
+  enum class Outcome { SAVED, NOT_A_LINK, SIGNED_OUT, RATE_LIMITED, PAYMENT_REQUIRED, RETRY_LATER }
 
   fun save(credential: SharedStore.Credential, text: String, requestId: String, timeoutMs: Int = 8000): Outcome = try {
     val conn = (URL(credential.endpoint).openConnection() as HttpURLConnection).apply {
@@ -25,6 +25,9 @@ object SaveClient {
       in 200..299 -> Outcome.SAVED
       400 -> Outcome.NOT_A_LINK
       401, 403 -> Outcome.SIGNED_OUT
+      // The free saves are used and there is no subscription. Kept queued, not retried here: the app
+      // delivers it after the person subscribes.
+      402 -> Outcome.PAYMENT_REQUIRED
       429 -> Outcome.RATE_LIMITED
       else -> Outcome.RETRY_LATER
     }
