@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
+import { INTEREST_FLOOR, type InterestRow } from "./interests";
 import { toItem, type LibraryItem } from "./library";
 
 const RECENT = 12;
@@ -44,6 +45,25 @@ export function useCategoryCovers(enabled: boolean) {
         if (row.category && row.thumbnail_path) covers[row.category] = row.thumbnail_path;
       }
       return covers;
+    },
+  });
+}
+
+/**
+ * What the person keeps saving, counted by the database from the entities the sorting found.
+ *
+ * Keyed as "interests", which invalidateLibrary matches, so a save that tips a name over the floor
+ * shows up without a restart. The rules for which names make the row live in interests.ts; this
+ * only fetches.
+ */
+export function useInterests(enabled: boolean) {
+  return useQuery({
+    queryKey: ["interests"],
+    enabled,
+    queryFn: async (): Promise<InterestRow[]> => {
+      const { data, error } = await supabase.rpc("user_interests", { p_min: INTEREST_FLOOR, p_limit: 40 });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as InterestRow[];
     },
   });
 }

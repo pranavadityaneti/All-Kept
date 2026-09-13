@@ -12,6 +12,8 @@ export interface Preferences {
   notifySorted: boolean;
   notifyAttention: boolean;
   aiSortingEnabled: boolean;
+  /** Null until asked: the question is put the first time there is something to show. */
+  interestsEnabled: boolean | null;
 }
 
 /** What the database says today, so a phone that has never written one still reads correctly. */
@@ -20,6 +22,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   notifySorted: true,
   notifyAttention: true,
   aiSortingEnabled: true,
+  interestsEnabled: null,
 };
 
 const COLUMN: Record<keyof Preferences, string> = {
@@ -27,6 +30,7 @@ const COLUMN: Record<keyof Preferences, string> = {
   notifySorted: "notify_sorted",
   notifyAttention: "notify_attention",
   aiSortingEnabled: "ai_sorting_enabled",
+  interestsEnabled: "interests_enabled",
 };
 
 export const preferencesKey = (userId: string | null) => ["preferences", userId] as const;
@@ -43,13 +47,15 @@ export function usePreferences(userId: string | null) {
         .single();
       if (error) throw new Error("Could not load your settings. Please try again.");
       const row = data as unknown as Record<string, unknown>;
-      const read = (k: keyof Preferences) =>
+      const read = (k: Exclude<keyof Preferences, "interestsEnabled">): boolean =>
         typeof row[COLUMN[k]] === "boolean" ? (row[COLUMN[k]] as boolean) : DEFAULT_PREFERENCES[k];
       return {
         notifyEnabled: read("notifyEnabled"),
         notifySorted: read("notifySorted"),
         notifyAttention: read("notifyAttention"),
         aiSortingEnabled: read("aiSortingEnabled"),
+        // Null is an answer here — "not asked yet" — so it is kept rather than defaulted away.
+        interestsEnabled: typeof row["interests_enabled"] === "boolean" ? (row["interests_enabled"] as boolean) : null,
       };
     },
   });
