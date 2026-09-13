@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertRejects } from "jsr:@std/assert@1";
-import { capture, CaptureError, type CaptureDeps, type ExistingItem, type NewItemRow, type CaptureRecord } from "../_shared/capture.ts";
+import { capture, CaptureError, PaymentRequiredError, type CaptureDeps, type ExistingItem, type NewItemRow, type CaptureRecord } from "../_shared/capture.ts";
 import type { CaptureInput } from "../_shared/contracts.ts";
 
 const USER = "11111111-1111-4111-8111-111111111111";
@@ -11,7 +11,10 @@ class Fake implements CaptureDeps {
   captures: CaptureRecord[] = [];
   bumps: string[] = [];
   forceConflict: "identity" | "other" | null = null;
+  admitted = true;
+  admits = 0;
   now() { return NOW; }
+  async admit(_userId: string) { this.admits++; return this.admitted; }
   async findCapture(userId: string, sourceKind: string, sourceEventId: string) {
     const c = this.captures.find((x) => x.userId === userId && x.sourceKind === sourceKind && x.sourceEventId === sourceEventId);
     return c ? { item: this.items.find((i) => i.id === c.itemId)!, deduplicated: c.deduplicated } : null;
@@ -121,4 +124,36 @@ Deno.test("direct shares need no connected source and deduplicate with DM permal
   assertEquals(f.items[0]!.row.canonical_url, url);
   assertEquals(f.items.length, 1);
   assertEquals(f.bumps.length, 1);
+});
+
+Deno.test("a new save asks the door once, and is stored when admitted", async () => {
+  const f = new Fake();
+  await capture(base({ sharedUrl: "https://www.instagram.com/reel/DdAye7JB4B4/" }), f);
+  assertEquals([f.admits, f.items.length], [1, 1]);
+});
+
+Deno.test("the twenty-sixth save is refused: nothing stored, no capture record, and the caller can tell why", async () => {
+  const f = new Fake(); f.admitted = false;
+  await assertRejects(() => capture(base({ sharedUrl: "https://www.instagram.com/reel/DdAye7JB4B4/" }), f), PaymentRequiredError);
+  assertEquals([f.items.length, f.captures.length, f.admits], [0, 0, 1]);
+});
+
+Deno.test("saving something already saved never asks — a duplicate is not a new save", async () => {
+  const f = new Fake();
+  await capture(base({ sharedUrl: "https://www.instagram.com/reel/DdAye7JB4B4/" }), f);
+  f.admitted = false;
+  const r = await capture(base({ sharedUrl: "https://www.instagram.com/reel/DdAye7JB4B4/?igsh=x" }), f);
+  assertEquals([r.deduplicated, f.bumps.length, f.admits], [true, 1, 1]);
+});
+
+Deno.test("a redelivered event never asks — the answer was already given", async () => {
+  const f = new Fake();
+  const first = await capture(base({ sourceEventId: "mid-same", sharedUrl: "https://www.instagram.com/reel/DdAye7JB4B4/" }), f);
+  f.admitted = false;
+  const again = await capture(base({ sourceEventId: "mid-same", sharedUrl: "https://www.instagram.com/reel/DdAye7JB4B4/" }), f);
+  assertEquals([again.itemId, f.admits], [first.itemId, 1]);
+});
+
+Deno.test("PaymentRequiredError is a CaptureError, so a door that only knows CaptureError still fails closed", () => {
+  assert(new PaymentRequiredError("x") instanceof CaptureError);
 });

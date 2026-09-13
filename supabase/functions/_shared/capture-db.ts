@@ -34,6 +34,11 @@ export function captureDeps(db: SupabaseClient): CaptureDeps {
       }
       return { ok: true, id: (data as { id: string }).id };
     },
+    async admit(userId) {
+      const { data, error } = await db.rpc("admit_save", { p_user_id: userId });
+      if (error) throw error;
+      return data === true;
+    },
     async bumpSave(itemId, userId, at) {
       const { error } = await db.rpc("bump_item_save", { p_item_id: itemId, p_user_id: userId, p_note: null, p_at: at.toISOString() });
       if (error) throw error;

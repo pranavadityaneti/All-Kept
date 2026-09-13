@@ -45,6 +45,13 @@ export interface CaptureRecord {
 
 export interface CaptureDeps {
   now(): Date;
+  /**
+   * Whether this person may make one more save — and, when they may, the count of one. Asked only
+   * for a *new* save: a duplicate of something already saved, or a redelivered event, never counts.
+   * The rule (a free region, an active subscription, or still inside the free saves) lives in the
+   * database, in admit_save(); this only carries the answer.
+   */
+  admit(userId: string): Promise<boolean>;
   findCapture(userId: string, sourceKind: SourceKind | "share", sourceEventId: string): Promise<{ item: ExistingItem; deduplicated: boolean } | null>;
   findExisting(userId: string, identity: ItemIdentity): Promise<ExistingItem | null>;
   insertItem(row: NewItemRow): Promise<InsertResult>;
@@ -53,6 +60,8 @@ export interface CaptureDeps {
 }
 
 export class CaptureError extends Error {}
+/** The free saves are used and there is no subscription. A CaptureError, so a door that only knows the parent still fails closed. */
+export class PaymentRequiredError extends CaptureError {}
 
 const result = (item: ExistingItem, deduplicated: boolean): CaptureResult => ({
   itemId: item.id, deduplicated, status: item.status, platform: item.platform, kind: item.kind,
@@ -109,6 +118,9 @@ export async function capture(input: CaptureInput, deps: CaptureDeps): Promise<C
     last_saved_at: savedAt.toISOString(),
     raw: { input: { ...input, sharedText: input.sharedText ? "[stored in text/note]" : undefined } },
   };
+
+  // The gate: asked here and nowhere else, after every way this could be a duplicate has been tried.
+  if (!(await deps.admit(input.userId))) throw new PaymentRequiredError("free saves used");
 
   const ins = await deps.insertItem(row);
   if (!ins.ok) {
