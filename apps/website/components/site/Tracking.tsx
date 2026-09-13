@@ -26,12 +26,11 @@ export function Tracking() {
         </>
       )}
       {GA_MEASUREMENT_ID && (
-        <>
-          <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
-          <Script id="ga4" strategy="afterInteractive">
-            {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`}
-          </Script>
-        </>
+        // The loader is appended from the inline script, the way the pixel's own snippet does it:
+        // one script element, no `src` prop for a cached type check on the build host to misread.
+        <Script id="ga4" strategy="afterInteractive">
+          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';document.head.appendChild(s);`}
+        </Script>
       )}
     </>
   );
