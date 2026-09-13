@@ -39,7 +39,9 @@ export default function Categories() {
       `Delete ${name}?`,
       count === 0
         ? "Nothing is filed under it."
-        : `The ${count} ${count === 1 ? "save" : "saves"} inside go back to the category Allkept first chose for each of them. Nothing is deleted.`,
+        : count === 1
+          ? "The save inside goes back to the category Allkept first chose for it. Nothing is deleted."
+          : `The ${count} saves inside go back to the category Allkept first chose for each of them. Nothing is deleted.`,
       [
         { text: "Keep", style: "cancel" },
         { text: "Delete", style: "destructive", onPress: () => remove.mutate(name) },

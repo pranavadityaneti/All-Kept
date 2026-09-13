@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "./Icon";
 import { categoryStyle } from "../lib/categories";
+import { categoryIcon } from "../lib/category-icons";
 import { categoryDisplayName } from "../lib/category-names";
 import { radius, space, type, usePalette } from "../lib/theme";
 
@@ -20,9 +21,14 @@ import { radius, space, type, usePalette } from "../lib/theme";
  * routinely has its own text burnt into it, which showed through the scrim and ran into ours. No
  * scrim can be tuned for every picture — moving the words off the picture is what settles it.
  */
-export function CategoryTile({ name, count, cover, onPress }: { name: string; count: number; cover?: string; onPress: () => void }) {
+export function CategoryTile({ name, count, cover, icon: chosen, onPress }: {
+  name: string; count: number; cover?: string;
+  /** The mark a person gave a category of their own. A built-in carries none and is looked up by name. */
+  icon?: string;
+  onPress: () => void;
+}) {
   const p = usePalette();
-  const { icon } = categoryStyle(name);
+  const icon = chosen ? categoryIcon(chosen) : categoryStyle(name).icon;
   const label = categoryDisplayName(name);
   const saves = `${count} ${count === 1 ? "save" : "saves"}`;
 

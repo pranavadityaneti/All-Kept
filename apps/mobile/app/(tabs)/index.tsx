@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Dimensions, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -27,6 +27,8 @@ import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { radius, space, type, usePalette } from "../../lib/theme";
 
 const CATEGORIES_SHOWN = 5;
+const GUTTER = space.sm + 2;
+const { width } = Dimensions.get("window");
 
 export default function Home() {
   const p = usePalette();
@@ -134,7 +136,7 @@ export default function Home() {
             <View style={styles.grid}>
               {grid.shown.map((c) => (
                 <View key={c.value} style={styles.cell}>
-                  <CategoryTile name={c.value} count={c.n} cover={thumbnails[coverPath(c.value) ?? ""]} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
+                  <CategoryTile name={c.value} count={c.n} icon={c.icon} cover={thumbnails[coverPath(c.value) ?? ""]} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
                 </View>
               ))}
               <View style={styles.cell}><AddCategoryTile onPress={() => setNaming(true)} /></View>
@@ -175,6 +177,8 @@ const styles = StyleSheet.create({
   rail: { marginHorizontal: -space.lg },
   railInner: { paddingHorizontal: space.lg, gap: space.md },
   railCard: { width: 156 },
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: space.md },
-  cell: { width: "31.5%" },
+  // Three across with a fixed gutter, left-aligned. "space-between" spread a two-item last row to
+  // the edges and left a hole in the middle, which the New tile — always last — made routine.
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-start", columnGap: GUTTER, rowGap: space.md },
+  cell: { width: (width - 2 * space.lg - 2 * GUTTER) / 3 },
 });
