@@ -13,6 +13,7 @@ import { revokeShareToken } from "../../lib/share-save";
 import { identities, hasGuestLibrary, restoreGuestLibrary } from "../../lib/google";
 import { usePreferences, useSetPreference } from "../../lib/preferences";
 import { useProfile, useAvatar } from "../../lib/profile";
+import { logOutBilling } from "../../lib/billing";
 import { openSystemSettings, pushPermission, registerForPush, unregisterPush } from "../../lib/push";
 import { REVIEW_URL, SUPPORT_EMAIL } from "../../lib/feedback";
 import { openLink } from "../../lib/open";
@@ -105,7 +106,7 @@ export default function Settings() {
       { text: "Stay signed in", style: "cancel" },
       // The device is forgotten first, while there is still a session allowed to forget it. Left
       // behind, the row keeps this phone ringing with this library's saves for whoever holds it next.
-      { text: "Sign out", style: "destructive", onPress: () => { void Promise.all([unregisterPush(), revokeShareToken()]).then(() => supabase.auth.signOut({ scope: "local" })).then(({ error }) => { if (error) Alert.alert("Could not sign out", "Please try again."); }); } },
+      { text: "Sign out", style: "destructive", onPress: () => { void Promise.all([unregisterPush(), revokeShareToken(), logOutBilling()]).then(() => supabase.auth.signOut({ scope: "local" })).then(({ error }) => { if (error) Alert.alert("Could not sign out", "Please try again."); }); } },
     ]);
 
   const confirmDelete = () =>

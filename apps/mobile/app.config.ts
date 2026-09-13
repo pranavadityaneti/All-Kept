@@ -42,7 +42,12 @@ const config: ExpoConfig = {
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FFFFFF" },
   },
   // The EAS project Pranav created on 8 Sep 2026. Builds and over-the-air updates resolve through it.
-  extra: { eas: { projectId: "55c2d8b3-2f30-462b-b052-2a685de0aa54" } },
+  extra: {
+    eas: { projectId: "55c2d8b3-2f30-462b-b052-2a685de0aa54" },
+    // RevenueCat's *public* SDK keys — safe in the app; the secret key never leaves the dashboard.
+    // Empty until Pranav creates the project; the app cannot sell until they are set.
+    revenuecat: { ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS ?? "", android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID ?? "" },
+  },
   updates: {
     url: "https://u.expo.dev/55c2d8b3-2f30-462b-b052-2a685de0aa54",
     // The app does its own checking (see lib/updates.ts) so it can apply an update on this launch

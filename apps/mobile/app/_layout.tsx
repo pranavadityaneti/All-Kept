@@ -3,6 +3,7 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack, useRouter } from "expo-router";
+import { configureBilling, reportStorefront } from "../lib/billing";
 import { ensureShareToken, flushShareQueue } from "../lib/share-save";
 import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
 import { backfillUnresolvedLinks, resolveDeps } from "../lib/resolve-backfill";
@@ -70,6 +71,9 @@ function Shell() {
   useEffect(() => {
     if (!unlocked) return;
     const sync = () => {
+      // The person is the customer, and the store they buy from is the server's business.
+      if (session.status === "ready") configureBilling(session.userId);
+      void reportStorefront().catch(() => undefined);
       void ensureShareToken().then(() => flushShareQueue(queryClient)).catch(() => undefined);
       // Reddit tells only a phone where a post's picture is, so the phone looks while it is awake.
       void backfillRedditThumbnails(backfillDeps()).catch(() => undefined);
@@ -79,7 +83,7 @@ function Shell() {
     sync();
     const sub = AppState.addEventListener("change", (state) => { if (state === "active") sync(); });
     return () => sub.remove();
-  }, [unlocked, queryClient]);
+  }, [unlocked, queryClient, session]);
   if (!updates.ready) return <View style={{ flex: 1, backgroundColor: p.bg }} />;
   if (configError) return <View style={[styles.centered, { backgroundColor: p.bg }]}><Text style={[type.title, { color: p.ink }]}>Allkept</Text><Text style={[type.body, { color: p.inkMuted }]}>{configError}</Text></View>;
   return <>
