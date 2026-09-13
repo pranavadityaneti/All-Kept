@@ -61,7 +61,9 @@ export function useInterests(enabled: boolean) {
     queryKey: ["interests"],
     enabled,
     queryFn: async (): Promise<InterestRow[]> => {
-      const { data, error } = await supabase.rpc("user_interests", { p_min: INTEREST_FLOOR, p_limit: 40 });
+      // One below the floor, so "Claude" at two and "Claude Code" at two can fold into one interest
+      // of four; the app applies the real floor after merging.
+      const { data, error } = await supabase.rpc("user_interests", { p_min: INTEREST_FLOOR - 1, p_limit: 60 });
       if (error) throw new Error(error.message);
       return (data ?? []) as InterestRow[];
     },

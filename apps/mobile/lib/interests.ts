@@ -62,19 +62,44 @@ function blocked(taken: readonly string[]): Set<string> {
 
 const daysSince = (iso: string, now: Date): number => Math.max(0, (now.getTime() - new Date(iso).getTime()) / 86_400_000);
 
+const escape = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** "claude" is a whole word of "claude code"; "java" is not a whole word of "javascript". */
+const wordOf = (short: string, long: string): boolean => new RegExp(`(^|\\s)${escape(short)}(\\s|$)`).test(long);
+
+/**
+ * One thread, not two. "Claude" and "Claude Code" are the same interest, and so are "Ariana" and
+ * "Ariana Grande": where one name is a whole word of the other, the two fold into one. The name
+ * saved more often keeps the label — it is the spelling the person uses — and takes the other's
+ * count, the more recent save, and the earlier crossing. Folded before the floor is applied, so two
+ * halves of one thread can make an interest between them.
+ */
+export function mergeThreads(rows: readonly InterestRow[]): InterestRow[] {
+  const ordered = [...rows].sort((a, b) => b.n - a.n || a.name.length - b.name.length);
+  const groups: InterestRow[] = [];
+  for (const r of ordered) {
+    const key = fold(r.name);
+    const home = groups.find((g) => { const k = fold(g.name); return k === key || wordOf(k, key) || wordOf(key, k); });
+    if (!home) { groups.push({ ...r }); continue; }
+    home.n += r.n;
+    if (r.last_saved_at > home.last_saved_at) home.last_saved_at = r.last_saved_at;
+    if (r.crossed_at && (!home.crossed_at || r.crossed_at < home.crossed_at)) home.crossed_at = r.crossed_at;
+  }
+  return groups;
+}
+
 /**
  * The interests to show, best first.
  *
- * The floor is applied again here even though the query applies it, so a lenient query or an old
- * function can never surface a one-off. Weight is the count, doubled for a save today and unboosted
+ * The floor is applied here, after folding: the query is asked for one below it so that two halves
+ * of one thread can make an interest between them, and a one-off can still never surface. Weight is the count, doubled for a save today and unboosted
  * three months out, so last month's thread outranks last year's without a big count ever losing to
  * a small recent one. The limit is taken after suppression, so a blocked name costs nothing.
  */
 export function rankInterests(rows: readonly InterestRow[], options: { taken: readonly string[]; now: Date; limit?: number }): Interest[] {
   const { taken, now, limit = 12 } = options;
   const never = blocked(taken);
-  return rows
-    .filter((r) => r.n >= INTEREST_FLOOR && !never.has(fold(r.name)))
+  return mergeThreads(rows.filter((r) => !never.has(fold(r.name))))
+    .filter((r) => r.n >= INTEREST_FLOOR)
     .map((r) => ({
       name: r.name.trim(),
       kind: r.kind,
