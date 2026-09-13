@@ -3,6 +3,7 @@ import { CATEGORY_WAIT_MS, processEvent, REPLY_TEXT, type ProcessDeps, type Link
 import type { NormalizedLink } from "../_shared/normalize.ts";
 import type { EventRow } from "../instagram-webhook/handler.ts";
 import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
+import { PaymentRequiredError } from "../_shared/capture.ts";
 
 const IGSID = "1086349983924918";
 const ALLKEPT = "17841428389790433";
@@ -34,6 +35,7 @@ class Fake implements ProcessDeps {
   recent = new Set<string>();
   category: string | null = "Travel & places";
   dedupe = false;
+  refuse = false;
   now() { return NOW; }
   async findSourceByIgsid() { return this.source; }
   async consumeLinkCode(code: string) { const u = this.codes[code]; if (!u) return null; delete this.codes[code]; return { userId: u }; }
@@ -41,6 +43,7 @@ class Fake implements ProcessDeps {
   async setRepliesEnabled(_id: string, enabled: boolean) { this.repliesEnabledSet.push(enabled); }
   async lookupProfile() { return { username: "pranavadityaneti", name: "Pranav" }; }
   async capture(input: CaptureInput): Promise<CaptureResult> {
+    if (this.refuse) throw new PaymentRequiredError("free saves used");
     this.captures.push(input);
     const platform = input.platform ?? (input.sharedUrl?.includes("instagram") ? "instagram" : input.sharedUrl || input.sharedText?.startsWith("http") ? "youtube" : "note");
     return { itemId: `item-${this.captures.length}`, deduplicated: this.dedupe, status: input.noLink ? "no_link" : "pending", platform, kind: input.kind ?? "video" };
@@ -354,4 +357,22 @@ Deno.test("a message that merely mentions deleting is a save, not a deletion", a
   const out = await processEvent(dm("remind me to delete my data from that other app"), f);
   assertEquals(f.erased, []);
   assertEquals(out.action, "captured");
+});
+
+Deno.test("the twenty-sixth share is refused: nothing stored, one reply an hour pointing at the app", async () => {
+  const f = new Fake(); f.refuse = true;
+  assertEquals((await processEvent(REEL, f)).action, "refused");
+  assertEquals(f.captures.length, 0);
+  assertEquals(f.replies.length, 1);
+  assertEquals(f.replies[0]!.text, REPLY_TEXT.paymentRequired);
+  assertEquals(f.replies[0]!.meta.kind, "payment_required");
+  f.recent.add("payment_required");
+  assertEquals((await processEvent(LINK, f)).action, "refused");
+  assertEquals(f.replies.length, 1);
+});
+
+Deno.test("with replies off, a refused share is simply refused", async () => {
+  const f = new Fake(); f.refuse = true; f.source!.repliesEnabled = false;
+  assertEquals((await processEvent(REEL, f)).action, "refused");
+  assertEquals(f.replies.length, 0);
 });

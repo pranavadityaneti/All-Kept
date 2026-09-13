@@ -1,10 +1,11 @@
 // Turns a stored Instagram messaging event into Allkept actions: linking, capture, deletion, replies. Pure; all I/O injected.
 import type { EventRow } from "./handler.ts";
+import { PaymentRequiredError } from "../_shared/capture.ts";
 import type { CaptureInput, CaptureResult } from "../_shared/contracts.ts";
 import { LINK_CODE_LENGTH } from "../_shared/contracts.ts";
 import { instagramPermalink, type NormalizedLink } from "../_shared/normalize.ts";
 
-export type ReplyKind = "linked" | "code_rejected" | "unlinked" | "unsupported" | "confirm" | "control" | "delete";
+export type ReplyKind = "linked" | "code_rejected" | "unlinked" | "unsupported" | "confirm" | "control" | "delete" | "payment_required";
 
 export interface LinkedSource {
   id: string;
@@ -54,7 +55,7 @@ export interface ProcessDeps {
 }
 
 export interface ProcessOutcome {
-  action: "echo" | "ignored" | "deleted" | "linked" | "code_rejected" | "unlinked" | "control" | "unsupported" | "captured" | "attached" | "delete_offered" | "erased";
+  action: "echo" | "ignored" | "deleted" | "linked" | "code_rejected" | "unlinked" | "control" | "unsupported" | "captured" | "attached" | "delete_offered" | "erased" | "refused";
   itemIds?: string[];
 }
 
@@ -82,6 +83,7 @@ export const REPLY_TEXT = {
   deleteDone: "Everything has been deleted. Your Allkept account is gone and nothing of it remains. Thank you for trying it.",
   deleteExpired: "That confirmation has expired or does not match. Send \"delete my data\" again for a new one. Nothing has been deleted.",
   alreadySaved: "Already saved.",
+  paymentRequired: "You've used your 25 free saves. Open Allkept to subscribe and keep saving — everything you've saved is still there.",
   saved: (category: string | null) => (category ? `Saved · ${category}` : "Saved, sorting…"),
   note: "Saved as a note.",
   noLink: " The original link was not included. Reply to your post message with its copied link, or open this save in Allkept and tap Add original link.",
@@ -230,7 +232,18 @@ export async function processEvent(row: EventRow, deps: ProcessDeps): Promise<Pr
   }
 
   const results: CaptureResult[] = [];
-  for (const input of inputs) results.push(await deps.capture(input));
+  for (const input of inputs) {
+    try { results.push(await deps.capture(input)); }
+    catch (e) {
+      // The free saves are used and there is no subscription. Nothing is stored; the person is told
+      // once an hour rather than once per share, and pointed at the app, where the paywall is.
+      if (!(e instanceof PaymentRequiredError)) throw e;
+      if (source.repliesEnabled && !(await deps.recentReply(igsid, "payment_required", new Date(now.getTime() - HOUR)))) {
+        await deps.sendReply(igsid, REPLY_TEXT.paymentRequired, { kind: "payment_required", userId: source.userId, sourceId: source.id, itemId: null, notAfter });
+      }
+      return { action: "refused", itemIds: results.map((r) => r.itemId) };
+    }
+  }
 
   if (source.repliesEnabled) {
     const first = results[0]!;

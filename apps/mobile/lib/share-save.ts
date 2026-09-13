@@ -25,17 +25,24 @@ const statusOf = (error: unknown): number | undefined => (error as { context?: {
 /**
  * Delivers what the extension queued while offline, each with the request id it was queued under,
  * so a retry can never double-save. Stops at the first network failure; runs again next foreground.
+ *
+ * A 402 — the free saves are used and there is no subscription — keeps the item queued and stops:
+ * everything behind it would be refused for the same reason, and the item is delivered by the next
+ * flush after the person subscribes. `blocked` is how the app knows to say so.
  */
-export async function flushShareQueue(queryClient: QueryClient): Promise<number> {
+export async function flushShareQueue(queryClient: QueryClient): Promise<{ delivered: number; blocked: boolean }> {
   let delivered = 0;
+  let blocked = false;
   for (const item of peekQueue()) {
     const { data, error } = await supabase.functions.invoke<{ itemId?: string }>("save-link", { body: { text: item.text, requestId: item.requestId } });
     if (error) {
-      if (statusOf(error) === 400) { dropQueued(item.requestId); continue; } // never going to be a link
+      const status = statusOf(error);
+      if (status === 400) { dropQueued(item.requestId); continue; } // never going to be a link
+      if (status === 402) { blocked = true; }
       break;
     }
     if (data?.itemId) { dropQueued(item.requestId); delivered++; }
   }
   if (delivered) invalidateLibrary(queryClient);
-  return delivered;
+  return { delivered, blocked };
 }

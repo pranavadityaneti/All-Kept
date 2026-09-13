@@ -1,6 +1,7 @@
 import { saveLink } from "../_shared/normalize.ts";
 import { LIMITS, type CaptureInput, type CaptureResult } from "../_shared/contracts.ts";
 import { apiError, json, readJson } from "../_shared/http.ts";
+import { PaymentRequiredError } from "../_shared/capture.ts";
 import { ShareTokenRateLimited } from "../_shared/share-token.ts";
 
 export interface SaveLinkDeps {
@@ -35,10 +36,18 @@ export async function handleSaveLink(req: Request, deps: SaveLinkDeps): Promise<
     return apiError("bad_request", "Stories disappear after 24 hours, so there is nothing to keep. Save the post or the profile instead.");
   }
 
-  const result = await deps.capture({
-    userId, sourceId: null, sourceKind: "share", sourceEventId: requestId,
-    savedAt: new Date().toISOString(), sharedUrl: link.canonicalUrl ?? link.sourceUrl!, sharedText: text,
-  });
+  let result: CaptureResult;
+  try {
+    result = await deps.capture({
+      userId, sourceId: null, sourceKind: "share", sourceEventId: requestId,
+      savedAt: new Date().toISOString(), sharedUrl: link.canonicalUrl ?? link.sourceUrl!, sharedText: text,
+    });
+  } catch (e) {
+    // The free saves are used and there is no subscription. 402 rather than 400: the app opens the
+    // paywall on it, and the share extension keeps the link queued instead of dropping it.
+    if (e instanceof PaymentRequiredError) return apiError("payment_required", "You've used your 25 free saves. Subscribe in Allkept to keep saving.");
+    throw e;
+  }
   deps.enqueue(result.itemId);
   return json(result);
 }

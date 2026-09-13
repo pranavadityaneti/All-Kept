@@ -52,3 +52,14 @@ describe("offline queue", () => {
     expect(mocks.invalidate).not.toHaveBeenCalled();
   });
 });
+
+describe("the twenty-sixth share", () => {
+  it("is kept in the queue, stops the flush, and is reported as blocked", async () => {
+    mocks.peek.mockReturnValue([{ text: "https://a.example", requestId: "r1", at: 1 }, { text: "https://b.example", requestId: "r2", at: 2 }]);
+    mocks.invoke.mockResolvedValue({ data: null, error: httpError(402) });
+    const out = await flushShareQueue(queryClient);
+    expect(out).toEqual({ delivered: 0, blocked: true });
+    expect(mocks.drop).not.toHaveBeenCalled();
+    expect(mocks.invoke).toHaveBeenCalledOnce();
+  });
+});

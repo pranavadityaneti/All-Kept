@@ -1,4 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
+import { PaymentRequiredError } from "../_shared/capture.ts";
 import { handleSaveLink, type SaveLinkDeps } from "../save-link/handler.ts";
 import type { CaptureInput } from "../_shared/contracts.ts";
 const URL = "https://www.instagram.com/p/Original/";
@@ -85,4 +86,12 @@ Deno.test("a flood from one token is answered 429, not 401", async () => {
   const res = await handleSaveLink(req({ text: URL, requestId: "request-123" }), deps);
   assertEquals(res.status, 429);
   assertEquals(f.captured.length, 0);
+});
+
+Deno.test("the twenty-sixth save answers 402 with a code the app and the extension can act on", async () => {
+  const f = fake();
+  f.deps.capture = async () => { throw new PaymentRequiredError("free saves used"); };
+  const res = await handleSaveLink(req({ text: URL, requestId: "request-123" }), f.deps);
+  assertEquals(res.status, 402);
+  assertEquals((await res.json() as { code: string }).code, "payment_required");
 });
