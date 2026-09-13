@@ -168,3 +168,18 @@ My next `git commit` then re-committed *their* staged content under *my* message
   commit is not. Check `git log --oneline -1` immediately before any history rewrite.
 - **Also:** to split a commit whose deletions are already staged, unstage by hash
   (`git restore --staged --source=HEAD~1 -- <path>`) rather than by a path that may no longer exist.
+
+## 2026-09-13 — A simulated tap on a React Native `Switch` can double-fire; a human finger does not
+Testing whether four Settings switches could save, I flipped "Sort saves automatically" through the
+simulator MCP and watched it snap back within a second, twice, while a switch backed by a column I
+had just granted held. I read that as the database rejecting the write — no migration grants
+`authenticated` update on `notify_*` or `ai_sorting_enabled`. Pranav then flipped it by hand: off
+stays off, on stays on. **The writes work.** What I saw was the *controlled* Switch bouncing under
+a synthetic tap — the optimistic update re-renders it mid-gesture and it fires `onValueChange`
+again — which also explains why my later taps to restore the interests switch did nothing.
+- **Remember:** never conclude anything about persistence from an automated tap on a Switch.
+  Verify switches by hand, or read the value back through a query, not through the toggle.
+- **The finding that survives:** the migrations in the repo do **not** grant the update that the
+  live database evidently permits. Either a grant was applied outside the migrations or a
+  migration was later removed — the files are not the whole truth of the hosted schema. Handed to
+  the security audit to verify against the live project rather than guessed at.
