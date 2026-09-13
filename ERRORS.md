@@ -183,3 +183,19 @@ again — which also explains why my later taps to restore the interests switch 
   live database evidently permits. Either a grant was applied outside the migrations or a
   migration was later removed — the files are not the whole truth of the hosted schema. Handed to
   the security audit to verify against the live project rather than guessed at.
+
+## 2026-09-13 — `expo run:ios` dies in pod install without a UTF-8 locale
+- **Symptom:** `npx expo run:ios --device <udid>` fails in "Installing CocoaPods…" with a Ruby trace ending `Unicode Normalization not appropriate for ASCII-8BIT (Encoding::CompatibilityError)`. Xcode never runs.
+- **Cause:** the agent's shell has no `LANG`; CocoaPods (Ruby 4, Homebrew) needs UTF-8. A bare `pod install` warned about it and worked when run with the locale set; `expo run:ios` runs its own `pod install` without it and crashes.
+- **Fix:** `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 npx expo run:ios --device <udid> --no-bundler` (Metro already running on 8081). Same for any bare `pod install` in `apps/mobile/ios`.
+- **Remember:** the simulator dev build is a *local* Xcode build (`ios/` is gitignored, no `development` profile in `eas.json`); EAS is used for Android and the store builds. Metro must be restarted after adding an `.env*` file — it reads them at start, and the manifest it serves carries `extra`.
+
+## 2026-09-13 — zsh: a loop variable named `path` wipes PATH
+- **Symptom:** mid-script, every external command "command not found: curl / head / cat / dig" while builtins and shell functions (`echo`, `printf`, the `grep` wrapper) keep working; an explicit `export PATH=…` at the top does not help. Two verification runs and two log appends silently did nothing.
+- **Cause:** the Bash tool runs zsh, where lowercase `path` is the array bound to `PATH`. `for path in / /auth/callback` set PATH to "/". Same trap for `cdpath`, `fpath`, `manpath`.
+- **Fix:** never use `path` (or the other tied names) as a variable in these scripts — `route`, `p`, `f`.
+- **Remember:** when "command not found" appears for /usr/bin binaries partway through a script, suspect a clobbered PATH before suspecting the sandbox.
+
+## 2026-09-13 — zsh: `${PIPESTATUS[0]}` is bash; in zsh it is `$pipestatus[1]`
+- **Symptom:** `cmd | head; echo "exit ${PIPESTATUS[0]}"` prints an empty exit code in the Bash tool's zsh, so a "commit only on green" guard silently refuses to commit even when everything passed.
+- **Fix:** run the command without a pipe and read `$?`, or use zsh's `$pipestatus[1]`.
