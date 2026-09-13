@@ -8,7 +8,7 @@
 
 **Tech stack:** Deno edge functions (tests: `npm run test:functions`), the `packages/normalize` TypeScript package (tests: `cd packages/normalize && npx vitest run`), Supabase CLI via `node_modules/.bin/supabase` (never the Homebrew binary — see ERRORS.md), pg_cron + pg_net.
 
-**Spec:** `docs/superpowers/specs/2026-09-12-pipeline-region-and-expansion-design.md`.
+**Spec:** `internal/superpowers/specs/2026-09-12-pipeline-region-and-expansion-design.md`.
 
 **House rules that apply to every task:** one task per commit; run the named tests and watch them fail before implementing; never deploy, push, or apply a migration inside a task — Tasks 9 and 10 say exactly where Pranav's Yes is needed; do not touch files outside the task's list.
 

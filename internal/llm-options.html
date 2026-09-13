@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Allkept — LLM options for classification</title>
+<style>
+ :root{--ink:#15131c;--muted:#5d5a68;--line:#e3e0ea;--accent:#6d4aff;--bad:#c0392b;--good:#1e7a4d;--warn:#9a5b12;--soft:#f7f6fb}
+ *{box-sizing:border-box} body{margin:0;background:#fff;color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+ main{max-width:960px;margin:0 auto;padding:40px 24px 90px}
+ h1{font-size:31px;line-height:1.2;margin:0 0 6px} h2{font-size:21px;margin:44px 0 10px;padding-top:16px;border-top:1px solid var(--line)}
+ h3{font-size:17px;margin:26px 0 8px} h4{font-size:15px;margin:18px 0 6px;color:var(--muted)}
+ .sub{color:var(--muted);margin:0 0 22px}
+ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px}
+ th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+ th{font-weight:600;background:var(--soft)} td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+ .scroll{overflow-x:auto}
+ .big{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:18px 0}
+ .big .fig{font-size:29px;font-weight:600;letter-spacing:-.5px}
+ .plain{background:#f4f1ff;border-left:3px solid var(--accent);padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+ .warn{background:#fdf3f2;border-left:3px solid var(--bad);padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+ .ok{background:#eef8f2;border-left:3px solid var(--good);padding:12px 16px;margin:16px 0;border-radius:0 8px 8px 0}
+ code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:13.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+ .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;vertical-align:middle;white-space:nowrap}
+ .t-yes{background:#e7f5ee;color:var(--good)} .t-no{background:#fdeceb;color:var(--bad)} .t-part{background:#fdf1e3;color:var(--warn)}
+ .t-unv{background:#eeecf5;color:#4a4757;border:1px dashed #b9b4cc}
+ .baseline td{background:#fffbe9}
+ nav.toc{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px 20px;margin:22px 0 10px}
+ nav.toc ol{margin:6px 0 6px 20px;padding:0} nav.toc li{margin:3px 0} nav.toc a{color:var(--ink)}
+ ul{margin:8px 0 8px 20px;padding:0} li{margin:5px 0}
+ a{color:var(--accent)} a:hover{text-decoration:underline}
+ .src{font-size:13.5px;line-height:1.5} .src td{padding:6px 9px}
+ .small{font-size:13.5px;color:var(--muted)}
+ @media print{
+   body{font-size:10.5pt} main{max-width:none;padding:0}
+   h2{page-break-after:avoid;break-after:avoid} h3{page-break-after:avoid}
+   table{page-break-inside:auto;font-size:9pt} tr{page-break-inside:avoid}
+   .big,.plain,.warn,.ok,nav.toc{border:1px solid #999;background:#fff}
+   a{color:#000;text-decoration:none} a[href^="http"]::after{content:" (" attr(href) ")";font-size:7.5pt;color:#555;word-break:break-all}
+   nav.toc a::after{content:""}
+ }
+</style></head><body><main>
+
+<h1>Allkept — alternative LLM providers for classification</h1>
+<p class="sub">12 September 2026 · pricing one workload only: the single classification call made per saved link.
+Every price below was read off the vendor's own pricing page on <strong>12 September 2026</strong> unless it is marked
+<span class="tag t-unv">UNVERIFIED</span>, which means I could not confirm it on an official page and it must not be relied on.</p>
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#workload">The workload being priced</a></li>
+    <li><a href="#headline">Headline comparison — cost per save</a></li>
+    <li><a href="#json">The hard requirement: strict JSON</a></li>
+    <li><a href="#openai">OpenAI — the incumbent, and the cheap tier already on the shelf</a></li>
+    <li><a href="#gemini">Google Gemini</a></li>
+    <li><a href="#mistral">Mistral</a></li>
+    <li><a href="#deepseek">DeepSeek</a></li>
+    <li><a href="#qwen">Alibaba Qwen</a></li>
+    <li><a href="#glm">Zhipu GLM (Z.ai)</a></li>
+    <li><a href="#kimi">Moonshot Kimi</a></li>
+    <li><a href="#minimax">MiniMax</a></li>
+    <li><a href="#groq">Groq</a></li>
+    <li><a href="#cerebras">Cerebras</a></li>
+    <li><a href="#free">Genuinely free options</a></li>
+    <li><a href="#selfhost">Self-hosting open weights</a></li>
+    <li><a href="#privacy">Privacy and legal — what each option forces into the policy</a></li>
+    <li><a href="#integration">Integration cost against <code>ClassifyDeps</code></a></li>
+    <li><a href="#multilingual">Multilingual quality, especially Indian languages</a></li>
+    <li><a href="#reco">Recommendation</a></li>
+    <li><a href="#decisions">The decisions you have to make</a></li>
+    <li><a href="#sources">Sources, and what I could not verify</a></li>
+  </ol>
+</nav>
+
+<!-- ===================================================================== -->
+<h2 id="workload">1. The workload being priced</h2>
+<p>One call per saved link, made from a Supabase Deno edge function in <code>ap-southeast-1</code>, over plain
+<code>fetch</code> with no SDK. Read from <code>supabase/functions/_shared/classify.ts</code>,
+<code>openai.ts</code> and <code>classifiers.ts</code>:</p>
+<ul>
+  <li><strong>Input:</strong> a fixed 189-word system prompt (1,114 characters) plus platform, kind, link, author, title (≤300 chars),
+  caption or text (≤1,500 chars) and the person's own note (≤300 chars). Short social-media text, often not English.</li>
+  <li><strong>Output:</strong> strict JSON — <code>category</code> (one of 15 fixed values), <code>tags</code>,
+  <code>summary</code> (one sentence ≤140 chars, in the caption's language), <code>entities</code>,
+  <code>language</code>, <code>actionability</code> (one of 7), <code>confidence</code>.
+  Today this is enforced by OpenAI's <code>json_schema</code> with <code>strict: true</code> and
+  <code>additionalProperties: false</code>.</li>
+  <li><strong>Measured size:</strong> 629 input tokens, 129 output tokens, averaged over 131 real calls
+  (<code>internal/unit-economics.html</code>).</li>
+  <li><strong>Today's cost:</strong> <code>gpt-5.6-sol</code> at $4 / $20 per million = <strong>$0.005096 per save</strong>.
+  A bulk tier <code>gpt-5.6-terra</code> ($2 / $12) is already wired for imports.</li>
+  <li><strong>Retries matter.</strong> <code>validateOutput()</code> returns <code>null</code> on anything that does not
+  match the shape, and a failed classification retries up to five times. A model that returns near-JSON instead of JSON
+  does not just annoy you — it multiplies its own bill.</li>
+</ul>
+<p>Every "cost per save" in this document is <code>629 × input_price ÷ 1e6 + 129 × output_price ÷ 1e6</code>, with no
+caching assumed (the system prompt is identical on every call, so prompt caching is a real further saving on any vendor
+that offers it — that is a separate lever and is not counted here).</p>
+<div class="plain"><strong>In plain English.</strong> You are buying one small, boring job a million times over: read a
+caption, hand back a tidy little form filled in correctly. It is the same job every time, the text is short, and the
+answer has to be machine-readable or the whole thing is worthless. That is the cheapest kind of AI work there is — which
+is exactly why paying premium-model prices for it is worth questioning.</div>
+
+<!-- ===================================================================== -->
+<h2 id="headline">2. Headline comparison — cost per save</h2>
+<p>Sorted cheapest first. "Per 1M saves" is the monthly bill at 10,000 Indian users × 100 saves/month — the number that
+<code>unit-economics.html</code> says should decide something. <strong>Strict JSON</strong> is the hard gate: a
+<span class="tag t-no">no</span> there means the row is disqualified however cheap it is.</p>
+
+<div class="scroll"><table>
+<tr><th>Model</th><th class="n">$/M in</th><th class="n">$/M out</th><th class="n">Per save</th><th class="n">vs today</th><th class="n">Per 1M saves</th><th>Strict JSON</th><th>Processed in</th></tr>
+
+<tr><td><strong>Mistral</strong> Ministral 3 (3B)</td><td class="n">0.10</td><td class="n">0.10</td><td class="n">$0.0000758</td><td class="n">67×</td><td class="n">$76</td><td><span class="tag t-yes">json_schema</span></td><td>EU <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Zhipu</strong> GLM-4-32B-0414-128K</td><td class="n">0.10</td><td class="n">0.10</td><td class="n">$0.0000758</td><td class="n">67×</td><td class="n">$76</td><td><span class="tag t-no">json_object only</span></td><td>Singapore</td></tr>
+<tr><td><strong>Qwen</strong> Qwen-Flash (Singapore)</td><td class="n">0.05</td><td class="n">0.40</td><td class="n">$0.0000831</td><td class="n">61×</td><td class="n">$83</td><td><span class="tag t-no">not in SG region</span></td><td>Singapore</td></tr>
+<tr><td><strong>Groq</strong> GPT-OSS-20B</td><td class="n">0.075</td><td class="n">0.30</td><td class="n">$0.0000859</td><td class="n">59×</td><td class="n">$86</td><td><span class="tag t-yes">strict:true</span></td><td>United States</td></tr>
+<tr><td><strong>Zhipu</strong> GLM-4.7-FlashX</td><td class="n">0.07</td><td class="n">0.40</td><td class="n">$0.0000956</td><td class="n">53×</td><td class="n">$96</td><td><span class="tag t-no">json_object only</span></td><td>Singapore</td></tr>
+<tr><td><strong>Mistral</strong> Ministral 3 (8B)</td><td class="n">0.15</td><td class="n">0.15</td><td class="n">$0.0001137</td><td class="n">45×</td><td class="n">$114</td><td><span class="tag t-yes">json_schema</span></td><td>EU <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Google</strong> Gemini 2.5 Flash-Lite <em>(paid)</em></td><td class="n">0.10</td><td class="n">0.40</td><td class="n">$0.0001145</td><td class="n">45×</td><td class="n">$115</td><td><span class="tag t-yes">responseSchema</span></td><td>US/global <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Mistral</strong> Ministral 3 (14B)</td><td class="n">0.20</td><td class="n">0.20</td><td class="n">$0.0001516</td><td class="n">34×</td><td class="n">$152</td><td><span class="tag t-yes">json_schema</span></td><td>EU <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Zhipu</strong> GLM-5.3-Flash</td><td class="n">0.15</td><td class="n">0.50</td><td class="n">$0.0001589</td><td class="n">32×</td><td class="n">$159</td><td><span class="tag t-no">json_object only</span></td><td>Singapore</td></tr>
+<tr><td><strong>DeepSeek</strong> deepseek-flash <em>(off-peak)</em></td><td class="n">0.15</td><td class="n">0.60</td><td class="n">$0.0001718</td><td class="n">30×</td><td class="n">$172</td><td><span class="tag t-no">json_object only</span></td><td><strong>China (PRC)</strong></td></tr>
+<tr><td><strong>Mistral</strong> Mistral Small 4</td><td class="n">0.15</td><td class="n">0.60</td><td class="n">$0.0001718</td><td class="n">30×</td><td class="n">$172</td><td><span class="tag t-yes">json_schema</span></td><td>EU <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Groq</strong> GPT-OSS-120B</td><td class="n">0.15</td><td class="n">0.60</td><td class="n">$0.0001718</td><td class="n">30×</td><td class="n">$172</td><td><span class="tag t-yes">strict:true</span></td><td>United States</td></tr>
+<tr><td><strong>Zhipu</strong> GLM-4.5-Air</td><td class="n">0.20</td><td class="n">1.10</td><td class="n">$0.0002677</td><td class="n">19×</td><td class="n">$268</td><td><span class="tag t-no">json_object only</span></td><td>Singapore</td></tr>
+<tr class="baseline"><td><strong>OpenAI</strong> <code>gpt-5.6-luna</code> — <em>already wired</em></td><td class="n">0.20</td><td class="n">1.20</td><td class="n">$0.0002806</td><td class="n">18×</td><td class="n">$281</td><td><span class="tag t-yes">strict json_schema</span></td><td>United States</td></tr>
+<tr><td><strong>Cerebras</strong> GPT-OSS-120B</td><td class="n">0.35</td><td class="n">0.75</td><td class="n">$0.0003169</td><td class="n">16×</td><td class="n">$317</td><td><span class="tag t-part">likely <span class="tag t-unv">unver</span></span></td><td>United States</td></tr>
+<tr><td><strong>DeepSeek</strong> deepseek-flash <em>(peak)</em></td><td class="n">0.30</td><td class="n">1.20</td><td class="n">$0.0003435</td><td class="n">15×</td><td class="n">$344</td><td><span class="tag t-no">json_object only</span></td><td><strong>China (PRC)</strong></td></tr>
+<tr><td><strong>MiniMax</strong> MiniMax-M3 (≤512k)</td><td class="n">0.30</td><td class="n">1.20</td><td class="n">$0.0003435</td><td class="n">15×</td><td class="n">$344</td><td><span class="tag t-no">not supported</span></td><td><span class="tag t-unv">unverified</span></td></tr>
+<tr><td><strong>Google</strong> Gemini 3.1 Flash-Lite <em>(paid)</em></td><td class="n">0.25</td><td class="n">1.50</td><td class="n">$0.0003508</td><td class="n">15×</td><td class="n">$351</td><td><span class="tag t-yes">responseSchema</span></td><td>US/global <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Qwen</strong> Qwen-Plus (Singapore)</td><td class="n">0.40</td><td class="n">1.60</td><td class="n">$0.0004580</td><td class="n">11×</td><td class="n">$458</td><td><span class="tag t-no">not in SG region</span></td><td>Singapore</td></tr>
+<tr><td><strong>Mistral</strong> Mistral Large 3</td><td class="n">0.50</td><td class="n">1.50</td><td class="n">$0.0005080</td><td class="n">10×</td><td class="n">$508</td><td><span class="tag t-yes">json_schema</span></td><td>EU <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Google</strong> Gemini 3.5 Flash-Lite / 2.5 Flash <em>(paid)</em></td><td class="n">0.30</td><td class="n">2.50</td><td class="n">$0.0005112</td><td class="n">10×</td><td class="n">$511</td><td><span class="tag t-yes">responseSchema</span></td><td>US/global <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Zhipu</strong> GLM-4.7 / 4.6 / 4.5</td><td class="n">0.60</td><td class="n">2.20</td><td class="n">$0.0006612</td><td class="n">7.7×</td><td class="n">$661</td><td><span class="tag t-no">json_object only</span></td><td>Singapore</td></tr>
+<tr><td><strong>DeepSeek</strong> deepseek-v4-pro <em>(off-peak)</em></td><td class="n">0.66</td><td class="n">1.98</td><td class="n">$0.0006706</td><td class="n">7.6×</td><td class="n">$671</td><td><span class="tag t-no">json_object only</span></td><td><strong>China (PRC)</strong></td></tr>
+<tr><td><strong>Cerebras</strong> Qwen 3.8 27B</td><td class="n">0.99</td><td class="n">1.49</td><td class="n">$0.0008149</td><td class="n">6.3×</td><td class="n">$815</td><td><span class="tag t-part">likely <span class="tag t-unv">unver</span></span></td><td>United States</td></tr>
+<tr><td><strong>Google</strong> Gemini 3.8/3.7/3.6 Flash <em>(promo to 31 Dec 2026)</em></td><td class="n">0.75</td><td class="n">3.75</td><td class="n">$0.0009555</td><td class="n">5.3×</td><td class="n">$956</td><td><span class="tag t-yes">responseSchema</span></td><td>US/global <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Moonshot</strong> kimi-k2.6 / k2.7-code</td><td class="n">0.95</td><td class="n">4.00</td><td class="n">$0.0011136</td><td class="n">4.6×</td><td class="n">$1,114</td><td><span class="tag t-no">json_object only</span></td><td>Singapore</td></tr>
+<tr><td><strong>Mistral</strong> Mistral Medium 3.5</td><td class="n">1.50</td><td class="n">7.50</td><td class="n">$0.0019110</td><td class="n">2.7×</td><td class="n">$1,911</td><td><span class="tag t-yes">json_schema</span></td><td>EU <span class="tag t-unv">unver</span></td></tr>
+<tr><td><strong>Qwen</strong> Qwen-Max (Singapore)</td><td class="n">2.00</td><td class="n">6.00</td><td class="n">$0.0020320</td><td class="n">2.5×</td><td class="n">$2,032</td><td><span class="tag t-no">not in SG region</span></td><td>Singapore</td></tr>
+<tr><td><strong>OpenAI</strong> <code>gpt-5.6-terra</code> — <em>already wired (bulk)</em></td><td class="n">2.00</td><td class="n">12.00</td><td class="n">$0.0028060</td><td class="n">1.8×</td><td class="n">$2,806</td><td><span class="tag t-yes">strict json_schema</span></td><td>United States</td></tr>
+<tr><td><strong>Moonshot</strong> kimi-k3</td><td class="n">3.00</td><td class="n">15.00</td><td class="n">$0.0038220</td><td class="n">1.3×</td><td class="n">$3,822</td><td><span class="tag t-no">json_object only</span></td><td>Singapore</td></tr>
+<tr class="baseline"><td><strong>OpenAI</strong> <code>gpt-5.6-sol</code> — <strong>today</strong></td><td class="n">4.00</td><td class="n">20.00</td><td class="n">$0.0050960</td><td class="n">1.0×</td><td class="n">$5,096</td><td><span class="tag t-yes">strict json_schema</span></td><td>United States</td></tr>
+</table></div>
+
+<p class="small">Free options are excluded from this table because their cost is $0 and the trade is entirely
+non-monetary — see <a href="#free">section 14</a>. Prompt caching is excluded throughout; on OpenAI's cached-input rate
+(one tenth of input) the fixed system prompt would cut the input half of every row further still.</p>
+
+<div class="plain"><strong>In plain English.</strong> There is a 67× spread between the dearest and the cheapest way to do
+exactly the same job. But most of the cheap end has something wrong with it — the model won't reliably return a proper
+form, or the data goes somewhere you'd have to explain to an App Store reviewer. The interesting row is the yellow one in
+the middle: <code>gpt-5.6-luna</code>, an 18× saving, from the company you already use, with nothing to explain to
+anybody.</div>
+
+<!-- ===================================================================== -->
+<h2 id="json">3. The hard requirement: strict JSON</h2>
+<p>There are three genuinely different things vendors call "JSON output", and the difference decides this whole exercise.</p>
+<table>
+<tr><th>Level</th><th>What it means</th><th>Who has it, verified on their own docs</th></tr>
+<tr><td><strong>Strict schema</strong> (constrained decoding)</td><td>The decoder is physically prevented from emitting
+  a token that breaks your schema. Enums are guaranteed. This is what <code>openai.ts</code> uses today.</td>
+  <td>OpenAI (all GPT-5.6 tiers), Google Gemini (<code>responseSchema</code> / <code>responseJsonSchema</code>, enums
+  supported), Mistral (<code>json_schema</code> — "guarantees the message the model generates is in JSON and follows the
+  schema you provide"), Groq (<code>strict: true</code>, on <code>gpt-oss-20b</code>, <code>gpt-oss-120b</code>,
+  <code>qwen/qwen3.8-27b</code>)</td></tr>
+<tr><td><strong>JSON object mode</strong></td><td>You get syntactically valid JSON. Nothing guarantees your <em>keys</em>,
+  your <em>enums</em> or your <em>types</em>. The model can happily return <code>{"category": "Recipes &amp; Food"}</code>
+  when your enum says <code>"Food"</code>.</td>
+  <td>DeepSeek (<code>json_object</code> only, and their docs warn "the API may occasionally return empty content"),
+  Zhipu GLM (<code>text</code> or <code>json_object</code> only), Moonshot Kimi (<code>json_object</code> only, docs give
+  "no guarantees" about matching a schema), Alibaba Qwen <em>on the Singapore endpoint</em></td></tr>
+<tr><td><strong>Nothing</strong></td><td>Prompt and pray.</td><td>MiniMax M2.x / M3 — <code>response_format</code> is
+  absent from the OpenAI-compatible parameter table and, per MiniMax's own GitHub issue tracker, is silently ignored
+  <span class="tag t-unv">unverified on an official docs page</span></td></tr>
+</table>
+
+<div class="warn"><p><strong>The Qwen trap.</strong> Alibaba <em>does</em> support strict <code>json_schema</code> — but
+their own JSON-mode page says it is limited to "Qwen3.7-Plus series, Qwen3.7-Flash series, Qwen3.7-Max series,
+Qwen3.8-Max series, and Qwen3.8-Flash series models", and then adds:
+<strong>"Singapore region models are not supported yet."</strong> Your edge function runs in <code>ap-southeast-1</code>
+and Allkept's backend sits in Mumbai. Getting strict JSON out of Qwen means using the Beijing endpoint — i.e. sending
+users' saved content into mainland China. That is not a trade worth making for $83 a month.</p></div>
+
+<p><strong>Why json_object-only is more expensive than it looks.</strong> <code>validateOutput()</code> returns
+<code>null</code> whenever <code>category</code> is not one of the 15 exact strings, and the pipeline retries up to five
+times. A model that gets the enum right 90% of the time does not cost you 10% more — it costs you 10% more calls
+<em>plus</em> a tail of saves that end up uncategorised after five attempts, which is a product failure, not a billing
+one. Every json_object-only vendor in the table would need a schema-in-the-prompt workaround and a measured failure rate
+before the cost column above means anything.</p>
+
+<div class="plain"><strong>In plain English.</strong> "Returns JSON" and "returns the exact form you asked for" are
+different promises, and only four of these companies make the second one. The others will mostly get it right and
+occasionally hand you a category that doesn't exist, which your code throws away and pays to ask again. That hidden retry
+bill is why the cheapest row on the table is not automatically the cheapest option.</div>
+
+<!-- ===================================================================== -->
+<h2 id="openai">4. OpenAI — the incumbent, and the cheap tier already on the shelf</h2>
+<table>
+<tr><th>Model</th><th class="n">Input</th><th class="n">Cached in</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td><code>gpt-5.6-sol</code> (today)</td><td class="n">$4.00</td><td class="n">$0.40</td><td class="n">$20.00</td><td class="n">$0.005096</td><td class="n">1.0×</td></tr>
+<tr><td><code>gpt-5.6-terra</code> (bulk, wired)</td><td class="n">$2.00</td><td class="n">$0.20</td><td class="n">$12.00</td><td class="n">$0.002806</td><td class="n">1.8×</td></tr>
+<tr><td><code>gpt-5.6-luna</code></td><td class="n">$0.20</td><td class="n">$0.02</td><td class="n">$1.20</td><td class="n">$0.000281</td><td class="n"><strong>18×</strong></td></tr>
+</table>
+<p class="small">Quoted from <a href="https://developers.openai.com/api/docs/pricing">developers.openai.com/api/docs/pricing</a>,
+checked 12 Sep 2026. These are the short-context rates; OpenAI's page notes long-context variants at double. At 629 input
+tokens you are nowhere near that boundary. These three numbers exactly match the table already in
+<code>supabase/functions/_shared/pipeline.ts</code>.</p>
+
+<ul>
+<li><strong>Strict JSON:</strong> yes. <code>gpt-5.6-luna</code>'s model page lists <code>structured_outputs</code> among
+its supported features, alongside <code>prompt_caching</code> and a 1,050,000-token context window.</li>
+<li><strong>Endpoint:</strong> unchanged — <code>https://api.openai.com/v1/responses</code>. Nothing to integrate.</li>
+<li><strong>Rate limits:</strong> Tier 1 is 500 RPM / 500K TPM for <code>gpt-5.6-luna</code>, rising to 30,000 RPM /
+180M TPM at Tier 5. At 1M saves/month you need roughly 0.4 requests per second. Tier 1 is already 1,000× that.</li>
+<li><strong>Data policy:</strong> "As of March 1, 2023, data sent to the OpenAI API is not used to train or improve
+OpenAI models (unless you explicitly opt in)." Abuse-monitoring logs are "retained for up to 30 days, unless longer
+retention is required by law." Zero Data Retention exists but is "subject to prior approval by OpenAI and acceptance of
+additional requirements" — you do not have it, and <code>store: false</code> is not the same thing.</li>
+<li><strong>Jurisdiction:</strong> United States. Already named in <code>docs/privacy.html</code> §6, §12 and §13.</li>
+<li><strong>Integration cost:</strong> <em>zero code</em>. <code>classifiers.ts</code> already reads
+<code>CLASSIFIER_MODEL</code> and <code>CLASSIFIER_MODEL_BULK</code> from the environment, and
+<code>PRICES_PER_MTOK</code> already carries a <code>gpt-5.6-luna</code> row at exactly $0.20 / $1.20. This is an
+<code>eb setenv</code>-shaped change, not a build.</li>
+</ul>
+<div class="ok"><p><strong>Worth saying plainly:</strong> the single largest saving available to you — 18×, $5,096/month
+down to $281/month at 10,000 free Indian users — requires no new vendor, no privacy-policy edit, no App Store label
+change, and no new code. It requires one environment variable and an honest quality test.</p></div>
+<div class="plain"><strong>In plain English.</strong> OpenAI already sells a budget version of the same model, it already
+does the strict-form trick, your code already knows its price, and your privacy policy already names OpenAI. You could
+switch the free tier to it this afternoon. The only real question is whether it sorts saves well enough — and you have
+131 already-sorted saves sitting in the database to check that against.</div>
+
+<!-- ===================================================================== -->
+<h2 id="gemini">5. Google Gemini</h2>
+<table>
+<tr><th>Model (paid tier)</th><th class="n">Input</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>Gemini 2.5 Flash-Lite</td><td class="n">$0.10</td><td class="n">$0.40</td><td class="n">$0.0001145</td><td class="n">45×</td></tr>
+<tr><td>Gemini 3.1 Flash-Lite</td><td class="n">$0.25</td><td class="n">$1.50</td><td class="n">$0.0003508</td><td class="n">15×</td></tr>
+<tr><td>Gemini 3.5 Flash-Lite</td><td class="n">$0.30</td><td class="n">$2.50</td><td class="n">$0.0005112</td><td class="n">10×</td></tr>
+<tr><td>Gemini 2.5 Flash</td><td class="n">$0.30</td><td class="n">$2.50</td><td class="n">$0.0005112</td><td class="n">10×</td></tr>
+<tr><td>Gemini 3.8 / 3.7 / 3.6 Flash</td><td class="n">$0.75</td><td class="n">$3.75</td><td class="n">$0.0009555</td><td class="n">5.3×</td></tr>
+<tr><td>Gemini 3.5 Flash</td><td class="n">$1.50</td><td class="n">$9.00</td><td class="n">$0.0021045</td><td class="n">2.4×</td></tr>
+</table>
+<p class="small">From <a href="https://ai.google.dev/gemini-api/docs/pricing">ai.google.dev/gemini-api/docs/pricing</a>,
+checked 12 Sep 2026. The $0.75 / $3.75 on the 3.6–3.8 Flash tiers is explicitly promotional "through Dec 31, 2026", after
+which the page states $1.50 / $7.50 — that would take those rows to $0.001911 per save (2.7×). <strong>Budget on the
+post-promo number, not the promo one.</strong></p>
+
+<div class="warn"><p><strong>The free tier is a legal trap, not a bargain.</strong> Google's own pricing page prints, for
+every model, a "Used to improve our products" row. Free tier: <strong>"Yes."</strong> Paid tier: <strong>"No."</strong>
+The Gemini API terms say that for unpaid services "Google uses the content you submit to the Services and any generated
+responses to provide, improve, and develop Google products and services" and that "human reviewers may read, annotate,
+and process your API input and output."</p>
+<p>Allkept's privacy policy currently tells users their saves go to one named provider that is asked not to retain them.
+Routing saved content through Gemini's free tier would mean a human at Google may read a user's saved Instagram caption,
+and Google may train on it. You cannot ship that behind the sentence that is in <code>privacy.html</code> today, and I
+would not want to defend it in an App Store privacy-label review.</p></div>
+
+<ul>
+<li><strong>Strict JSON:</strong> yes, and good. <code>responseMimeType: "application/json"</code> plus
+<code>responseSchema</code> / <code>responseJsonSchema</code> constrains output to the schema, and <code>enum</code> is
+explicitly supported for exactly this kind of classification. Google's own docs still recommend validating semantics —
+which <code>validateOutput()</code> already does.</li>
+<li><strong>OpenAI-compatible endpoint:</strong> yes —
+<code>https://generativelanguage.googleapis.com/v1beta/openai/</code>. I could <strong>not</strong> confirm on Google's
+compatibility page that <code>response_format: {type: "json_schema"}</code> works through that shim
+<span class="tag t-unv">UNVERIFIED</span>; the documented, certain path is the native
+<code>generateContent</code> endpoint with <code>responseSchema</code>. Assume the native endpoint.</li>
+<li><strong>Rate limits:</strong> Google's rate-limits page now defers to a per-account view in AI Studio rather than
+publishing a table. Free-tier RPM/RPD figures circulating on third-party blogs are <span class="tag t-unv">UNVERIFIED</span>
+and I will not reproduce them. Paid Tier 1 limits are also not published on that page.</li>
+<li><strong>Data policy (paid):</strong> "Google doesn't use your prompts… or responses to improve our products."
+Prompts and responses are logged "for a limited period of time, solely for detecting and preventing violations" — the
+page does not name a number of days <span class="tag t-unv">UNVERIFIED</span>.</li>
+<li><strong>Jurisdiction:</strong> Google LLC, United States. The Gemini API is listed as available in 195+ countries
+including India and Singapore, but that page is about <em>access</em>, not <em>processing location</em>. Google's
+Vertex AI data-residency documentation indicates ML-processing residency commitments are supported only in US and EU
+locations — <strong>not</strong> <code>asia-south1</code> (Mumbai) <span class="tag t-unv">UNVERIFIED — the primary page
+did not render for me; treat as "assume US/global processing"</span>.</li>
+<li><strong>Integration cost:</strong> a new ~70-line <code>gemini.ts</code> implementing <code>ClassifyDeps</code>.
+The schema has to be restated in Google's flavour (<code>responseSchema</code>, different usage field names —
+<code>promptTokenCount</code> / <code>candidatesTokenCount</code> instead of <code>input_tokens</code> /
+<code>output_tokens</code>), <code>classifiers.ts</code>'s <code>vendor</code> union widens to include
+<code>"google"</code>, and <code>PRICES_PER_MTOK</code> gains a row. Call it a day's careful work, not a rebuild.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Gemini is the only serious rival to OpenAI here: it is a further
+2.5× cheaper than the cheap OpenAI tier, it does the strict-form trick properly, and Google is already named in your
+privacy policy for YouTube and sign-in. The catch is the free version — Google reads and trains on anything you send it
+for free, which is exactly the thing you have promised users you don't do. If you use Gemini, you must pay for it.</div>
+
+<!-- ===================================================================== -->
+<h2 id="mistral">6. Mistral</h2>
+<table>
+<tr><th>Model</th><th class="n">Input</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>Ministral 3 (3B)</td><td class="n">$0.10</td><td class="n">$0.10</td><td class="n">$0.0000758</td><td class="n">67×</td></tr>
+<tr><td>Ministral 3 (8B)</td><td class="n">$0.15</td><td class="n">$0.15</td><td class="n">$0.0001137</td><td class="n">45×</td></tr>
+<tr><td>Ministral 3 (14B)</td><td class="n">$0.20</td><td class="n">$0.20</td><td class="n">$0.0001516</td><td class="n">34×</td></tr>
+<tr><td>Mistral Small 4</td><td class="n">$0.15</td><td class="n">$0.60</td><td class="n">$0.0001718</td><td class="n">30×</td></tr>
+<tr><td>Mistral Large 3</td><td class="n">$0.50</td><td class="n">$1.50</td><td class="n">$0.0005080</td><td class="n">10×</td></tr>
+<tr><td>Mistral Medium 3.5</td><td class="n">$1.50</td><td class="n">$7.50</td><td class="n">$0.0019110</td><td class="n">2.7×</td></tr>
+</table>
+<p class="small">From <a href="https://mistral.ai/pricing/api">mistral.ai/pricing/api</a>, checked 12 Sep 2026.
+The symmetric input/output pricing on the Ministral 3 family is unusual and works strongly in your favour here, because
+this workload is output-light.</p>
+<ul>
+<li><strong>Strict JSON:</strong> yes. Mistral's API reference for <code>POST /v1/chat/completions</code> states
+<code>{"type": "json_schema"}</code> "guarantees the message the model generates is in JSON and follows the schema you
+provide". Whether a <code>strict</code> boolean is accepted inside that object is <span class="tag t-unv">UNVERIFIED</span>
+— the reference documents the <code>type</code> field but I could not see the nested properties.
+<strong>Which models</strong> support it is also <span class="tag t-unv">UNVERIFIED</span>: their structured-output guide
+has an FAQ titled "Which models support custom Structured Outputs?" whose answer did not render for me. Their example
+uses <code>ministral-8b-latest</code>, which is suggestive but not proof for the 3B.</li>
+<li><strong>OpenAI-compatible endpoint:</strong> <code>https://api.mistral.ai/v1/chat/completions</code> — same shape,
+same <code>response_format</code> parameter. A near drop-in.</li>
+<li><strong>Rate limits:</strong> <span class="tag t-unv">UNVERIFIED</span>. The free "Experiment" plan advertises
+$10/month in API credits; per-minute and per-day limits are not on the pricing page.</li>
+<li><strong>Data policy:</strong> paid API — Mistral's help centre and admin docs describe an "Anonymous improvement
+data" toggle in the Admin console controlling whether API calls are used to improve Mistral's services, a 30-rolling-day
+abuse-retention window for stateless API calls, and an optional Zero Data Retention setting.
+<strong>Whether training is on or off <em>by default</em> for a paid API account is
+<span class="tag t-unv">UNVERIFIED</span></strong> — I could not load the primary
+<code>docs.mistral.ai/admin/monitor-comply/privacy-data-controls</code> page (it 404'd for me), and secondary sources
+disagree about the free tier. If you pursue Mistral, read that page yourself and screenshot the default.</li>
+<li><strong>Jurisdiction:</strong> Mistral AI is a French company and its legal centre is at <code>legal.mistral.ai</code>.
+The actual hosting/processing region for La Plateforme is <span class="tag t-unv">UNVERIFIED</span> — I did not find it
+stated on a page I could load. <strong>Do not write "EU" into the privacy policy on my say-so.</strong></li>
+<li><strong>Integration cost:</strong> smallest of any new vendor. A ~50-line <code>mistral.ts</code>: same
+Chat Completions body shape, same <code>response_format</code>, usage fields are <code>prompt_tokens</code> /
+<code>completion_tokens</code>, plus a <code>vendor</code> union widening and a price row.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Mistral's tiny models are the cheapest thing on this list that can
+still fill in your form properly, and being European they are the easiest to explain to a privacy-conscious user. But two
+things I could not pin down — whether their smallest model actually supports the strict form, and whether they train on
+your data by default — are exactly the two things that decide it. Promising, not yet provable.</div>
+
+<!-- ===================================================================== -->
+<h2 id="deepseek">7. DeepSeek</h2>
+<table>
+<tr><th>Model</th><th class="n">In (miss)</th><th class="n">In (hit)</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>deepseek-flash — off-peak</td><td class="n">$0.15</td><td class="n">$0.003</td><td class="n">$0.60</td><td class="n">$0.0001718</td><td class="n">30×</td></tr>
+<tr><td>deepseek-flash — peak</td><td class="n">$0.30</td><td class="n">$0.006</td><td class="n">$1.20</td><td class="n">$0.0003435</td><td class="n">15×</td></tr>
+<tr><td>deepseek-v4-pro — off-peak</td><td class="n">$0.66</td><td class="n">$0.022</td><td class="n">$1.98</td><td class="n">$0.0006706</td><td class="n">7.6×</td></tr>
+<tr><td>deepseek-v4-pro — peak</td><td class="n">$1.32</td><td class="n">$0.044</td><td class="n">$3.96</td><td class="n">$0.0013411</td><td class="n">3.8×</td></tr>
+</table>
+<p class="small">From <a href="https://api-docs.deepseek.com/quick_start/pricing">api-docs.deepseek.com/quick_start/pricing</a>,
+checked 12 Sep 2026. "Peak hours are 01:00 – 04:00 and 06:00 – 10:00 UTC, Monday through Friday (all other hours are
+off-peak)." Note the cache-hit rate is extraordinary — $0.003/M — which would matter a great deal for a fixed system
+prompt, if the rest of DeepSeek were usable.</p>
+<div class="warn"><p><strong>Two disqualifiers, either of which is fatal.</strong></p>
+<p><strong>1. No strict schema.</strong> DeepSeek's JSON guide documents <code>{'type': 'json_object'}</code> and nothing
+else, and warns in its own words that "the API may occasionally return empty content." Against a 15-value enum and a
+7-value enum, that is a retry machine.</p>
+<p><strong>2. Data is processed in China.</strong> DeepSeek's own privacy policy says: <em>"To provide you with our
+services, we directly collect, process and store your Personal Data in People's Republic of China."</em> Retention is
+"as long as necessary", with no stated period. The policy gives users a right "to opt-out of using your Personal Data for
+training our models" — which is a plain admission that the default is opt-<em>in</em>.</p>
+<p>To use DeepSeek you would have to add "the People's Republic of China" to §13 of the privacy policy, add DeepSeek to
+the §12 subprocessor table, and disclose in the App Store data form that saved content leaves for a PRC-based processor
+that trains on it unless opted out. For a US paid launch, this is the single hardest thing on this list to justify.</p></div>
+<ul>
+<li><strong>Endpoint:</strong> <code>https://api.deepseek.com</code>, OpenAI-compatible.</li>
+<li><strong>Rate limits:</strong> concurrency-based, not RPM — 2,500 concurrent for <code>deepseek-flash</code>, 500 for
+<code>deepseek-v4-pro</code>; HTTP 429 above that. Generous.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> DeepSeek is cheap and fast, and it is the wrong answer. Their own
+privacy policy says your users' saved captions would be stored in China and used to train their models unless someone
+opts out. You are about to publish a privacy policy and tick App Store disclosure boxes for a US paid launch. This one is
+not a close call.</div>
+
+<!-- ===================================================================== -->
+<h2 id="qwen">8. Alibaba Qwen</h2>
+<table>
+<tr><th>Model (Singapore endpoint)</th><th class="n">Input</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>Qwen-Flash (lowest tier)</td><td class="n">$0.05</td><td class="n">$0.40</td><td class="n">$0.0000831</td><td class="n">61×</td></tr>
+<tr><td>Qwen-Plus (0–256K, non-thinking)</td><td class="n">$0.40</td><td class="n">$1.60</td><td class="n">$0.0004580</td><td class="n">11×</td></tr>
+<tr><td>Qwen-Max</td><td class="n">$2.00</td><td class="n">$6.00</td><td class="n">$0.0020320</td><td class="n">2.5×</td></tr>
+</table>
+<p class="small">From <a href="https://www.alibabacloud.com/help/en/model-studio/billing-for-model-studio">alibabacloud.com/help/en/model-studio/billing-for-model-studio</a>,
+checked 12 Sep 2026. Qwen-Flash is tiered by prompt length — the page gives a range of $0.05–$0.25 input and
+$0.40–$2.00 output. At 629 input tokens you are in the bottom bracket, but <strong>the exact tier boundary is
+<span class="tag t-unv">UNVERIFIED</span></strong>; I read the range, not the cut-points. New Singapore accounts get a
+free quota of 1 million tokens per eligible model, valid 90 days from activation.</p>
+<div class="warn"><p><strong>Strict JSON is region-locked away from you.</strong> Alibaba's JSON-mode page says
+<code>json_schema</code> with <code>strict: true</code> is supported on the Qwen3.7/3.8 Plus, Flash and Max series — and
+then: <strong>"Singapore region models are not supported yet."</strong> On the Singapore endpoint you get
+<code>json_object</code> only, and even that requires the literal word "JSON" to appear in your system or user message or
+the API errors.</p></div>
+<ul>
+<li><strong>Endpoint:</strong> workspace-scoped —
+<code>https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1</code> for Singapore,
+<code>…cn-beijing.maas.aliyuncs.com/…</code> for Beijing. OpenAI-compatible in shape.</li>
+<li><strong>Rate limits:</strong> <span class="tag t-unv">UNVERIFIED</span> — not on the pages I could load.</li>
+<li><strong>Data policy:</strong> <span class="tag t-unv">UNVERIFIED</span>. I did not find an Alibaba Cloud statement I
+could quote on whether Model Studio trains on API inputs or how long it retains them.</li>
+<li><strong>Jurisdiction:</strong> the Singapore endpoint processes in Singapore (<code>ap-southeast-1</code>); the
+corporate parent is Chinese. The formal data-residency commitment is <span class="tag t-unv">UNVERIFIED</span>.</li>
+<li><strong>Integration cost:</strong> moderate — OpenAI-shaped, but you would be building the schema-in-prompt +
+retry-on-invalid machinery that strict mode makes unnecessary, and the workspace-scoped base URL is one more secret to
+manage.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Qwen is the cheapest credible price on the list and it runs out of
+Singapore, which is the same neighbourhood as your edge function. But the one feature you actually need — the guaranteed
+form — is explicitly switched off in Singapore, and turning it on means moving to Beijing. That trade is not available at
+a price you should accept.</div>
+
+<!-- ===================================================================== -->
+<h2 id="glm">9. Zhipu GLM (Z.ai)</h2>
+<table>
+<tr><th>Model</th><th class="n">Input</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>GLM-4.7-Flash / GLM-4.5-Flash</td><td class="n">Free</td><td class="n">Free</td><td class="n">$0</td><td class="n">—</td></tr>
+<tr><td>GLM-4-32B-0414-128K</td><td class="n">$0.10</td><td class="n">$0.10</td><td class="n">$0.0000758</td><td class="n">67×</td></tr>
+<tr><td>GLM-4.7-FlashX</td><td class="n">$0.07</td><td class="n">$0.40</td><td class="n">$0.0000956</td><td class="n">53×</td></tr>
+<tr><td>GLM-5.3-Flash</td><td class="n">$0.15</td><td class="n">$0.50</td><td class="n">$0.0001589</td><td class="n">32×</td></tr>
+<tr><td>GLM-4.5-Air</td><td class="n">$0.20</td><td class="n">$1.10</td><td class="n">$0.0002677</td><td class="n">19×</td></tr>
+<tr><td>GLM-4.7 / 4.6 / 4.5</td><td class="n">$0.60</td><td class="n">$2.20</td><td class="n">$0.0006612</td><td class="n">7.7×</td></tr>
+<tr><td>GLM-5.3 / 5.2 / 5.1</td><td class="n">$1.40</td><td class="n">$4.40</td><td class="n">$0.0014482</td><td class="n">3.5×</td></tr>
+</table>
+<p class="small">From <a href="https://docs.z.ai/guides/overview/pricing">docs.z.ai/guides/overview/pricing</a>,
+checked 12 Sep 2026.</p>
+<ul>
+<li><strong>Strict JSON:</strong> <span class="tag t-no">no</span>. Z.ai's chat-completion API reference documents
+<code>response_format</code> as "text for plain text, <code>json_object</code> for JSON-formatted output" and lists no
+third value. Disqualifying under your hard requirement.</li>
+<li><strong>Endpoint:</strong> <code>https://api.z.ai/api/paas/v4/chat/completions</code>, explicitly OpenAI-SDK
+compatible.</li>
+<li><strong>Data policy — this is the surprising part, and it is good.</strong> Z.ai's privacy policy embeds a Data
+Processing Addendum which states: <em>"The Company do not store any of the content the Customer or its End Users provide
+or generate while using our Services. This includes any texts, or other data you input. This information is processed in
+real-time to provide the Customer and End Users with the API Service and is not saved on our servers."</em> That is a
+stronger written commitment than OpenAI's 30-day abuse log.</li>
+<li><strong>Jurisdiction:</strong> Singapore. The international service is operated by
+<em>JINGSHENG HENGXING TECHNOLOGY PTE. LTD.</em>, registered at 10 Anson Road, International Plaza, Singapore, and the
+policy says personal data is "generally processed in Singapore." The parent (Zhipu AI) is Chinese; the policy also
+reserves the right to transfer data "to affiliated companies within the Z.ai Group or third parties located overseas",
+which is the clause a careful reviewer would notice.</li>
+<li><strong>Rate limits / free-tier allowance:</strong> <span class="tag t-unv">UNVERIFIED</span>. The pricing page lists
+GLM-4.7-Flash and GLM-4.5-Flash as "Free" but does not state the quota or rate limit attached.</li>
+<li><strong>Integration cost:</strong> moderate — OpenAI-shaped, plus the schema-in-prompt and retry machinery.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Z.ai is the best-behaved of the Chinese-origin providers on paper:
+Singapore entity, Singapore processing, and a written promise not to store your API content at all. It falls over on the
+one technical requirement — it cannot guarantee the exact form — and its own policy leaves the door open to sending data
+to overseas affiliates, which is not a sentence you want to have to paraphrase in a privacy policy.</div>
+
+<!-- ===================================================================== -->
+<h2 id="kimi">10. Moonshot Kimi</h2>
+<table>
+<tr><th>Model</th><th class="n">In (miss)</th><th class="n">In (hit)</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>kimi-k2.6</td><td class="n">$0.95</td><td class="n">$0.16</td><td class="n">$4.00</td><td class="n">$0.0011136</td><td class="n">4.6×</td></tr>
+<tr><td>kimi-k2.7-code</td><td class="n">$0.95</td><td class="n">$0.19</td><td class="n">$4.00</td><td class="n">$0.0011136</td><td class="n">4.6×</td></tr>
+<tr><td>kimi-k3</td><td class="n">$3.00</td><td class="n">$0.30</td><td class="n">$15.00</td><td class="n">$0.0038220</td><td class="n">1.3×</td></tr>
+</table>
+<p class="small">From <a href="https://platform.kimi.ai/docs/pricing/chat">platform.kimi.ai/docs/pricing/chat</a>
+(<code>platform.moonshot.ai</code> 301-redirects here), checked 12 Sep 2026. All USD.</p>
+<ul>
+<li><strong>Strict JSON:</strong> <span class="tag t-no">no</span>. Kimi's JSON-mode guide supports
+<code>{"type":"text"}</code> and <code>{"type":"json_object"}</code> only, gives no schema guarantee — it only promises
+"a valid, correctly parsable JSON document" — and warns "If you do not correctly inform the Kimi large language model of
+the required JSON Object format, it will generate unexpected results."</li>
+<li><strong>Endpoint:</strong> <code>https://api.moonshot.ai/v1/chat/completions</code>, "compatible with both the
+OpenAI and Anthropic API formats."</li>
+<li><strong>Data policy — the worst on this list after DeepSeek.</strong> The Kimi OpenPlatform privacy policy says user
+content is collected to "optimize our models and understand your needs and preferences", and I could find
+<strong>no opt-out</strong> for model improvement anywhere in the policy. Retention is "as long as necessary", with no
+stated period.</li>
+<li><strong>Jurisdiction:</strong> operated by <em>MOONSHOT AI PTE. LTD.</em> in Singapore, and the policy states
+"We store the information we collect in secure servers located in Singapore." The parent, Moonshot AI, is a Chinese
+company; third-party commentators raise PRC state-access arguments on that basis, which I have <strong>not</strong>
+verified against a primary legal source and am flagging only as a known line of objection.</li>
+<li><strong>Rate limits:</strong> <span class="tag t-unv">UNVERIFIED</span>.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Kimi is not cheap enough to be tempting (only 4.6× off today's
+price for the usable tier), it cannot guarantee the form, and its privacy policy says it uses what you send to improve
+its models with no way to say no. There is no version of this that is worth writing into a privacy policy.</div>
+
+<!-- ===================================================================== -->
+<h2 id="minimax">11. MiniMax</h2>
+<table>
+<tr><th>Model</th><th class="n">Input</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>MiniMax-M3 (≤512k input)</td><td class="n">$0.30</td><td class="n">$1.20</td><td class="n">$0.0003435</td><td class="n">15×</td></tr>
+<tr><td>MiniMax-M3 (&gt;512k input)</td><td class="n">$0.60</td><td class="n">$2.40</td><td class="n">$0.0006870</td><td class="n">7.4×</td></tr>
+<tr><td>MiniMax-M2.7 / M2.5 / M2.1 / M2</td><td class="n">$0.30</td><td class="n">$1.20</td><td class="n">$0.0003435</td><td class="n">15×</td></tr>
+</table>
+<p class="small">From <a href="https://platform.minimax.io/docs/guides/pricing-paygo">platform.minimax.io/docs/guides/pricing-paygo</a>,
+checked 12 Sep 2026. The page notes a "Permanent 50% off" already reflected in the M3 figures.</p>
+<ul>
+<li><strong>Strict JSON:</strong> <span class="tag t-no">no</span>, and worse — <em>silently</em> no.
+<code>response_format</code> does not appear in MiniMax's OpenAI-compatible parameter table at all: not as supported, not
+as ignored. MiniMax's own GitHub issue tracker for M2.5 reports the parameter is accepted and then silently discarded,
+with no error. <span class="tag t-unv">This behaviour is from MiniMax's issue tracker and community forum, not from an
+official docs page — treat the mechanism as unverified; the absence from the docs I <em>did</em> read is verified.</span>
+A parameter that fails silently is more dangerous than one that errors.</li>
+<li><strong>Endpoint:</strong> <code>https://api.minimax.io/v1/chat/completions</code>. Their docs say: "Already wired up
+to the OpenAI SDK? Swap <code>base_url</code> and <code>model</code>… and you can keep using your existing client."</li>
+<li><strong>Data policy and jurisdiction:</strong> <span class="tag t-unv">UNVERIFIED</span> — I could not reach a
+MiniMax privacy policy or DPA I could quote. For a provider you would have to name in a published privacy policy, "I
+could not find their data policy" is itself the answer.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> MiniMax is middling on price, cannot do the form, and — the part
+that actually rules it out — I could not find a privacy policy for it at all. You cannot name a company in your privacy
+policy as handling users' saved content when you don't know what they do with it.</div>
+
+<!-- ===================================================================== -->
+<h2 id="groq">12. Groq</h2>
+<table>
+<tr><th>Model</th><th class="n">Input</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>openai/gpt-oss-20b</td><td class="n">$0.075</td><td class="n">$0.30</td><td class="n">$0.0000859</td><td class="n">59×</td></tr>
+<tr><td>openai/gpt-oss-120b</td><td class="n">$0.15</td><td class="n">$0.60</td><td class="n">$0.0001718</td><td class="n">30×</td></tr>
+</table>
+<p class="small">From <a href="https://console.groq.com/docs/models">console.groq.com/docs/models</a>, checked
+12 Sep 2026. Llama 3.1 8B and 3.3 70B are listed as enterprise-priced (contact sales), so no public number for them.</p>
+<div class="ok"><p><strong>Groq is the strongest of the cheap options, and it is not close.</strong> It is the only
+provider in the sub-$0.0002 band that offers <em>real</em> constrained decoding, and its written data terms are better
+than OpenAI's current default.</p></div>
+<ul>
+<li><strong>Strict JSON:</strong> <span class="tag t-yes">yes, properly</span>. Groq's structured-outputs docs document
+<code>response_format: {type: "json_schema", json_schema: {name, strict: true, schema}}</code> and state: "With
+<code>strict: true</code>, the model uses constrained decoding to guarantee that the output will always match your schema
+exactly." It requires all fields <code>required</code> and <code>additionalProperties: false</code> — <strong>which is
+exactly how <code>OUTPUT_SCHEMA</code> in <code>openai.ts</code> is already written.</strong> Supported on
+<code>openai/gpt-oss-20b</code>, <code>openai/gpt-oss-120b</code> and <code>qwen/qwen3.8-27b</code>.</li>
+<li><strong>Endpoint:</strong> <code>https://api.groq.com/openai/v1/chat/completions</code>, OpenAI-compatible.</li>
+<li><strong>Rate limits:</strong> the free plan is tight — the published table shows Llama models at 30 RPM / 1K RPD /
+8K TPM / 200K TPD. At 8,000 tokens per minute you could classify roughly ten saves a minute. That is a prototyping tier,
+not a production one. The Developer plan's actual limits are <strong>not published</strong> on the rate-limits page
+(it says "the limits shown below are the base limits for the Developer plan" and then shows only the free table) —
+<span class="tag t-unv">UNVERIFIED</span>. <strong>This is the number you would need before committing.</strong></li>
+<li><strong>Data policy:</strong> Groq's "Your Data in GroqCloud" page: "By default, Groq does not retain customer data
+for inference requests", with temporary logging only for troubleshooting or suspected abuse, kept up to 30 days.
+"All customers may enable Zero Data Retention (ZDR) in Data Controls settings" — note <em>all</em>, not "eligible
+customers subject to approval" as with OpenAI. Their Services Agreement states Groq is not permitted to use Inputs or
+Outputs for training unless the customer says so.</li>
+<li><strong>Jurisdiction:</strong> United States, explicitly: "All customer data is retained in Google Cloud Platform
+(GCP) buckets located in the United States." Groq's privacy policy adds that Groq "maintains processing operations in
+various global jurisdictions."</li>
+<li><strong>Integration cost:</strong> <em>the smallest of any new vendor, by a distance.</em> Same endpoint shape, same
+<code>response_format</code> object, same <code>strict: true</code> semantics, same <code>additionalProperties: false</code>
+requirement. <code>OUTPUT_SCHEMA</code> transfers verbatim. A ~45-line <code>groq.ts</code>, a widened
+<code>vendor</code> union, a price row.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Groq is an American company running open models very fast and very
+cheaply, it can guarantee your form exactly the way OpenAI does, and you can switch on "keep nothing" yourself without
+asking permission. The open question is whether their paid tier will let you run at the volume you need — they don't
+publish that — and whether an open 20-billion-parameter model sorts Hindi captions as well as a frontier model. Both are
+testable; neither is guessable.</div>
+
+<!-- ===================================================================== -->
+<h2 id="cerebras">13. Cerebras</h2>
+<table>
+<tr><th>Model (Developer Tier)</th><th class="n">Input</th><th class="n">Output</th><th class="n">Per save</th><th class="n">vs today</th></tr>
+<tr><td>GPT OSS 120B (~3,000 tok/s)</td><td class="n">$0.35</td><td class="n">$0.75</td><td class="n">$0.0003169</td><td class="n">16×</td></tr>
+<tr><td>Qwen 3.8 27B (~1,850 tok/s)</td><td class="n">$0.99</td><td class="n">$1.49</td><td class="n">$0.0008149</td><td class="n">6.3×</td></tr>
+</table>
+<p class="small">From <a href="https://www.cerebras.ai/pricing">cerebras.ai/pricing</a>, checked 12 Sep 2026. Those two
+rows are the entire published Developer Tier table.</p>
+<ul>
+<li><strong>Free tier:</strong> the page now says "Self-serve pay-as-you-go with <strong>free $5 credit to start</strong>."
+The widely-cited "1 million free tokens per day" is no longer on their pricing page. Treat the $5 credit as the offer.</li>
+<li><strong>Strict JSON:</strong> <span class="tag t-unv">UNVERIFIED</span>. Cerebras serves the same open weights that
+Groq serves with constrained decoding, so it is plausible, but I did not confirm it on a Cerebras page.</li>
+<li><strong>Endpoint, rate limits, data policy:</strong> all <span class="tag t-unv">UNVERIFIED</span> — their docs site
+redirects to the marketing pricing page, which carries none of it.</li>
+<li><strong>Jurisdiction:</strong> Sunnyvale, California (per their own site footer), so United States.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Cerebras is faster than everyone and about three times the price
+of Groq for the same model, and their free offer has quietly shrunk to a $5 voucher. Speed is not your problem — a save
+is sorted in the background and nobody is watching a spinner. Skip it.</div>
+
+<!-- ===================================================================== -->
+<h2 id="free">14. Genuinely free options</h2>
+<p>There are four real ones. All four cost money in a currency you care about more than dollars.</p>
+<table>
+<tr><th>Option</th><th>What you get</th><th>What it actually costs</th></tr>
+<tr><td><strong>Google AI Studio free tier</strong></td>
+  <td>Every Gemini model "free of charge" for input and output, permanently rate-limited rather than credit-limited.</td>
+  <td><strong>Google trains on it.</strong> The pricing page prints "Used to improve our products: Yes" for every free
+  row, and the API terms add that "human reviewers may read, annotate, and process your API input and output."
+  Disqualifying.</td></tr>
+<tr><td><strong>Zhipu GLM-4.7-Flash / GLM-4.5-Flash</strong></td>
+  <td>Listed as "Free" on z.ai's own pricing page, on a Singapore-operated platform whose DPA promises not to store API
+  content at all.</td>
+  <td>No strict schema (json_object only), and the free quota and rate limit are
+  <span class="tag t-unv">not published</span>. A free tier with an unpublished ceiling is not a production plan.</td></tr>
+<tr><td><strong>Groq free plan</strong></td>
+  <td>30 RPM / 1,000 RPD / 8,000 TPM / 200,000 TPD on Llama models, no card.</td>
+  <td>200,000 tokens/day ÷ 758 tokens/save ≈ <strong>260 saves a day, across your entire user base.</strong> That is one
+  enthusiastic user. Fine for the A/B test, useless as a tier.</td></tr>
+<tr><td><strong>OpenRouter <code>:free</code> models</strong></td>
+  <td>20 RPM / 50 RPD without credits, or 20 RPM / 1,000 RPD once you have ever bought $10 of credit.</td>
+  <td>OpenRouter's own docs say the opt-out works by <em>not routing</em> to providers that train — "If you opt out of
+  training in your account settings, OpenRouter will not route to providers that train." Free endpoints are largely
+  provided <em>because</em> the provider trains on them, so opting out tends to leave nothing to route to. It also warns
+  the setting "has no bearing on OpenRouter's own policies and what we do with your prompts." Plus you would be naming
+  OpenRouter <em>and</em> an unknown, changing set of downstream providers in your privacy policy.</td></tr>
+</table>
+<div class="warn"><p><strong>The general rule, and it holds without exception here:</strong> free inference at this scale
+is paid for with the data. Every free option above is free either because the provider trains on the input, or because
+the ceiling is too low to matter. There is no free lunch that survives contact with a published privacy policy and an App
+Store data-disclosure form.</p></div>
+<div class="plain"><strong>In plain English.</strong> Free AI is not free — you pay with your users' saved content, which
+is the one asset in this product you have promised to protect. The free tiers that don't train on you are too small to
+run a product on. Assume you will pay something; the question is only how little.</div>
+
+<!-- ===================================================================== -->
+<h2 id="selfhost">15. Self-hosting open weights</h2>
+<p>Running Qwen or Llama yourself on a rented GPU converts a per-save cost into a fixed monthly one. Here is the honest
+arithmetic.</p>
+<table>
+<tr><th>GPU (RunPod on-demand)</th><th class="n">$/hour</th><th class="n">$/month (730 h)</th></tr>
+<tr><td>RTX A5000 (24 GB) — Community / Secure</td><td class="n">$0.16 / $0.27</td><td class="n">$117 / $197</td></tr>
+<tr><td>RTX 4090 (24 GB) — Community / Secure</td><td class="n">$0.34 / $0.74</td><td class="n">$248 / $540</td></tr>
+<tr><td>L4 (24 GB) — Community / Secure</td><td class="n">$0.44 / $0.49</td><td class="n">$321 / $358</td></tr>
+<tr><td>L40S (48 GB) — Community / Secure</td><td class="n">$0.79 / $1.09</td><td class="n">$577 / $796</td></tr>
+<tr><td>A100 80 GB PCIe — Community / Secure</td><td class="n">$1.19 / $1.59</td><td class="n">$869 / $1,161</td></tr>
+<tr><td>H100 80 GB PCIe — Community / Secure</td><td class="n">$1.99 / $2.89</td><td class="n">$1,453 / $2,110</td></tr>
+</table>
+<p class="small">From <a href="https://www.runpod.io/pricing">runpod.io/pricing</a>, checked 12 Sep 2026. Billed per
+second, but a classification service has to be up all the time, so treat it as monthly.</p>
+
+<h3>Where the break-even actually falls</h3>
+<p>Take one L40S on Secure Cloud at <strong>$796/month</strong> — comfortably enough to serve a 7–14B model with vLLM and
+outlines-style grammar-constrained decoding, which is how you would get strict schema output. Divide that fixed cost by
+each API's per-save price:</p>
+<table>
+<tr><th>Beats self-hosting until…</th><th class="n">Saves / month</th><th class="n">≈ free users at 100 saves/mo</th></tr>
+<tr><td>… vs today's <code>gpt-5.6-sol</code> ($0.005096)</td><td class="n">156,000</td><td class="n">1,600</td></tr>
+<tr><td>… vs <code>gpt-5.6-luna</code> ($0.000281)</td><td class="n">2,840,000</td><td class="n">28,000</td></tr>
+<tr><td>… vs Groq GPT-OSS-20B ($0.0000859)</td><td class="n">9,270,000</td><td class="n">93,000</td></tr>
+<tr><td>… vs Gemini 2.5 Flash-Lite paid ($0.0001145)</td><td class="n">6,950,000</td><td class="n">70,000</td></tr>
+</table>
+<p><strong>Today you have 132 saves in the database.</strong> Self-hosting would cost $796/month to do $0.67 of work.
+Even at the 10,000-user scenario in <code>unit-economics.html</code> (1M saves/month), self-hosting is
+<em>more</em> expensive than <code>gpt-5.6-luna</code> and roughly 8× more expensive than Groq.</p>
+<div class="warn"><p><strong>And the fixed cost is the cheap part.</strong> Self-hosting also buys you: a GPU host to
+patch and monitor; a vLLM version to pin; a model to evaluate and re-evaluate; cold starts; a single point of failure
+with no vendor SLA; capacity planning for the import spike that <code>BULK_MODEL</code> exists to absorb; and — because
+the box lives outside Supabase — a new network path, a new secret, and a new entry in the privacy policy anyway.
+<span class="tag t-unv">The tokens-per-second a given GPU sustains on a given model at a given batch size is
+UNVERIFIED</span> — I did not find a benchmark I would stand behind, and I am not going to invent one. That uncertainty
+cuts against self-hosting, not for it: the break-evens above already assume one GPU is enough.</p></div>
+<div class="plain"><strong>In plain English.</strong> Renting your own AI machine costs about $800 a month whether one
+person saves a link or a million do. At your size that is madness, and even at ten thousand keen Indian users it is still
+worse than just paying the cheap API. Self-hosting is a thing you do when the API bill passes roughly $1,000 a month
+<em>and</em> you have someone whose job is to keep it up. Neither is true. Revisit at 50,000 active users, not before.</div>
+
+<!-- ===================================================================== -->
+<h2 id="privacy">16. Privacy and legal — what each option forces into the policy</h2>
+<p>Allkept's current position, from <code>docs/privacy.html</code>: one AI provider (OpenAI), named in §6, §12 and §13;
+requests sent with <code>store: false</code>; §13 says providers are "based outside India and outside the EEA,
+principally in the United States"; and §6 carries a promise — <em>"If we ever change AI provider, we will update this
+policy before the change goes live."</em></p>
+<div class="scroll"><table>
+<tr><th>Option</th><th>Privacy-policy change required</th><th>App Store / reviewer risk</th></tr>
+<tr><td><strong>OpenAI <code>gpt-5.6-luna</code></strong></td>
+  <td><strong>None.</strong> §6 already says "The model in use today is from OpenAI's GPT-5.6 family; a cheaper tier of
+  the same family is used when someone imports a large back catalogue." Using a third tier of the same family for free
+  accounts is within that sentence — though it would be honest to widen it to say which tier applies to whom.</td>
+  <td><strong>None.</strong> Same processor, same country, same disclosure.</td></tr>
+<tr><td><strong>Google Gemini (paid tier)</strong></td>
+  <td>Moderate. Google already appears in the §12 table three times (YouTube Data API, Sign in with Google, Firebase
+  Cloud Messaging) — but for <em>metadata and identity</em>, never for the content of a save. You would add a row saying Google receives the content of a save, rewrite §6 to name
+  two AI providers or replace OpenAI, and keep §13's "principally in the United States" (still true). You must also state
+  that the <em>paid</em> tier is used, because the free tier's terms are materially different.</td>
+  <td>Low. A well-known US processor, contractually barred from training on paid-tier data.</td></tr>
+<tr><td><strong>Groq</strong></td>
+  <td>Moderate. A new §12 row, a rewritten §6. §13 unchanged (US). You could honestly write a <em>stronger</em> sentence
+  than you have today — Groq lets any customer switch on Zero Data Retention, which OpenAI does not.</td>
+  <td>Low. US company, US storage, contractual no-training.</td></tr>
+<tr><td><strong>Mistral</strong></td>
+  <td>Moderate, <em>plus homework.</em> A new §12 row and a rewritten §6, and §13 would need the EEA added. But you
+  cannot write the §13 sentence until you have confirmed where La Plateforme actually processes — which I could not.</td>
+  <td>Low, if the hosting region checks out.</td></tr>
+<tr><td><strong>Zhipu GLM (Z.ai)</strong></td>
+  <td>Large. §13 currently says nothing about Singapore. You would add Singapore, name a Singapore entity with a Chinese
+  parent, and — to be truthful — disclose the policy's own clause permitting transfer "to affiliated companies within the
+  Z.ai Group or third parties located overseas."</td>
+  <td><strong>Material.</strong> Defensible on the facts, awkward in a US App Store review and awkward in a press
+  question.</td></tr>
+<tr><td><strong>Moonshot Kimi</strong></td>
+  <td>Large, and the sentence is bad. You would have to write that a provider uses saved content to optimise its models
+  and that there is no opt-out. That contradicts the spirit of §6.</td>
+  <td><strong>High.</strong></td></tr>
+<tr><td><strong>Alibaba Qwen (Beijing, for strict JSON)</strong></td>
+  <td>Very large. §13 would name mainland China.</td><td><strong>High.</strong></td></tr>
+<tr><td><strong>DeepSeek</strong></td>
+  <td>Very large. Their policy's own words — data "collected, processed and stored in People's Republic of China", with
+  training as the default and an opt-out right. §13 would name the PRC; §6 would have to say the provider may train on
+  saves.</td>
+  <td><strong>Highest on this list.</strong> Hard to justify to a US paying customer.</td></tr>
+<tr><td><strong>MiniMax</strong></td>
+  <td>Cannot be written. I could not find a privacy policy to characterise.</td>
+  <td><strong>Disqualifying</strong> — you cannot disclose what you do not know.</td></tr>
+<tr><td><strong>Any free tier that trains</strong></td>
+  <td>You would have to delete the reassurance in §6 and replace it with a disclosure that a provider trains on saved
+  content. <strong>Do not.</strong></td>
+  <td><strong>Disqualifying.</strong></td></tr>
+<tr><td><strong>Self-hosting</strong></td>
+  <td>Smallest of all: no new AI processor. You would add the GPU host (RunPod or similar) as an infrastructure
+  subprocessor and name its region. Arguably the <em>best</em> privacy story available.</td>
+  <td>None.</td></tr>
+</table></div>
+<div class="warn"><p><strong>One thing to fix regardless of which way you go.</strong> §6's callout currently ends with
+a dangling fragment — "the switch also stops search indexing" — sitting immediately after a paragraph that says the
+opposite (that the switch does <em>not</em> stop search indexing). Two contradictory sentences about what a privacy
+control does is the kind of thing that gets quoted back at you. That is a pre-existing bug in
+<code>docs/privacy.html</code>, not something this research introduces, and I have not touched it.</p></div>
+<div class="plain"><strong>In plain English.</strong> Changing model within OpenAI costs you nothing legally. Moving to
+Google or Groq costs you one careful afternoon with the privacy policy and a re-check of the App Store questionnaire.
+Moving to a Chinese-origin provider costs you a paragraph you would rather not have to write, right at the moment you are
+asking Americans for money. And using anything free costs you the one promise in the policy that is actually worth
+something.</div>
+
+<!-- ===================================================================== -->
+<h2 id="integration">17. Integration cost against <code>ClassifyDeps</code></h2>
+<p>The seam is small and well-drawn. <code>ClassifyDeps</code> is one method:</p>
+<p><code>call(system: string, user: string) =&gt; Promise&lt;ModelResult&gt;</code></p>
+<p>and <code>ModelResult</code> is <code>{ output, refused, model, usage, error }</code>. <code>openai.ts</code> fills it
+in 86 lines of plain <code>fetch</code>. So "how hard is this vendor" reduces to four questions: does it take an
+OpenAI-shaped body, does it enforce the schema, what does it call its token counts, and do you have to build a retry
+loop that does not currently exist.</p>
+<table>
+<tr><th>Option</th><th>Work required</th><th>Verdict</th></tr>
+<tr><td><strong>OpenAI <code>gpt-5.6-luna</code></strong></td>
+  <td>Set <code>CLASSIFIER_MODEL=gpt-5.6-luna</code>. That is the entire change. <code>PRICES_PER_MTOK</code> already has
+  the row; <code>classifiers.ts</code> already reads the variable.</td><td><strong>Zero code.</strong></td></tr>
+<tr><td><strong>Groq</strong></td>
+  <td>New <code>groq.ts</code> (~45 lines). Same <code>response_format: {type:"json_schema", json_schema:{name, strict,
+  schema}}</code>; <code>OUTPUT_SCHEMA</code> transfers verbatim because it is already all-required with
+  <code>additionalProperties:false</code>. Usage maps <code>prompt_tokens</code>/<code>completion_tokens</code> →
+  <code>input_tokens</code>/<code>output_tokens</code>. Widen <code>ClassifierChoice["vendor"]</code>; add a price row.</td>
+  <td><strong>Drops in.</strong></td></tr>
+<tr><td><strong>Mistral</strong></td>
+  <td>New <code>mistral.ts</code> (~50 lines), same shape as Groq. Confirm first that the model you pick supports
+  <code>json_schema</code>.</td><td><strong>Drops in.</strong></td></tr>
+<tr><td><strong>Google Gemini</strong></td>
+  <td>New <code>gemini.ts</code> (~70 lines). Native endpoint, so a different body shape:
+  <code>contents</code> / <code>systemInstruction</code> instead of <code>instructions</code> / <code>input</code>,
+  <code>generationConfig.responseSchema</code> + <code>responseMimeType</code>, and usage under
+  <code>usageMetadata.promptTokenCount</code> / <code>candidatesTokenCount</code>. No <code>refusal</code> content type —
+  you would map <code>finishReason: "SAFETY"</code> onto <code>refused</code> yourself.</td>
+  <td><strong>Small module, real care.</strong></td></tr>
+<tr><td><strong>Any json_object-only vendor</strong><br>(DeepSeek, GLM, Kimi, Qwen-SG, MiniMax)</td>
+  <td>New module <em>plus</em> machinery that does not exist today: embed the schema in the system prompt, detect enum
+  and type violations, and retry with a correction. <code>validateOutput()</code> gives you the detection for free but
+  the pipeline's existing five-attempt retry is meant for transport failures, not for a model that is confidently wrong —
+  leaning on it would inflate both the bill and the tail of uncategorised saves.</td>
+  <td><strong>Materially more than "a small module".</strong></td></tr>
+<tr><td><strong>Self-hosting</strong></td>
+  <td>An OpenAI-compatible vLLM server is a ~45-line module like Groq's. The module is not the work; the box is.</td>
+  <td><strong>Code trivial, operations not.</strong></td></tr>
+</table>
+<p class="small"><strong>One shared-code note, flagged not done:</strong> adding any non-OpenAI vendor means widening the
+<code>vendor</code> union in <code>classifiers.ts</code> and adding a row to <code>PRICES_PER_MTOK</code> in
+<code>pipeline.ts</code>. Both are files the classification feature owns, but <code>pipeline.ts</code> is shared with
+other call sites, and <code>costUsd()</code> returns <code>null</code> for any model not in the table — so forgetting the
+price row silently blanks your cost telemetry rather than erroring. Worth calling out before any such change is
+approved.</p>
+<div class="plain"><strong>In plain English.</strong> Your code was written so that swapping the AI is easy, and it
+genuinely is — for the well-behaved vendors. Switching to the cheap OpenAI tier is one setting. Groq or Mistral is an
+afternoon. Google is a careful day. Anything that can't guarantee the form is a week, because you would be building the
+"ask it again, properly this time" machinery that you currently don't need.</div>
+
+<!-- ===================================================================== -->
+<h2 id="multilingual">18. Multilingual quality, especially Indian languages</h2>
+<div class="warn"><p><strong>I am going to be blunt about this section: I could not find what you need.</strong> There is
+no credible public benchmark that measures short-text social-caption classification in Indian languages across the models
+in this document. I looked. I am not going to construct a ranking out of general-purpose leaderboards and present it as
+an answer.</p></div>
+<p>What I <em>can</em> tell you, with sources:</p>
+<ul>
+<li><strong>The gap is real and measured.</strong> HinTel-AlignBench (arXiv 2511.15183) evaluates state-of-the-art open
+and closed models on English-aligned Hindi and Telugu samples and reports "a regression in performance for tasks in
+English versus in Indian languages for 4 out of 5 tasks across all the models, with an average regression of 8.3 points
+in Hindi and 5.5 points for Telugu." Every model tested got worse in Indian languages. That is the finding that should
+shape your expectations: <em>whichever</em> model you pick, Indian-language saves will be sorted less accurately than
+English ones.</li>
+<li><strong>IndicGenBench</strong> (arXiv 2404.16816, from Google) covers 29 Indic languages, 13 scripts and 4 language
+families, and is the most serious public Indic generation benchmark I found. It does not cover 2026 model versions and it
+does not cover classification of social captions.</li>
+<li><strong>Claims I saw but will not repeat as fact:</strong> that Gemini 2.5 Flash is the best performer on Hindi.
+That came from a search summary, I could not confirm it against the paper itself, and it concerns a model version that is
+two generations old in this document's own pricing table. <span class="tag t-unv">UNVERIFIED</span></li>
+</ul>
+<h3>What to do instead of guessing</h3>
+<p>You are sitting on the only benchmark that matters: <strong>131 real saves, already classified by
+<code>gpt-5.6-sol</code>, with the outputs stored.</strong> The honest test is four hours of work and it beats every
+leaderboard on the internet for this decision:</p>
+<ol>
+<li>Re-run all 131 through the candidate (<code>gpt-5.6-luna</code> first) with the identical prompt and schema.</li>
+<li>Measure exact-match agreement on <code>category</code> and on <code>actionability</code> — the two fields where being
+wrong is visible to a user.</li>
+<li>Measure the invalid-output rate: how often <code>validateOutput()</code> returns <code>null</code>. On a strict-schema
+vendor this should be 0. On a json_object vendor it will not be, and that number is the real price difference.</li>
+<li>Read the <code>summary</code> field by hand for every non-English save. The prompt requires the summary to be in the
+caption's language — that is the hardest thing you are asking for, it is the most visible if it breaks, and no benchmark
+will tell you whether a given model honours it.</li>
+<li>Check <code>language</code> is a correct ISO 639-1 code on the non-English ones.</li>
+</ol>
+<p class="small">Note the sample is skewed — 54 Instagram and 57 YouTube out of 132, from one test account — so treat it
+as a smoke test that can <em>disqualify</em> a model, not as proof that one is good enough.</p>
+<div class="plain"><strong>In plain English.</strong> Nobody has published the test you actually need, and I am not
+going to invent a league table to fill the gap. What is well established is that every one of these models is worse at
+Hindi and Telugu than at English, by a meaningful margin — so budget for Indian-language saves being sorted slightly
+worse no matter what you choose. The good news is you already own the right test: run your 131 real saves through the
+cheap model and compare. Four hours of work will tell you more than any benchmark on the internet.</div>
+
+<!-- ===================================================================== -->
+<h2 id="reco">19. Recommendation</h2>
+<div class="big">
+  <div class="fig">Switch the free tier to <code>gpt-5.6-luna</code>. Nothing else, yet.</div>
+  <div>$0.000281 per save — 18× cheaper, $5,096/month down to $281/month at 10,000 Indian users. Zero new code, zero
+  privacy-policy change, zero App Store exposure, strict JSON schema unchanged. Gate it on an A/B against your 131
+  existing saves.</div>
+</div>
+<h3>Why this and not the cheaper rows</h3>
+<p>The rows below <code>gpt-5.6-luna</code> in the headline table that <em>also</em> pass the strict-JSON gate save you
+between $109 and $205 per month at the 10,000-user scenario. Against that, each of them costs you a privacy-policy rewrite, an App Store re-disclosure, a new
+integration to build and maintain, a new failure mode to monitor, and — for most of them — a retry loop you do not
+currently need. <strong>$281/month is already a rounding error against the $99/year Apple fee and a Supabase plan.</strong>
+The 18× step is the one that changes the shape of the business; the further 2–3× does not.</p>
+<h3>The second choice, if luna fails the quality test</h3>
+<p><strong>Groq on <code>openai/gpt-oss-20b</code></strong> ($0.0000859/save, 59×), <em>conditional</em> on two things you
+must check before committing: (a) the Developer-plan rate limits, which Groq does not publish, and (b) the same 131-save
+A/B. It is the only sub-$0.0002 option with genuine constrained decoding, its schema requirements are identical to what
+<code>OUTPUT_SCHEMA</code> already satisfies, it is a US company storing in the US, and it offers Zero Data Retention to
+every customer rather than by approval.</p>
+<p><strong>Google Gemini 2.5 Flash-Lite paid</strong> ($0.0001145/save, 45×) is the safer-brand version of the same move:
+better Indic-language prospects than an open 20B model, a vendor already named in your policy, and mature structured
+output — at the cost of a slightly larger integration and the discipline of never, ever letting a request fall onto the
+free tier.</p>
+<h3>What I would not do</h3>
+<ul>
+<li><strong>Do not use any free tier for production saves.</strong> Google's free tier trains on user content and says so
+on its own pricing page. OpenRouter's free endpoints route to providers that train. The two that do not train (Groq free,
+Z.ai free models) have ceilings or unpublished quotas that cannot carry a product.</li>
+<li><strong>Do not use DeepSeek, Kimi, Qwen-via-Beijing or MiniMax.</strong> Each fails on the strict-JSON requirement,
+and each additionally fails on jurisdiction, training-by-default, or — in MiniMax's case — on my inability to find a data
+policy at all.</li>
+<li><strong>Do not self-host.</strong> $796/month fixed, worse than <code>gpt-5.6-luna</code> until roughly 2.8 million
+saves a month, and it buys you a GPU to babysit. Revisit past 50,000 active users.</li>
+<li><strong>Do not touch the paid US tier.</strong> <code>unit-economics.html</code> is right that paid users are not the
+problem. Keep <code>gpt-5.6-sol</code> there, at least until the free-tier A/B tells you something about quality.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> The big win is sitting in a drawer you already own. OpenAI sells a
+budget model that does everything your code needs, costs an eighteenth of what you pay today, and requires no legal work
+and no engineering. Point the free Indian tier at it, keep paying full price for the Americans who are paying you, and
+check the quality against the saves you already have. If the quality isn't good enough, Groq is the next stop — but check
+their volume limits first, because they don't publish them.</div>
+
+<!-- ===================================================================== -->
+<h2 id="decisions">20. The decisions you have to make</h2>
+<ol>
+<li><strong>What agreement rate is good enough?</strong> Before you run the A/B, decide the number. If
+<code>gpt-5.6-luna</code> agrees with <code>gpt-5.6-sol</code> on <code>category</code> for 90% of your 131 saves, is
+that a ship or a no? Decide it now, in advance, or you will rationalise whatever number comes back. My suggestion:
+category agreement ≥90%, invalid-output rate 0%, and every non-English <code>summary</code> in the right language — but
+the threshold is yours, because it is a product judgement about how annoying a wrong category is.</li>
+<li><strong>One AI vendor or two?</strong> Staying inside OpenAI means one subprocessor, one policy sentence, one thing
+to monitor — and you stop at 18×. Adding Google or Groq for the free tier gets you to 45–59× but permanently makes you a
+two-AI-vendor company: two policies to track, two sets of terms to re-read, two things that can break at 3am, and a
+privacy policy that has to be re-published before the change goes live (§6 promises exactly that). At these absolute
+numbers — $281 versus $115 per month — I think one vendor wins, but it is your call and it is the call that decides
+whether this is a config change or a project.</li>
+<li><strong>Does the free tier get a ceiling anyway?</strong> Independent of model choice. Even at $0.000281 a save, an
+unbounded free tier in India is an unbounded liability — it is just a smaller one. <code>unit-economics.html</code>
+already lists a monthly cap as lever four. Model choice makes the liability affordable; it does not make it bounded. Pick
+one: a cap, or a deliberate decision to run uncapped with a monitored alert.</li>
+</ol>
+<p class="small">A fourth item, smaller but worth queuing: §6 of <code>docs/privacy.html</code> ends with a fragment
+("the switch also stops search indexing") that contradicts the paragraph directly above it. Whoever edits that policy for
+a model change should fix it in the same pass.</p>
+<div class="plain"><strong>In plain English.</strong> Three things only you can decide: how good is good enough, whether
+you are willing to become a two-AI-vendor company to save another $150 a month, and whether free users get a ceiling.
+Everything else in this document is arithmetic.</div>
+
+<!-- ===================================================================== -->
+<h2 id="sources">21. Sources, and what I could not verify</h2>
+<h3>Pages I read, with the date checked</h3>
+<div class="scroll"><table class="src">
+<tr><th>What</th><th>URL</th><th class="n">Checked</th></tr>
+<tr><td>OpenAI — API pricing (GPT-5.6 sol / terra / luna)</td><td><a href="https://developers.openai.com/api/docs/pricing">developers.openai.com/api/docs/pricing</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>OpenAI — <code>gpt-5.6-luna</code> model card (features, rate limits)</td><td><a href="https://developers.openai.com/api/docs/models/gpt-5.6-luna">developers.openai.com/api/docs/models/gpt-5.6-luna</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>OpenAI — data usage, retention, ZDR</td><td><a href="https://developers.openai.com/api/docs/guides/your-data">developers.openai.com/api/docs/guides/your-data</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Google — Gemini API pricing (incl. "Used to improve our products" rows)</td><td><a href="https://ai.google.dev/gemini-api/docs/pricing">ai.google.dev/gemini-api/docs/pricing</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Google — Gemini API additional terms (paid vs unpaid data use)</td><td><a href="https://ai.google.dev/gemini-api/terms">ai.google.dev/gemini-api/terms</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Google — structured output / responseSchema / enums</td><td><a href="https://ai.google.dev/gemini-api/docs/structured-output">ai.google.dev/gemini-api/docs/structured-output</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Google — generateContent reference (GenerationConfig)</td><td><a href="https://ai.google.dev/api/generate-content">ai.google.dev/api/generate-content</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Google — OpenAI compatibility base URL</td><td><a href="https://ai.google.dev/gemini-api/docs/openai">ai.google.dev/gemini-api/docs/openai</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Google — available regions</td><td><a href="https://ai.google.dev/gemini-api/docs/available-regions">ai.google.dev/gemini-api/docs/available-regions</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Mistral — API pricing</td><td><a href="https://mistral.ai/pricing/api">mistral.ai/pricing/api</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Mistral — chat completions reference (<code>response_format</code>)</td><td><a href="https://docs.mistral.ai/api/">docs.mistral.ai/api/</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Mistral — training opt-out help article</td><td><a href="https://help.mistral.ai/en/articles/455207-can-i-opt-out-of-my-input-or-output-data-being-used-for-training">help.mistral.ai/en/articles/455207-…</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>DeepSeek — models &amp; pricing, peak/off-peak</td><td><a href="https://api-docs.deepseek.com/quick_start/pricing">api-docs.deepseek.com/quick_start/pricing</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>DeepSeek — JSON mode</td><td><a href="https://api-docs.deepseek.com/guides/json_mode">api-docs.deepseek.com/guides/json_mode</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>DeepSeek — rate/concurrency limits</td><td><a href="https://api-docs.deepseek.com/quick_start/rate_limit">api-docs.deepseek.com/quick_start/rate_limit</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>DeepSeek — privacy policy ("stored in People's Republic of China")</td><td><a href="https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html">cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Alibaba — Model Studio billing (Qwen prices, Singapore free quota)</td><td><a href="https://www.alibabacloud.com/help/en/model-studio/billing-for-model-studio">alibabacloud.com/help/en/model-studio/billing-for-model-studio</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Alibaba — JSON mode / JSON schema ("Singapore region models are not supported yet")</td><td><a href="https://www.alibabacloud.com/help/en/model-studio/json-mode">alibabacloud.com/help/en/model-studio/json-mode</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Alibaba — OpenAI compatibility base URLs</td><td><a href="https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope">alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Z.ai — GLM pricing</td><td><a href="https://docs.z.ai/guides/overview/pricing">docs.z.ai/guides/overview/pricing</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Z.ai — chat completion reference (<code>response_format</code>)</td><td><a href="https://docs.z.ai/api-reference/llm/chat-completion">docs.z.ai/api-reference/llm/chat-completion</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Z.ai — quick start (base URL, OpenAI compatibility)</td><td><a href="https://docs.z.ai/guides/overview/quick-start">docs.z.ai/guides/overview/quick-start</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Z.ai — privacy policy / DPA (Singapore entity, no API content storage)</td><td><a href="https://docs.z.ai/legal-agreement/privacy-policy">docs.z.ai/legal-agreement/privacy-policy</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Moonshot Kimi — chat pricing</td><td><a href="https://platform.kimi.ai/docs/pricing/chat">platform.kimi.ai/docs/pricing/chat</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Moonshot Kimi — JSON mode</td><td><a href="https://platform.kimi.ai/docs/guide/use-json-mode-feature-of-kimi-api">platform.kimi.ai/docs/guide/use-json-mode-feature-of-kimi-api</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Moonshot Kimi — base URL / OpenAI &amp; Anthropic compatibility</td><td><a href="https://platform.kimi.ai/docs/guide/use-kimi-api-to-complete-chat">platform.kimi.ai/docs/guide/use-kimi-api-to-complete-chat</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Moonshot Kimi — OpenPlatform privacy policy (Singapore entity &amp; servers)</td><td><a href="https://platform.kimi.ai/docs/agreement/userprivacy">platform.kimi.ai/docs/agreement/userprivacy</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>MiniMax — pay-as-you-go pricing</td><td><a href="https://platform.minimax.io/docs/guides/pricing-paygo">platform.minimax.io/docs/guides/pricing-paygo</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>MiniMax — text generation / endpoint &amp; OpenAI compatibility</td><td><a href="https://platform.minimax.io/docs/guides/text-generation">platform.minimax.io/docs/guides/text-generation</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Groq — models &amp; per-model pricing</td><td><a href="https://console.groq.com/docs/models">console.groq.com/docs/models</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Groq — structured outputs (<code>strict: true</code>, supported models)</td><td><a href="https://console.groq.com/docs/structured-outputs">console.groq.com/docs/structured-outputs</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Groq — rate limits (free plan table)</td><td><a href="https://console.groq.com/docs/rate-limits">console.groq.com/docs/rate-limits</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Groq — your data in GroqCloud (retention, ZDR, US storage)</td><td><a href="https://console.groq.com/docs/your-data">console.groq.com/docs/your-data</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Groq — privacy policy (US location, global processing)</td><td><a href="https://groq.com/privacy-policy/">groq.com/privacy-policy/</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>Cerebras — pricing (Developer Tier table, $5 credit)</td><td><a href="https://www.cerebras.ai/pricing">cerebras.ai/pricing</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>OpenRouter — free-model rate limits</td><td><a href="https://openrouter.ai/docs/api-reference/limits">openrouter.ai/docs/api-reference/limits</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>OpenRouter — provider logging / training opt-out routing</td><td><a href="https://openrouter.ai/docs/guides/privacy/provider-logging">openrouter.ai/docs/guides/privacy/provider-logging</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>RunPod — GPU hourly pricing</td><td><a href="https://www.runpod.io/pricing">runpod.io/pricing</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>HinTel-AlignBench — Indian-language regression finding</td><td><a href="https://arxiv.org/abs/2511.15183">arxiv.org/abs/2511.15183</a></td><td class="n">12 Sep 2026</td></tr>
+<tr><td>IndicGenBench — 29 Indic languages</td><td><a href="https://arxiv.org/pdf/2404.16816v2">arxiv.org/pdf/2404.16816v2</a></td><td class="n">12 Sep 2026</td></tr>
+</table></div>
+
+<h3>What I could not verify — read this before relying on anything</h3>
+<ul>
+<li><strong>Gemini free-tier and paid Tier-1 rate limits.</strong> Google's rate-limits page now defers to a per-account
+view in AI Studio and publishes no table. Third-party blogs give confident numbers for older model versions; I have not
+reproduced them.</li>
+<li><strong>Gemini paid-tier log retention period.</strong> The terms say "a limited period of time" and name no number
+of days.</li>
+<li><strong>Gemini / ai.google.dev processing location.</strong> No residency statement on the pages I could load.
+Vertex AI's residency documentation indicates ML-processing commitments exist only for US and EU locations, but the
+primary page did not render for me. Treat Gemini as "US/global processing" until confirmed.</li>
+<li><strong>Whether Gemini's OpenAI-compat shim accepts <code>response_format: json_schema</code>.</strong> Not stated on
+the compatibility page. The native <code>generateContent</code> path is the confirmed one.</li>
+<li><strong>Mistral: default training setting for a paid API account.</strong> The primary privacy-data-controls page
+404'd for me twice. Secondary sources disagree about the free "Experiment" tier. <em>Check this yourself before
+shipping Mistral.</em></li>
+<li><strong>Mistral: hosting / processing region for La Plateforme.</strong> Not found on any page I could load. Do not
+write "EU" into the privacy policy on the strength of the company being French.</li>
+<li><strong>Mistral: whether <code>strict</code> is a field inside <code>response_format</code>, and which models support
+<code>json_schema</code>.</strong> The reference documents <code>type</code> only; the FAQ answer did not render.</li>
+<li><strong>Mistral rate limits.</strong> Not published on the pricing page.</li>
+<li><strong>Qwen-Flash tier boundaries.</strong> The billing page gives ranges ($0.05–$0.25 in, $0.40–$2.00 out) without
+the cut-points. I used the bottom bracket because 629 tokens is plainly a short prompt, but the boundary is unconfirmed.</li>
+<li><strong>Alibaba Model Studio data policy and rate limits.</strong> Not found.</li>
+<li><strong>Z.ai free-model quotas and rate limits.</strong> The pricing page says "Free" and nothing else.</li>
+<li><strong>Moonshot Kimi rate limits.</strong> Not found.</li>
+<li><strong>MiniMax privacy policy, data policy and jurisdiction.</strong> Not found at all. This is itself the finding.</li>
+<li><strong>MiniMax silently ignoring <code>response_format</code>.</strong> Reported on MiniMax's own GitHub issue
+tracker and community forum, not in official docs. What <em>is</em> verified is that the parameter is absent from the
+docs I read.</li>
+<li><strong>Groq Developer-plan rate limits.</strong> The page says they exist and then shows only the free table. This
+is the single most important unverified number in the document if you pursue Groq.</li>
+<li><strong>Cerebras: structured-output support, endpoint, rate limits, data policy.</strong> Their docs site redirects
+to the marketing pricing page, which carries none of it.</li>
+<li><strong>Self-hosting throughput.</strong> I found no tokens-per-second benchmark I would stand behind for a specific
+model on a specific GPU at a specific batch size. The break-even table therefore assumes one GPU suffices — an assumption
+that flatters self-hosting, and it still loses.</li>
+<li><strong>Indian-language quality rankings.</strong> No credible benchmark exists for short-text classification in
+Indian languages across these models. The "Gemini 2.5 Flash is best on Hindi" claim is unverified and concerns an old
+model version.</li>
+<li><strong>Rate-limit headroom generally.</strong> Every "this is plenty" judgement in this document is arithmetic
+against 1M saves/month ≈ 0.4 requests/second, not against a measured burst. An Instagram back-catalogue import arrives
+all at once — that is what <code>BULK_MODEL</code> exists for, and it is the shape that would actually hit a limit.</li>
+</ul>
+<div class="plain"><strong>In plain English.</strong> Everything above with a source link, I read on the company's own
+page today. Everything in the list just above, I could not find and have refused to guess. Two of those gaps matter for
+real decisions: Mistral's default on training, and Groq's paid-tier volume limits. If either of those becomes your plan,
+that is the first thing to go and check.</div>
+
+<p class="sub" style="margin-top:36px">Allkept · LLM options for classification · 12 September 2026 · companion to
+<code>unit-economics.html</code>, <code>privacy.html</code> and <code>us-launch-legal-plan.html</code>.
+Prices change without notice; re-check before acting on any figure here.</p>
+</main></body></html>

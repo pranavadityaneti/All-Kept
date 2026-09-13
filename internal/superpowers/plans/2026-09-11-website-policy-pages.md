@@ -8,7 +8,7 @@
 
 **Tech Stack:** next 16.3.4, react 19.2.3, TypeScript ~6.0.3 (matching `apps/mobile` and `apps/admin`), plain CSS. No other dependencies.
 
-Spec: `docs/superpowers/specs/2026-09-11-website-policy-pages-design.md`.
+Spec: `internal/superpowers/specs/2026-09-11-website-policy-pages-design.md`.
 
 ---
 
@@ -715,7 +715,7 @@ Open `http://localhost:4173/`, `/privacy.html`, `/terms.html`, `/delete.html`, `
 ### Task 8: Hand-off
 
 **Files:**
-- Modify: `SESSION_LOG.md` (session entry), `forlater.md` (follow-ups from the spec), `docs/store-submission.html` (URLs stay on GitHub Pages until the domain is live — no change yet)
+- Modify: `SESSION_LOG.md` (session entry), `forlater.md` (follow-ups from the spec), `internal/store-submission.html` (URLs stay on GitHub Pages until the domain is live — no change yet)
 
 - [ ] **Step 1: Record in `SESSION_LOG.md`** what was built, the commits, and the two things Pranav does next: create the Vercel project (Root Directory `apps/website`, production branch `main`, domains `www.allkept.app` primary + `allkept.app` redirect) and say when to open the PR.
 

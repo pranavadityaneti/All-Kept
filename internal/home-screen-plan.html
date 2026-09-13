@@ -585,8 +585,8 @@ They overlap on exactly one case. If a "Needs you" section lands on home reading
 <h4>Documents read</h4>
 <ul class="src">
 <li><code>docs/design/interface-direction.md</code> · <code>docs/design/category-prototypes/category-system.md</code> · <code>docs/design/platform-logo-artwork.md</code> · <code>docs/design/welcome-concepts/references.html</code> (the three concepts: saved fan, smart sorting, AI recall)</li>
-<li><code>docs/engineering/sorting-and-search.md</code> · <code>docs/engineering/instagram-links.md</code></li>
-<li><code>docs/store-submission.html</code> §2 (what is collected, no ads, no tracking) · <code>docs/us-launch-legal-plan.html</code> §2 (platform terms) · <code>docs/tiktok-plan.html</code> (house style, and TikTok Phase 3)</li>
+<li><code>internal/engineering/sorting-and-search.md</code> · <code>internal/engineering/instagram-links.md</code></li>
+<li><code>internal/store-submission.html</code> §2 (what is collected, no ads, no tracking) · <code>internal/us-launch-legal-plan.html</code> §2 (platform terms) · <code>internal/tiktok-plan.html</code> (house style, and TikTok Phase 3)</li>
 <li><code>~/projects/Random Tasks/docs/saves-app-proposal.html</code> (the use case, the resurfacing idea, the "graveyard" warning) · <code>saves-app-phase0-spec.html</code> (the decision rule and the metrics: saves per day, opens per save, habit retention in days 8–14)</li>
 <li><code>forlater.md</code> — read for anything that collides with this plan. Nothing in the queue is about the home screen; item 15 (privacy-policy content) is the one this plan touches, via decision 3.</li>
 </ul>
@@ -598,10 +598,10 @@ They overlap on exactly one case. If a "Needs you" section lands on home reading
 <li><b>That exposing <code>actionability</code> is only a query change.</b> The column is written by the classifier and stored; adding it to the returned columns and the facets is a new version of two SQL functions. I have not written or run that migration.</li>
 <li><b>Section sizes (S/M/L).</b> These are judgements from the shape of the code, not estimates anyone has checked against a calendar.</li>
 <li><b>"This will be empty for most people."</b> I have no usage data at all — no idea how many saves a typical tester has, how many are unsorted, or how often anyone saves the same thing twice. Every judgement of the form "this section will usually be empty" comes from the structure of the data, not from measurement. If there are real numbers from the testers, they should be checked before section J or H is ruled in or out.</li>
-<li><b>The classifier's vendor in production.</b> <code>docs/store-submission.html</code> §2 already flags this as unverified (the policy names OpenAI; the code picks by whichever key is set). It does not affect anything recommended here, all of which is free of AI calls, but it would matter for decision 8.</li>
+<li><b>The classifier's vendor in production.</b> <code>internal/store-submission.html</code> §2 already flags this as unverified (the policy names OpenAI; the code picks by whichever key is set). It does not affect anything recommended here, all of which is free of AI calls, but it would matter for decision 8.</li>
 </ul>
 
-<p><small>Allkept · home screen plan · 12 September 2026 · companion to <code>docs/tiktok-plan.html</code>, <code>docs/store-submission.html</code> and <code>docs/us-launch-legal-plan.html</code>. Nothing in the app was changed to write this.</small></p>
+<p><small>Allkept · home screen plan · 12 September 2026 · companion to <code>internal/tiktok-plan.html</code>, <code>internal/store-submission.html</code> and <code>internal/us-launch-legal-plan.html</code>. Nothing in the app was changed to write this.</small></p>
 
 </div>
 </body>

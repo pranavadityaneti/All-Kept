@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terms of Service (United States) · Allkept — DRAFT</title>
+<meta name="description" content="Draft Terms of Service for Allkept users in the United States. Not yet in force. Prepared 11 September 2026 for review by counsel.">
+<meta name="robots" content="noindex,nofollow">
+<style>
+  /* House style from docs/terms.html. Light ground, painted explicitly. No external dependencies. */
+  :root{
+    --bg:#F6F7FA; --surface:#FFFFFF; --surface-alt:#EEF0F6; --line:#DFE3EC;
+    --ink:#14161C; --muted:#5F6675; --accent:#6D46F2; --accent-soft:#EDE8FF;
+    --warn:#8A5200; --warn-bg:#FFF6E6; --warn-line:#F0D9A8;
+    --counsel:#A32020; --counsel-bg:#FBE7E7;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:400 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 20px 72px}
+  nav{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:24px 0 8px}
+  .mark{font-weight:700; letter-spacing:-.02em; font-size:17px; color:var(--ink); text-decoration:none}
+  nav .links{display:flex; gap:18px; font-size:14px; flex-wrap:wrap}
+  nav a{color:var(--muted); text-decoration:none}
+  nav a:hover{color:var(--ink)}
+  h1{font-size:clamp(28px,5vw,38px); line-height:1.1; letter-spacing:-.03em; margin:26px 0 6px}
+  .stamp{color:var(--muted); font-size:14px; margin:0 0 22px}
+  h2{font-size:21px; letter-spacing:-.015em; margin:38px 0 10px; padding-top:14px; border-top:1px solid var(--line)}
+  h3{font-size:16.5px; margin:24px 0 6px; letter-spacing:-.01em}
+  p,li{font-size:15.5px}
+  ul,ol{padding-left:22px}
+  li{margin:5px 0}
+  a{color:var(--accent)}
+  strong{font-weight:600}
+  code{background:var(--surface-alt); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:13.5px}
+  .note{
+    background:var(--warn-bg); border:1px solid var(--warn-line); border-left:4px solid var(--warn);
+    border-radius:10px; padding:14px 16px; margin:20px 0; color:var(--warn); font-size:15px;
+  }
+  .note strong{color:var(--warn)}
+  .note p{margin:0 0 8px; font-size:15px}
+  .note p:last-child{margin:0}
+  .callout{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:18px 0}
+  .callout p:first-child,.callout ul:first-child{margin-top:0}
+  .callout p:last-child,.callout ul:last-child{margin-bottom:0}
+  .counsel{
+    display:inline; background:var(--counsel-bg); color:var(--counsel); border:1px solid #F0B8B8;
+    border-radius:6px; padding:1px 6px; font-size:14px; font-weight:600;
+  }
+  .toc{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:24px 0}
+  .toc h2{border:0; margin:0 0 8px; padding:0; font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+  .toc ol{margin:0; padding-left:20px; columns:2; column-gap:28px}
+  .toc li{margin:3px 0; break-inside:avoid; font-size:14.5px}
+  .toc a{text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  @media (max-width:620px){ .toc ol{columns:1} }
+  .caps{font-size:14.5px; letter-spacing:.01em; font-weight:600}
+  .scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:16px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px}
+  th,td{text-align:left; vertical-align:top; padding:10px 14px; border-bottom:1px solid var(--line)}
+  th{background:var(--surface-alt); font-weight:600; font-size:13.5px}
+  tr:last-child td{border-bottom:0}
+  footer{border-top:1px solid var(--line); margin-top:44px; padding-top:20px; color:var(--muted); font-size:13.5px}
+  footer a{color:var(--muted)}
+  footer .l{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px}
+  @media print{
+    :root{--bg:#fff; --surface:#fff; --surface-alt:#f4f4f4; --accent:#000; --accent-soft:#fff; --counsel-bg:#fff}
+    body{font-size:10.5pt; line-height:1.45}
+    .wrap{max-width:none; padding:0}
+    nav{display:none}
+    .toc ol{columns:1}
+    h1{font-size:22pt}
+    h2{font-size:13pt; page-break-after:avoid; border-top:1px solid #ccc}
+    h3{font-size:11.5pt; page-break-after:avoid}
+    p,li,table{font-size:10pt}
+    table,.scroll,.note,.callout{page-break-inside:avoid}
+    .scroll{overflow:visible; border:0}
+    table{min-width:0; border:1px solid #ccc}
+    .counsel{border:1px solid #000; background:#fff; color:#000}
+    a{color:#000; text-decoration:none}
+    a[href^="http"]::after,a[href^="mailto"]::after{content:" (" attr(href) ")"; font-size:8.5pt; color:#555}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <a class="mark" href="https://www.allkept.app/">Allkept</a>
+  <span class="links">
+    <a href="https://www.allkept.app/">Home</a>
+    <a href="https://www.allkept.app/privacy">Privacy</a>
+    <a href="https://www.allkept.app/terms">Terms</a>
+    <a href="https://www.allkept.app/delete">Delete your data</a>
+    <a href="https://www.allkept.app/support">Support</a>
+  </span>
+</nav>
+
+<h1>Terms of Service<br><span style="font-size:.6em;color:var(--muted);letter-spacing:0">United States</span></h1>
+<p class="stamp">Draft prepared 11 September 2026 · Not yet in force ·
+<span class="counsel">[COUNSEL: set the effective date when these terms are published on www.allkept.app/terms and shown in the app; nothing here binds anyone until then]</span></p>
+
+<div class="note">
+  <p><strong>Read section 19 carefully.</strong> It requires most disputes between you and Allkept to be resolved by
+  <strong>binding individual arbitration</strong>, not in court, and it waives class actions. You can
+  <strong>opt out</strong> of arbitration within 30 days of accepting these terms (section 19.11). Small claims
+  court is always available to you (section 19.3).</p>
+</div>
+
+<div class="callout">
+  <p><strong>The short version.</strong> This summary is here to help you read the terms; the full terms below are what applies.</p>
+  <ul>
+    <li>Allkept is a private library of things you save from Instagram, YouTube, Reddit and the web. Your library is yours. We need only a narrow permission to store it, sort it, index it for search, and show it back to you.</li>
+    <li>We show no ads, sell no data, and never use your library to train AI models.</li>
+    <li>You must be 18 or older. These terms are for people in the United States.</li>
+    <li>Allkept's core features are free. If you choose a paid subscription, Apple or Google bills you, it renews until you cancel, and you cancel it in your app store account.</li>
+    <li>Copyright complaints go to <a href="mailto:dmca@allkept.app">dmca@allkept.app</a>. We follow the DMCA notice-and-takedown process and close the accounts of repeat infringers.</li>
+    <li>If we have a dispute, we talk first. If that fails, we arbitrate individually. You can opt out of arbitration within 30 days.</li>
+  </ul>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#s1">Who we are and what these terms cover</a></li>
+    <li><a href="#s2">Accepting these terms; who may use Allkept</a></li>
+    <li><a href="#s3">What Allkept is — and what it is not</a></li>
+    <li><a href="#s4">Your account</a></li>
+    <li><a href="#s5">How your saves reach Allkept</a></li>
+    <li><a href="#s6">Other companies' platforms and content</a></li>
+    <li><a href="#s7">Your content, and the permission you give us</a></li>
+    <li><a href="#s8">Our content, and your permission to use the app</a></li>
+    <li><a href="#s9">What you may not do</a></li>
+    <li><a href="#s10">Copyright complaints and the DMCA</a></li>
+    <li><a href="#s11">Paid subscriptions</a></li>
+    <li><a href="#s12">Privacy; no ads, no data sales, no biometrics, no texts</a></li>
+    <li><a href="#s13">Feedback</a></li>
+    <li><a href="#s14">Availability and changes to the service</a></li>
+    <li><a href="#s15">Ending your account</a></li>
+    <li><a href="#s16">Disclaimers</a></li>
+    <li><a href="#s17">Limits on our liability</a></li>
+    <li><a href="#s18">Your responsibility for claims you cause</a></li>
+    <li><a href="#s19">Resolving disputes: talk first, then individual arbitration</a></li>
+    <li><a href="#s20">Governing law and courts</a></li>
+    <li><a href="#s21">Notices for residents of particular states</a></li>
+    <li><a href="#s22">Export controls and sanctions</a></li>
+    <li><a href="#s23">If you got Allkept from the Apple App Store</a></li>
+    <li><a href="#s24">If you got Allkept from Google Play</a></li>
+    <li><a href="#s25">Changes to these terms</a></li>
+    <li><a href="#s26">General terms</a></li>
+    <li><a href="#s27">Contact</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Who we are and what these terms cover</h2>
+<p>These Terms of Service (the "<strong>terms</strong>") are a contract between you and
+<strong>MECA Engineering Solutions (OPC) Private Limited</strong>, a company incorporated in India, of 4th Floor,
+No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru 560102, India ("<strong>Allkept</strong>",
+"<strong>we</strong>", "<strong>us</strong>"). We build and run Allkept from India.</p>
+<p>The terms cover the Allkept iOS and Android apps, the Allkept Instagram account <strong>@allkeptapp</strong>, the
+Allkept servers, and the pages at <strong>allkept.app</strong> (together, the "<strong>Service</strong>").</p>
+<p>These are the terms for people in the United States. They apply if you live in the United States, or if you got
+the app from the United States storefront of the Apple App Store or Google Play. If you live in India, Allkept's
+terms for India apply to you instead.
+<span class="counsel">[COUNSEL: confirm the URL where the India terms will live (for example www.allkept.app/terms/india) and link it here; the website spec currently has a single /terms route]</span></p>
+<p>Our <a href="https://www.allkept.app/privacy">Privacy Policy</a> explains what we do with your data. It forms part
+of these terms. If you are a user, the Privacy Policy, not this document, is where to look for what we collect and why.</p>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. Accepting these terms; who may use Allkept</h2>
+<h3>2.1 How you accept</h3>
+<p>You accept these terms by tapping a button that says you agree, by creating an Allkept account, by sending a
+message to @allkeptapp, or by using the Service in any other way. If you do not agree, do not use Allkept.</p>
+<p>You agree that we can form this contract electronically, and that your electronic acceptance has the same effect
+as a signature on paper.</p>
+<h3>2.2 Who may use Allkept</h3>
+<ul>
+  <li>You must be <strong>at least 18 years old</strong>. Allkept is not for children or teenagers, and we do not
+    knowingly collect personal information from anyone under 13.</li>
+  <li>Allkept is for personal use by an individual. Do not create an account for a company, a brand, a bot, or
+    another person, and do not use Allkept for anyone else's benefit.</li>
+  <li>You must not use Allkept if the law bars you from doing so, if a platform you connect to it bars you from
+    doing so, or if we have previously closed an account of yours for breaking these terms.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. What Allkept is — and what it is not</h2>
+<h3>3.1 What it does</h3>
+<p>Allkept gathers things you have saved elsewhere into one private library, sorts them into categories
+automatically, and lets you search them. Saves reach Allkept in the ways described in section 5.</p>
+<p>For each save, Allkept stores the link, the public preview details of the link (title, caption or description,
+author name and handle), a copy of the preview image (a "thumbnail"), and whatever you write yourself. <strong>It
+does not download, copy, host or re-publish videos, audio or full posts.</strong> Playback happens through the
+platform's own embedded player, and every card links back to the original.</p>
+<h3>3.2 Automatic sorting and search</h3>
+<p>Allkept sorts saves into categories, writes a one-line summary and extracts tags automatically. To do that, it
+sends the text of the save to a third-party AI provider (currently OpenAI). Search combines exact matching with
+meaning-based matching, which sends the words you type to the same provider. The
+<a href="https://www.allkept.app/privacy">Privacy Policy</a> describes exactly what is sent.</p>
+<p><strong>These are automated guesses, not statements of fact.</strong> A category can be wrong, a summary can be
+misleading, and a search can miss something. Do not rely on them for anything that matters. You can change any
+category yourself, and your correction is never overwritten.</p>
+<p>Sorting is on by default and can be switched off in Settings; saves then arrive uncategorised. Search indexing is
+separate and stays on. Sorting is not a decision about you and has no legal or similarly significant effect on you.</p>
+<h3>3.3 Notifications</h3>
+<p>Allkept can tell you when a save has landed or when one needs something from you. Notifications are service
+messages about your own library, not marketing. They are <strong>off until you turn them on</strong> in Settings, you
+can turn them off again at any time, and your phone's own settings override ours.</p>
+<h3>3.4 What Allkept is not</h3>
+<ul>
+  <li><strong>Not a backup service.</strong> Platforms remove posts, change links and block previews. Keep your own
+    copy of anything you cannot afford to lose.</li>
+  <li><strong>Not a licence to other people's content.</strong> Saving something in Allkept gives you no right to
+    use it beyond what the platform and the law already allow (section 6.4).</li>
+  <li><strong>Not affiliated</strong> with Meta, Instagram, YouTube, Google, Reddit, OpenAI, Apple or any other
+    company named in these terms (section 6.1).</li>
+  <li><strong>Not ad-supported.</strong> There are no ads in Allkept and we do not sell your data (section 12).</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. Your account</h2>
+<ul>
+  <li>You sign in with <strong>Google</strong> or with <strong>Apple</strong>. There is no Allkept password. Keep
+    control of whichever account you use to sign in — anyone who has it has your Allkept library.</li>
+  <li>If you sign in with Apple and choose Hide My Email, the relay address Apple gives us is the only address we
+    have for you. Keep it working if you want to hear from us.</li>
+  <li>The only profile detail we ask for is a name. A profile photo is optional and can be added in Settings.
+    We do not ask for or store a phone number.</li>
+  <li>One person, one account. Do not share your account or let anyone else use it.</li>
+  <li>Everything done through your account is treated as done by you, unless it happened because of a security
+    failure on our side.</li>
+  <li>Tell us at <a href="mailto:hi@allkept.app">hi@allkept.app</a> if you think someone else has got into your
+    account.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. How your saves reach Allkept</h2>
+<h3>5.1 Instagram</h3>
+<p>You connect Instagram by sending a six-character code to @allkeptapp. That code links whichever Instagram account
+sent it to whichever Allkept account requested it — so do not give your code to anyone else, and do not send someone
+else's code. A code expires after ten minutes and can be used once. From then on, a post, reel or link you send to
+@allkeptapp becomes a save.</p>
+<p>We only ever see the messages you send to us. We cannot see your feed, your followers, your other conversations,
+your stories or your Instagram saved collection, and we never post or message on your behalf. We reply in the thread
+you started, and only to confirm a save. You can stop those replies at any time by sending
+<code>stop replies</code>, or from Settings.</p>
+<p>Some Instagram post shares arrive without the original link because Instagram does not include one. Those saves
+stay incomplete until you supply the link. That is a platform limitation, not a fault we can fix.</p>
+<h3>5.2 Links you paste or share</h3>
+<p>You can paste any link into the app, or share one into Allkept from another app. Our server — not your phone —
+fetches the public preview of the link (title, description, author, thumbnail) from the platform's public embed
+endpoint or from the page's public preview tags. The request identifies itself as <code>AllkeptBot</code>. If the
+page is private, behind a login or paywall, or refuses the request, the card simply has no preview.</p>
+<h3>5.3 A YouTube playlist</h3>
+<p>You give us the link to a public or unlisted playlist of your own. We read it periodically with Allkept's own
+YouTube API key and turn new videos in it into saves. We do not ask for, receive or store your Google or YouTube
+credentials, and we can see nothing on YouTube except that one playlist. YouTube shows Watch Later and Liked videos
+to nobody, including us. Disconnect the playlist at any time in Settings. Section 6.3 has the terms YouTube requires
+us to tell you about.</p>
+<h3>5.4 Reddit links</h3>
+<p>You can save a link to a Reddit post or comment. We store the link and read its public preview (the title and the
+poster's name) through Reddit's public embed endpoint. We do not log in to Reddit, do not use Reddit's Data API, and
+do not store Reddit posts beyond that preview. Some Reddit share links are resolved to the post they point at on your
+phone before being sent to us, because Reddit refuses to resolve them for servers.</p>
+<h3>5.5 Importing your older Instagram saves</h3>
+<p>You may upload the "saved posts" export that Meta gives you, so that your existing Instagram saves appear in
+Allkept. Upload only an export of your own account. We read the Instagram post links out of it and delete the file
+immediately afterwards.</p>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Other companies' platforms and content</h2>
+<h3>6.1 Not affiliated</h3>
+<p>Allkept is not affiliated with, endorsed by or sponsored by Meta, Instagram, YouTube, Google, Reddit, OpenAI,
+Apple or any other company named in these terms. Their names and logos are their trademarks and are used only to
+identify their services.</p>
+<h3>6.2 Their rules still apply to you</h3>
+<p>When you connect a platform to Allkept, or save something from it, that platform's own agreement with you
+continues to apply, and you must keep to it. In particular:</p>
+<ul>
+  <li><strong>Instagram:</strong> the <a href="https://help.instagram.com/581066165581870" rel="noopener">Instagram
+    Terms of Use</a> and Meta's other rules.</li>
+  <li><strong>Reddit:</strong> Reddit's user agreement and content policy.</li>
+  <li><strong>Any other site you save from:</strong> that site's own terms, including any limits on copying its
+    content.</li>
+</ul>
+<h3>6.3 YouTube API Services — what YouTube requires us to tell you</h3>
+<p>Allkept's YouTube door uses <strong>YouTube API Services</strong>. <strong>By using it, you agree to be bound by
+the <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a>.</strong> Google's handling
+of your data is described in the <a href="https://www.google.com/policies/privacy" rel="noopener">Google Privacy
+Policy</a>. Allkept reads only the playlist you name, and only the public details of the videos in it, with Allkept's
+own API key; it holds no authorisation on your Google or YouTube account, so <strong>disconnecting the playlist in
+Settings is what revokes our access to it</strong>. Separately, the Google account you may use to sign in to Allkept
+can be reviewed, and its access revoked, at <a href="https://myaccount.google.com/permissions" rel="noopener">Google's
+security settings page</a> — revoking it there stops you signing in, and does not by itself delete your Allkept
+library (see <a href="https://www.allkept.app/delete">Delete your data</a>).</p>
+<h3>6.4 The content belongs to whoever made it</h3>
+<p>The posts, reels, videos, articles and images you save belong to the people and companies who made them. Allkept
+does not transfer any right in them to you, and you must not use Allkept to copy, republish, redistribute or sell
+them. You are responsible for having the right to save what you save.</p>
+<h3>6.5 Embedded players and links open on your phone</h3>
+<p>When you open a save, the platform's own embedded player or page loads on your phone directly from that platform,
+under that platform's terms and privacy policy. When you tap through to the original, it opens in the platform's app
+or a browser. What those companies do with the visit is their responsibility, not ours.</p>
+<h3>6.6 Platforms change</h3>
+<p>Platforms fail, rate-limit and change their rules without warning. If a platform changes its rules or its access
+in a way that breaks a door, that door may stop working, and we may have to delete or refresh data the platform
+requires us to. We will say so in the app where we can. We are not responsible for the platforms, for the content
+on them, or for anything they do.</p>
+
+<!-- ============================================================ -->
+<h2 id="s7">7. Your content, and the permission you give us</h2>
+<h3>7.1 What is yours</h3>
+<p>Your notes, your category corrections, your profile details, your profile photo, the text you send alongside a
+link, and your feedback are yours ("<strong>your content</strong>"). We claim no ownership of them.</p>
+<p>The things you save (the "<strong>saves</strong>") — links, public preview details and thumbnails — remain the
+property of whoever made the original content (section 6.4). Your library, meaning the collection of your saves
+together with your content, is private to you.</p>
+<h3>7.2 The permission we need</h3>
+<p>To run Allkept we need your permission to handle your library. You grant us a <strong>worldwide, non-exclusive,
+royalty-free licence to store, copy, reformat, transmit, analyse and display your content and your saves, solely in
+order to provide the Service to you, to keep it secure, and to support and troubleshoot it for you</strong>. This
+includes:</p>
+<ul>
+  <li>fetching and storing a thumbnail of each save so that your library keeps showing a picture after the platform's
+    temporary image link expires;</li>
+  <li>sending the text of a save, and the words you type into search, to our AI provider to sort your saves and to
+    build the search index — as described in the Privacy Policy;</li>
+  <li>showing your library, and only to you, on the devices you sign in on;</li>
+  <li>sending you a notification that names a save, if you have turned notifications on.</li>
+</ul>
+<p>This permission is limited to running the Service. <strong>We do not use your content or your saves to train AI
+models, we do not show them to other users, and we do not use them for advertising.</strong> The permission ends when
+you delete the item or your account, except that copies may remain in our provider's routine backups for a short time
+before they age out, and detached feedback is kept as described in section 13.</p>
+<h3>7.3 What you promise about your content</h3>
+<p>You promise that your content and your saves do not break the law or anyone else's rights, that you have the
+right to give us the permission above, and that you will only upload an Instagram export of your own account.</p>
+
+<!-- ============================================================ -->
+<h2 id="s8">8. Our content, and your permission to use the app</h2>
+<p>Allkept — the app, the name, the design, the code and the way it works — belongs to us or our licensors and is
+protected by copyright, trademark and other laws. We give you a <strong>personal, limited, non-exclusive,
+non-transferable, non-sublicensable, revocable licence</strong> to install and use the app on devices you own or
+control, for your own personal use, under these terms. Nothing else is granted.</p>
+<p>The app includes open-source components. Each of them is licensed to you under its own licence, which we do not
+change.</p>
+<p>You must not copy, modify, distribute, sell, rent or lease any part of the Service; reverse engineer, decompile or
+try to extract its source code, except to the extent a law that applies to you gives you a right we cannot exclude;
+or remove, obscure or alter any notice of ownership.</p>
+
+<!-- ============================================================ -->
+<h2 id="s9">9. What you may not do</h2>
+<p>You may use Allkept to keep and organise things for your own personal, non-commercial use. You must not:</p>
+<ul>
+  <li>use Allkept to build a collection, archive, dataset or feed for anyone other than yourself, or to republish,
+    resell or redistribute what you save;</li>
+  <li>save content you have no right to access, or use Allkept to get around a platform's privacy settings, paywall,
+    geo-restriction or technical protection;</li>
+  <li>save or store anything unlawful — including child sexual abuse material, content that infringes someone's
+    rights, and content that is illegal where you are;</li>
+  <li>use Allkept to harass, stalk, monitor or profile another person;</li>
+  <li>automate, scrape, bulk-load or otherwise use Allkept other than through the app and the @allkeptapp thread as
+    they are intended to work, or send us content through any other channel;</li>
+  <li>attempt to reach another user's library, or any part of our systems you have not been given access to;</li>
+  <li>probe, load-test, interfere with, or try to defeat the security of the Service;</li>
+  <li>impersonate anyone, link an Instagram account that is not yours, or upload someone else's data export;</li>
+  <li>break a platform's rules while using Allkept, or cause us to break them; or</li>
+  <li>sell, rent or share your account, or a subscription, with anyone.</li>
+</ul>
+<p>We may limit how much you can save, how fast, and how large an upload can be, to keep the service working for
+everyone.</p>
+
+<!-- ============================================================ -->
+<h2 id="s10">10. Copyright complaints and the DMCA</h2>
+<p>We respect copyright and expect you to. Allkept libraries are private to their owners and consist mainly of links
+back to the original; where a save is only a link, the stored preview text and thumbnail is the whole of what we hold.
+Even so, we follow the notice-and-takedown process of the United States Digital Millennium Copyright Act
+("<strong>DMCA</strong>", 17 U.S.C. §512).</p>
+<h3>10.1 Our designated agent</h3>
+<p>Send copyright notices and counter-notices to our designated agent:</p>
+<div class="callout">
+  <p><strong>Copyright Agent, MECA Engineering Solutions (OPC) Private Limited</strong>
+  <span class="counsel">[COUNSEL: Pranav to decide whether the registered agent is a named individual (for example Pranav Aditya) or the title "Copyright Agent"; whichever is registered with the U.S. Copyright Office must appear here word for word]</span><br>
+  4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru 560102, India<br>
+  Email: <a href="mailto:dmca@allkept.app">dmca@allkept.app</a><br>
+  Telephone: <span class="counsel">[COUNSEL: insert the telephone number registered with the U.S. Copyright Office; the details here must match the DMCA Designated Agent Directory entry exactly, and the designation must be renewed every three years]</span></p>
+</div>
+<h3>10.2 What a notice must contain</h3>
+<p>If you believe that material stored by Allkept infringes your copyright, send our agent a written notice that
+includes:</p>
+<ol>
+  <li>your physical or electronic signature, or that of a person authorised to act for the copyright owner;</li>
+  <li>identification of the copyrighted work you say has been infringed (or, if there are several works at one
+    location, a representative list);</li>
+  <li>identification of the material you say is infringing, with enough information for us to find it — for Allkept,
+    the link to the original post is usually enough;</li>
+  <li>your name, address, telephone number and email address;</li>
+  <li>a statement that you believe in good faith that the use of the material is not authorised by the copyright
+    owner, its agent, or the law; and</li>
+  <li>a statement that the information in the notice is accurate and, <strong>under penalty of perjury</strong>, that
+    you are the copyright owner or are authorised to act for the owner.</li>
+</ol>
+<p>A notice that leaves out most of this may not be acted on. Anyone who knowingly and materially misrepresents that
+material is infringing, or that it was removed by mistake, can be liable for damages, costs and attorney's fees
+under 17 U.S.C. §512(f).</p>
+<h3>10.3 What we do with a notice</h3>
+<p>When we receive a notice that substantially complies with 10.2, we will promptly remove or disable access to the
+stored preview text and thumbnail for that material in the library concerned (and the save itself, where it consists
+of the material rather than a link), tell the user whose library it was in, and give that user a copy of the notice.
+We may also pass a notice to the relevant platform where that helps.</p>
+<h3>10.4 Counter-notice</h3>
+<p>If material from your library was removed and you believe that was a mistake or a misidentification, you may send
+our agent a counter-notice that includes:</p>
+<ol>
+  <li>your physical or electronic signature;</li>
+  <li>identification of the material that was removed and where it appeared before removal;</li>
+  <li>a statement <strong>under penalty of perjury</strong> that you believe in good faith that the material was
+    removed or disabled as a result of mistake or misidentification; and</li>
+  <li>your name, address and telephone number; a statement that you consent to the jurisdiction of the federal
+    district court for the judicial district in which your address is located (or, if you are outside the United
+    States, any judicial district in which Allkept may be found); and a statement that you will accept service of
+    process from the person who sent the original notice or their agent.</li>
+</ol>
+<p>We will send a copy of your counter-notice to the person who sent the original notice. We will then restore the
+material between 10 and 14 business days after we receive your counter-notice — unless, before we do, that person
+tells us that they have filed a court action seeking to restrain you from the activity the notice complained of.</p>
+<h3>10.5 Repeat infringers</h3>
+<p>We will close the account of anyone who repeatedly infringes copyright. We treat a user as a repeat infringer
+when three valid notices against material in their library go unrebutted within any twelve-month period, and we may
+act sooner where the circumstances warrant it — for example, a single clear case of deliberate infringement.
+<span class="counsel">[COUNSEL: Pranav to confirm the three-notice threshold; the law requires only a policy that is "reasonably implemented", and a stated threshold must then actually be applied]</span></p>
+<h3>10.6 Other complaints</h3>
+<p>For complaints that are not about copyright — trademark, privacy, harassment, or a post of yours that you want out
+of someone's library — write to <a href="mailto:hi@allkept.app">hi@allkept.app</a>. Section 20 of the
+<a href="https://www.allkept.app/privacy">Privacy Policy</a> explains what we do when your post is in someone's library.</p>
+
+<!-- ============================================================ -->
+<h2 id="s11">11. Paid subscriptions</h2>
+<h3>11.1 The free tier stays free</h3>
+<p>Allkept's core features — saving, sorting, searching and opening your saves — are free. We may offer an optional
+paid subscription (a "<strong>Subscription</strong>") that adds features on top. What a Subscription includes, its
+price and its billing period are shown in the app and in the store listing before you buy. We will not move a feature
+that was free when you started using Allkept behind a Subscription without telling you first.
+<span class="counsel">[COUNSEL: Pranav to decide the Subscription's name, price(s), billing periods and which features it includes; those facts must be true in the app, the store listing and here before the paid tier ships]</span></p>
+<h3>11.2 Where it is offered</h3>
+<p>Subscriptions are offered only on the United States storefronts of the Apple App Store and Google Play. Whether
+you are offered one depends on the storefront your store account belongs to. Allkept in India is free and has no
+Subscription.</p>
+<h3>11.3 Apple or Google bills you, not us</h3>
+<p>You buy a Subscription as an in-app purchase through Apple or Google (the "<strong>store</strong>"). The store is
+the merchant of record: it takes your payment, applies any sales tax, issues receipts, and handles refunds under its
+own terms. <strong>We never see or store your card or payment details.</strong> The store's own terms apply to the
+purchase in addition to these terms — see sections 23 and 24.</p>
+<h3>11.4 Automatic renewal — read this before you buy</h3>
+<div class="callout">
+  <ul>
+    <li><strong>It renews until you cancel.</strong> A Subscription continues for the billing period you chose
+      (for example, one month or one year) and then <strong>automatically renews for the same period, at the price
+      shown at the time, until you cancel it</strong>.</li>
+    <li><strong>You are charged at each renewal.</strong> The store charges the payment method on your store account
+      at the start of each new period.</li>
+    <li><strong>How to cancel.</strong> Cancel in your store account, not in Allkept — see 11.5. To avoid being
+      charged for the next period, cancel before the current period ends; Apple asks for at least 24 hours before the
+      renewal date. Deleting the Allkept app, or deleting your Allkept account, <strong>does not cancel</strong> a
+      Subscription.</li>
+    <li><strong>Free trials and introductory prices.</strong> If we offer one, the length of the trial or offer, the
+      price you will be charged when it ends, and the fact that it converts to a paid Subscription unless you cancel
+      first are shown before you start it. Cancel before the trial ends to avoid the charge.</li>
+    <li><strong>Price changes.</strong> If the price of your Subscription is going to go up, the store will notify you
+      in advance and, where its rules or the law require it, ask for your consent before charging the new price. If
+      you do not agree, cancel before the new price takes effect.</li>
+  </ul>
+</div>
+<h3>11.5 How to cancel</h3>
+<ul>
+  <li><strong>iPhone or iPad:</strong> open the Settings app, tap your name, tap <strong>Subscriptions</strong>, tap
+    Allkept, then tap <strong>Cancel Subscription</strong>. Apple's instructions are at
+    <a href="https://support.apple.com/en-us/118428" rel="noopener">support.apple.com/en-us/118428</a>.</li>
+  <li><strong>Android:</strong> open the Google Play app, go to your <strong>Subscriptions</strong> (under your
+    profile, Payments &amp; subscriptions), select Allkept, then tap <strong>Cancel subscription</strong>. Google's
+    instructions are at <a href="https://support.google.com/googleplay/answer/7018481" rel="noopener">support.google.com/googleplay/answer/7018481</a>.</li>
+</ul>
+<p>The app also has a <strong>Manage subscription</strong> link in Settings that takes you to the store's cancellation
+screen. When you cancel, you keep the Subscription until the end of the period you have already paid for, and you are
+not charged again. Cancelling is always free. If you cannot cancel through the store, write to
+<a href="mailto:hi@allkept.app">hi@allkept.app</a> and we will help.</p>
+<h3>11.6 Refunds</h3>
+<p>Because the store takes your payment, the store decides refunds under its policy and the law that applies to you.
+Apple customers request a refund from Apple at reportaproblem.apple.com. Google Play customers can request a refund
+from Google within 48 hours of a purchase, and after that from us. If the law of your state entitles you to a refund
+that the store will not give, write to <a href="mailto:hi@allkept.app">hi@allkept.app</a> and we will arrange it.
+Otherwise, charges for a period that has already started are not refundable, and cancelling does not refund the
+current period.</p>
+<h3>11.7 Changes to what a Subscription includes</h3>
+<p>We may add to, change or remove Subscription features over time. If we materially reduce what your Subscription
+includes during a period you have already paid for, we will tell you and arrange, through the store where we can, a
+refund for the unused part of that period.</p>
+<h3>11.8 Restoring purchases; one account</h3>
+<p>A Subscription belongs to the store account that bought it and works on your devices signed in to that store
+account and your Allkept account. The app has a <strong>Restore purchases</strong> control for a Subscription you
+already own. Subscriptions may not be sold, transferred or shared.</p>
+
+<!-- ============================================================ -->
+<h2 id="s12">12. Privacy; no ads, no data sales, no biometrics, no texts</h2>
+<p>The <a href="https://www.allkept.app/privacy">Privacy Policy</a> is the full account of what we collect and why.
+These commitments are also part of these terms:</p>
+<ul>
+  <li><strong>No ads.</strong> Allkept shows no advertising and contains no ad network or tracking SDK.</li>
+  <li><strong>No sale of data.</strong> We do not sell your personal information, and we do not share it for
+    advertising. We never have.</li>
+  <li><strong>No AI training.</strong> Your library is never used to train AI models, by us or by our providers on
+    our behalf.</li>
+  <li><strong>No biometrics.</strong> We do not collect or process biometric identifiers or biometric information —
+    no face geometry, fingerprints, voiceprints or the like. We do not run face detection or recognition on profile
+    photos or thumbnails. A photo you choose to upload is stored as a picture and nothing more.</li>
+  <li><strong>No phone numbers, no texts, no calls.</strong> We do not collect phone numbers, and we do not send SMS
+    messages or make calls, automated or otherwise.</li>
+  <li><strong>No children.</strong> Allkept is for adults. We do not knowingly collect personal information from
+    anyone under 13, and we delete it if we learn we have it.</li>
+  <li><strong>Your data rights are not waived.</strong> Nothing in these terms limits any right you have under a
+    privacy law that applies to you, including the California Consumer Privacy Act.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="s13">13. Feedback</h2>
+<p>You can send us feedback from Settings, or write to <a href="mailto:hi@allkept.app">hi@allkept.app</a>. Keep it
+to the product — do not put confidential information, or anyone else's personal details, in a feedback message.</p>
+<p>If you send us an idea, a bug report or a suggestion, we may use it freely, without owing you anything and without
+keeping it confidential. You keep whatever rights you had in it; you are simply letting us act on it.</p>
+<p><strong>Feedback outlives your account on purpose.</strong> If you delete your account, the message stays but is
+detached from you: your account link and the address we could have replied to are removed. If you would rather the
+message went too, ask us and we will delete it.</p>
+<p>Nothing in these terms stops you from writing an honest review of Allkept anywhere you like.</p>
+
+<!-- ============================================================ -->
+<h2 id="s14">14. Availability and changes to the service</h2>
+<p>Allkept is a new product. It is provided as it is, when it is available. We may change, suspend, limit or withdraw
+any part of it — including a whole door — at any time, with notice where it is reasonable to give notice and without
+it where it is not. If we withdraw a feature that is part of a Subscription, section 11.7 applies.</p>
+<p>We do not promise any level of uptime, any processing time, or that any particular save will be captured,
+previewed or sorted successfully. Platforms fail, rate-limit and change without warning, and some content simply has
+no public preview.</p>
+<p><strong>Allkept is not a backup service.</strong> Keep your own copy of anything you cannot afford to lose.</p>
+
+<!-- ============================================================ -->
+<h2 id="s15">15. Ending your account</h2>
+<h3>15.1 You can leave at any time</h3>
+<p>Delete your account from <strong>Settings → Delete account and everything in it</strong>, or follow the steps at
+<a href="https://www.allkept.app/delete">www.allkept.app/delete</a>. Deletion is immediate and permanent: it removes
+your library and everything else we hold about you, except feedback, which is kept detached from you (section 13).
+<strong>Deleting your account does not cancel a Subscription</strong> — cancel it in the store first (section 11.5),
+or the store may keep charging you.</p>
+<h3>15.2 When we may suspend or close your account</h3>
+<p>We may suspend or close your account if you break these terms, if we are required to by law or by a platform
+whose rules you have broken, if your use threatens the Service or another person, if you are a repeat infringer
+(section 10.5), or if we discontinue Allkept. Where it is possible and lawful, we will tell you first and give you a
+chance to get your data out. If we close your account for a reason other than your breach of these terms while you
+are in a paid Subscription period, we will arrange a refund of the unused part of that period through the store where
+we can.</p>
+<h3>15.3 What survives</h3>
+<p>Sections that by their nature should survive the end of this agreement do survive it — including sections 6.4, 7.3,
+8, 10, 13, 16, 17, 18, 19, 20, 21, 25 and 26.</p>
+
+<!-- ============================================================ -->
+<h2 id="s16">16. Disclaimers</h2>
+<p class="caps">ALLKEPT IS PROVIDED "AS IS" AND "AS AVAILABLE". TO THE EXTENT THE LAW THAT APPLIES TO YOU ALLOWS IT,
+WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT, AND ANY WARRANTY THAT THE SERVICE WILL BE UNINTERRUPTED, TIMELY,
+SECURE, ACCURATE OR ERROR-FREE, OR THAT ANY SAVE, PREVIEW, CATEGORY, SUMMARY OR SEARCH RESULT WILL BE CAPTURED,
+CORRECT OR COMPLETE.</p>
+<p>We do not warrant the accuracy of any category, tag, summary or search result, or of any preview detail fetched
+from a platform. We are not responsible for the content you save, for the platforms it came from, or for anything
+those platforms do.</p>
+<p><strong>What this section does not do.</strong> It does not exclude or limit any warranty or right that the law
+that applies to you says cannot be excluded or limited by contract. If you live in a state that does not allow the
+exclusion of an implied warranty in a contract like this one, that warranty applies to you for the shortest period
+the law allows, and the disclaimer above does not apply to it. Section 21 says how this section applies to residents
+of New Jersey.</p>
+
+<!-- ============================================================ -->
+<h2 id="s17">17. Limits on our liability</h2>
+<p class="caps">TO THE EXTENT THE LAW THAT APPLIES TO YOU ALLOWS IT, NEITHER ALLKEPT NOR ITS DIRECTORS, EMPLOYEES OR
+SUPPLIERS WILL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF
+PROFITS, REVENUE, GOODWILL, DATA OR SAVED CONTENT, ARISING OUT OF OR RELATING TO THE SERVICE OR THESE TERMS, WHETHER
+BASED ON CONTRACT, WARRANTY, TORT (INCLUDING NEGLIGENCE), STATUTE OR ANY OTHER LEGAL THEORY, AND EVEN IF WE WERE TOLD
+SUCH DAMAGES WERE POSSIBLE.</p>
+<p class="caps">TO THE SAME EXTENT, OUR TOTAL LIABILITY FOR ALL CLAIMS ARISING OUT OF OR RELATING TO THE SERVICE OR
+THESE TERMS, TAKEN TOGETHER, IS LIMITED TO THE GREATER OF (A) THE AMOUNT YOU PAID US FOR THE SERVICE IN THE TWELVE
+MONTHS BEFORE THE EVENT GIVING RISE TO THE CLAIM AND (B) ONE HUNDRED UNITED STATES DOLLARS (US$100).</p>
+<p><strong>What this section does not do.</strong> Nothing in these terms excludes or limits our liability for:</p>
+<ul>
+  <li>death or personal injury caused by our negligence;</li>
+  <li>our fraud, fraudulent misrepresentation, gross negligence or wilful misconduct;</li>
+  <li>a violation of law that the law does not allow us to contract out of; or</li>
+  <li>anything else that the law that applies to you says cannot be excluded or limited by contract, including any
+    statutory remedy or right under a consumer protection law that cannot be waived.</li>
+</ul>
+<p>The limits in this section apply to the extent the law that applies to you permits them and, where it does not,
+they apply only to the extent it does. Section 21 says how this section applies to residents of New Jersey.</p>
+
+<!-- ============================================================ -->
+<h2 id="s18">18. Your responsibility for claims you cause</h2>
+<p>If someone else brings a claim against us because of (a) your content or your saves, (b) your breach of these
+terms or of a platform's rules, or (c) your use of the Service in a way that breaks the law or infringes someone's
+rights, you will reimburse us for the losses, liabilities and reasonable costs (including reasonable attorney's fees)
+that we incur from that claim. This does not apply to the extent the claim arises from our own breach of these terms,
+our negligence, or our misconduct, and it does not apply where the law that applies to you does not allow it.</p>
+<p>We will tell you promptly about any such claim, let you control the defence and settlement with counsel of your
+choice (as long as the settlement does not impose obligations on us or admit fault on our behalf without our written
+consent), and give you reasonable help with the defence at your expense.</p>
+
+<!-- ============================================================ -->
+<h2 id="s19">19. Resolving disputes: talk first, then individual arbitration</h2>
+<div class="note">
+  <p><strong>Please read this section carefully.</strong> Unless you opt out (section 19.11), it requires you and
+  Allkept to resolve most disputes through <strong>binding arbitration on an individual basis</strong>. That means
+  no judge or jury, no class actions, and limited court review. Small claims court remains available to both of us.</p>
+</div>
+<h3>19.1 What this section covers</h3>
+<p>"<strong>Dispute</strong>" means any dispute, claim or controversy between you and Allkept arising out of or
+relating to the Service, your account, a Subscription, these terms, the Privacy Policy, or our relationship — whether
+based on contract, tort, statute, fraud, misrepresentation or any other legal theory, and whether it arose before or
+after you accepted these terms. It includes disputes about the scope or enforceability of this section, except where
+19.8 says a court decides.</p>
+<p>This section applies to you and to Allkept, and to our respective successors, and to our officers, directors and
+employees when a Dispute is brought against them because of their work for Allkept.</p>
+<h3>19.2 Talk to us first (60 days)</h3>
+<p>Before either of us starts an arbitration or a court case, we must give the other a written notice of the Dispute
+and try in good faith to resolve it for <strong>60 days</strong>. Your notice goes to
+<a href="mailto:hi@allkept.app">hi@allkept.app</a> with the subject line "Notice of Dispute", and must include your
+name, the email address on your account, a description of the Dispute, and what you want us to do. Our notice goes to
+the email address on your account. If we do not resolve the Dispute within 60 days of the notice, either of us may
+start arbitration (or, where allowed, a court case). Any limitation period is paused while this 60-day process runs.</p>
+<h3>19.3 Small claims court is always available</h3>
+<p>Either of us may bring an individual Dispute in a small claims court that has jurisdiction over it, instead of
+arbitration, as long as the case stays in that court and is brought on an individual basis. You may do that in the
+county where you live. If a small claims case is transferred, removed or appealed to a court that is not a small
+claims court, the Dispute goes back to arbitration under this section.</p>
+<h3>19.4 Agreement to arbitrate</h3>
+<p>Except for Disputes in small claims court (19.3) and the other exceptions in 19.9, <strong>you and Allkept agree
+that any Dispute will be resolved exclusively by final and binding arbitration before a single neutral arbitrator,
+and not in court</strong>. The arbitration will be administered by the <strong>American Arbitration Association
+("AAA")</strong> under its <strong>Consumer Arbitration Rules</strong> then in force — and, where 19.10 applies, its
+Mass Arbitration Supplementary Rules — except where those rules conflict with this section, in which case this section
+governs. The AAA's rules and fee schedules are at <a href="https://www.adr.org" rel="noopener">www.adr.org</a>. If the AAA
+is unavailable or unwilling to administer the arbitration, we will agree on another established arbitration provider,
+and if we cannot agree, a court will appoint one under the Federal Arbitration Act.</p>
+<p>The <strong>Federal Arbitration Act</strong> (9 U.S.C. §1 and following) governs this section, its interpretation
+and its enforcement. The arbitrator applies the substantive law that governs the Dispute (section 20), including
+statutes of limitation, and may award any relief on an individual basis that a court could award to that person —
+including damages, and injunctive or declaratory relief that benefits only the person seeking it. The arbitrator must
+follow these terms, and must issue a written decision that explains its essential findings and conclusions.</p>
+<h3>19.5 Where and how the arbitration happens</h3>
+<p>Arbitration hearings are held by video or telephone unless the arbitrator decides an in-person hearing is needed,
+in which case it takes place in the county where you live or another place we both agree on. Disputes about small
+amounts may be decided on documents alone under the AAA's rules. Each of us may be represented by a lawyer. The
+arbitrator allows the exchange of non-privileged information relevant to the Dispute, as the AAA's rules provide.</p>
+<h3>19.6 Fees and costs</h3>
+<ul>
+  <li><strong>Your filing fee.</strong> If you start arbitration, you pay no more than the consumer filing fee set by
+    the AAA's Consumer Arbitration Rules. If your claim is for US$10,000 or less, we will reimburse that fee when the
+    arbitrator issues an award, unless the arbitrator finds that your claim was frivolous or brought for an improper
+    purpose.</li>
+  <li><strong>Everything else.</strong> We pay all other AAA administrative fees and the arbitrator's compensation,
+    as the AAA's rules require. If we start arbitration, we pay all of it.</li>
+  <li><strong>Paying on time.</strong> We will pay the fees we owe within the time the AAA's rules or the law
+    require. If we fail to, you may withdraw your claim from arbitration and bring it in court, and the law that applies
+    to you may give you further remedies.</li>
+  <li><strong>Lawyers' fees.</strong> Each of us pays our own lawyers, except that the arbitrator may award attorney's
+    fees and costs to either side where the law that governs the claim allows it. We will not seek our attorney's fees
+    from you unless the arbitrator finds that your claim was frivolous or brought for an improper purpose.</li>
+</ul>
+<h3>19.7 No class actions; individual claims only</h3>
+<p class="caps">YOU AND ALLKEPT AGREE THAT EACH OF US MAY BRING CLAIMS AGAINST THE OTHER ONLY IN AN INDIVIDUAL CAPACITY,
+AND NOT AS A PLAINTIFF OR CLASS MEMBER IN ANY CLASS, COLLECTIVE, CONSOLIDATED OR REPRESENTATIVE PROCEEDING, IN
+ARBITRATION OR IN COURT. THE ARBITRATOR MAY NOT CONSOLIDATE MORE THAN ONE PERSON'S CLAIMS, AND MAY NOT PRESIDE OVER
+ANY FORM OF CLASS OR REPRESENTATIVE PROCEEDING, EXCEPT AS SECTION 19.10 PROVIDES FOR COORDINATED FILINGS.</p>
+<p>This does not prevent you from bringing an individual claim for public injunctive relief where the law that
+applies to you makes that right non-waivable; 19.9 explains how such a claim is handled. Nothing in this section
+prevents either of us from reporting a matter to, or cooperating with, a government agency, or prevents an agency from
+seeking relief on your behalf.</p>
+<h3>19.8 Who decides what</h3>
+<p>The arbitrator decides all disputes about the interpretation, applicability, enforceability or formation of this
+section, <strong>except</strong> that a court decides: (a) whether the class-action waiver in 19.7 is enforceable as
+to a particular claim; (b) whether the coordinated-filings procedure in 19.10 is enforceable; (c) whether a claim
+falls within the small claims exception in 19.3 or the public injunctive relief carve-out in 19.9; and (d) any
+Dispute about the validity of the opt-out in 19.11.</p>
+<h3>19.9 Exceptions</h3>
+<ul>
+  <li><strong>Small claims</strong> — section 19.3.</li>
+  <li><strong>Intellectual property and unauthorised access.</strong> Either of us may ask a court for an injunction
+    or other equitable relief to stop actual or threatened infringement or misuse of intellectual property rights, or
+    unauthorised access to the Service or to an account. The rest of the Dispute stays in arbitration.</li>
+  <li><strong>Public injunctive relief.</strong> If the law that applies to you does not allow the right to seek
+    public injunctive relief to be waived, and you seek it, then the arbitrator first decides all of your individual
+    claims and any individual relief; any request for public injunctive relief is then decided by a court, and is
+    stayed until the arbitration ends.</li>
+  <li><strong>Where the waiver cannot be enforced.</strong> If a court decides that the class-action waiver in 19.7
+    cannot be enforced as to a particular claim or request for relief, that claim or request (and only that one) is
+    severed from arbitration and decided by a court after the arbitration of everything else is complete. Under no
+    circumstances will an arbitrator hear a class, collective or representative proceeding.</li>
+</ul>
+<h3>19.10 Coordinated filings</h3>
+<p>If <strong>25 or more</strong> demands for arbitration are filed against us (or against you and others by us) that
+raise similar claims and the claimants are represented by the same lawyers or by lawyers acting in coordination, then
+in addition to the AAA's Consumer Arbitration Rules:</p>
+<ol>
+  <li>the AAA's <strong>Mass Arbitration Supplementary Rules</strong> and its mass arbitration fee schedule apply, and
+    a process arbitrator appointed under those rules resolves administrative and procedural issues common to the cases;</li>
+  <li>the AAA and the process arbitrator schedule the cases in stages, so that they are heard in manageable groups
+    rather than all at once; each case is decided by its own arbitrator on its own facts, and <strong>no decision in
+    one case binds any other claimant, or binds us as to any other claimant</strong>;</li>
+  <li>while a filed demand waits for its stage, any limitation period for that claim is paused from the date the
+    demand was filed until it is heard, settled or withdrawn;</li>
+  <li>at any point, either side may propose mediation of all the pending cases before an AAA mediator, whose fee we
+    pay; taking part in mediation is voluntary and does not pause cases already scheduled; and</li>
+  <li>the AAA's fee schedule decides how fees are shared in these cases, subject to 19.6.</li>
+</ol>
+<p>A court, not the arbitrator, decides whether this section 19.10 is enforceable. If any part of it is found
+unenforceable, that part is severed and the rest of section 19 still applies.</p>
+<h3>19.11 Your right to opt out of arbitration (30 days)</h3>
+<p><strong>You can reject this arbitration agreement.</strong> To do so, email
+<a href="mailto:hi@allkept.app">hi@allkept.app</a> with the subject line "Arbitration opt-out", your name, and the
+email address on your Allkept account, <strong>within 30 days</strong> of the date you first accept these terms (or,
+if you already had an account, within 30 days of the date we first notify you of these terms). If you opt out, neither
+you nor we are bound by section 19, and Disputes go to court under section 20. Opting out does not affect any other
+part of these terms, and we will not treat you differently for opting out. If you opt out of a later version of this
+section, the version you last agreed to continues to apply.</p>
+<h3>19.12 Changes to this section</h3>
+<p>If we change this section 19 in the future, we will give you at least <strong>30 days' notice</strong> in the app
+or by email before the change takes effect, and you may reject the change by opting out under 19.11 within 30 days of
+the notice. A change does not apply to a Dispute for which a Notice of Dispute was sent, or an arbitration or court
+case was started, before the change took effect.</p>
+<h3>19.13 Severability and survival of this section</h3>
+<p>Except as 19.9 and 19.10 provide, if any part of this section is found unenforceable, that part is severed and the
+rest of the section applies. This section survives the end of your account and of these terms. Our agreement to
+arbitrate is mutual: whatever binds you here binds us in the same way.</p>
+
+<!-- ============================================================ -->
+<h2 id="s20">20. Governing law and courts</h2>
+<p>The Federal Arbitration Act governs section 19. Otherwise, these terms and any Dispute are governed by the laws of
+the <strong>State of California</strong>, without regard to its conflict-of-law rules — <strong>except</strong> that if
+you live in another state and that state's consumer protection laws give you rights that cannot be taken away by a
+contract, those laws apply to you as well.
+<span class="counsel">[COUNSEL: confirm California as the governing law; the reasoning and the alternatives (New York, the user's home state, India) are in the annotations, section 20]</span></p>
+<p>If a Dispute is not subject to arbitration — because you opted out, because it falls within an exception in
+section 19, or because a court has found section 19 unenforceable — it will be brought in the state or federal courts
+located in San Francisco County, California, and you and we consent to the personal jurisdiction of those courts. This
+does not stop you from bringing a small claims case in the county where you live, and it does not take away any right
+you have under the law of your state to bring a claim in your home courts.</p>
+<p>Before you start any court case, please write to <a href="mailto:hi@allkept.app">hi@allkept.app</a>. Most things
+are quicker to fix that way, and section 19.2 requires it.</p>
+
+<!-- ============================================================ -->
+<h2 id="s21">21. Notices for residents of particular states</h2>
+<h3>21.1 California</h3>
+<p>Under California Civil Code §1789.3, California users are entitled to the following consumer rights notice.
+Allkept is provided by MECA Engineering Solutions (OPC) Private Limited, 4th Floor, No. 19, Urban Vault, 18th Cross
+Road, Sector 7, HSR Layout, Bengaluru 560102, India, email <a href="mailto:hi@allkept.app">hi@allkept.app</a>. The
+Service is free to use; the only charges are for an optional Subscription, as described in section 11 and shown before
+you buy. To resolve a complaint about the Service or to receive further information about it, write to
+<a href="mailto:hi@allkept.app">hi@allkept.app</a>. You may also contact the Complaint Assistance Unit of the Division
+of Consumer Services of the California Department of Consumer Affairs in writing at 1625 North Market Blvd., Suite
+N 112, Sacramento, CA 95834, or by telephone at (800) 952-5210.</p>
+<p>Nothing in these terms waives or limits any right you have under the California Consumer Privacy Act, or under the
+Consumers Legal Remedies Act, and nothing in section 17 limits our liability for our own fraud, wilful injury or
+violation of law.</p>
+<h3>21.2 New Jersey</h3>
+<p>If you live in New Jersey, the following explains how these terms apply to you, so that nothing in them is left
+uncertain. (1) Sections 16 and 17 apply to you, except that they do not limit our liability for death or bodily injury
+caused by our negligence, for our gross negligence, recklessness, fraud or wilful misconduct, or for any remedy you
+have under the New Jersey Consumer Fraud Act, the New Jersey Products Liability Act or the New Jersey Punitive
+Damages Act. (2) Section 18 does not require you to reimburse us for a claim that arises from our own negligent,
+reckless or wrongful conduct. (3) Sections 19 and 20 apply to you. (4) Nothing in these terms limits any right you
+have under the New Jersey Truth-in-Consumer Contract, Warranty and Notice Act.</p>
+<h3>21.3 Other states</h3>
+<p>Wherever you live in the United States, nothing in these terms waives any right you have under your state's
+consumer protection laws that the law does not allow to be waived by contract, and nothing in sections 16, 17 or 18
+applies to the extent your state's law does not permit it.</p>
+
+<!-- ============================================================ -->
+<h2 id="s22">22. Export controls and sanctions</h2>
+<p>The app is subject to United States export and sanctions laws. You may not use or export the app except as those
+laws and the laws of the place where you got it allow. You represent that (a) you are not located in a country or
+territory that is subject to a comprehensive United States government embargo or that has been designated by the
+United States government as a "terrorist supporting" country, and (b) you are not listed on any United States
+government list of prohibited or restricted parties. Allkept is not offered in any such country or territory.</p>
+
+<!-- ============================================================ -->
+<h2 id="s23">23. If you got Allkept from the Apple App Store</h2>
+<p>These additional terms apply if you downloaded the app from Apple's App Store. Where they conflict with the rest of
+these terms, they prevail.
+<span class="counsel">[COUNSEL: decide whether these Terms will be submitted in App Store Connect as a custom end-user licence agreement (in which case this section serves as the licence terms Apple requires) or whether Apple's standard EULA will govern the app licence and these Terms the service; the store-submission worksheet currently says "Apple's standard EULA"]</span></p>
+<ul>
+  <li><strong>Acknowledgement.</strong> These terms are between you and Allkept only, <strong>not with Apple</strong>.
+    Apple is not responsible for the app or its content. Allkept, not Apple, is solely responsible for the app.</li>
+  <li><strong>Scope of licence.</strong> Your licence to the app is a non-transferable licence to use it on any
+    Apple-branded product that you own or control, as permitted by the Usage Rules in the Apple Media Services Terms
+    and Conditions, except that the app may be accessed and used by other accounts associated with you through Family
+    Sharing or volume purchasing where those are available.</li>
+  <li><strong>Maintenance and support.</strong> Allkept is solely responsible for providing any maintenance and
+    support for the app, as these terms describe. Apple has <strong>no obligation</strong> to provide any maintenance
+    or support for the app.</li>
+  <li><strong>Warranty.</strong> Allkept is solely responsible for any product warranty, whether express or implied by
+    law, to the extent not disclaimed. If the app fails to conform to any applicable warranty, you may notify Apple,
+    and Apple will refund the purchase price of the app to you (which, for the app itself, is zero). To the maximum
+    extent permitted by law, Apple has no other warranty obligation with respect to the app, and any other claim, loss,
+    liability, damage, cost or expense attributable to a failure to conform to a warranty is Allkept's sole
+    responsibility.</li>
+  <li><strong>Product claims.</strong> Allkept, not Apple, is responsible for addressing any claim by you or a third
+    party relating to the app or your possession or use of it, including (i) product liability claims; (ii) any claim
+    that the app fails to conform to a legal or regulatory requirement; and (iii) claims under consumer protection,
+    privacy or similar law.</li>
+  <li><strong>Intellectual property.</strong> If a third party claims that the app, or your possession and use of it,
+    infringes that third party's intellectual property rights, Allkept, not Apple, is solely responsible for the
+    investigation, defence, settlement and discharge of the claim.</li>
+  <li><strong>Legal compliance.</strong> You represent and warrant that you are not located in a country subject to a
+    United States government embargo or designated by the United States government as a "terrorist supporting"
+    country, and that you are not listed on any United States government list of prohibited or restricted parties.</li>
+  <li><strong>Developer name and address.</strong> Questions, complaints and claims about the app go to Allkept at the
+    address in section 27.</li>
+  <li><strong>Third-party terms.</strong> You must comply with the third-party terms that apply when you use the app —
+    for example, the platform terms in section 6.</li>
+  <li><strong>Third-party beneficiary.</strong> Apple and Apple's subsidiaries are third-party beneficiaries of these
+    terms, and on your acceptance of them Apple has the right (and is deemed to have accepted the right) to enforce
+    them against you as a third-party beneficiary.</li>
+</ul>
+<p>Subscriptions bought through the App Store are also subject to the
+<a href="https://www.apple.com/legal/internet-services/itunes/us/terms.html" rel="noopener">Apple Media Services Terms
+and Conditions</a>, including Apple's rules on renewal, cancellation and refunds.</p>
+
+<!-- ============================================================ -->
+<h2 id="s24">24. If you got Allkept from Google Play</h2>
+<p>If you downloaded the app from Google Play, your use of it is also subject to the
+<a href="https://play.google.com/intl/en-us_us/about/play-terms/index.html" rel="noopener">Google Play Terms of
+Service</a>. Google is not a party to these terms and is not responsible for the app. Subscriptions bought through
+Google Play are billed by Google, and Google's refund policy applies to them in addition to section 11.6. If these
+terms conflict with Google's Developer Distribution Agreement, that agreement prevails as between Allkept and Google.</p>
+
+<!-- ============================================================ -->
+<h2 id="s25">25. Changes to these terms</h2>
+<p>We may update these terms. When we do, we will change the date at the top and post the new version at
+<a href="https://www.allkept.app/terms">www.allkept.app/terms</a>.</p>
+<ul>
+  <li><strong>Material changes need notice.</strong> If a change is material — it takes away a right, adds an
+    obligation, changes section 19, or changes what a Subscription costs or includes — we will tell you in the app or by
+    email <strong>at least 30 days before it takes effect</strong>. Changes to section 19 also follow section 19.12.</li>
+  <li><strong>Minor changes</strong> — clarifications, corrections, and changes to describe a new feature that does not
+    reduce your rights — may take effect when posted.</li>
+  <li><strong>Your choice.</strong> If you do not agree to a change, delete your account before it takes effect.
+    Continuing to use Allkept after the effective date of a change means you accept it.</li>
+  <li><strong>No surprises on price.</strong> A change to the price of a Subscription is handled by the store under
+    section 11.4, never by a silent change to these terms.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="s26">26. General terms</h2>
+<ul>
+  <li><strong>Whole agreement.</strong> These terms and the <a href="https://www.allkept.app/privacy">Privacy
+    Policy</a> are the entire agreement between you and Allkept about the Service, and replace anything said before.</li>
+  <li><strong>Severability.</strong> If a court or arbitrator finds part of these terms unenforceable, that part is
+    enforced to the extent it can be, and the rest stays in force (section 19.13 applies to section 19).</li>
+  <li><strong>No waiver.</strong> If we do not enforce something straight away, we have not given up the right to
+    enforce it later. A waiver must be in writing.</li>
+  <li><strong>Assignment.</strong> You may not transfer these terms or your account. We may transfer these terms to a
+    successor in connection with a merger, acquisition, reorganisation or sale of the business, on notice to you; the
+    successor must honour these terms and the Privacy Policy.</li>
+  <li><strong>Notices.</strong> We may reach you by the email address on your account, in the app, or in the
+    @allkeptapp thread, and you agree to receive notices electronically. You reach us at
+    <a href="mailto:hi@allkept.app">hi@allkept.app</a> or at the address in section 27.</li>
+  <li><strong>Events beyond our control.</strong> Neither of us is liable for a delay or failure caused by something
+    outside reasonable control — including a platform outage, a change to a platform's API or rules, an internet or
+    hosting failure, or a natural disaster — except that this does not excuse payment obligations or stop you cancelling
+    a Subscription.</li>
+  <li><strong>No third-party rights.</strong> Except for Apple under section 23, and our officers, directors and
+    employees under section 19.1, nobody other than you and Allkept has rights under these terms.</li>
+  <li><strong>Interpretation.</strong> Headings and the "short version" at the top are for convenience and do not
+    change the meaning of the terms. "Including" means "including but not limited to".</li>
+  <li><strong>Language.</strong> These terms are written in English. A translation is provided for convenience only;
+    the English version governs.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="s27">27. Contact</h2>
+<p>MECA Engineering Solutions (OPC) Private Limited<br>
+4th Floor, No. 19, Urban Vault, 18th Cross Road, Sector 7, HSR Layout, Bengaluru 560102, India<br>
+General: <a href="mailto:hi@allkept.app">hi@allkept.app</a><br>
+Copyright notices: <a href="mailto:dmca@allkept.app">dmca@allkept.app</a><br>
+Web: <a href="https://www.allkept.app/support">www.allkept.app/support</a></p>
+
+<footer>
+  <span>Allkept · Terms of Service (United States) · draft of 11 September 2026 · not yet in force</span>
+  <span class="l">
+    <a href="https://www.allkept.app/">Home</a>
+    <a href="https://www.allkept.app/privacy">Privacy</a>
+    <a href="https://www.allkept.app/delete">Delete your data</a>
+    <a href="https://www.allkept.app/support">Support</a>
+    <a href="mailto:hi@allkept.app">hi@allkept.app</a>
+  </span>
+</footer>
+
+</div>
+</body>
+</html>

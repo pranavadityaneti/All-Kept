@@ -106,7 +106,7 @@ footer. No images, no launch date. Replaced whole by the real landing page later
 1. Switch the app's privacy/terms links in `apps/mobile/app/(tabs)/settings.tsx` to
    `https://www.allkept.app/privacy` and `/terms` — JS-only, ships over the air.
 2. Update Meta app dashboard URLs (privacy, terms, data deletion) — Pranav.
-3. Update `docs/store-submission.html` URLs (privacy, support, marketing).
+3. Update `internal/store-submission.html` URLs (privacy, support, marketing).
 4. Turn `docs/privacy.html`, `terms.html`, `delete.html`, `testers.html` into meta-refresh
    redirects to www.allkept.app.
 5. Retire the old `website` worktree and branch.

@@ -49,7 +49,7 @@
 <div class="wrap">
 
 <h1>WhatsApp and X on Allkept — plan</h1>
-<p class="sub">Written 12 September 2026 from the code as it stands and from official documentation read on that date. Purpose: decide whether either platform is worth a door, what it would cost, and what could get the app cut off. Companion to <code>docs/tiktok-plan.html</code> and <code>docs/us-launch-legal-plan.html</code>.</p>
+<p class="sub">Written 12 September 2026 from the code as it stands and from official documentation read on that date. Purpose: decide whether either platform is worth a door, what it would cost, and what could get the app cut off. Companion to <code>internal/tiktok-plan.html</code> and <code>internal/us-launch-legal-plan.html</code>.</p>
 
 <p><span class="b done">DONE</span> already in the code &nbsp; <span class="b gap">GAP</span> to build &nbsp; <span class="b verify">VERIFY</span> believed to work, not yet proven end to end &nbsp; <span class="b no">NOT POSSIBLE</span> no route exists today &nbsp; <span class="unv">[UNVERIFIED]</span> I could not confirm this on an official page</p>
 
@@ -366,7 +366,7 @@ The text that lands in the database
 
 <!-- ============================================================ -->
 <h2 id="legal">7. Platform terms — the exposure on each door</h2>
-<p>Same spirit as <code>docs/us-launch-legal-plan.html</code> §2: each of these is a contract the company can enforce without a court, by switching the app off.</p>
+<p>Same spirit as <code>internal/us-launch-legal-plan.html</code> §2: each of these is a contract the company can enforce without a court, by switching the app off.</p>
 
 <div class="tbl"><table>
 <tr><th>Door</th><th>What Allkept would do</th><th>The rule</th><th>Exposure</th></tr>
@@ -390,7 +390,7 @@ Allkept's X card today shows the logo and the author name, and shows the tweet t
 <div class="warn"><b>X: the 24-hour deletion obligation.</b> <q>If you store X Content offline, you must keep it up to date with the current state of that content on X</q>, and <q>you must delete or modify any content you have if it is deleted or modified on X. This must be done as soon as reasonably possible, or within 24 hours after receiving a request to do so by X or the applicable X account owner.</q> The Policy also allows distributing up to 1,500,000 Post IDs to any entity in 30 days, and displaying up to 500 public Post objects per person per day by non-automated means — neither of which Allkept would come near. The deletion duty is the one that bites, and Allkept has no such job for any platform today. It becomes a genuine obligation the moment a bookmarks import stores hundreds of tweets per user. <b>Do not ship a bookmarks import without a refresh-or-expire job.</b> (This is the same shape of problem as <code>forlater.md</code> item 17, YouTube's 30-day storage rule — worth solving once, generically, for every platform.)</div>
 
 <h4>Brand and store listings</h4>
-<p>The logos come from <code>packages/platform-assets</code> ("official platform artwork", 9 Sep) with provenance recorded. Naming X and WhatsApp in a store listing is the same trademark question as Instagram and YouTube, already open in <code>docs/store-submission.html</code> §7. One extra note for WhatsApp: if Allkept ever publishes its own WhatsApp number, that number and its display name go through Meta's display-name review, and the name people see in WhatsApp is Meta's to approve, not Allkept's to choose.</p>
+<p>The logos come from <code>packages/platform-assets</code> ("official platform artwork", 9 Sep) with provenance recorded. Naming X and WhatsApp in a store listing is the same trademark question as Instagram and YouTube, already open in <code>internal/store-submission.html</code> §7. One extra note for WhatsApp: if Allkept ever publishes its own WhatsApp number, that number and its display name go through Meta's display-name review, and the name people see in WhatsApp is Meta's to approve, not Allkept's to choose.</p>
 
 <div class="eng"><b>In plain English.</b> The WhatsApp door is fine as long as the bot stays a bot that says "saved" and never becomes a chatbot that answers questions — Meta has a rule about that and decides on its own what counts. On X, the real issue is that X has rules about how you are allowed to show a tweet, and Allkept's current card does not follow them. The fix is the same as the fix for the missing picture: show X's own embed. And if you ever import someone's bookmarks, you take on a duty to delete a tweet from your database within a day of it being deleted on X.</div>
 
@@ -522,7 +522,7 @@ Allkept's X card today shows the logo and the author name, and shows the tweet t
 <li><b>The 24-hour deletion job.</b> X needs it for stored Posts; YouTube needs something like it within 30 days (<code>forlater.md</code> item 17). Build one generic refresh-or-expire mechanism for every platform, or keep deferring both?</li>
 </ol>
 
-<p><small>Allkept · WhatsApp and X plan · 12 September 2026 · companion to <code>docs/tiktok-plan.html</code>, <code>docs/us-launch-legal-plan.html</code> and <code>docs/store-submission.html</code>. Read-only research: no repository file other than this one was created or changed.</small></p>
+<p><small>Allkept · WhatsApp and X plan · 12 September 2026 · companion to <code>internal/tiktok-plan.html</code>, <code>internal/us-launch-legal-plan.html</code> and <code>internal/store-submission.html</code>. Read-only research: no repository file other than this one was created or changed.</small></p>
 
 </div>
 </body>

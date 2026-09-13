@@ -8,7 +8,7 @@
 
 **Tech Stack:** Supabase (Postgres migration, Deno edge functions), Expo Modules API (Swift + Kotlin local module), `@bacons/apple-targets` for the iOS extension target, WorkManager on Android, vitest + Deno tests.
 
-Spec: `docs/superpowers/specs/2026-09-11-share-extension-save-design.md`.
+Spec: `internal/superpowers/specs/2026-09-11-share-extension-save-design.md`.
 
 **Approval gates inside this plan (Pranav's rules):** deleting files (Task 11), pushing the migration (Task 2), deploying functions (Task 6), EAS builds (Task 13). Each step says STOP where it applies.
 
@@ -1414,7 +1414,7 @@ Watch the iOS build log for "Syncing capabilities" — App Groups must sync with
 
 ### Task 14: Records
 
-- [ ] `SESSION_LOG.md`: what shipped, fingerprints, build ids. `forlater.md`: item 18 → Done once the device checklist passes; add "iOS background delivery" as a queued follow-up if wanted. `docs/store-submission.html`: the review notes' "share a link from Safari" path now shows a banner instead of opening the app — update the sentence.
+- [ ] `SESSION_LOG.md`: what shipped, fingerprints, build ids. `forlater.md`: item 18 → Done once the device checklist passes; add "iOS background delivery" as a queued follow-up if wanted. `internal/store-submission.html`: the review notes' "share a link from Safari" path now shows a banner instead of opening the app — update the sentence.
 
 ---
 

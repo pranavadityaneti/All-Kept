@@ -8,7 +8,7 @@
 
 **Tech stack:** React Native (`react-native-webview`), vitest (`cd apps/mobile && npx vitest run`), Deno tests (`npm run test:functions`), the iOS simulator for Instagram/YouTube proof (Pranav taps; screenshots via `xcrun simctl io booted screenshot`), a VPN-connected device for TikTok proof.
 
-**Spec:** `docs/superpowers/specs/2026-09-12-autoplay-and-tiktok-playback-design.md`.
+**Spec:** `internal/superpowers/specs/2026-09-12-autoplay-and-tiktok-playback-design.md`.
 
 **House rules:** one task per commit; failing test first, watched to fail; no build, no deploy, no push inside a task — Task 9 says where Pranav's Yes is needed; touch only the listed files.
 

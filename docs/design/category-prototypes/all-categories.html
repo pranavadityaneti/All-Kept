@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>All Kept category card system</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f7f7fa;
+      color: #17131d;
+      font-family: Garet, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { width: 390px; min-height: 100vh; margin: 0 auto; padding: 42px 20px 34px; }
+    header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+    h1 { margin: 0; font-size: 29px; line-height: 1; letter-spacing: -1px; }
+    header span { color: #6d46f2; font-size: 16px; font-weight: 650; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px 11px; }
+    .card {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 0.8;
+      border: 1px solid rgba(109, 70, 242, 0.14);
+      border-radius: 18px;
+      background: #f1ecfa;
+      box-shadow: 0 6px 16px rgba(70, 52, 106, 0.09);
+    }
+    .card img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .copy { position: absolute; top: 14px; left: 14px; right: 10px; }
+    .name {
+      color: #241f44;
+      font-size: 14px;
+      line-height: 16px;
+      font-weight: 750;
+      letter-spacing: -0.2px;
+    }
+    .count { margin-top: 3px; color: rgba(65, 35, 61, 0.58); font-size: 11px; line-height: 13px; font-weight: 550; }
+  </style>
+</head>
+<body>
+  <main>
+    <header><h1>Categories</h1><span>See all</span></header>
+    <section class="grid" id="grid"></section>
+  </main>
+  <script>
+    const categories = [
+      ["Tech", 19, "tech-minimal.png"],
+      ["Entertainment", 7, "entertainment-minimal.png"],
+      ["Career", 7, "career-minimal.png"],
+      ["Learn", 6, "learn-minimal.png"],
+      ["Food", 19, "food-minimal-dark-purple-v5.png"],
+      ["Wellness", 12, "wellness-minimal.png"],
+      ["Travel", 8, "travel-minimal.png"],
+      ["Design", 3, "design-minimal.png"],
+      ["Style", 11, "style-minimal.png"],
+      ["Beauty", 9, "beauty-minimal.png"],
+      ["Home", 14, "home-minimal.png"],
+      ["Memes", 21, "memes-minimal.png"],
+      ["News", 5, "news-minimal.png"],
+      ["Life", 10, "life-minimal.png"],
+      ["Other", 4, "other-minimal.png"],
+    ];
+    const assetRoot = "../../../apps/mobile/assets/categories/";
+    document.querySelector("#grid").innerHTML = categories.map(([name, count, file]) => `
+      <article class="card">
+        <img src="${assetRoot}${file}" alt="" />
+        <div class="copy"><div class="name">${name}</div><div class="count">${count} ${count === 1 ? "save" : "saves"}</div></div>
+      </article>
+    `).join("");
+  </script>
+</body>
+</html>

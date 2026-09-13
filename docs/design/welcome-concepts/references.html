@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>All Kept welcome concepts</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { color-scheme: light; font-family: Garet, "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+    body { margin: 0; min-height: 100vh; background: #e9edf4; color: #17151b; }
+    .gallery { min-height: 100vh; display: flex; justify-content: center; align-items: center; gap: 32px; padding: 28px; zoom: .77; }
+    .concept { display: grid; gap: 18px; justify-items: center; }
+    .label { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+    .phone {
+      width: 390px; height: 844px; position: relative; overflow: hidden;
+      background:
+        linear-gradient(rgba(89,61,144,.042) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(89,61,144,.042) 1px, transparent 1px),
+        #fbfafc;
+      background-size: 92px 92px;
+      border: 7px solid #fff; border-radius: 50px;
+      box-shadow: 0 28px 70px rgba(54,56,76,.20), 0 3px 10px rgba(54,56,76,.09);
+    }
+    .status { height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 4px 24px 0; font-size: 13px; font-weight: 700; }
+    .island { width: 104px; height: 28px; border-radius: 18px; background: #09090b; position: absolute; top: 10px; left: 136px; }
+    .brand { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); width: 132px; height: 52px; object-fit: contain; }
+    .hero { position: absolute; top: 105px; left: 11px; width: 354px; height: 410px; overflow: hidden; }
+    .hero img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; transform: scale(1.11); }
+    .sheet {
+      position: absolute; z-index: 3; left: 13px; right: 13px; bottom: 13px; height: 326px;
+      padding: 27px 22px 18px; border: 1px solid rgba(35,27,48,.055); border-radius: 34px;
+      display: flex; flex-direction: column; align-items: center;
+      background: rgba(255,255,255,.96); box-shadow: 0 -4px 28px rgba(87,65,128,.075), 0 10px 22px rgba(37,31,49,.08);
+      backdrop-filter: blur(18px);
+    }
+    h2 { margin: 0; max-width: 310px; font-size: 31px; line-height: .98; letter-spacing: -.045em; text-align: center; font-weight: 400; }
+    h2 span { color: #7047f2; font-weight: 500; }
+    .sub { margin: 14px 0 22px; max-width: 278px; color: #716b79; font-size: 13px; line-height: 1.35; text-align: center; }
+    .actions { width: 100%; margin-top: auto; display: grid; gap: 9px; }
+    .button { height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 13px; font-weight: 700; }
+    .button img { width: 18px; height: 18px; object-fit: contain; }
+    .google { color: white; background: #7047f2; box-shadow: 0 8px 18px rgba(112,71,242,.22); }
+    .apple { color: #17151b; background: #f4f2f7; border: 1px solid #e6e1ec; }
+    .apple-mark { width: 17px; font-size: 21px; line-height: 1; transform: translateY(-1px); }
+    .saved .sub { margin-bottom: 14px; }
+    .saved .actions { margin-top: 21px; display: flex; flex-direction: column; align-items: center; gap: 9px; }
+    .saved .legal { margin-top: auto; }
+    .signin-prompt { color: #716b79; font-size: 12px; line-height: 1; font-weight: 500; }
+    .provider-row { display: flex; align-items: center; justify-content: center; gap: 14px; }
+    .icon-button { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .icon-button.google { background: #fff; border: 1px solid #e6e1ec; box-shadow: 0 5px 12px rgba(43,32,55,.08); }
+    .icon-button.google img { width: 24px; height: 24px; object-fit: contain; }
+    .icon-button.apple img { width: 56px; height: 56px; object-fit: contain; }
+    .legal { margin-top: 9px; color: #9a96a0; font-size: 9px; }
+    .homebar { position: absolute; z-index: 6; bottom: 3px; left: 137px; width: 102px; height: 4px; border-radius: 3px; background: #111; }
+    .sort .hero { top: 102px; height: 414px; }
+    .sort .hero img { transform: scale(1.07) translateY(-1px); object-position: 50% 40%; }
+    .ask .hero { top: 106px; left: 4px; width: 369px; height: 414px; }
+    .ask .hero img { transform: scale(1.04) translateY(0); object-position: 50% 43%; }
+    @media (max-width: 1320px) { .gallery { gap: 22px; padding: 32px 16px; transform-origin: top center; } }
+  </style>
+</head>
+<body>
+  <main class="gallery">
+    <section class="concept">
+      <div class="phone saved">
+        <div class="status"><span>9:41</span><span>●●●</span></div><div class="island"></div>
+        <img class="brand" src="../../../apps/mobile/assets/Home_All Kept_Logo.png" alt="All Kept" />
+        <div class="hero"><img src="/docs/design/welcome-concepts/hero-1-platforms-v2.png" alt="Saved content cards from YouTube, Instagram and TikTok" /></div>
+        <div class="sheet">
+          <h2>Everything you save.<br><span>Kept together.</span></h2>
+          <p class="sub">Instagram, YouTube, TikTok and the web. Sorted and ready when you need it.</p>
+          <div class="actions">
+            <div class="signin-prompt">Sign in below</div>
+            <div class="provider-row">
+              <div class="icon-button google"><img src="../../../packages/platform-assets/assets/google.png" alt="Sign in with Google" /></div>
+              <div class="icon-button apple"><img src="../../../apps/mobile/assets/welcome/apple-signin-logo.png" alt="Sign in with Apple" /></div>
+            </div>
+          </div>
+          <div class="legal">By continuing, you agree to our Terms and Privacy Policy.</div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="label">01 · Saved fan</div>
+    </section>
+
+    <section class="concept">
+      <div class="phone sort">
+        <div class="status"><span>9:41</span><span>●●●</span></div><div class="island"></div>
+        <img class="brand" src="../../../apps/mobile/assets/Home_All Kept_Logo.png" alt="All Kept" />
+        <div class="hero"><img src="/docs/design/welcome-concepts/hero-2.png" alt="Saved cards sorting into collections" /></div>
+        <div class="sheet">
+          <h2>Messy saves.<br><span>Sorted for you.</span></h2>
+          <p class="sub">Your finds organise themselves into beautiful collections you can actually use.</p>
+          <div class="actions">
+            <div class="button google"><img src="../../../packages/platform-assets/assets/google.png" alt="" />Continue with Google</div>
+            <div class="button apple"><span class="apple-mark"></span>Continue with Apple</div>
+          </div>
+          <div class="legal">By continuing, you agree to our Terms and Privacy Policy.</div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="label">02 · Smart sorting</div>
+    </section>
+
+    <section class="concept">
+      <div class="phone ask">
+        <div class="status"><span>9:41</span><span>●●●</span></div><div class="island"></div>
+        <img class="brand" src="../../../apps/mobile/assets/Home_All Kept_Logo.png" alt="All Kept" />
+        <div class="hero"><img src="/docs/design/welcome-concepts/hero-3.png" alt="Hand holding a phone among saved content" /></div>
+        <div class="sheet">
+          <h2>Ask your saves.<br><span>Find anything.</span></h2>
+          <p class="sub">Search naturally, rediscover what you kept and turn old saves into useful answers.</p>
+          <div class="actions">
+            <div class="button google"><img src="../../../packages/platform-assets/assets/google.png" alt="" />Continue with Google</div>
+            <div class="button apple"><span class="apple-mark"></span>Continue with Apple</div>
+          </div>
+          <div class="legal">By continuing, you agree to our Terms and Privacy Policy.</div>
+        </div>
+        <div class="homebar"></div>
+      </div>
+      <div class="label">03 · AI recall</div>
+    </section>
+  </main>
+</body>
+</html>

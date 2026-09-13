@@ -10,4 +10,4 @@ psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/profile_onboardin
 psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/admin_dashboard.sql
 ```
 
-The test database must be otherwise empty because the sweeper assertions check the entire work queue. Never point these checks at a user's hosted library. See `docs/engineering/sorting-and-search.md` for rollout order and the checks performed during implementation.
+The test database must be otherwise empty because the sweeper assertions check the entire work queue. Never point these checks at a user's hosted library. See `internal/engineering/sorting-and-search.md` for rollout order and the checks performed during implementation.
