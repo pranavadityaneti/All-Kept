@@ -111,3 +111,46 @@ Deno.test({ name: "a push token follows the phone: the next person to sign in on
     await admin.auth.admin.deleteUser(b.id);
   }
 }});
+
+Deno.test({ name: "paid in the US: 25 free saves, then a subscription, unless the store is in India (hosted project)", ignore, async fn() {
+  const admin = createClient(URL_!, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
+  const a = await makeUser(admin);
+  try {
+    // Twenty-four made, in the US. The twenty-fifth is admitted; the twenty-sixth is not.
+    assertEquals((await admin.from("profiles").update({ storefront: "US", saves_used: 24 }).eq("user_id", a.id)).error, null);
+    assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, true);
+    assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, false);
+    assertEquals((await admin.from("profiles").select("saves_used").eq("user_id", a.id).single()).data, { saves_used: 25 });
+
+    // A subscription opens the door; an expired one closes it; a card that failed keeps it open until the period ends.
+    const tomorrow = new Date(Date.now() + 86_400_000).toISOString();
+    assertEquals((await admin.from("subscriptions").insert({ user_id: a.id, product_id: "allkept_monthly", status: "active", current_period_end: tomorrow })).error, null);
+    assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, true);
+    await admin.from("subscriptions").update({ status: "billing_issue" }).eq("user_id", a.id);
+    assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, true);
+    await admin.from("subscriptions").update({ status: "expired" }).eq("user_id", a.id);
+    assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, false);
+
+    // India is free, whatever the count says.
+    await admin.from("profiles").update({ storefront: "IN" }).eq("user_id", a.id);
+    assertEquals((await admin.rpc("admit_save", { p_user_id: a.id })).data, true);
+
+    // The phone may ask about itself, and sees the truth.
+    const me = await a.client.rpc("my_entitlement");
+    assertEquals(me.error, null);
+    const row = (me.data as { entitled: boolean; saves_used: number; free_saves: number; storefront: string }[])[0]!;
+    assertEquals([row.entitled, row.free_saves, row.storefront], [true, 25, "IN"]);
+    assert(row.saves_used >= 27);
+
+    // The phone can neither decide, nor count, nor write a subscription.
+    assert((await a.client.rpc("admit_save", { p_user_id: a.id })).error !== null, "admit_save must be service-role only");
+    assert((await a.client.from("subscriptions").insert({ user_id: a.id, product_id: "x", status: "active" })).error !== null, "no client writes to subscriptions");
+    const before = (await admin.from("profiles").select("saves_used").eq("user_id", a.id).single()).data as { saves_used: number };
+    await a.client.from("profiles").update({ saves_used: 0 }).eq("user_id", a.id);
+    assertEquals((await admin.from("profiles").select("saves_used").eq("user_id", a.id).single()).data, before, "saves_used must not be client-writable");
+    // …but may report the store it buys from.
+    assertEquals((await a.client.from("profiles").update({ storefront: "US", storefront_at: new Date().toISOString() }).eq("user_id", a.id)).error, null);
+  } finally {
+    await admin.auth.admin.deleteUser(a.id);
+  }
+}});

@@ -94,7 +94,15 @@ export interface ItemAiOutput {
   confidence: number;
 }
 
-export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "rate_limited" | "internal";
+export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "rate_limited" | "internal" | "payment_required";
+
+/**
+ * Paid in the US, free in India. The first FREE_SAVES saves are free everywhere — a count, not a
+ * clock. A store account in a FREE_REGION never reaches the count. The rule itself lives in the
+ * database (entitled(), admit_save()); these are the same numbers, for the phone's own copy.
+ */
+export const FREE_SAVES = 25;
+export const FREE_REGIONS = ["IN"] as const;
 export interface ApiError {
   error: string;
   code: ApiErrorCode;
