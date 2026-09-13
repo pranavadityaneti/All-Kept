@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Allkept — Economics of making things from saves</title>
+<style>
+:root{--ink:#14161C;--muted:#5F6675;--line:#DFE3EC;--soft:#F6F7FA;--accent:#6D46F2}
+*{box-sizing:border-box} body{margin:0;background:#fff;color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:30px;line-height:1.2;margin:0 0 6px} h2{font-size:21px;margin:40px 0 10px;padding-top:14px;border-top:1px solid var(--line)} h3{font-size:17px;margin:24px 0 8px}
+p.lede{color:var(--muted);margin:0 0 18px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14.5px} th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;background:var(--soft)} td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.muted{color:var(--muted);font-size:13.5px} .tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:999px;background:var(--soft);border:1px solid var(--line);margin-left:6px;vertical-align:middle}
+.big{display:flex;gap:28px;flex-wrap:wrap;margin:18px 0} .big div{flex:1 1 200px;background:var(--soft);border-radius:14px;padding:16px 18px} .big .fig{font-size:30px;font-weight:600;letter-spacing:-.5px}
+pre{background:var(--soft);padding:14px 16px;border-radius:10px;overflow:auto;font-size:13.5px;line-height:1.5}
+nav ol{columns:2;gap:24px;margin:0;padding-left:20px} .plain{border-left:3px solid var(--accent);padding:10px 16px;background:#F8F6FF;border-radius:0 10px 10px 0;margin:14px 0}
+@media print{main{padding:0} h2{break-after:avoid} table{break-inside:auto} tr{break-inside:avoid}}
+</style></head><body><main>
+<h1>Economics of making things from saves</h1>
+<p class="lede">13 September 2026 · what a "Make" costs — an itinerary from a hundred travel saves, and the same idea for every other category. Figures marked <span class="tag">measured</span> come from the live database; <span class="tag">assumed</span> means a sizing I chose and should be checked against a prototype; <span class="tag">unverified</span> means a vendor price I could not confirm today.</p>
+
+<nav><ol>
+<li><a href="#short">The short version</a></li><li><a href="#inputs">What goes into one call</a></li><li><a href="#travel">A hundred travel saves</a></li>
+<li><a href="#all">Every category</a></li><li><a href="#ask">Ask your saves</a></li><li><a href="#month">A month of one person</a></li>
+<li><a href="#levers">What moves the number</a></li><li><a href="#verify">What to verify before relying on this</a></li>
+</ol></nav>
+
+<h2 id="short">The short version</h2>
+<div class="big">
+<div><div class="fig">$0.19</div><div class="muted">an itinerary from 100 travel saves, Claude Opus 5, before place lookups</div></div>
+<div><div class="fig">$0.075</div><div class="muted">the same on Claude Sonnet 5</div></div>
+<div><div class="fig">$0.83</div><div class="muted">a heavy month for one person — four Makes, twenty questions, thirty new saves sorted — on Opus 5</div></div>
+</div>
+<div class="plain"><b>In plain English.</b> A save costs half a cent to sort. Turning a hundred of them into a trip plan costs about the price of a small coffee's tax — twenty cents on the best model, seven on the next one down — plus whatever we pay to look up where each place actually is. The model is not the expensive part of an itinerary; <b>the places lookup can be</b>, and it is the line to design around. Everything else on the list is cheaper than travel, and two categories need no model at all. A person who uses this heavily for a month costs about a dollar. That is a paid feature with room in it.</div>
+
+<h2 id="inputs">What goes into one call</h2>
+<table><tr><th>Piece</th><th class="n">Tokens</th><th>Where the number comes from</th></tr>
+<tr><td>A save's stored record — title, one-line summary, five tags, named entities</td><td class="n">84</td><td><span class="tag">measured</span> 145 saves, average 335 characters, at 4 characters a token</td></tr>
+<tr><td>Framing per save — id, link, date, platform</td><td class="n">~15</td><td><span class="tag">assumed</span></td></tr>
+<tr><td>A save's caption, when the Make needs it (recipes: the ingredients live there)</td><td class="n">56</td><td><span class="tag">measured</span> average across all saves; about half have one, and those average ~110</td></tr>
+<tr><td>The instructions — grounding rules, the category's recipe, the output shape</td><td class="n">1,800</td><td><span class="tag">assumed</span> identical on every call, so it is <b>cached</b>: a tenth of the input price after the first call of the day</td></tr>
+<tr><td>Place facts for an itinerary — where each place is, its area, hours</td><td class="n">~120 per place</td><td><span class="tag">assumed</span> ~60 distinct places in a hundred travel saves</td></tr>
+<tr><td>The thing that comes out</td><td class="n">600 – 4,000</td><td><span class="tag">assumed</span> per category below; an itinerary is the longest. Output is priced at five times input, so this is where the money is</td></tr>
+</table>
+<p class="muted">The rule that keeps input small: <b>send the record, not the caption</b>, except where the caption is the point. The sorting already distilled every save into 84 tokens; a Make reads the distillate.</p>
+
+<h2 id="travel">A hundred travel saves → one itinerary</h2>
+<table><tr><th>Component</th><th class="n">Tokens</th><th class="n">Opus 5</th><th class="n">Sonnet 5</th></tr>
+<tr><td>100 save records</td><td class="n">10,000</td><td class="n">$0.050</td><td class="n">$0.020</td></tr>
+<tr><td>~60 place facts</td><td class="n">7,200</td><td class="n">$0.036</td><td class="n">$0.014</td></tr>
+<tr><td>Instructions, cached</td><td class="n">1,800</td><td class="n">$0.001</td><td class="n">$0.000</td></tr>
+<tr><td>A six-day itinerary, ~30 stops, each cited to its reel</td><td class="n">4,000</td><td class="n">$0.10</td><td class="n">$0.040</td></tr>
+<tr><th>Model total</th><th class="n"></th><th class="n">$0.19</th><th class="n">$0.075</th></tr>
+<tr><td>Place lookups — 60 places <span class="tag">unverified</span></td><td class="n">—</td><td class="n" colspan="2">geocoding alone is a few tenths of a cent a place; details with hours are historically around a cent or two. <b>Uncached, this line can exceed the model.</b> Cached per place and shared across everyone, it collapses: Blue Bottle Kyoto is looked up once, ever.</td></tr>
+</table>
+<p>What makes it <i>realistic</i> is not the model size but the grounding: only places that appear in the saves; the facts from the lookup, not from memory; the plan composed by area and pace; every stop cited to the reel it came from; anything assumed marked as a suggestion. That discipline costs nothing extra in tokens and is the difference between a plan and a plausible paragraph.</p>
+
+<h2 id="all">Every category, a hundred saves each</h2>
+<table><tr><th>Category · what it makes</th><th class="n">In</th><th class="n">Out</th><th class="n">Claude Opus 5</th><th class="n">Claude Sonnet 5</th><th class="n">gpt-5.6-sol</th><th>Outside data</th></tr>
+<tr><td><b>Travel &amp; places</b><br><span class=muted>Itinerary — days, order, map</span></td><td class=n>17,200</td><td class=n>4,000</td><td class=n>$0.19</td><td class=n>$0.075</td><td class=n>$0.16</td><td>Place lookups: ~60 distinct places · geocode + hours</td></tr><tr><td><b>Food &amp; recipes</b><br><span class=muted>Cook this week + one shopping list</span></td><td class=n>16,000</td><td class=n>2,000</td><td class=n>$0.13</td><td class=n>$0.052</td><td class=n>$0.11</td><td>— (ingredients read from captions; guessed ones flagged)</td></tr><tr><td><b>Entertainment</b><br><span class=muted>Watchlist + tonight&#x27;s pick</span></td><td class=n>6,000</td><td class=n>1,200</td><td class=n>$0.061</td><td class=n>$0.024</td><td class=n>$0.055</td><td>Where-to-watch lookup per title (TMDB) — free tier</td></tr><tr><td><b>Learning &amp; how-to</b><br><span class=muted>Study path, basics first</span></td><td class=n>10,000</td><td class=n>2,000</td><td class=n>$0.10</td><td class=n>$0.040</td><td class=n>$0.087</td><td>—</td></tr><tr><td><b>Tech &amp; tools</b><br><span class=muted>Toolkit — compared, which first</span></td><td class=n>10,000</td><td class=n>2,500</td><td class=n>$0.11</td><td class=n>$0.045</td><td class=n>$0.097</td><td>—</td></tr><tr><td><b>Money &amp; career</b><br><span class=muted>Action checklist</span></td><td class=n>10,000</td><td class=n>1,500</td><td class=n>$0.088</td><td class=n>$0.035</td><td class=n>$0.077</td><td>—</td></tr><tr><td><b>Style &amp; fashion</b><br><span class=muted>Lookbook / wishlist</span></td><td class=n>10,000</td><td class=n>1,500</td><td class=n>$0.088</td><td class=n>$0.035</td><td class=n>$0.077</td><td>Prices, only if a merchant feed is worth it</td></tr><tr><td><b>Beauty &amp; self-care</b><br><span class=muted>AM / PM routine</span></td><td class=n>10,000</td><td class=n>1,500</td><td class=n>$0.088</td><td class=n>$0.035</td><td class=n>$0.077</td><td>—</td></tr><tr><td><b>Home &amp; living</b><br><span class=muted>Room project + shopping list</span></td><td class=n>10,000</td><td class=n>1,500</td><td class=n>$0.088</td><td class=n>$0.035</td><td class=n>$0.077</td><td>—</td></tr><tr><td><b>News &amp; opinion</b><br><span class=muted>Briefing — threads, opposing views</span></td><td class=n>10,000</td><td class=n>1,500</td><td class=n>$0.088</td><td class=n>$0.035</td><td class=n>$0.077</td><td>— (if weekly and automatic, ×4 a month)</td></tr><tr><td><b>Fitness &amp; health</b><br><span class=muted>Weekly plan</span></td><td class=n>10,000</td><td class=n>1,500</td><td class=n>$0.088</td><td class=n>$0.035</td><td class=n>$0.077</td><td>—</td></tr><tr><td><b>Life &amp; relationships</b><br><span class=muted>Quote book / date ideas</span></td><td class=n>10,000</td><td class=n>1,200</td><td class=n>$0.081</td><td class=n>$0.032</td><td class=n>$0.071</td><td>—</td></tr><tr><td><b>Design &amp; inspiration</b><br><span class=muted>Mood board — thumbnails + palette</span></td><td class=n>0</td><td class=n>0</td><td class=n>$0</td><td class=n>$0</td><td class=n>$0</td><td>No model call: assembled on the phone</td></tr><tr><td><b>Humour &amp; memes</b><br><span class=muted>Weekly best-of to send on</span></td><td class=n>6,000</td><td class=n>600</td><td class=n>$0.046</td><td class=n>$0.018</td><td class=n>$0.043</td><td>—</td></tr>
+</table>
+<p class="muted">"In" excludes the cached instructions, which add under a tenth of a cent. gpt-5.6-sol is the model sorting uses today, shown for comparison at the price checked on 8 September; a Make is a rarer, deliberate call and can use whichever model is best for it, independently of sorting.</p>
+
+<h2 id="ask">Ask your saves — one question</h2>
+<p>The general form of all of the above: a question over the library, answered from the ten most relevant saves (the search embeddings already exist). About 1,200 tokens in and 300 out: <b>$0.014 on Opus 5, $0.006 on Sonnet 5</b>. Twenty questions a month is $0.29 on Opus.</p>
+
+<h2 id="month">A month of one person</h2>
+<table><tr><th>Scenario</th><th class="n">Claude Opus 5</th><th class="n">Claude Sonnet 5</th><th class="n">gpt-5.6-sol</th></tr>
+<tr><td>Four Makes (average across the categories above) + twenty questions + thirty new saves sorted</td><td class="n">$0.83</td><td class="n">$0.42</td><td class="n">$0.85</td></tr>
+<tr><td>Light: one Make + five questions + ten saves</td><td class="n">$0.22</td><td class="n">$0.12</td><td class="n">$0.22</td></tr>
+</table>
+<p>Against the pricing on the queue (item 14 — paid in the US, free in India): a heavy user costs about a dollar a month on the best model. A free tier needs a ceiling — one Make and ten questions a month holds it near twenty cents — and the paid tier has a real reason to exist, which it did not before.</p>
+
+<h2 id="levers">What moves the number</h2>
+<table><tr><th>Lever</th><th>Effect</th></tr>
+<tr><td><b>Send records, not captions</b></td><td>The single biggest saving, already built into the numbers above: 100 tokens a save instead of the ~630 sorting reads. Only Food needs captions.</td></tr>
+<tr><td><b>Cache the instructions</b></td><td>1,800 tokens at a tenth of the price on every call after the first. Regenerating the same Make within the cache window also re-reads the save records at a tenth.</td></tr>
+<tr><td><b>Output length</b></td><td>Output is five times the price of input. An itinerary at 4,000 tokens is half its own cost; a tighter format (stops as short lines, detail on tap) halves the bill.</td></tr>
+<tr><td><b>Batch, when nobody is waiting</b></td><td>Half price. "Your Kyoto plan will be ready in a minute" is an honest experience and cuts every number above in two; keep the interactive path for a person who is watching.</td></tr>
+<tr><td><b>Sonnet for the plain lists</b></td><td>Watchlists, checklists and routines do not need the best model; Opus earns its price on the itinerary, where composition and judgement show. Two models, chosen per category.</td></tr>
+<tr><td><b>Cache place lookups per place</b></td><td>The one line that can outgrow the model. Look a place up once, keep it, share it across every person who saves it.</td></tr>
+<tr><td><b>No model where none is needed</b></td><td>A mood board is thumbnails and a palette, assembled on the phone. A meme digest is a list.</td></tr>
+</table>
+
+<h2 id="verify">What to verify before relying on this</h2>
+<ul>
+<li><b>Output sizes</b> are assumed. Build one itinerary as a prototype and count its tokens with the API's count endpoint — the whole table scales with that one number.</li>
+<li><b>Characters to tokens at 4:1</b> holds for English. Captions in Hindi, Telugu or Japanese tokenise at roughly twice the density; a library in those languages costs more per save than measured here.</li>
+<li><b>Place lookup pricing</b> is the unverified line and the one that can dominate. Choose the provider, read its sheet, and decide whether hours are worth paying for or whether coordinates and area are enough for a first version.</li>
+<li><b>No travel saves exist yet</b> in the database to measure against; Travel is modelled on the all-category averages plus place facts.</li>
+<li><b>Prices</b>: Anthropic's from the price sheet cached 24 June 2026 (Opus 5 $5/$25, Sonnet 5 $2/$10 per million; cache reads a tenth); gpt-5.6-sol at $4/$20 as checked on 8 September.</li>
+</ul>
+</main></body></html>
