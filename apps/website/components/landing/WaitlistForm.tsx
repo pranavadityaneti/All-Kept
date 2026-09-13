@@ -1,5 +1,7 @@
 'use client';
 
+import { trackLead } from '@/lib/track';
+
 import { useId, useState, type FormEvent } from 'react';
 import type { WaitlistConfig } from '@/lib/waitlist';
 
@@ -53,6 +55,7 @@ export function WaitlistForm({ config, source }: Props) {
         return;
       }
       setStatus('ok');
+      trackLead(source);
       setMessage(data?.message ?? 'You’re in.');
       if (data?.joined) setEmail('');
     } catch {

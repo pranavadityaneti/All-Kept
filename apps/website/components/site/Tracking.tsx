@@ -1,0 +1,38 @@
+import Script from 'next/script';
+import { GA_MEASUREMENT_ID, META_PIXEL_ID } from '@/lib/site';
+
+/**
+ * The measurement tags, loaded after the page is interactive so they never delay it. The Meta
+ * Pixel counts page views and, from the waitlist form, leads; Google Analytics does the same once
+ * its id is set. Nothing here reads anything a visitor typed.
+ */
+export function Tracking() {
+  return (
+    <>
+      {META_PIXEL_ID && (
+        <>
+          <Script id="meta-pixel" strategy="afterInteractive">
+            {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${META_PIXEL_ID}');fbq('track','PageView');`}
+          </Script>
+          <noscript>
+            <img
+              height="1"
+              width="1"
+              style={{ display: 'none' }}
+              alt=""
+              src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
+            />
+          </noscript>
+        </>
+      )}
+      {GA_MEASUREMENT_ID && (
+        <>
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
+          <Script id="ga4" strategy="afterInteractive">
+            {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`}
+          </Script>
+        </>
+      )}
+    </>
+  );
+}

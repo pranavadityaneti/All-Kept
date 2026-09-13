@@ -7,9 +7,12 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "extract": "node scripts/extract-content.mjs",
-    "verify:content": "node scripts/verify-content.mjs"
+    "verify:content": "node scripts/verify-content.mjs",
+    "verify:head": "node scripts/verify-head.mjs"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "next": "16.3.4",
     "react": "19.2.3",
     "react-dom": "19.2.3"

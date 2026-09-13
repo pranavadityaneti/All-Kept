@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { LegalShell } from '@/components/legal/LegalShell';
 
-export const metadata: Metadata = { title: 'Support — All Kept' };
+export const metadata: Metadata = { title: 'Support — All Kept', alternates: { canonical: '/support' }, openGraph: { url: '/support' } };
 
 // Carried over from the website-pages branch; plain links, same text.
 export default function SupportPage() {
