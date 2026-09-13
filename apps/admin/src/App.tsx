@@ -100,6 +100,10 @@ function Badge({ value }: { value: unknown }) {
     </span>
   );
 }
+/** A sign-in code in this page's address, if the browser brought one back. */
+const codeInAddress = (): boolean =>
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).has("code");
 function App() {
   const [demo, setDemo] = useState(demoEnabled);
   const [identity, setIdentity] = useState<{
@@ -108,10 +112,14 @@ function App() {
   } | null>(null);
   const [loading, setLoading] = useState(configured && !demoEnabled);
   const [error, setError] = useState("");
+  // What became of a sign-in link. Kept apart from `error`: the auth library announces the
+  // initial session while the link is still being judged, and that announcement clears `error`.
+  const [linkError, setLinkError] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [loginBusy, setLoginBusy] = useState(false);
   useEffect(() => {
     if (!supabase || demo) return;
+    const client = supabase;
     let generation = 0;
     let mounted = true;
     const check = async (email?: string) => {
@@ -140,6 +148,22 @@ function App() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== "TOKEN_REFRESHED") void check(session?.user.email);
     });
+    // The link's outcome. The library keeps it to itself: a code it cannot trade for a session
+    // leaves this page looking as if nothing happened, with the code still in the address.
+    void client.auth.initialize().then(({ error: linkFailure }) => {
+      if (!mounted) return;
+      if (linkFailure) {
+        setLinkError(`Could not complete sign-in: ${linkFailure.message}`);
+        return;
+      }
+      if (!codeInAddress()) return;
+      void client.auth.getSession().then(({ data }) => {
+        if (mounted && !data.session)
+          setLinkError(
+            "This sign-in link was opened in a different window from the one it was started in. Start again from this page.",
+          );
+      });
+    });
     return () => {
       mounted = false;
       generation++;
@@ -159,6 +183,7 @@ function App() {
   };
   const signIn = async () => {
     setError("");
+    setLinkError("");
     setLoginBusy(true);
     try {
       const result = await supabase?.auth.signInWithOAuth({
@@ -203,9 +228,9 @@ function App() {
           </div>
         ) : (
           <>
-            {error && (
+            {(error || linkError) && (
               <div role="alert" className="error-box">
-                {error}
+                {error || linkError}
               </div>
             )}
             {!configured && (
