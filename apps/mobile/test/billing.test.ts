@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { regionFromLocale, standing, type EntitlementRow } from "../lib/standing";
+import { normalizeRegion, regionFromLocale, standing, type EntitlementRow } from "../lib/standing";
 
 const now = new Date("2026-09-13T12:00:00Z");
 const later = new Date(now.getTime() + 10 * 86_400_000).toISOString();
@@ -44,5 +44,19 @@ describe("where a person stands", () => {
     expect(regionFromLocale("hi-Deva-IN")).toBe("IN");
     expect(regionFromLocale("en")).toBe(null);
     expect(regionFromLocale(undefined)).toBe(null);
+  });
+});
+
+describe("the store's country, in the one spelling the rules use", () => {
+  it("turns Apple's three letters into two, keeps Google's two, and admits when it cannot", () => {
+    expect(normalizeRegion("USA")).toBe("US");
+    expect(normalizeRegion("IND")).toBe("IN");
+    expect(normalizeRegion("GBR")).toBe("GB");
+    expect(normalizeRegion("IN")).toBe("IN");
+    expect(normalizeRegion(" us ")).toBe("US");
+    expect(normalizeRegion("XYZ")).toBe(null); // unknown → not reported → not gated
+    expect(normalizeRegion("")).toBe(null);
+    expect(normalizeRegion(undefined)).toBe(null);
+    expect(normalizeRegion(null)).toBe(null);
   });
 });

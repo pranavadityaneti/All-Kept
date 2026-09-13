@@ -17,7 +17,7 @@ import { Linking, NativeModules, Platform } from "react-native";
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from "react-native-purchases";
 import { FREE_SAVES } from "@allkept/contracts";
 import { keyAllowed, MANAGE_URL } from "./paywall";
-import { regionFromLocale, standing, type EntitlementRow, type Standing } from "./standing";
+import { normalizeRegion, regionFromLocale, standing, type EntitlementRow, type Standing } from "./standing";
 import { supabase } from "./supabase";
 
 export { regionFromLocale, standing, type EntitlementRow, type Standing } from "./standing";
@@ -54,9 +54,10 @@ export async function logOutBilling(): Promise<void> {
 export async function reportStorefront(): Promise<string | null> {
   let code: string | null = null;
   if (billingAvailable()) {
-    try { code = (await Purchases.getStorefront())?.countryCode?.toUpperCase() ?? null; } catch { code = null; }
+    // Apple says "USA", Google says "US": one spelling before it is written down.
+    try { code = normalizeRegion((await Purchases.getStorefront())?.countryCode); } catch { code = null; }
   }
-  if (!code) code = regionFromLocale(Intl.DateTimeFormat().resolvedOptions().locale);
+  if (!code) code = normalizeRegion(regionFromLocale(Intl.DateTimeFormat().resolvedOptions().locale));
   if (!code) return null;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return code;
