@@ -6,7 +6,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { IconButton } from "../../components/IconButton";
 import { ItemCard } from "../../components/ItemCard";
-import { AddCategoryTile, CategoryTile } from "../../components/CategoryTile";
+import { CategoryTile } from "../../components/CategoryTile";
 import { CategorySheet } from "../../components/CategorySheet";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { InterestPills } from "../../components/InterestPills";
@@ -16,8 +16,8 @@ import { PlatformPills } from "../../components/PlatformPills";
 import { FILTER_LABEL } from "../../lib/platforms";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { categoryLabel } from "../../lib/sorting";
-import { expandable } from "../../lib/expandable";
-import { useCategoryCovers, useInterests, useRecentSaves } from "../../lib/home";
+import { arrangeGrid } from "../../lib/category-grid";
+import { useCategoryActivity, useInterests, useRecentSaves } from "../../lib/home";
 import { rankInterests, showInterests, type Interest } from "../../lib/interests";
 import { usePreferences, useSetPreference } from "../../lib/preferences";
 import { RESERVED_NAMES } from "../../lib/user-categories";
@@ -30,7 +30,6 @@ import { useThumbnails } from "../../lib/thumbnails";
 import { TAB_BAR_CLEARANCE } from "../../components/FloatingTabBar";
 import { radius, space, type, usePalette } from "../../lib/theme";
 
-const CATEGORIES_SHOWN = 5;
 const GUTTER = space.sm + 2;
 const { width } = Dimensions.get("window");
 
@@ -51,16 +50,14 @@ export default function Home() {
 
   const items: LibraryItem[] = recent.data ?? [];
   const categories = facets.data?.categories ?? [];
-  const covers = useCategoryCovers(ready);
-  // Signed in one batch with the cards above them rather than in a second round trip, and keyed on
-  // every category rather than the visible six, so opening the grid needs no further signing.
-  const coverPath = (category: string): string | null => covers.data?.[category] ?? null;
-  const thumbnails = useThumbnails([...items.map((i) => i.thumbnailPath), ...categories.map((c) => coverPath(c.value))]);
+  const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
+  const activity = useCategoryActivity(ready);
   const [allCategories, setAllCategories] = useState(false);
   const [naming, setNaming] = useState(false);
   const createCategory = useCreateCategory(ready ? session.userId : null);
   const places = categories.filter((c) => !(RESERVED_NAMES as readonly string[]).includes(c.value));
-  const grid = expandable(places, CATEGORIES_SHOWN, allCategories);
+  const grid = arrangeGrid(places, activity.data ?? [], allCategories);
+  const openCategory = (value: string) => router.push({ pathname: "/library", params: { category: value } });
   const [searching, setSearching] = useState(false);
   // A pill pulls its thread through search; a tap on the magnifier starts empty.
   const [searchFor, setSearchFor] = useState<string | undefined>(undefined);
@@ -177,14 +174,23 @@ export default function Home() {
               title="Categories"
               actionLabel={grid.actionLabel}
               onAction={() => setAllCategories((open) => !open)}
+              pill={{ label: "+ Custom", onPress: () => setNaming(true) }}
             />
+            {grid.wide.length > 0 && (
+              <View style={styles.grid}>
+                {grid.wide.map((c) => (
+                  <View key={c.value} style={styles.wideCell}>
+                    <CategoryTile name={c.value} chosen={c.icon} wide onPress={() => openCategory(c.value)} />
+                  </View>
+                ))}
+              </View>
+            )}
             <View style={styles.grid}>
-              {grid.shown.map((c) => (
+              {grid.rest.map((c) => (
                 <View key={c.value} style={styles.cell}>
-                  <CategoryTile name={c.value} count={c.n} icon={c.icon} cover={thumbnails[coverPath(c.value) ?? ""]} onPress={() => router.push({ pathname: "/library", params: { category: c.value } })} />
+                  <CategoryTile name={c.value} chosen={c.icon} onPress={() => openCategory(c.value)} />
                 </View>
               ))}
-              <View style={styles.cell}><AddCategoryTile onPress={() => setNaming(true)} /></View>
             </View>
           </View>
         )}
@@ -227,4 +233,5 @@ const styles = StyleSheet.create({
   // the edges and left a hole in the middle, which the New tile — always last — made routine.
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-start", columnGap: GUTTER, rowGap: space.md },
   cell: { width: (width - 2 * space.lg - 2 * GUTTER) / 3 },
+  wideCell: { width: (width - 2 * space.lg - GUTTER) / 2 },
 });

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
+import { CategoryMark } from "./CategoryMark";
 import { categoryStyle, tint } from "../lib/categories";
 import { FLAG_ICON, SHAPE_ICON, filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
 import { countFilters, type Facets, type Filters } from "../lib/library";
@@ -100,14 +101,14 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
               <Group title="Category">
                 {categories.map((o) => {
                   // The same mark and hue the home grid uses, so a category is the same thing in both places.
-                  const { icon, hue } = categoryStyle(o.value);
+                  const { hue } = categoryStyle(o.value);
                   return (
                     <Option
                       key={o.value}
                       option={o}
                       hue={hue}
                       onPress={() => onToggle("categories", o.value)}
-                      mark={<Icon name={icon} size={15} color={hue} />}
+                      mark={<CategoryMark category={o.value} chosen={o.icon} size={18} />}
                     />
                   );
                 })}

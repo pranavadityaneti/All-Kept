@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Icon } from "./Icon";
+import { CategoryMark } from "./CategoryMark";
 import { tint } from "../lib/categories";
 import { interestStyle, isNewInterest, type Interest } from "../lib/interests";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -21,7 +21,7 @@ export function InterestPills({ interests, now, onPress }: { interests: Interest
 
 export function InterestPill({ interest, fresh, onPress }: { interest: Interest; fresh: boolean; onPress: () => void }) {
   const p = usePalette();
-  const { icon, hue } = interestStyle(interest.kind);
+  const { hue } = interestStyle(interest.kind);
   const saves = `${interest.n} ${interest.n === 1 ? "save" : "saves"}`;
   return (
     <Pressable
@@ -31,7 +31,7 @@ export function InterestPill({ interest, fresh, onPress }: { interest: Interest;
       style={({ pressed }) => [styles.pill, { backgroundColor: tint(hue, p.blur === "dark" ? 0.22 : 0.12) }, pressed && styles.pressed]}
     >
       <View style={[styles.mark, { backgroundColor: hue }]}>
-        <Icon name={icon} size={15} color="#FFFFFF" />
+        <CategoryMark category={interest.category ?? "Other"} size={18} />
       </View>
       <Text numberOfLines={1} style={[styles.name, { color: hue }]}>{interest.name}</Text>
       {/* Crossed the floor this week: the small sign that this is something Allkept noticed, not something set up. */}

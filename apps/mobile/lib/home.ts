@@ -27,24 +27,17 @@ export function useRecentSaves(enabled: boolean, platforms: string[] = []) {
 }
 
 /**
- * The picture each category wears: the newest save under it that has a thumbnail.
- *
- * Keyed as "category-covers", which invalidateLibrary matches, so saving something that becomes a
- * category's newest picture changes the tile without a restart. A category with nothing pictured
- * inside it is simply absent from the map and falls back to its own mark.
+ * How many saves each category took in the last thirty days — what "saves to regularly" means for
+ * the two wide cards. Keyed as "category-activity", which invalidateLibrary matches.
  */
-export function useCategoryCovers(enabled: boolean) {
+export function useCategoryActivity(enabled: boolean) {
   return useQuery({
-    queryKey: ["category-covers"],
+    queryKey: ["category-activity"],
     enabled,
-    queryFn: async (): Promise<Record<string, string>> => {
-      const { data, error } = await supabase.rpc("category_covers");
+    queryFn: async (): Promise<{ category: string; n: number }[]> => {
+      const { data, error } = await supabase.rpc("category_activity", { p_days: 30 });
       if (error) throw new Error(error.message);
-      const covers: Record<string, string> = {};
-      for (const row of (data ?? []) as { category: string; thumbnail_path: string }[]) {
-        if (row.category && row.thumbnail_path) covers[row.category] = row.thumbnail_path;
-      }
-      return covers;
+      return ((data ?? []) as { category: string; n: number | string }[]).map((r) => ({ category: r.category, n: Number(r.n) }));
     },
   });
 }

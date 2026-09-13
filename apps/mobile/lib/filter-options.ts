@@ -45,7 +45,10 @@ export const FLAG_ICON: Record<string, string> = {
   noted: "create-outline",
 };
 
-export interface FilterOption { value: string; label: string; n: number; selected: boolean }
+export interface FilterOption { value: string; label: string; n: number; selected: boolean
+  /** The mark a person chose for a category of their own; absent for a built-in. */
+  icon?: string;
+}
 export interface ActiveFilter { group: FilterGroup; value: string; label: string }
 
 /**
@@ -80,7 +83,7 @@ export function filterOptions(group: FilterGroup, facets: Facets | undefined, fi
   const counted = (facets?.[group] ?? []).filter((f) => !(f.mine && f.n === 0) || chosen.includes(f.value));
   const known = new Set(counted.map((f) => f.value));
   return [
-    ...counted.map((f) => ({ value: f.value, label: filterLabel(group, f.value), n: f.n, selected: chosen.includes(f.value) })),
+    ...counted.map((f) => ({ value: f.value, label: filterLabel(group, f.value), n: f.n, selected: chosen.includes(f.value), ...(f.icon ? { icon: f.icon } : {}) })),
     ...chosen.filter((v) => !known.has(v)).map((v) => ({ value: v, label: filterLabel(group, v), n: 0, selected: true })),
   ];
 }

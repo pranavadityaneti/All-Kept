@@ -8,7 +8,8 @@ import { CategorySheet } from "../components/CategorySheet";
 import { Icon } from "../components/Icon";
 import { IconButton } from "../components/IconButton";
 import { TAB_BAR_CLEARANCE } from "../components/FloatingTabBar";
-import { categoryIcon } from "../lib/category-icons";
+import { CategoryMark } from "../components/CategoryMark";
+import { markFor } from "../lib/category-marks";
 import { useDeleteCategory, useCreateCategory, useEditCategory, useFacets, ownCategories } from "../lib/library";
 import { useSession } from "../lib/session";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -72,13 +73,13 @@ export default function Categories() {
             {mine.map((c, i) => (
               <View key={c.value} style={[styles.row, i < mine.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: p.border }]}>
                 <View style={[styles.mark, { backgroundColor: p.surfaceAlt, borderColor: p.border }]}>
-                  <Icon name={categoryIcon(c.icon)} size={20} color={p.accent} />
+                  <CategoryMark mark={c.icon} size={26} />
                 </View>
                 <View style={styles.rowText}>
                   <Text numberOfLines={1} style={[type.body, { color: p.ink }]}>{c.value}</Text>
                   <Text style={[type.label, { color: p.inkMuted }]}>{c.n} {c.n === 1 ? "save" : "saves"}</Text>
                 </View>
-                <IconButton name="edit" label={`Edit ${c.value}`} onPress={() => setSheet({ open: true, editing: { name: c.value, icon: categoryIcon(c.icon) } })} />
+                <IconButton name="edit" label={`Edit ${c.value}`} onPress={() => setSheet({ open: true, editing: { name: c.value, icon: markFor(c.icon) } })} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`Delete ${c.value}`}

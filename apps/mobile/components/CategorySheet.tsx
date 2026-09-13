@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "./Button";
-import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { tint } from "../lib/categories";
-import { CATEGORY_ICONS, DEFAULT_CATEGORY_ICON, categoryIcon, type CategoryIcon } from "../lib/category-icons";
+import { CategoryMark } from "./CategoryMark";
+import { DEFAULT_MARK, PICKER_MARKS, markFor, type MarkKey } from "../lib/category-marks";
 import { MAX_NAME, checkCategoryName, nameProblemMessage } from "../lib/user-categories";
 import { radius, space, type, usePalette } from "../lib/theme";
 
@@ -23,12 +23,12 @@ export function CategorySheet({ visible, initial, existing, onClose, onSubmit }:
   existing: readonly string[];
   onClose: () => void;
   /** Resolves to a message when the database refused it, or null when it went through. */
-  onSubmit: (value: { name: string; icon: CategoryIcon }) => Promise<string | null>;
+  onSubmit: (value: { name: string; icon: MarkKey }) => Promise<string | null>;
 }) {
   const p = usePalette();
   const editing = !!initial;
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState<CategoryIcon>(DEFAULT_CATEGORY_ICON);
+  const [icon, setIcon] = useState<MarkKey>(DEFAULT_MARK);
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -36,7 +36,7 @@ export function CategorySheet({ visible, initial, existing, onClose, onSubmit }:
   useEffect(() => {
     if (!visible) return;
     setName(initial?.name ?? "");
-    setIcon(categoryIcon(initial?.icon));
+    setIcon(markFor(initial?.icon));
     setFailure(null);
     setBusy(false);
   }, [visible, initial?.name, initial?.icon]);
@@ -82,14 +82,14 @@ export function CategorySheet({ visible, initial, existing, onClose, onSubmit }:
 
           <Text style={[type.label, { color: p.inkMuted }]}>Pick a mark</Text>
           <ScrollView style={styles.marks} contentContainerStyle={styles.marksInner} keyboardShouldPersistTaps="handled">
-            {CATEGORY_ICONS.map((option) => {
+            {PICKER_MARKS.map((option) => {
               const on = option === icon;
               return (
                 <Pressable
                   key={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected: on }}
-                  accessibilityLabel={option.replace("-outline", "")}
+                  accessibilityLabel={option.replace(/_/g, " ")}
                   onPress={() => setIcon(option)}
                   style={({ pressed }) => [
                     styles.mark,
@@ -97,7 +97,7 @@ export function CategorySheet({ visible, initial, existing, onClose, onSubmit }:
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Icon name={option} size={22} color={on ? p.accent : p.inkMuted} />
+                  <CategoryMark mark={option} size={30} />
                 </Pressable>
               );
             })}

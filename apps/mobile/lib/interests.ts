@@ -9,7 +9,6 @@
  */
 import { CATEGORIES } from "@allkept/contracts";
 import { categoryDisplayName } from "./category-names";
-import type { Glyph } from "./icon-names";
 import { RESERVED_NAMES } from "./user-categories";
 
 /** What user_interests() returns, one row per name. */
@@ -119,15 +118,7 @@ export const isNewInterest = (interest: Pick<Interest, "crossedAt">, now: Date):
 
 export const showInterests = (interests: readonly Interest[]): boolean => interests.length >= MIN_TO_SHOW;
 
-/** A mark and a colour per kind of thing, so a person and a place never look alike in the row. */
-const STYLE: Record<string, { icon: Glyph; hue: string }> = {
-  person: { icon: "person-outline", hue: "#D63B6E" },
-  brand: { icon: "pricetag-outline", hue: "#2F6FED" },
-  product: { icon: "cube-outline", hue: "#E58A1F" },
-  place: { icon: "location-outline", hue: "#1FA36B" },
-  recipe: { icon: "restaurant-outline", hue: "#C64B2A" },
-  tool: { icon: "construct-outline", hue: "#6D46F2" },
-};
-const OTHER = { icon: "sparkles-outline" as Glyph, hue: "#5F6675" };
+/** A colour per kind of thing, so a person and a place never look alike in the row. */
+const HUES: Record<string, string> = { person: "#D63B6E", brand: "#2F6FED", product: "#E58A1F", place: "#1FA36B", recipe: "#C64B2A", tool: "#6D46F2" };
 
-export const interestStyle = (kind: string): { icon: Glyph; hue: string } => STYLE[kind] ?? OTHER;
+export const interestStyle = (kind: string): { hue: string } => ({ hue: HUES[kind] ?? "#5F6675" });
