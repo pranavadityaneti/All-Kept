@@ -3,6 +3,7 @@ import { normaliseUsage, openaiDeps, OUTPUT_SCHEMA } from "../_shared/openai.ts"
 import { BULK_MODEL, classifierFromEnv } from "../_shared/classifiers.ts";
 import { costUsd, PRICES_PER_MTOK } from "../_shared/pipeline.ts";
 import { SYSTEM_PROMPT } from "../_shared/classify.ts";
+import { ICONS_SCHEMA } from "../_shared/entity-icons.ts";
 
 const GOOD = { category: "Money & career", tags: ["uber", "startups"], summary: "Kalanick on the details that let Uber beat Lyft.", entities: [{ type: "person", name: "Travis Kalanick" }], language: "en", actionability: "watch", confidence: 0.92 };
 // Shape of a Responses API reply as documented: a reasoning item, then the message; usage counts cached tokens inside input_tokens.
@@ -101,4 +102,26 @@ Deno.test("classifierFromEnv: an imported back catalogue takes the cheaper tier,
   // A model with no price would be billed as free and quietly hide what an import costs.
   assert(Object.keys(PRICES_PER_MTOK).includes(BULK_MODEL));
   assert(PRICES_PER_MTOK[BULK_MODEL]!.input < PRICES_PER_MTOK["gpt-5.6-sol"]!.input);
+});
+
+Deno.test("openai: a call may name its own answer shape, and the classification's stays the default", async () => {
+  const seen: { url?: string; init?: RequestInit } = {};
+  const shape = { name: "entity_icons", schema: { type: "object", properties: { icons: { type: "array", items: { type: "string" } } }, required: ["icons"], additionalProperties: false } };
+  const withShape = await openaiDeps("k", "gpt-5.6-sol", fetchWith(200, reply({ output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify({ icons: ["film"] }) }] }] }), seen)).call("sys", "user", shape);
+  assertEquals(withShape.output, { icons: ["film"] });
+  const body = JSON.parse(String(seen.init?.body)) as Record<string, unknown>;
+  assertEquals(body["text"], { format: { type: "json_schema", name: "entity_icons", schema: shape.schema, strict: true } });
+});
+
+Deno.test("ICONS_SCHEMA satisfies strict mode the same way", () => {
+  const check = (node: Record<string, unknown>) => {
+    if (node["type"] === "object") {
+      const props = node["properties"] as Record<string, Record<string, unknown>>;
+      assertEquals(node["required"], Object.keys(props));
+      assertEquals(node["additionalProperties"], false);
+      for (const p of Object.values(props)) check(p);
+    }
+    if (node["type"] === "array") check(node["items"] as Record<string, unknown>);
+  };
+  check(ICONS_SCHEMA as unknown as Record<string, unknown>);
 });

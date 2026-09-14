@@ -3,6 +3,7 @@ import { adminClient, env } from "../_shared/supabase.ts";
 import { MAX_SNAPSHOT_ATTEMPTS, runPipeline } from "../_shared/pipeline.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
+import { runIconPass, type IconRow } from "../_shared/entity-icons.ts";
 import { json, readJson } from "../_shared/http.ts";
 import { singleItemRequest } from "./single.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
@@ -67,7 +68,28 @@ Deno.serve(async (req) => {
       try { indexed = await indexSearchBatch(db, embedder(embeddingKey)); }
       catch { console.error("sweeper: search indexing failed; leases will expire for retry"); }
     }
-    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, processed: ok, failed, classifier: choice?.model ?? null });
+    // 5. A mark of its own for every named thing the sorting found: one model call for a batch of
+    //    names, written onto the saves that carry them. Never fails the sweep.
+    let icons: { rows: number; names: number; saved: number } | null = null;
+    if (choice) {
+      try {
+        icons = await runIconPass({
+          async rows(limit) {
+            const { data, error } = await db.rpc("item_ai_missing_icons", { lim: limit });
+            if (error) throw error;
+            return (data ?? []) as IconRow[];
+          },
+          // Naming what sort of thing "IMDb" is takes no more than the cheaper tier, where there is one.
+          call: (deps.bulkClassifier ?? choice.deps).call,
+          async save(itemId, entities) {
+            const { error } = await db.from("item_ai").update({ entities }).eq("item_id", itemId);
+            if (error) throw error;
+          },
+          log: deps.log,
+        });
+      } catch (e) { console.error("sweeper: icon pass failed", { error: String(e).slice(0, 200) }); }
+    }
+    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, icons, processed: ok, failed, classifier: choice?.model ?? null });
   } catch (e) {
     console.error("sweeper failed", e);
     return new Response("internal error", { status: 500 });

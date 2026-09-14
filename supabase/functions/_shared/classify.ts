@@ -24,8 +24,11 @@ export interface ModelResult {
   error?: string;
 }
 
+/** A JSON shape the model must answer in. Absent, the classification's own. */
+export interface OutputShape { name: string; schema: Record<string, unknown> }
+
 export interface ClassifyDeps {
-  call(system: string, user: string): Promise<ModelResult>;
+  call(system: string, user: string, shape?: OutputShape): Promise<ModelResult>;
 }
 
 export interface ClassifyResult {

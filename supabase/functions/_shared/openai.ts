@@ -45,7 +45,7 @@ export function normaliseUsage(u: ResponsesReply["usage"]): ModelUsage | null {
 
 export function openaiDeps(apiKey: string, model: string = DEFAULT_MODEL, fetchImpl: typeof fetch = fetch): ClassifyDeps {
   return {
-    async call(system, user): Promise<ModelResult> {
+    async call(system, user, shape): Promise<ModelResult> {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
       try {
@@ -58,7 +58,7 @@ export function openaiDeps(apiKey: string, model: string = DEFAULT_MODEL, fetchI
             instructions: system,
             input: user,
             reasoning: { effort: REASONING_EFFORT },
-            text: { format: { type: "json_schema", name: "item_ai", schema: OUTPUT_SCHEMA, strict: true } },
+            text: { format: { type: "json_schema", name: shape?.name ?? "item_ai", schema: shape?.schema ?? OUTPUT_SCHEMA, strict: true } },
             max_output_tokens: MAX_OUTPUT_TOKENS,
             store: false,
           }),

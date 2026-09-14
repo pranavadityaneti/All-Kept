@@ -23,14 +23,14 @@ const OUTPUT_SCHEMA = {
 export function anthropicDeps(apiKey: string): ClassifyDeps {
   const client = new Anthropic({ apiKey, timeout: 20_000, maxRetries: 0 });
   return {
-    async call(system, user): Promise<ModelResult> {
+    async call(system, user, shape): Promise<ModelResult> {
       try {
         const response = await client.beta.messages.create({
           model: MODEL,
           max_tokens: 1024,
           betas: ["server-side-fallback-2026-07-01"],
           fallbacks: "default",
-          output_config: { effort: "low", format: { type: "json_schema", schema: OUTPUT_SCHEMA } },
+          output_config: { effort: "low", format: { type: "json_schema", schema: shape?.schema ?? OUTPUT_SCHEMA } },
           system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
           messages: [{ role: "user", content: user }],
         } as never) as unknown as { content: { type: string; text?: string }[]; stop_reason: string; model: string; usage: ModelResult["usage"] };
