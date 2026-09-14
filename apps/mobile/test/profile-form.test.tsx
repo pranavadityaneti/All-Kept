@@ -7,7 +7,7 @@ vi.mock("react-native", () => ({ View: "View", Text: "Text", TextInput: "TextInp
 vi.mock("../components/ConfirmButton", () => ({ ConfirmButton: "ConfirmButton" }));
 vi.mock("expo-image", () => ({ Image: "Image" }));
 vi.mock("../components/Icon", () => ({ Icon: "Icon" }));
-vi.mock("../lib/theme", () => ({ usePalette: () => ({}), type: { body: {}, label: {}, heading: {} }, space: { sm: 8, md: 16, lg: 24 }, radius: { md: 12 } }));
+vi.mock("../lib/theme", () => ({ usePalette: () => ({}), type: { body: {}, label: {}, heading: {} }, font: () => ({}), space: { sm: 8, md: 16, lg: 24 }, radius: { md: 12 } }));
 vi.mock("../lib/profile", () => ({ useAvatar: () => ({ data: null }), profileKey: (id: string) => ["profile",id] }));
 vi.mock("../lib/profile-photo", () => ({ pickProfilePhoto: mocks.pick, photoBytes: mocks.bytes, removeDraftPhoto: vi.fn() }));
 vi.mock("../lib/storage", () => ({ chunkedSecureStore: { getItem: async (k: string) => mocks.draft.get(k) ?? null, setItem: async (k: string,v: string) => { mocks.draft.set(k,v); }, removeItem: async (k: string) => { mocks.draft.delete(k); } } }));

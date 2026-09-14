@@ -9,7 +9,7 @@ import { profileKey, useAvatar } from "../lib/profile";
 import { photoBytes, pickProfilePhoto, removeDraftPhoto } from "../lib/profile-photo";
 import { chunkedSecureStore } from "../lib/storage";
 import { supabase } from "../lib/supabase";
-import { type, usePalette } from "../lib/theme";
+import { font, type, usePalette } from "../lib/theme";
 
 interface Draft { name: string; photoUri: string | null; uploadedPath: string | null }
 export const profileDraftKey = (userId: string) => `allkept.profile-draft.${userId}`;
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   photoLabel: { fontSize: 13 },
   fields: { gap: 30 },
   field: { gap: 12 },
-  label: { fontSize: 13, fontWeight: "500" },
+  label: { fontSize: 13, ...font("500") },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 17, paddingHorizontal: 18, paddingVertical: 17, minHeight: 58, fontSize: 16 },
   submit: { marginTop: "auto", paddingTop: 8, gap: 8 },
   message: { textAlign: "center", lineHeight: 21 },

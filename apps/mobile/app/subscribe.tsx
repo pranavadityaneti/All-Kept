@@ -14,7 +14,7 @@ import { openLink } from "../lib/open";
 import { disclosure, plansFrom, PRIVACY_URL, subscriptionRow, TERMS_URL, type Plan } from "../lib/paywall";
 import { useSession } from "../lib/session";
 import { flushShareQueue } from "../lib/share-save";
-import { radius, space, type, usePalette } from "../lib/theme";
+import { font, radius, space, type, usePalette } from "../lib/theme";
 
 /**
  * The paywall, at the twenty-sixth save.
@@ -246,15 +246,15 @@ const styles = StyleSheet.create({
   keeps: { borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: space.lg },
   keep: { flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: space.md },
   keepText: { flex: 1, gap: 2 },
-  keepTitle: { fontWeight: "700" },
+  keepTitle: { ...font("700") },
   offer: { gap: space.md },
   cards: { flexDirection: "row", gap: space.md, paddingTop: space.sm },
   card: { flex: 1, borderRadius: radius.lg, borderWidth: 2, paddingHorizontal: space.md, paddingVertical: space.lg, alignItems: "center", gap: 2 },
   badgeWrap: { position: "absolute", top: -12, left: 0, right: 0, alignItems: "center" },
   badge: { paddingHorizontal: space.md, paddingVertical: 3, borderRadius: radius.pill },
-  badgeText: { fontSize: 12, fontWeight: "700" },
+  badgeText: { fontSize: 12, ...font("700") },
   centered: { alignItems: "center", gap: space.sm },
   centeredText: { textAlign: "center" },
-  fine: { fontSize: 13, fontWeight: "400", lineHeight: 18 },
+  fine: { fontSize: 13, ...font("400"), lineHeight: 18 },
   footer: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: space.sm, flexWrap: "wrap" },
 });

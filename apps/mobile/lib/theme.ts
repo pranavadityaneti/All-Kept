@@ -28,19 +28,41 @@ const dark: Palette = {
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 export const radius = { sm: 6, md: 12, lg: 18, xl: 24, pill: 999 } as const;
 /**
+ * The typeface. Manrope, a geometric sans, loaded at start from the Google Fonts package in
+ * static cuts, one file per weight. null puts every screen back on the platform's own face (SF
+ * Pro, Roboto) with nothing else to change: every weight in the app is asked for through font().
+ */
+export const FONT: "Manrope" | null = "Manrope";
+export type Weight = "200" | "300" | "400" | "500" | "600" | "700" | "800";
+/** The family name each cut is loaded under, which is the name a style asks for. */
+export const MANROPE: Record<Weight, string> = {
+  "200": "Manrope_200ExtraLight", "300": "Manrope_300Light", "400": "Manrope_400Regular", "500": "Manrope_500Medium",
+  "600": "Manrope_600SemiBold", "700": "Manrope_700Bold", "800": "Manrope_800ExtraBold",
+};
+
+/**
+ * A weight, as a style. With a typeface set, the cut of that weight and no fontWeight at all: a
+ * static face carries its own weight, and asking for one on top makes iOS hunt for a bolder cut
+ * that is not there and fall back to the system font. Without one, the weight itself.
+ */
+export function font(weight: Weight): { fontFamily?: string; fontWeight?: Weight } {
+  return FONT ? { fontFamily: MANROPE[weight] } : { fontWeight: weight };
+}
+
+/**
  * Anchored on Apple's own scale rather than picked by eye: 17pt is the iOS default for body text,
  * 15pt is secondary, 13pt tertiary. Body sat at 15 — one whole step down, which is why every screen
  * read smaller than the apps beside it. Instagram sets SF Pro at these same system sizes, so putting
  * body back on 17 is what closes the gap. The rest lift with it to keep the hierarchy intact.
  */
 export const type = {
-  title: { fontSize: 30, fontWeight: "700" },
-  section: { fontSize: 22, fontWeight: "700" },
-  heading: { fontSize: 19, fontWeight: "600" },
-  body: { fontSize: 17, fontWeight: "400" },
-  label: { fontSize: 15, fontWeight: "500" },
+  title: { fontSize: 30, ...font("700") },
+  section: { fontSize: 22, ...font("700") },
+  heading: { fontSize: 19, ...font("600") },
+  body: { fontSize: 17, ...font("400") },
+  label: { fontSize: 15, ...font("500") },
   // The one-time code, which is sized to the box it sits in rather than to the text scale.
-  mono: { fontSize: 32, fontWeight: "700", letterSpacing: 6 },
+  mono: { fontSize: 32, ...font("700"), letterSpacing: 6 },
 } as const;
 
 export type ThemeChoice = "system" | "light" | "dark";

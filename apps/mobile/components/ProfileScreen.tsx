@@ -2,7 +2,7 @@ import type { PropsWithChildren } from "react";
 import { StatusBar } from "expo-status-bar";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { usePalette } from "../lib/theme";
+import { font, usePalette } from "../lib/theme";
 import { Icon } from "./Icon";
 
 export function ProfileScreen({ children, title, onBack, light = false }: PropsWithChildren<{ title: string; onBack?: () => void; light?: boolean }>) {
@@ -17,4 +17,4 @@ export function ProfileScreen({ children, title, onBack, light = false }: PropsW
     </KeyboardAvoidingView>
   </SafeAreaView>;
 }
-const styles = StyleSheet.create({ safe: { flex: 1 }, page: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 24, paddingBottom: 24, gap: 30, width: "100%", maxWidth: 520, alignSelf: "center" }, heading: { flexDirection: "row", alignItems: "center", gap: 10 }, title: { fontSize: 30, lineHeight: 37, fontWeight: "600", letterSpacing: -0.8 }, back: { minWidth: 44, minHeight: 44, justifyContent: "center" } });
+const styles = StyleSheet.create({ safe: { flex: 1 }, page: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 24, paddingBottom: 24, gap: 30, width: "100%", maxWidth: 520, alignSelf: "center" }, heading: { flexDirection: "row", alignItems: "center", gap: 10 }, title: { fontSize: 30, lineHeight: 37, ...font("600"), letterSpacing: -0.8 }, back: { minWidth: 44, minHeight: 44, justifyContent: "center" } });

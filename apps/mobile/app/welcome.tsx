@@ -7,7 +7,7 @@ import { Button } from "../components/Button";
 import { PlatformLogo } from "../components/PlatformLogo";
 import { hasGuestLibrary, restoreGuestLibrary, signInWith, type AuthProvider } from "../lib/google";
 import { useSession } from "../lib/session";
-import { type, usePalette } from "../lib/theme";
+import { font, type, usePalette } from "../lib/theme";
 
 export default function Welcome() {
   const p = usePalette("light"), session = useSession();
@@ -98,12 +98,12 @@ const styles = StyleSheet.create({
     shadowColor: "#35254E", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.09, shadowRadius: 22, elevation: 5,
   },
   headline: { fontSize: 32, lineHeight: 35, letterSpacing: -1.05, textAlign: "center" },
-  headlineRegular: { fontWeight: "400" },
-  headlineMedium: { fontWeight: "500" },
-  subcopy: { maxWidth: 292, marginTop: 13, fontSize: 13, lineHeight: 18, fontWeight: "400", textAlign: "center" },
+  headlineRegular: { ...font("400") },
+  headlineMedium: { ...font("500") },
+  subcopy: { maxWidth: 292, marginTop: 13, fontSize: 13, lineHeight: 18, ...font("400"), textAlign: "center" },
   actions: { width: "100%", alignItems: "center", marginTop: 9, gap: 8 },
   guest: { fontSize: 12, lineHeight: 17, textAlign: "center" },
-  signInPrompt: { fontSize: 12, lineHeight: 17, fontWeight: "500", textAlign: "center" },
+  signInPrompt: { fontSize: 12, lineHeight: 17, ...font("500"), textAlign: "center" },
   providerRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14 },
   providerButton: { width: 56, height: 56, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   googleButton: {
@@ -113,5 +113,5 @@ const styles = StyleSheet.create({
   appleButton: { width: 56, height: 56 },
   appleLoader: { width: 56, height: 56, borderRadius: 18, backgroundColor: "#000000" },
   error: { textAlign: "center" },
-  legal: { marginTop: 11, fontSize: 9, lineHeight: 12, fontWeight: "400", textAlign: "center", opacity: 0.72 },
+  legal: { marginTop: 11, fontSize: 9, lineHeight: 12, ...font("400"), textAlign: "center", opacity: 0.72 },
 });

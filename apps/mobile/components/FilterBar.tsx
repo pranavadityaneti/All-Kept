@@ -3,7 +3,7 @@ import { Icon } from "./Icon";
 import { PlatformPills } from "./PlatformPills";
 import { activeFilters, matchesLabel, type FilterGroup, type Matches } from "../lib/filter-options";
 import type { Facets, Filters } from "../lib/library";
-import { radius, space, type, usePalette } from "../lib/theme";
+import { font, radius, space, type, usePalette } from "../lib/theme";
 
 /**
  * What is filtered, and the way to change it.
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   bar: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingHorizontal: space.lg, paddingVertical: space.xs },
   open: { flexDirection: "row", alignItems: "center", gap: space.xs + 2, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: space.xs + 2, minHeight: 36 },
   badge: { minWidth: 18, height: 18, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
-  badgeText: { fontWeight: "700" },
+  badgeText: { ...font("700") },
   // A horizontal ScrollView inside a row stretches to fill the space unless it is told not to.
   tokens: { flexGrow: 0, flexShrink: 1 },
   tokensInner: { gap: space.sm, alignItems: "center" },

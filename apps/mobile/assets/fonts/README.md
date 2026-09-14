@@ -1,5 +1,8 @@
-# Garet app fonts
+# App typeface
 
-Add the licensed mobile-app font files here as `Garet-Book.otf` and `Garet-Heavy.otf`.
+The app is set in **Manrope** (SIL Open Font License), loaded at start from the
+`@expo-google-fonts/manrope` package in static cuts, one file per weight, 200 to 800. Nothing lives
+in this folder; the package carries the files.
 
-The free Garet download permits desktop and web use. Shipping either file inside the iOS or Android bundle requires an app licence. Once the licensed files are present, load them in `app/_layout.tsx` with `expo-font` and map the shared typography tokens in `lib/theme.ts` to `GaretBook` and `GaretHeavy`.
+Every weight in the app is asked for through `font()` in `lib/theme.ts`, which hands back the
+matching cut. `FONT = null` there puts every screen back on the platform's own face.

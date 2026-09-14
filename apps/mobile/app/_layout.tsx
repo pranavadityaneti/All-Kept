@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { Manrope_200ExtraLight, Manrope_300Light, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
+import { useFonts } from "expo-font";
 import { Stack, useRouter } from "expo-router";
 import { configureBilling, entitlementKey, reportStorefront, setShareQueueBlocked } from "../lib/billing";
 import { ensureShareToken, flushShareQueue } from "../lib/share-save";
@@ -16,7 +18,7 @@ import { invalidateLibrary } from "../lib/library";
 import { useRealtimeSync } from "../lib/realtime";
 import { SessionProvider, useSession } from "../lib/session";
 import { configError } from "../lib/supabase";
-import { space, type, usePalette } from "../lib/theme";
+import { FONT, MANROPE, space, type, usePalette } from "../lib/theme";
 import { useOtaUpdates } from "../lib/updates";
 import { useNotificationRoute } from "../lib/push";
 import { useProfile } from "../lib/profile";
@@ -56,6 +58,13 @@ function AccountQueries({ children }: PropsWithChildren) {
 
 function Shell() {
   const p = usePalette(), updates = useOtaUpdates(), session = useSession();
+  // The typeface, every cut the scale can ask for, under the names the theme asks by. Nothing is
+  // drawn until it is here, so no screen flashes the system face first; if it cannot load, the
+  // system face is what every style falls back to, and the app still opens.
+  const [fontsReady, fontError] = useFonts(FONT ? {
+    [MANROPE["200"]]: Manrope_200ExtraLight, [MANROPE["300"]]: Manrope_300Light, [MANROPE["400"]]: Manrope_400Regular, [MANROPE["500"]]: Manrope_500Medium,
+    [MANROPE["600"]]: Manrope_600SemiBold, [MANROPE["700"]]: Manrope_700Bold, [MANROPE["800"]]: Manrope_800ExtraBold,
+  } : {});
   const router = useRouter();
   const userId = session.status === "ready" && !session.anonymous ? session.userId : null;
   const profile = useProfile(userId);
@@ -90,7 +99,7 @@ function Shell() {
     const sub = AppState.addEventListener("change", (state) => { if (state === "active") sync(); });
     return () => sub.remove();
   }, [unlocked, queryClient, session]);
-  if (!updates.ready) return <View style={{ flex: 1, backgroundColor: p.bg }} />;
+  if (!updates.ready || !(fontsReady || fontError)) return <View style={{ flex: 1, backgroundColor: p.bg }} />;
   if (configError) return <View style={[styles.centered, { backgroundColor: p.bg }]}><Text style={[type.title, { color: p.ink }]}>Allkept</Text><Text style={[type.body, { color: p.inkMuted }]}>{configError}</Text></View>;
   return <>
     <StatusBar style={p.blur === "dark" ? "light" : "dark"} />

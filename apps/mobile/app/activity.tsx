@@ -10,7 +10,7 @@ import { PlatformLogo } from "../components/PlatformLogo";
 import { describe, groupByDay, when } from "../lib/activity";
 import { useRecentSaves } from "../lib/home";
 import { useSession } from "../lib/session";
-import { radius, space, type, usePalette } from "../lib/theme";
+import { font, radius, space, type, usePalette } from "../lib/theme";
 import { useThumbnails } from "../lib/thumbnails";
 
 export default function Activity() {
@@ -95,6 +95,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: space.md },
   thumb: { width: 48, height: 48, borderRadius: radius.md, overflow: "hidden", alignItems: "center", justifyContent: "center" },
   rowText: { flex: 1, gap: 2 },
-  rowTitle: { fontWeight: "600" },
+  rowTitle: { ...font("600") },
   empty: { padding: space.lg },
 });

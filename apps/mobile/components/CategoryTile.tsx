@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CategoryMark } from "./CategoryMark";
 import { categoryPalette, darkPalette } from "../lib/category-marks";
 import { categoryDisplayName } from "../lib/category-names";
-import { radius, space, type, usePalette } from "../lib/theme";
+import { font, radius, space, type, usePalette } from "../lib/theme";
 
 /**
  * A category as a place: a card washed in the category's own pastel, its mark printed small in
@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
   // Every card is a square, whichever row it sits in.
   tile: { aspectRatio: 1, borderRadius: radius.xl, alignItems: "center", justifyContent: "center", paddingHorizontal: space.sm, paddingVertical: space.md, gap: space.sm },
   markBox: { flex: 1, alignItems: "center", justifyContent: "center" },
-  name: { fontSize: type.label.fontSize, lineHeight: 18, fontWeight: "600", letterSpacing: -0.2, textAlign: "center" },
+  name: { fontSize: type.label.fontSize, lineHeight: 18, ...font("600"), letterSpacing: -0.2, textAlign: "center" },
   pressed: { transform: [{ scale: 0.97 }], opacity: 0.94 },
 });

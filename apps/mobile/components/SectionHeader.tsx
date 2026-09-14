@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { radius, space, type, usePalette } from "../lib/theme";
+import { font, radius, space, type, usePalette } from "../lib/theme";
 
 export function SectionHeader({ title, actionLabel, onAction, pill }: {
   title: string;
@@ -32,6 +32,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.md },
   actions: { flexDirection: "row", alignItems: "center", gap: space.md },
   pill: { paddingHorizontal: space.md, paddingVertical: space.xs + 2, borderRadius: radius.pill },
-  pillText: { fontWeight: "700" },
+  pillText: { ...font("700") },
   pressed: { opacity: 0.8 },
 });
