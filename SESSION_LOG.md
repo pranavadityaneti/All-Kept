@@ -1232,3 +1232,11 @@ categories.
   `git push`. Step 4 (the four stuck saves) happens on the phone's next foreground with the new
   JS, through the backfill; the sweeper's pass 4 only covers saves walled from now on.
 - Deferred to forlater: sweeper pass-4 index; the Reddit backfill's unbounded re-reads (sibling).
+- Deployed on Pranav's Yes (14 Sep, 23:48 IST): `sweeper` v35, `reprocess-item` v24, `save-link` v20,
+  `reddit-thumbnail` v9. Pushed `8d38a15..8d8714b` to `origin/main`. Step 4 verified: relaunched the
+  simulator dev app twice (Metro serving the new JS); the backfill stored pictures for
+  `p/DdPficfHPyL`, `reel/DdJsVxhCCLM`, `p/DdNFvWBkxgD` on the first foreground and the video post
+  `p/DdH1aXsk4C9` on the second (its video address replaced by the poster, attempts reset).
+  `reel/DdLnijyiVGa` stays preview_unavailable: nothing to show. Read-only check afterwards: only
+  those four rows changed in 30 minutes; no settled card carries a preview retry. This log commit
+  is unpushed (a push needs its own Yes).
