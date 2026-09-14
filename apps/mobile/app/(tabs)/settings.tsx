@@ -17,6 +17,7 @@ import { logOutBilling, openManageSubscription, useEntitlement } from "../../lib
 import { openSystemSettings, pushPermission, registerForPush, unregisterPush } from "../../lib/push";
 import { REVIEW_URL, SUPPORT_EMAIL } from "../../lib/feedback";
 import { openLink } from "../../lib/open";
+import { STREAMLINE_URL } from "../../lib/category-marks";
 import { PRIVACY_URL, subscriptionRow, TERMS_URL } from "../../lib/paywall";
 import { useSession } from "../../lib/session";
 import { useLinkedSource, useSetReplies } from "../../lib/sources";
@@ -289,7 +290,9 @@ export default function Settings() {
           <SettingsRow icon="note" title="Send feedback" detail="Tell us what is broken or missing" onPress={() => router.push("/feedback")} />
           <SettingsRow icon="check" title="Rate Allkept" onPress={() => { void openLink(REVIEW_URL); }} />
           <SettingsRow icon="open" title="Privacy" onPress={() => { void openLink(PRIVACY_URL); }} />
-          <SettingsRow icon="open" title="Terms" onPress={() => { void openLink(TERMS_URL); }} last />
+          <SettingsRow icon="open" title="Terms" onPress={() => { void openLink(TERMS_URL); }} />
+          {/* The category marks are Streamline's free Plump icons, CC BY 4.0, which asks for this credit. */}
+          <SettingsRow icon="open" title="Icons by Streamline" detail="Plump, the free set, CC BY 4.0" onPress={() => { void openLink(STREAMLINE_URL); }} last />
         </SettingsGroup>
 
         <SettingsGroup>
