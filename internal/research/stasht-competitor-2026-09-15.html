@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stasht — competitor research, 15 Sep 2026</title>
+<style>
+  :root { --ink: #141221; --muted: #5F6675; --accent: #6D46F2; --line: #E3E1EC; --wash: #F6F5FA; }
+  body { margin: 0; font: 16px/1.55 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); background: #fff; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 24px 80px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  nav.toc { background: var(--wash); border-radius: 12px; padding: 16px 20px; margin: 0 0 32px; }
+  nav.toc ol { margin: 0; padding-left: 20px; } nav.toc ol ol { margin-top: 4px; }
+  nav.toc a { color: var(--accent); text-decoration: none; } nav.toc a:hover { text-decoration: underline; }
+  h2 { font-size: 24px; margin: 48px 0 12px; padding-top: 24px; border-top: 2px solid var(--line); letter-spacing: -0.3px; }
+  h3 { font-size: 19px; margin: 32px 0 8px; } h4 { font-size: 16px; margin: 24px 0 6px; }
+  p, li { max-width: 78ch; } a { color: var(--accent); word-break: break-word; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0 20px; display: block; overflow-x: auto; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left; }
+  th { background: var(--wash); } tr:nth-child(even) td { background: #FBFBFD; }
+  code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--wash); padding: 1px 4px; border-radius: 4px; }
+  pre { background: var(--wash); padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  blockquote { margin: 0; padding: 0 0 0 14px; border-left: 3px solid var(--line); color: var(--muted); }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+  .note { font-size: 14px; color: var(--muted); }
+  @media print { body { font-size: 12px; } main { max-width: none; padding: 0; } h2 { page-break-before: always; border: 0; padding-top: 0; } nav.toc { page-break-after: always; } a { color: inherit; text-decoration: none; } table { display: table; font-size: 11px; } }
+</style></head><body><main>
+<h1>Stasht — competitor research</h1>
+<p class="sub">Internal. Compiled 15 September 2026 from three read-only research passes: the comparison (repository code and docs against the two reports), Stasht's product surfaces, and Stasht's public Featurebase board. Nothing was signed up for, voted on, or posted. Facts either side could not settle are marked "unverified" in the text.</p>
+<nav class="toc"><strong>Contents</strong><ol><li><a href="#comparison">Part 1 — Allkept against Stasht: where we stand and how we get ahead</a><ol><li><a href="#comparison-1">1. Summary</a></li><li><a href="#comparison-2">2. Side by side</a></li><li><a href="#comparison-3">3. Where Allkept is better today</a></li><li><a href="#comparison-4">4. Where Allkept is worse today — bluntly</a></li><li><a href="#comparison-5">5. What Stasht&#39;s customers are telling us, and where Allkept stands</a></li><li><a href="#comparison-6">6. How Allkept gets better than Stasht — ranked moves</a></li><li><a href="#comparison-7">7. Positioning</a></li><li><a href="#comparison-8">8. Risks — where Stasht could overtake, and what to watch</a></li><li><a href="#comparison-9">9. Facts I could not verify</a></li></ol></li><li><a href="#product">Part 2 — Stasht, the product</a><ol><li><a href="#product-1">1. What Stasht is and who it is for</a></li><li><a href="#product-2">2. How saving works — capture paths and platforms</a></li><li><a href="#product-3">3. How organising works — automatic vs manual</a></li><li><a href="#product-4">4. Pricing</a></li><li><a href="#product-5">5. Platforms and distribution</a></li><li><a href="#product-6">6. Team, company, funding, traction, press, social</a></li><li><a href="#product-7">7. Positioning against alternatives</a></li><li><a href="#product-8">8. Notable UX from screenshots (described in words)</a></li><li><a href="#product-9">Facts I am unsure about</a></li></ol></li><li><a href="#feedback">Part 3 — What Stasht's customers say (their public feedback board)</a><ol><li><a href="#feedback-1">1. Board overview</a></li><li><a href="#feedback-2">2. Top requests, ranked by votes</a></li><li><a href="#feedback-3">3. Complaints and bugs</a></li><li><a href="#feedback-4">4. Praise (in their words)</a></li><li><a href="#feedback-5">5. Integrations and platforms mentioned</a></li><li><a href="#feedback-6">6. Shipped vs promised</a></li><li><a href="#feedback-7">7. Underlying themes</a></li><li><a href="#feedback-8">8. Lessons for a competitor building the same product</a></li></ol></li></ol></nav>
+<section id="comparison"><h2>Part 1 — Allkept against Stasht: where we stand and how we get ahead</h2><p>Sources: the two Stasht reports (product + feedback board), and the Allkept repository read directly (code, migrations, specs, <code>forlater.md</code>, <code>SESSION_LOG.md</code>). Every Allkept claim cites a path; every Stasht claim cites a report URL. &quot;Unverified&quot; means neither side&#39;s evidence settles it.</p>
+<h3 id="comparison-1"$1>1. Summary</h3>
+<p>Stasht is ahead of Allkept as a shipped product and behind it as an engineered one. Stasht is on both stores (iOS since at least Mar 2026, Play since 2 Feb 2026), has a web app and Chrome/Safari extensions, bulk-imports from five platforms, and — its real pitch — turns saves into things: places on a map, events on a calendar, reminders, &quot;nearby&quot; alerts and weekly roundups, from captions, on-screen text and (it claims) speech (<a href="https://stasht.app/">https://stasht.app/</a>, <a href="https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175">https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175</a>). It is free, and a native iOS 26 rewrite (v7.0.1) shipped today. Its traction is still tiny (27 App Store ratings, 500+ Play downloads, 231 Chrome users) and its own feedback board shows the cost of that breadth: ~20 posts about extraction getting it wrong, 7 about search, 6 about missing thumbnails, a confusing stashes/collections/AI-folders/tags/intent hierarchy, no way to override what the AI added, and 80 of 82 posts still &quot;In Review&quot; (<a href="https://stasht.featurebase.app/">https://stasht.featurebase.app/</a>). Allkept is pre-launch (TestFlight build 25, launch date 21 Sep on the site, 3 profiles on 11 Sep — <code>internal/store-submission.html</code>, <code>SESSION_LOG.md</code> 11 Sep), mobile-only, and extracts far less per save (category, tags, one-line summary, typed entity names, an unused actionability — <code>packages/contracts/src/index.ts</code>): no map, no calendar, no reminders, no transcription. But on exactly the things Stasht&#39;s customers complain about, Allkept is structurally stronger today: one simple hierarchy (15 categories + categories you make) where your choice always wins and the model&#39;s answer is never overwritten (<code>supabase/migrations/20260912210000_user_categories.sql</code>, spec <code>internal/superpowers/specs/2026-09-12-categories-tiles-and-user-categories-design.md</code>), hybrid search (full-text + trigram + embeddings) over caption, note, summary, tags and entities (<code>supabase/migrations/20260910030000_search_library_v2.sql</code>), dedupe by platform identity, thumbnail retry engineering, a sorting switch and no forced translation, plus things Stasht has nothing like — an interests row computed from recurring entities, an Instagram DM door, YouTube playlist polling, in-app playback, and (as of today) a sorter that looks at the picture. The honest headline: <strong>Allkept is the better-built library; Stasht is the better after-save product; neither has users; Allkept charges in the US where Stasht is free.</strong> The race is open for about a year; Stasht&#39;s map/calendar extraction is the one thing their users love that Allkept cannot yet offer.</p>
+<h3 id="comparison-2"$1>2. Side by side</h3>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Allkept (today)</th>
+<th>Stasht (today)</th>
+<th>Verdict</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Capture paths</td>
+<td>Share sheet into the app (<code>app/save.tsx</code> hand-off; Pocket-style silent extension built but not in a build — <code>forlater.md</code> #18); paste field on Home (<code>components/SaveLinkField.tsx</code>); Instagram DM to @allkeptapp with a link code (<code>app/setup/instagram.tsx</code>, <code>supabase/functions/instagram-webhook</code>) — testers only until Meta App Review (<code>forlater.md</code> #8); YouTube playlist polling every 15 min (<code>supabase/functions/youtube-poll</code>, <code>migrations/20260909001600_youtube_poll_cron.sql</code>); Instagram export import (<code>app/import.tsx</code>, <code>supabase/functions/import-saves</code>)</td>
+<td>Share sheet; in-app add of screenshots/photos/links; Chrome + Safari extensions with bulk import from Instagram saves, YouTube Watch Later, TikTok, Reddit, Pinterest; X account sync for bookmarks; web app (<a href="https://stasht.app/#faq">https://stasht.app/#faq</a>, <a href="https://chromewebstore.google.com/detail/stasht/pnmkndkigheholgjnjklmaahpfanhcdg">https://chromewebstore.google.com/detail/stasht/pnmkndkigheholgjnjklmaahpfanhcdg</a>)</td>
+<td><strong>Stasht-better</strong> on breadth; <strong>Allkept-better</strong> on automatic doors</td>
+<td>Stasht has desktop + bulk import; Allkept has two hands-free doors (DM, playlist) Stasht lacks — but one is gated on Meta</td>
+</tr>
+<tr>
+<td>Source platforms</td>
+<td>11 in <code>packages/normalize/src/index.ts</code>: Instagram, YouTube, X, Facebook, TikTok, Reddit, Threads, LinkedIn, Pinterest, web, notes. oEmbed for 7 (<code>_shared/enrich.ts</code>)</td>
+<td>Instagram, TikTok, X, YouTube, Pinterest, Reddit, Facebook, screenshots, web (<a href="https://stasht.app/#faq">https://stasht.app/#faq</a>)</td>
+<td><strong>Allkept-better</strong> (narrowly)</td>
+<td>Threads + LinkedIn + notes; Stasht has screenshots/photos as inputs, Allkept&#39;s extension takes links and text only (<code>specs/2026-09-11-share-extension-save-design.md</code>)</td>
+</tr>
+<tr>
+<td>After a save — extraction</td>
+<td>oEmbed + Open Graph: title, caption, author, poster picture stored privately (<code>_shared/enrich.ts</code>, <code>_shared/pipeline.ts</code> <code>snapshotTo</code>). No transcription, no OCR</td>
+<td>Reads caption, on-screen text and speech in video; extracts places, events, hours, links, prices, recipes, products (<a href="https://stasht.app/blog/how-to-search-and-sort-saved-social-media-posts">https://stasht.app/blog/how-to-search-and-sort-saved-social-media-posts</a>, App Store description)</td>
+<td><strong>Stasht-better</strong></td>
+<td>This is Stasht&#39;s whole product; Allkept reads words and (since today) the poster frame only</td>
+</tr>
+<tr>
+<td>Categories</td>
+<td>Fixed 15 (<code>CATEGORIES</code> in <code>packages/contracts/src/index.ts</code>) chosen by one model call with confidence; classifier now sees the picture (<code>_shared/classify.ts</code> PROMPT_VERSION 2026-09-16.1, commits 19a0488…09229b7 — deployment unverified); user categories with create/rename/delete via atomic RPCs; your choice wins, model&#39;s kept</td>
+<td>Category + tags + intent per save, auto-generated folders; category set seen: Wellness, Recipes, Tech, Nightlife, Travel, Disney, Family, Fitness, Shopping (<a href="https://stasht.app/">https://stasht.app/</a>). Wrong-category posts: workout as Travel, recipes as Other (<a href="https://stasht.featurebase.app/p/why-are-all-my-recipes-categorized-as-other">https://stasht.featurebase.app/p/why-are-all-my-recipes-categorized-as-other</a>)</td>
+<td><strong>Allkept-better</strong></td>
+<td>One override model, no AI folders that fragment (<a href="https://stasht.featurebase.app/p/unable-to-access-all-saved-content">https://stasht.featurebase.app/p/unable-to-access-all-saved-content</a>); Stasht&#39;s custom-category request is unanswered</td>
+</tr>
+<tr>
+<td>Entities</td>
+<td>Typed names only: place/product/recipe/tool/person/brand (<code>ENTITY_TYPES</code>), with an icon chosen by an icon pass (<code>migrations/20260915090000_interest_icons.sql</code>); no geocoding, no dates, no prices</td>
+<td>Places with Google-style rating, price level, address, hours; events with dates; products; each pin linked back to the video (<a href="https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f">https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f</a>)</td>
+<td><strong>Stasht-better</strong></td>
+<td>Allkept&#39;s entities make a save findable; Stasht&#39;s make it usable</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>None</td>
+<td>Personal map, neighbourhood browse, nearby alerts, public Explore map (Play description; App Store description)</td>
+<td><strong>Stasht-better</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Calendar</td>
+<td>None</td>
+<td>Events auto-added, Google Calendar sync named in privacy policy (<a href="https://stasht.app/privacy">https://stasht.app/privacy</a>); users report &quot;All Day&quot; and duplicates (<a href="https://stasht.featurebase.app/p/make-events-editable">https://stasht.featurebase.app/p/make-events-editable</a>)</td>
+<td><strong>Stasht-better</strong></td>
+<td>Even a flawed calendar beats none</td>
+</tr>
+<tr>
+<td>Reminders</td>
+<td>None per save (only pipeline pushes)</td>
+<td>Reminder on any stash at save time (App Store description)</td>
+<td><strong>Stasht-better</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Search</td>
+<td><code>search_library_v2</code>: simple + English full-text, prefix, trigram similarity, then pgvector cosine on <code>text-embedding-3-small</code> 512-d (<code>_shared/embeddings.ts</code>); document = platform, title, caption, note, author, URLs, category, tags, summary, entity names (<code>migrations/20260909114451_library_search.sql</code>); filters by platform/category/shape/flag inside search (<code>components/SearchOverlay.tsx</code>)</td>
+<td>Keyword over caption + OCR + transcript with platform/type/category/intent/tag filters; semantic unverified; 7 complaints (&quot;haphazard&quot;, Halloween for &quot;Christmas&quot;, &quot;NJ bookstores&quot; wrong) (<a href="https://stasht.featurebase.app/p/search">https://stasht.featurebase.app/p/search</a>)</td>
+<td><strong>Allkept-better</strong> on retrieval method; <strong>Stasht-better</strong> on what is indexed</td>
+<td>Allkept has no transcript text to search; Stasht has the text but the ranking misfires</td>
+</tr>
+<tr>
+<td>Organisation and manual control</td>
+<td>Category override, own categories, note, delete with confirm, attach a missing link, retry sorting, share out (<code>components/ItemDetail.tsx</code>); filters: platform, category, shape, flags (needs attention / saved more than once / has a note) (<code>lib/filter-options.ts</code>). No tag editing, no bulk select, no collections, no done/visited</td>
+<td>Tags, notes, collections (public/collaborative), Faves + Done (v7.0.1), customisable nav; no nested collections, no bulk edit (V2 beta only), no manual location edit, no event edit (<a href="https://stasht.featurebase.app/p/bulk-tag-editmove-or-collection-merge">https://stasht.featurebase.app/p/bulk-tag-editmove-or-collection-merge</a>)</td>
+<td><strong>Even</strong></td>
+<td>Stasht has more knobs; Allkept&#39;s fewer knobs do not fight each other</td>
+</tr>
+<tr>
+<td>Resurfacing / notifications</td>
+<td>Push only when a save lands (&quot;sorted&quot;) or needs you (&quot;attention&quot;) (<code>_shared/push.ts</code> <code>PushReason</code>); three home sections planned (<code>forlater.md</code> #22); nothing records opens (<code>forlater.md</code> #20)</td>
+<td>Weekly roundups, nearby alerts, reminders; praised: &quot;I quite like the weekly summaries&quot; (<a href="https://stasht.featurebase.app/p/location-based-notifications">https://stasht.featurebase.app/p/location-based-notifications</a>)</td>
+<td><strong>Stasht-better</strong></td>
+<td>Allkept has no &quot;come back&quot; loop yet</td>
+</tr>
+<tr>
+<td>Sharing / public pages</td>
+<td>OS share sheet of the link or picture (<code>lib/share.ts</code>); no public pages</td>
+<td>Public stash pages at stasht.app/stash/<uuid>, public Explore, shareable collections (<a href="https://stasht.app/terms">https://stasht.app/terms</a>)</td>
+<td><strong>Stasht-better</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Client platforms</td>
+<td>iOS + Android (Expo), dark mode (<code>app/(tabs)/settings.tsx</code>), OTA updates; no web, no desktop, no extension; iPad unverified</td>
+<td>iOS/iPadOS (iOS 26+ only), Android 6+, web app, Chrome + Safari extensions; dark mode unverified (all screenshots light)</td>
+<td><strong>Stasht-better</strong></td>
+<td>Allkept&#39;s Android + older-iOS reach is the one edge</td>
+</tr>
+<tr>
+<td>Pricing</td>
+<td>25 free saves everywhere, then $2.99/mo or $27.99/yr on the US storefront; India free; library never locked (<code>FREE_SAVES</code>, <code>FREE_REGIONS</code>, <code>migrations/20260913150000_paid_in_the_us.sql</code> <code>entitled()</code>, <code>app/subscribe.tsx</code>). Stores not yet configured (<code>forlater.md</code> #14)</td>
+<td>Free everywhere, no IAP listed; terms reserve paid features (<a href="https://stasht.app/#faq">https://stasht.app/#faq</a>, <a href="https://stasht.app/terms">https://stasht.app/terms</a>)</td>
+<td><strong>Stasht-better</strong> for acquisition</td>
+<td>A reviewer praises Stasht for not &quot;requiring a subscription&quot; after &quot;5 TikToks&quot; (App Store review sparky2708)</td>
+</tr>
+<tr>
+<td>Maturity / traction</td>
+<td>Pre-launch: TestFlight build 25, Play internal APK only, launch 21 Sep 2026 on the site (<code>.worktrees/website/apps/website/lib/site.ts</code>), 3 profiles on 11 Sep (<code>SESSION_LOG.md</code>); 34 app + 28 function test files</td>
+<td>Live on both stores; 27 ratings at 5.0, 500+ Play, 231 Chrome users, 197 IG followers; ~59 real customer posts on the board</td>
+<td><strong>Stasht-better</strong></td>
+<td>Both are tiny; Stasht is real</td>
+</tr>
+<tr>
+<td>Team</td>
+<td>Solo founder, non-coder, builds with LLM coding agents (<code>~/.claude/CLAUDE.md</code>); entity MECA Engineering Solutions (OPC) Pvt Ltd, Bengaluru (<code>docs/terms.html</code>)</td>
+<td>&quot;Small team&quot;, Stasht LLC, New York; Andrew (W. Haim) named, a second cofounder claimed (<a href="https://www.siliconsnark.com/%E2%80%A6">https://www.siliconsnark.com/…</a>)</td>
+<td><strong>Unverified</strong></td>
+<td>Neither has a visible engineering bench</td>
+</tr>
+</tbody></table>
+<h3 id="comparison-3"$1>3. Where Allkept is better today</h3>
+<ol>
+<li><strong>Override without erasure.</strong> <code>item_ai.user_category</code> wins everywhere and the model&#39;s <code>category</code> is kept; deleting a custom category returns saves to the model&#39;s choice, never to &quot;Uncategorized&quot; (<code>migrations/20260912210000_user_categories.sql</code>; spec §Part 2). Stasht&#39;s top-voted post says &quot;I can&#39;t control what is added, why, etc.&quot; (<a href="https://stasht.featurebase.app/p/first-days-with-stasht">https://stasht.featurebase.app/p/first-days-with-stasht</a>) and &quot;Category addition&quot; has sat unanswered since Sep 2025 (<a href="https://stasht.featurebase.app/p/category-addition">https://stasht.featurebase.app/p/category-addition</a>).</li>
+<li><strong>One hierarchy.</strong> A save sits on exactly one shelf; interests are computed, not filed (<code>internal/superpowers/specs/2026-09-13-explore-interests-design.md</code>). Stasht has stashes vs collections vs AI folders vs tags vs Type/Intent, which produced &quot;What is the purpose of collections?&quot; (<a href="https://stasht.featurebase.app/p/purpose-of-collections">https://stasht.featurebase.app/p/purpose-of-collections</a>), &quot;Simplify the sorting&quot; and the 12-videos-shows-6 bug.</li>
+<li><strong>Search that ranks by meaning.</strong> Four-tier scoring ending in embedding distance under 0.55 (<code>migrations/20260910030000_search_library_v2.sql</code> lines 33–52), scoped by RLS as the caller (<code>supabase/functions/search-library/index.ts</code>), with a cached query embedder. Stasht&#39;s search is keyword over enriched text, semantic unverified, and is its second-largest complaint cluster.</li>
+<li><strong>Duplicates are folded, not shown twice.</strong> Identity = platform id or canonical URL; a duplicate found after short-link expansion is folded into the original with the capture re-pointed (<code>_shared/duplicate.ts</code>, <code>_shared/pipeline.ts</code> 23505 branch); the library flags &quot;Saved more than once&quot; (<code>lib/filter-options.ts</code>). Stasht users report duplicate events and posts (<a href="https://stasht.featurebase.app/p/duplicate-events">https://stasht.featurebase.app/p/duplicate-events</a>).</li>
+<li><strong>Thumbnail reliability is engineered.</strong> Retry ladder for walled pages, poster fallback when the held address is a video file, phone-side backfill through a per-platform picture door, &quot;sweeper pass 4&quot; for settled cards (<code>SESSION_LOG.md</code> 14 Sep; <code>_shared/picture-hosts.ts</code>; <code>lib/instagram-picture.ts</code>). Stasht has six &quot;media missing / thumbnail not showing&quot; posts across a year (<a href="https://stasht.featurebase.app/p/media-missing">https://stasht.featurebase.app/p/media-missing</a>).</li>
+<li><strong>Consent and opt-outs exist.</strong> &quot;Sort saves automatically&quot; can be turned off and then nothing is sent to a model (<code>_shared/pipeline.ts</code> checks <code>ai_sorting_enabled</code> server-side); interests ask before showing (<code>profiles.interests_enabled</code> null until asked); summaries are written in the caption&#39;s language, never translated (<code>_shared/classify.ts</code>). Stasht drew complaints for forced translation and junk enrichment with no opt-out (<a href="https://stasht.featurebase.app/p/first-days-with-stasht">https://stasht.featurebase.app/p/first-days-with-stasht</a>).</li>
+<li><strong>Interests.</strong> <code>user_interests()</code> counts recurring entities across the library with a floor of three, recency weighting and an icon per name (<code>migrations/20260913090000_interests.sql</code>, <code>20260915090000_interest_icons.sql</code>, <code>lib/interests.ts</code>). Nothing on Stasht&#39;s site, store pages or board resembles this; their closest request is &quot;Auto tagging&quot; with folder summaries (<a href="https://stasht.featurebase.app/p/auto-tagging">https://stasht.featurebase.app/p/auto-tagging</a>).</li>
+<li><strong>Hands-free doors.</strong> Instagram DM with a reply carrying the category (<code>supabase/functions/instagram-webhook/index.ts</code>), YouTube playlist polling with a pause-and-reason on the paywall (<code>forlater.md</code> #14 T3). Stasht has no DM/bot path anywhere (product report §2, absence noted).</li>
+<li><strong>Picture-aware sorting since today.</strong> The classifier receives the stored poster frame as bytes from the private bucket (<code>_shared/pipeline.ts</code> <code>pictureForModel</code>; spec <code>2026-09-15-classify-with-the-picture-design.md</code>), which directly targets the &quot;vibe caption, wrong category&quot; failure Stasht users hit (workout filed as Travel).</li>
+<li><strong>Destructive actions confirm.</strong> Delete asks first (<code>components/ItemDetail.tsx</code> <code>confirmDelete</code>); sign-out and account deletion do too. Stasht deleted a post when a user pressed Cancel (<a href="https://stasht.featurebase.app/p/deleted-post-when-i-hit-cancel">https://stasht.featurebase.app/p/deleted-post-when-i-hit-cancel</a>).</li>
+<li><strong>Ships on older iPhones.</strong> Stasht v7 requires iOS 26 (App Store listing); Allkept&#39;s share target deploys to 15.1 (<code>specs/2026-09-11-share-extension-save-design.md</code>).</li>
+</ol>
+<h3 id="comparison-4"$1>4. Where Allkept is worse today — bluntly</h3>
+<ol>
+<li><strong>Nothing happens after the save except a label.</strong> No map, calendar, reminders, nearby alerts or weekly roundup. Push fires only on &quot;sorted&quot; or &quot;attention&quot; (<code>_shared/push.ts</code>). <code>ACTIONABILITY</code> (watch/try/buy/go/read) is extracted and stored but <strong>no app code reads it</strong> (grep of <code>apps/mobile</code> found zero uses). Stasht&#39;s users open the app because of what it brings back; Allkept has no reason-to-return loop, and cannot even measure returns (<code>forlater.md</code> #20).</li>
+<li><strong>No transcription or OCR.</strong> Enrichment is oEmbed + Open Graph + one poster frame (<code>_shared/enrich.ts</code>). A recipe reel with a thin caption is nearly invisible to Allkept&#39;s search; Stasht reads speech and on-screen text (their claim; a user confirms &quot;It does a good job of taking information from the videos&quot;). <code>docs/competitive-landscape.html</code> already names this the largest gap.</li>
+<li><strong>Entities are names, not things.</strong> No geocoding, hours, prices, dates (<code>ItemAiOutput</code> in <code>packages/contracts/src/index.ts</code>). Stasht&#39;s public page shows nine venues with ratings, addresses and hours from one video.</li>
+<li><strong>No desktop, no web, no extensions, thin import.</strong> Import is the Instagram export only (<code>supabase/functions/import-saves/index.ts</code>, <code>_shared/saved-export.ts</code>); YouTube needs an unlisted playlist (<code>app/setup/youtube.tsx</code>); no TikTok/X/Reddit/Pinterest import (<code>internal/tiktok-plan.html</code>, <code>internal/whatsapp-x-plan.html</code> are plans). Stasht bulk-imports from five platforms plus X sync — flaky (<a href="https://stasht.featurebase.app/p/problem-with-chrome-extension">https://stasht.featurebase.app/p/problem-with-chrome-extension</a>) but real.</li>
+<li><strong>Not launched, and the two flagship doors are gated.</strong> DM saves work only for Meta testers until App Review (<code>forlater.md</code> #8; ~20-day clock from 11 Sep); the silent share extension is committed but no build has been made (<code>forlater.md</code> #18, on hold); store billing is blocked on an App Store Connect ticket and a Google merchant profile (<code>forlater.md</code> #14). Stasht has shipped for seven-plus months.</li>
+<li><strong>Charging where the competitor is free.</strong> $2.99/mo after 25 saves in the US (<code>app/subscribe.tsx</code>, <code>lib/paywall.ts</code>). Category-wide subscription resistance is documented in <code>docs/competitive-landscape.html</code>, and a Stasht reviewer explicitly contrasts it with subscription apps. Also a latent trap: any storefront that is neither IN nor null (UK, CA…) is blocked after 25 with nothing to buy (<code>entitled()</code>; <code>lib/standing.ts</code> line 68–74) — fine for a US+India launch, wrong the day availability widens.</li>
+<li><strong>Fewer knobs.</strong> No tag editing (tags are display-only in <code>ItemDetail.tsx</code>), no multi-select or bulk move, no done/visited state, no per-save reminder, no collections or sharing beyond the OS sheet. Stasht shipped Faves/Done today and has tags, notes, reminders and public collections.</li>
+<li><strong>Custom categories do not teach the model.</strong> The classifier keeps choosing from the fixed fifteen; new saves land in a built-in until moved (spec <code>2026-09-12-categories-tiles-…</code> &quot;Not doing&quot;). The app copy says so, but it is the same gap Stasht&#39;s &quot;Category addition&quot; request describes.</li>
+<li><strong>Scale is untested.</strong> Largest library in the database is ~159 saves (<code>specs/2026-09-15-classify-with-the-picture-design.md</code>). Pagination (30/page, <code>lib/library.ts</code>) and FlashList exist, and the sweeper&#39;s pass-4 has no index (<code>forlater.md</code> #37). Stasht broke at 200+ items in a collection; Allkept has never had 200.</li>
+<li><strong>Platform-terms exposure is shared but unresolved.</strong> Instagram thumbnails/captions come from fetching the page&#39;s OG tags, which Meta&#39;s Automated Data Collection Terms name (<code>SESSION_LOG.md</code> 15 Sep, 4th revision; <code>_shared/enrich.ts</code> line 310 comment). Stasht re-hosts the video itself, which is arguably worse, but Allkept has not had the counsel hour either.</li>
+</ol>
+<h3 id="comparison-5"$1>5. What Stasht&#39;s customers are telling us, and where Allkept stands</h3>
+<table>
+<thead>
+<tr>
+<th>Need (from the board)</th>
+<th>Votes / priority</th>
+<th>Allkept today</th>
+<th>Status</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Control what auto-extraction adds; explain why</td>
+<td>3, top post</td>
+<td>Category override + note + delete; confidence stored but not shown; no per-entity removal</td>
+<td><strong>Partly</strong></td>
+<td><code>ItemDetail.tsx</code>; <code>item_ai.confidence</code> unsurfaced</td>
+</tr>
+<tr>
+<td>Reliable search (incl. by city)</td>
+<td>3 + 7 bug posts</td>
+<td>Hybrid semantic search; no geo notion at all</td>
+<td><strong>Partly</strong></td>
+<td><code>search_library_v2.sql</code>; no place coordinates</td>
+</tr>
+<tr>
+<td>Fast reel loading</td>
+<td>3</td>
+<td>Official embeds with autoplay for Instagram/YouTube/TikTok/Reddit</td>
+<td><strong>Meets</strong> (unverified at scale)</td>
+<td><code>lib/embed.ts</code>, <code>SESSION_LOG.md</code> 12 Sep autoplay</td>
+</tr>
+<tr>
+<td>No forced translation / enrichment opt-out</td>
+<td>3</td>
+<td>Summary in caption language; AI sorting switch</td>
+<td><strong>Meets</strong></td>
+<td><code>_shared/classify.ts</code>; <code>settings.tsx</code> &quot;Sort saves automatically&quot;</td>
+</tr>
+<tr>
+<td>Map off the home screen (recipe savers)</td>
+<td>3</td>
+<td>No map at all</td>
+<td><strong>Meets by absence</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>AI grouping with folder summaries</td>
+<td>3</td>
+<td>Categories + interests; no per-category summary</td>
+<td><strong>Partly</strong></td>
+<td><code>lib/interests.ts</code></td>
+</tr>
+<tr>
+<td>Bulk tag edit / move / merge</td>
+<td>2</td>
+<td>None</td>
+<td><strong>Does not meet</strong></td>
+<td><code>library.tsx</code> has no selection mode</td>
+</tr>
+<tr>
+<td>Migrate saves from Instagram/YouTube</td>
+<td>2</td>
+<td>Instagram export import; YouTube via playlist polling (Liked + named playlists only)</td>
+<td><strong>Partly</strong></td>
+<td><code>app/import.tsx</code>, <code>youtube-poll</code></td>
+</tr>
+<tr>
+<td>Import discoverability</td>
+<td>2</td>
+<td>&quot;Bring in your older saves&quot; row in Settings; not in onboarding</td>
+<td><strong>Partly</strong></td>
+<td><code>settings.tsx</code> line ~199</td>
+</tr>
+<tr>
+<td>Purpose of collections unclear</td>
+<td>2</td>
+<td>One concept (category) + interests</td>
+<td><strong>Meets</strong></td>
+<td>interests spec</td>
+</tr>
+<tr>
+<td>Editable / deletable events with real times</td>
+<td>2</td>
+<td>No events</td>
+<td><strong>Does not meet</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Location-based notifications</td>
+<td>2</td>
+<td>None</td>
+<td><strong>Does not meet</strong></td>
+<td><code>_shared/push.ts</code></td>
+</tr>
+<tr>
+<td>Nested collections / subfolders</td>
+<td>High Priority</td>
+<td>None</td>
+<td><strong>Does not meet</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Manually add/edit a location</td>
+<td>High Priority</td>
+<td>No locations</td>
+<td><strong>Does not meet</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>&quot;Visited&quot; / done tick</td>
+<td>High Priority</td>
+<td>None (Stasht shipped Done today)</td>
+<td><strong>Does not meet</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Grid/list toggle, smaller thumbnails</td>
+<td>High Priority</td>
+<td>Single list of cards; square category tiles</td>
+<td><strong>Does not meet</strong></td>
+<td><code>library.tsx</code></td>
+</tr>
+<tr>
+<td>Offline mode</td>
+<td>High Priority</td>
+<td>Persisted query cache; thumbnails are 24-h signed links</td>
+<td><strong>Partly</strong></td>
+<td><code>app/_layout.tsx</code> PersistQueryClientProvider; <code>lib/thumbnails.ts</code></td>
+</tr>
+<tr>
+<td>Collections lag at 200+ items</td>
+<td>High Priority</td>
+<td>Server pagination, untested at that size</td>
+<td><strong>Unverified</strong></td>
+<td><code>lib/library.ts</code> PAGE=30</td>
+</tr>
+<tr>
+<td>Thumbnails missing / deleted originals</td>
+<td>6 posts</td>
+<td>Retry ladder + backfill; &quot;No longer on YouTube&quot; wording queued</td>
+<td><strong>Partly</strong></td>
+<td><code>SESSION_LOG.md</code> 14 Sep; <code>forlater.md</code> #28</td>
+</tr>
+<tr>
+<td>Sign-up black screen / can&#39;t scroll to login</td>
+<td>bugs</td>
+<td>Google/Apple sign-in, name only, photo optional</td>
+<td><strong>Meets</strong></td>
+<td><code>lib/profile-fields.ts</code></td>
+</tr>
+<tr>
+<td>Custom categories the AI uses going forward</td>
+<td>1</td>
+<td>Custom categories exist; model does not learn them</td>
+<td><strong>Partly</strong></td>
+<td>categories spec &quot;Not doing&quot;</td>
+</tr>
+<tr>
+<td>Pick a category at save time, then a reminder</td>
+<td>1</td>
+<td>Neither (category sheet on share deferred)</td>
+<td><strong>Does not meet</strong></td>
+<td><code>forlater.md</code> #31</td>
+</tr>
+<tr>
+<td>&quot;Not in any collection&quot; filter</td>
+<td>1</td>
+<td>&quot;Other&quot; category and Needs attention flag</td>
+<td><strong>Partly</strong></td>
+<td><code>lib/filter-options.ts</code></td>
+</tr>
+<tr>
+<td>Suggested tags apply on tap / tag UX</td>
+<td>bugs</td>
+<td>No tag editing</td>
+<td><strong>Does not meet</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Loading ring after share implies waiting</td>
+<td>1</td>
+<td>iOS extension closes silently; Android toast</td>
+<td><strong>Meets</strong> (once built)</td>
+<td>share-extension spec</td>
+</tr>
+<tr>
+<td>Delete on Cancel</td>
+<td>bug</td>
+<td>Confirm dialogs</td>
+<td><strong>Meets</strong></td>
+<td><code>ItemDetail.tsx</code></td>
+</tr>
+<tr>
+<td>Distance in miles</td>
+<td>1</td>
+<td>N/A</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>GIF / meme support</td>
+<td>1</td>
+<td>Links and text only</td>
+<td><strong>Does not meet</strong></td>
+<td>extension spec</td>
+</tr>
+<tr>
+<td>Facebook posts render badly; Resy shares fail; Gemini links empty</td>
+<td>bugs</td>
+<td>Facebook via oEmbed; web links via OG; unverified for Resy/Gemini</td>
+<td><strong>Unverified</strong></td>
+<td><code>_shared/enrich.ts</code></td>
+</tr>
+<tr>
+<td>Two Instagram accounts</td>
+<td>1</td>
+<td>One linked source per user</td>
+<td><strong>Does not meet</strong></td>
+<td><code>link-instagram</code></td>
+</tr>
+<tr>
+<td>See what friends stash</td>
+<td>1</td>
+<td>Nothing social</td>
+<td><strong>Does not meet</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>A place to give positive feedback / close the loop</td>
+<td>1</td>
+<td>In-app feedback + Rate row; no public board</td>
+<td><strong>Partly</strong></td>
+<td><code>app/feedback.tsx</code></td>
+</tr>
+</tbody></table>
+<h3 id="comparison-6"$1>6. How Allkept gets better than Stasht — ranked moves</h3>
+<p>Sizes are relative to this codebase (small ≈ a day or two, medium ≈ a week, large ≈ several weeks plus native builds).</p>
+<p><strong>Fix what we have</strong></p>
+<ol>
+<li><strong>Ship the silent share extension, then the &quot;Saved — filed under Food. Change?&quot; sheet on next open (route B).</strong> Code is committed (<code>forlater.md</code> #18, #31); needs EAS builds and one React sheet. <em>Beats Stasht:</em> their share flow shows a loading ring users misread (<a href="https://stasht.featurebase.app/p/get-rid-of-timer">https://stasht.featurebase.app/p/get-rid-of-timer</a>) and offers no override at all. <em>Size:</em> small (builds + one sheet). <em>Proves:</em> capture friction is solved and every automatic decision has a two-tap correction — the single most repeated need on their board.</li>
+<li><strong>Surface actionability and add a Done flag.</strong> <code>actionability</code> is already stored per save and unused; add it as a filter group (&quot;To go / To try / To buy / To watch&quot;) and a <code>done</code> flag next to <code>noted</code>/<code>repeated</code> (<code>lib/filter-groups.ts</code>, <code>library_query_v3</code>). <em>Beats Stasht:</em> their &quot;Visited&quot; is High Priority and unanswered (<a href="https://stasht.featurebase.app/p/visited">https://stasht.featurebase.app/p/visited</a>); their intent filter exists but adds to the confusion. <em>Size:</em> small. <em>Proves:</em> intent-based retrieval with zero new AI cost.</li>
+<li><strong>Resurfacing: record opens, build the three home sections, send a weekly digest push.</strong> <code>forlater.md</code> #20 and #22 plus one cron using the existing push path (<code>_shared/push.ts</code>). <em>Beats Stasht:</em> weekly summaries are their most-praised feature (<a href="https://stasht.featurebase.app/p/location-based-notifications">https://stasht.featurebase.app/p/location-based-notifications</a>); Allkept can do it per interest (&quot;three new saves about Julian Goldie this week&quot;), which they cannot. <em>Size:</em> medium. <em>Proves:</em> retrieval rate — the metric <code>docs/competitive-landscape.html</code> says decides the category.</li>
+<li><strong>Editable tags + multi-select bulk move/delete.</strong> Tags are display-only in <code>ItemDetail.tsx</code>; add a selection mode to <code>library.tsx</code> with a batch RPC. <em>Beats Stasht:</em> bulk edit is their #3 request and lives only in an unreleased V2 beta (<a href="https://stasht.featurebase.app/p/bulk-tag-editmove-or-collection-merge">https://stasht.featurebase.app/p/bulk-tag-editmove-or-collection-merge</a>). <em>Size:</em> medium. <em>Proves:</em> the library scales to hundreds without a second hierarchy.</li>
+<li><strong>Density: grid/list toggle and compact cards.</strong> <em>Beats Stasht:</em> High Priority, unanswered (<a href="https://stasht.featurebase.app/p/smaller-thumbnails-and-choice-between-grid-and-list">https://stasht.featurebase.app/p/smaller-thumbnails-and-choice-between-grid-and-list</a>). <em>Size:</em> small. <em>Proves:</em> glanceability at 200+ saves.</li>
+</ol>
+<p><strong>Build what they lack</strong></p>
+<ol start="6">
+<li><strong>&quot;Why this category&quot; with confidence, and a one-tap fix that teaches.</strong> Show the stored confidence and summary as the reason; add a rule engine (&quot;everything from @account → Wedding&quot;) the categories spec already names as the right shape, and feed the person&#39;s own category names into the prompt only when a rule exists. <em>Beats Stasht:</em> their top complaint is opacity (&quot;I can&#39;t control what is added, why&quot;) and their custom-category request is unanswered. <em>Size:</em> medium. <em>Proves:</em> the AI gets better for a person over time, which no rival on the board does.</li>
+<li><strong>Place list before map: geocode <code>place</code> entities, list by city, manual add/edit.</strong> A places provider with per-place caching is already costed in <code>internal/compile-economics.html</code>. Do the list view + override first, map second and never on Home. <em>Beats Stasht:</em> three separate posts ask for a <em>list</em> by city, not pins (<a href="https://stasht.featurebase.app/p/map">https://stasht.featurebase.app/p/map</a>, …/search-bar, …/bad-results); manual location edit is High Priority unanswered; their map annoys recipe savers. <em>Size:</em> medium-large. <em>Proves:</em> the &quot;after the save&quot; value on the highest-intent category without inheriting their wrong-state pin bug.</li>
+<li><strong>Make the paid tier buy something Stasht cannot give: Weave.</strong> Itinerary / cook-this-week / watchlist artefacts grounded in the person&#39;s saves (<code>forlater.md</code> #34, <code>internal/compile-economics.html</code>). <em>Beats Stasht:</em> they organise; nobody on the board asks for or gets a composed output, and their terms only reserve &quot;premium features&quot;. <em>Size:</em> large. <em>Proves:</em> a reason to pay that survives a free competitor.</li>
+</ol>
+<p><strong>Do what they do that we don&#39;t</strong></p>
+<ol start="9">
+<li><strong>Transcription and on-screen text into the search document and the classifier.</strong> Largest functional gap (<code>docs/competitive-landscape.html</code> §&quot;Behind on&quot;); the picture path built today (<code>_shared/pipeline.ts</code> <code>pictureForModel</code>) is the pattern to extend. <em>Beats Stasht:</em> their search over transcripts ranks badly; Allkept&#39;s ranking is better and would finally have the text. It also multiplies interests, because speech names more entities than captions. <em>Size:</em> large (media access, cost per save rises well above $0.005 — <code>internal/unit-economics.html</code>). <em>Proves:</em> &quot;gochujang finds the recipe nobody typed&quot; with correct results.</li>
+<li><strong>Dates and events, editable from day one.</strong> Extract event dates as a typed entity with time, a &quot;remind me&quot; per save using local notifications (the extension already posts them), and delete/edit in the sheet. <em>Beats Stasht:</em> &quot;All Day&quot; events, duplicates and no delete (<a href="https://stasht.featurebase.app/p/make-events-editable">https://stasht.featurebase.app/p/make-events-editable</a>). <em>Size:</em> medium. <em>Proves:</em> calendar value without Google Calendar sync.</li>
+<li><strong>Import breadth and discoverability.</strong> TikTok data export (<code>internal/tiktok-plan.html</code> Phase 3), Reddit saved, X bookmarks (decision in <code>forlater.md</code> #24), and put &quot;Bring in your older saves&quot; into onboarding. <em>Beats Stasht:</em> their Chrome import failed on four networks for one user and a 2-vote requester did not know import existed. <em>Size:</em> medium. <em>Proves:</em> day-one library size, the strongest retention lever in read-later history.</li>
+<li><strong>Web read-only library.</strong> Last, not first: nobody on Stasht&#39;s board asked for web; it matters for bulk import only, which item 11 solves on the phone. <em>Size:</em> large. <em>Proves:</em> little until there are users.</li>
+</ol>
+<h3 id="comparison-7"$1>7. Positioning</h3>
+<p><strong>Allkept can truthfully say:</strong> &quot;One library for everything you save from Instagram, YouTube, TikTok, X, Reddit, Threads, Facebook, Pinterest, LinkedIn and the web — sorted into categories you can change and categories you make, and your choice is never overwritten.&quot; &quot;Search by meaning, in any language, across captions, notes, tags and the names inside your saves — and see what you keep coming back to.&quot; &quot;Sorting can be switched off, nothing is translated, and your first 25 saves are free with no clock.&quot;</p>
+<p><strong>Must not claim yet:</strong> places on a map, events on a calendar, reminders or &quot;brings it back&quot; (nothing resurfaces — <code>_shared/push.ts</code>); &quot;reads what is said in a video&quot; or on-screen text; bulk import from many platforms or a desktop; &quot;free&quot; in the US; DM saving for everyone until Meta approves (<code>forlater.md</code> #8); and the &quot;people save and never return&quot; statistic, already retracted (<code>SESSION_LOG.md</code> 15 Sep). Also avoid &quot;Your saves, sorted&quot; as the store subtitle — four rivals use it (<code>docs/competitive-landscape.html</code>).</p>
+<h3 id="comparison-8"$1>8. Risks — where Stasht could overtake, and what to watch</h3>
+<ul>
+<li><strong>Free plus native.</strong> Stasht&#39;s v7.0.1 native rewrite landed today, its V2 beta already has bulk edit, and its founder fixed a sign-up crash in a day (<a href="https://stasht.featurebase.app/p/unable-to-sign-up">https://stasht.featurebase.app/p/unable-to-sign-up</a>). If they ship overrides and a semantic search, Allkept&#39;s engineering edge halves while their after-save lead stays.</li>
+<li><strong>Data compounds on their side.</strong> Public stash pages, a public Explore map and &quot;+ Add&quot; from others&#39; stashes are a network effect and an SEO surface Allkept has none of; &quot;Network showing&quot; is on their board (<a href="https://stasht.featurebase.app/p/network-showing">https://stasht.featurebase.app/p/network-showing</a>). B2B/creator interest is invited at <a href="mailto:business@stasht.app">business@stasht.app</a> (<a href="https://stasht.app/#faq">https://stasht.app/#faq</a>).</li>
+<li><strong>They are closer to the vertical that wins.</strong> <code>docs/competitive-landscape.html</code> shows place-first apps (Rhyme, 5,170 ratings) beating horizontals ~100×. Stasht&#39;s map is a half-step toward that; Allkept is fully horizontal.</li>
+<li><strong>Allkept&#39;s doors depend on Meta.</strong> DM capture and export import are surfaces Meta can withdraw; the OG page fetch is the first counsel question (<code>SESSION_LOG.md</code> 15 Sep). Stasht has the same exposure plus video re-hosting, but a Meta action would hit both, and only the share sheet survives it.</li>
+<li><strong>Pricing.</strong> $2.99/mo against a free rival that a reviewer already praises for being free; and the non-US/non-IN storefront trap in <code>entitled()</code>.</li>
+<li><strong>AI sorting is becoming table stakes</strong> (Apple&#39;s iOS 27 Safari auto-organisation, <code>SESSION_LOG.md</code> 15 Sep).</li>
+<li><strong>Watch:</strong> Stasht&#39;s App Store version cadence and iOS-26-only reviews; whether the Featurebase board starts moving statuses (a sign of a bigger team); pricing appearing in their terms/store; X bookmark sync reliability; Android rating; any Product Hunt or press push; whether the map becomes optional for recipe users.</li>
+</ul>
+<h3 id="comparison-9"$1>9. Facts I could not verify</h3>
+<p><strong>Stasht:</strong> whether search is semantic; whether speech transcription actually runs or is marketing (users praise extraction but nobody names transcripts); exact iOS launch date; dark mode; how reliable the v7 native app is (zero reviews of it yet); whether categories are fully automatic in v7; team size and the second cofounder; whether reminders can be location-based today; Play in-app purchase absence (India-locale view only); whether video re-hosting is licensed.</p>
+<p><strong>Allkept:</strong> whether today&#39;s picture-classification commits (<code>19a0488</code>…<code>09229b7</code>, migration <code>20260916090000_classify_with_the_picture.sql</code>) are deployed to the live sweeper — the log has no entry yet; iPad layout; Android store build with the billing library; Meta App Review outcome; number of external testers on TestFlight; whether the share-extension build passes on device; behaviour of the library and sweeper past ~200 saves (never exercised); whether Resy/Gemini/Facebook links render; live store prices (RevenueCat Test Store only so far, <code>SESSION_LOG.md</code> 13 Sep); the outcome of the counsel questions on Meta&#39;s data-collection terms and YouTube&#39;s 30-day retention (<code>forlater.md</code> #17, #24).</p>
+<hr>
+<p><strong>In plain English:</strong> Stasht does more with each save (map, calendar, reminders) and is free and already in the stores, but its users say the automatic stuff is often wrong, they cannot fix it, and search misses. Allkept is not launched, does less per save and charges in the US, but is built the way Stasht&#39;s own customers are asking for: one simple way to organise, your corrections always win, search that understands meaning, and a few things nobody else has (interests, DM saving, playlist watching). The fastest route past Stasht is to ship the share extension and the &quot;change it&quot; sheet, give people a reason to come back (weekly digest, done/visited, intent filters), and then take their best idea — turning places and dates into something usable — but with the override and list view their users are begging for.</p>
+</section><section id="product"><h2>Part 2 — Stasht, the product</h2><p><strong>Summary.</strong> Stasht (&quot;Saves That Work&quot;) is a free, US-based (New York law; seller &quot;Stasht LLC&quot;) app for saving posts, screenshots, videos and links from Instagram, TikTok, X, YouTube, Pinterest, Reddit, Facebook and the web, whose core differentiator is <em>what happens after the save</em>: it reads captions, on-screen text and speech in video, then extracts places, events, recipes, products, hours, links and prices and re-surfaces them on a personal map, a calendar, reminders, &quot;nearby&quot; alerts, weekly roundups and search. It ships on iOS/iPadOS (v7.0.1, a native rewrite published today, 15 Sep 2026, requiring iOS 26), Android (v6.1.3, released on Play 2 Feb 2026, 500+ downloads), a web app, and Chrome + Safari extensions used for bulk-importing existing saves. It is entirely free with no in-app purchases listed on either store, and its FAQ says so explicitly. Traction is small (27 App Store ratings at 5.0, 500+ Play downloads, 231 Chrome-extension users, 197 Instagram followers, 9 X followers). The team is a self-described &quot;small team&quot;; the only named person I could verify is Andrew (W. Haim), who authors the blog and owns the Chrome extension listing. No funding, press beyond one small review, or Product Hunt launch could be found. Its closest positioning is against place-saving apps (Rezz, GoPlaces, Drawer, Mapstr, Rodeo, Albo, Google Maps lists), recipe apps (ReciMe) and card/collection apps (Stacklist), and against Instagram&#39;s own saves (&quot;they don&#39;t organize themselves, and they don&#39;t come back to you&quot;).</p>
+<hr>
+<h3 id="product-1"$1>1. What Stasht is and who it is for</h3>
+<ul>
+<li>Tagline on the site: <strong>&quot;Everything you save, finally organized.&quot;</strong> Sub-copy: &quot;Save posts, screenshots, and links from Instagram, TikTok, and the web. Stasht pulls out the details and brings them back on your map, calendar, reminders, and search.&quot; — <a href="https://stasht.app/">https://stasht.app/</a></li>
+<li>App Store name/subtitle: &quot;Stasht App | Saves That Work&quot; / &quot;Saved Posts, Organized For You&quot;. — <a href="https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175">https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175</a></li>
+<li>FAQ &quot;What is Stasht?&quot;: &quot;Stasht is like that friend who actually remembers what you&#39;re into. You send us the things you find online — restaurants, events, products, travel ideas, recipes — and we organize them, pull out the details, and bring them back to you when they matter.&quot; — <a href="https://stasht.app/#faq">https://stasht.app/#faq</a> (accordion answer, read in browser)</li>
+<li>Problem statement on the SEO landing page: <strong>&quot;Every app has a save button. None of them work together.&quot;</strong> — saves scattered across TikTok (restaurants), Instagram (recipes), X (links), YouTube (videos), camera roll (screenshots). — <a href="https://stasht.app/app-to-save-and-organize-social-media-posts">https://stasht.app/app-to-save-and-organize-social-media-posts</a></li>
+<li>Origin story in the store description: &quot;we&#39;re a small team that saves the same stuff you do. We built this because bookmarks, DMs, and screenshots weren&#39;t cutting it anymore. We&#39;re still early and building fast&quot;. — App Store URL above; same text on <a href="https://play.google.com/store/apps/details?id=app.stasht">https://play.google.com/store/apps/details?id=app.stasht</a></li>
+<li>Target user: consumers saving restaurants, events, recipes, travel ideas, gift ideas, workouts, products, articles (&quot;Restaurants, Concerts, Recipes, Events, Travel, Gift Ideas, Family, Fitness, Articles, Podcasts and more&quot; chips on the home page). Strong NYC/local-discovery flavour (most blog posts are NYC guides). — <a href="https://stasht.app/">https://stasht.app/</a> , <a href="https://stasht.app/blog">https://stasht.app/blog</a></li>
+<li>B2B/creators: &quot;We&#39;re building for that. If you&#39;re interested, reach out at <a href="mailto:business@stasht.app">business@stasht.app</a>.&quot; — <a href="https://stasht.app/#faq">https://stasht.app/#faq</a></li>
+</ul>
+<h3 id="product-2"$1>2. How saving works — capture paths and platforms</h3>
+<p>Capture paths (all sourced from the App Store/Play descriptions unless noted):</p>
+<ul>
+<li><strong>iOS/Android share extension</strong>: &quot;save from Instagram, TikTok, Facebook, X, YouTube, and any social media app with the share extension. Set it up once and stash from any app in seconds.&quot; — <a href="https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175">https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175</a></li>
+<li><strong>In-app add (no share sheet)</strong>: &quot;Screenshots, photos from your camera or album, links — add them right in the app. No share sheet needed.&quot; — same URL</li>
+<li><strong>Screenshots</strong> are a first-class input (OCR&#39;d: privacy policy says OpenAI/Bedrock are used for &quot;extracting text from screenshots&quot;). — <a href="https://stasht.app/privacy">https://stasht.app/privacy</a></li>
+<li><strong>Chrome extension</strong> (desktop): &quot;Save URLs with notes and tags&quot;, capture any webpage, and <strong>bulk import</strong> saves from Instagram, TikTok, YouTube, Reddit, Pinterest. — <a href="https://chromewebstore.google.com/detail/stasht/pnmkndkigheholgjnjklmaahpfanhcdg">https://chromewebstore.google.com/detail/stasht/pnmkndkigheholgjnjklmaahpfanhcdg</a></li>
+<li><strong>Safari extension</strong> (Mac, iPhone, iPad): &quot;In Safari, log into the supported sites you want to import from, then bring those saves into Stasht&quot; or &quot;send pages and posts into your stash while you browse.&quot; v1.1.4 adds &quot;Optional notes, titles, tags, reminders, and collections when saving a page&quot; and &quot;Clearer import review, with Stasht collection destinations and the option to skip collection groups before importing.&quot; — <a href="https://stasht.app/#faq">https://stasht.app/#faq</a> ; <a href="https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12">https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12</a></li>
+<li><strong>X account sync</strong>: &quot;sync your X account in Profile › Account Settings › Connected Accounts to pull in all your old bookmarks.&quot; — <a href="https://stasht.app/#faq">https://stasht.app/#faq</a></li>
+<li><strong>Bulk import claim</strong>: &quot;Everything you&#39;ve saved on Instagram, X, TikTok, Reddit, YouTube, Pinterest, and the web — imported in one click and automatically organized.&quot; — <a href="https://stasht.app/">https://stasht.app/</a></li>
+<li><strong>Web app</strong> (stasht.app/login) with email, Google, Apple sign-in and &quot;Log in with QR code&quot;. — <a href="https://stasht.app/login">https://stasht.app/login</a> (viewed, not used)</li>
+<li><strong>Not found</strong>: no DM-to-bot, WhatsApp, email-in, or paste-a-link-to-a-bot path anywhere on the site, stores, or feedback board. (Absence, not a denial — unverified whether it exists inside the app.)</li>
+</ul>
+<p>Platforms named as sources: Instagram, TikTok, X, YouTube, Pinterest, Reddit, Facebook, screenshots, &quot;the web&quot;. — <a href="https://stasht.app/#faq">https://stasht.app/#faq</a> (&quot;Instagram, X, TikTok, Reddit, YouTube, Pinterest, and the web&quot;); Facebook appears in the store descriptions.</p>
+<h3 id="product-3"$1>3. How organising works — automatic vs manual</h3>
+<p>Automatic:</p>
+<ul>
+<li>Extraction: &quot;Every stash gets better after you save it. We extract places, events, hours, links, and prices — automatically. No folders. No sorting. No work on your part.&quot; — App Store description (URL above)</li>
+<li>Inputs read: &quot;Stasht reads the post text, what appears on screen, and what is said out loud in a video.&quot; — <a href="https://stasht.app/blog/how-to-search-and-sort-saved-social-media-posts">https://stasht.app/blog/how-to-search-and-sort-saved-social-media-posts</a></li>
+<li>Categories + intents are assigned per save: &quot;Each one can get a category, tags, and an intent such as buy, book, note, or explore.&quot; — same blog post. The site&#39;s &quot;automatically organized&quot; language and the App Store screenshot &quot;Organized without lifting a finger. No folders. No sorting. No work.&quot; indicate categories are automatic; a user complaint about &quot;a bunch of AI generated folders with only one video in them&quot; (1 day ago) confirms auto-generated folders/collections exist. — <a href="https://stasht.app/">https://stasht.app/</a> ; <a href="https://stasht.featurebase.app/">https://stasht.featurebase.app/</a></li>
+<li>Public-facing category set seen on the home page: Wellness, Recipes, Tech, Nightlife, Travel, Disney, Family, Fitness, Shopping. — <a href="https://stasht.app/">https://stasht.app/</a></li>
+<li>Map: &quot;Every place you stash — restaurants, bars, coffee shops, hotels, hikes — lands on your personal map. Browse by neighborhood, filter by category&quot;. Multi-place videos are split: &quot;Each spot gets its own pin, all linked back to the original video.&quot; — Play description; <a href="https://stasht.app/blog/how-to-save-tiktok-restaurants-to-a-map">https://stasht.app/blog/how-to-save-tiktok-restaurants-to-a-map</a></li>
+<li>Calendar: &quot;We find the events in the posts you stash — concerts, pop-ups, openings, reservations — and put them on a calendar automatically.&quot; Google Calendar sync is named as an integration in the privacy policy. — Play description; <a href="https://stasht.app/privacy">https://stasht.app/privacy</a></li>
+<li>Translation: an Android user reports Japanese reels &quot;are translated in English by stasht&quot;. — <a href="https://stasht.featurebase.app/">https://stasht.featurebase.app/</a></li>
+<li>Suggested tags: App Store screenshot 6 shows a Tags screen with &quot;Your tags&quot; and &quot;Suggested&quot; tabs listing e.g. &quot;restaurant&quot;, &quot;travel&quot;, &quot;technology&quot;, &quot;new york city&quot; with save counts. — App Store listing (screenshot, described in §8)</li>
+<li>Public map / &quot;Explore&quot;: &quot;A public map of save-worthy places, events, restaurants, shops, trips, and ideas other people are stashing on Stasht… tap a pin, open the detail page, and + Add anything you want to keep to your own stash.&quot; — App Store description</li>
+</ul>
+<p>Manual:</p>
+<ul>
+<li>Tags and notes: &quot;Add a note to remember why you stashed something. Tag it however you want. Or don&#39;t — everything is searchable anyway.&quot; — App Store description</li>
+<li>Reminders: &quot;Set a reminder on any stash, right when you save it.&quot; — App Store description</li>
+<li>Collections: exist (Safari extension &quot;collection destinations&quot;; a reviewer says &quot;I don&#39;t fully understand the purpose of collections apart from collaborating&quot;), can be made public (&quot;stash or Stash Page public&quot; in the Terms). Nested collections and bulk-edit are open feature requests. — <a href="https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12">https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12</a> ; App Store review by sparky2708 ; <a href="https://stasht.app/terms">https://stasht.app/terms</a> ; <a href="https://stasht.featurebase.app/">https://stasht.featurebase.app/</a></li>
+<li>&quot;Faves&quot; and &quot;Done&quot; states and a customisable bottom navigation were introduced in v7.0.1. — App Store &quot;What&#39;s New&quot;</li>
+</ul>
+<p>Search:</p>
+<ul>
+<li>Keyword/entity search over post text + OCR + transcript: &quot;&#39;gochujang&#39; can find the recipe where nobody typed it, and &#39;counter seating Bushwick&#39; can find the ramen place.&quot; Filters: &quot;filter by platform, content type, category, intent, or tag, combine filters, and sort… newest to oldest&quot;. — <a href="https://stasht.app/blog/how-to-search-and-sort-saved-social-media-posts">https://stasht.app/blog/how-to-search-and-sort-saved-social-media-posts</a></li>
+<li>Whether search is semantic/embedding-based vs keyword is <strong>not stated anywhere</strong> (unverified). A user complaint: &quot;Searching in stasht is haphazard. I get unrelated results.&quot; — <a href="https://stasht.featurebase.app/">https://stasht.featurebase.app/</a></li>
+<li>Resurfacing: &quot;Weekly Roundups&quot; and &quot;Alerts&quot; chips on the home page; hero shows a push notification &quot;Our current coffee shop obsessions — Go this weekend!&quot;; description: &quot;That restaurant someone posted on Instagram shows up on your map when you&#39;re nearby.&quot; — <a href="https://stasht.app/">https://stasht.app/</a> ; App Store description</li>
+</ul>
+<h3 id="product-4"$1>4. Pricing</h3>
+<ul>
+<li>Site: &quot;Free on iOS, Android, and desktop.&quot; (repeated in hero, footer, every landing page). FAQ &quot;Is Stasht free?&quot;: &quot;Yes. We&#39;re early and focused on building the best experience we can. Just download and start stashing.&quot; — <a href="https://stasht.app/#faq">https://stasht.app/#faq</a></li>
+<li>App Store: Price &quot;Free&quot;; <strong>no In-App Purchases section</strong> on the listing. — <a href="https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175">https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175</a></li>
+<li>Google Play: no &quot;In-app purchases&quot; line on the listing (viewed from an India locale; &quot;All prices include GST&quot; footer). — <a href="https://play.google.com/store/apps/details?id=app.stasht">https://play.google.com/store/apps/details?id=app.stasht</a></li>
+<li>Safari extension and Chrome extension: Free. — <a href="https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12">https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12</a> ; Chrome Web Store URL above</li>
+<li>Terms leave room for paid features: &quot;If you purchase premium features, you agree to pay all fees… All fees are non-refundable except as required by law&quot;, with Apple refund language. No plan names, prices, trials, or lifetime deals anywhere. — <a href="https://stasht.app/terms">https://stasht.app/terms</a></li>
+<li>A reviewer contrasts it with competitors: &quot;Unlike the competitors this doesn&#39;t have the annoyance of processing 5 TikToks and then requiring a subscription… All FREE.&quot; — App Store review &quot;sparky2708&quot;, Aug 8</li>
+<li>No regional pricing exists to compare (nothing is priced).</li>
+</ul>
+<h3 id="product-5"$1>5. Platforms and distribution</h3>
+<ul>
+<li><strong>iOS/iPadOS</strong>: v7.0.1 &quot;46m ago&quot; at time of reading (15 Sep 2026); &quot;Stasht goes native! … We&#39;ve rebuilt Stasht for iPhone and iPad&quot;; size 17.6 MB; <strong>requires iOS 26.0 or later</strong>; iPhone + iPad; English only; age 13+; category Productivity; seller Stasht LLC; © 2026 Stasht LLC; 5.0 stars from <strong>27 ratings</strong>; earliest visible review dated Mar 14 (2026). Version history dialog could not be opened, so update cadence is unverified beyond &quot;v7&quot; today. — <a href="https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175">https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175</a></li>
+<li><strong>Android</strong>: v6.1.3, &quot;Updated on Sep 4, 2026&quot;, &quot;Released on Feb 2, 2026&quot;, &quot;Requires Android 6.0 and up&quot;, <strong>500+ downloads</strong>, no star rating shown, &quot;Rated for 3+&quot;, offered by &quot;Stasht&quot;. What&#39;s new: &quot;Stability improvements. Fixed the app crashing forever, this app can no longer crash. jk but really. Maybe...&quot; — <a href="https://play.google.com/store/apps/details?id=app.stasht">https://play.google.com/store/apps/details?id=app.stasht</a></li>
+<li><strong>Chrome extension</strong>: v1.1.4, updated Sep 14, 2026, 1.07 MiB, <strong>231 users</strong>, no ratings, developer &quot;Andrew (<a href="mailto:andrew@stasht.app">andrew@stasht.app</a>)&quot;. A June 26, 2026 review reported &quot;28 users&quot;. — <a href="https://chromewebstore.google.com/detail/stasht/pnmkndkigheholgjnjklmaahpfanhcdg">https://chromewebstore.google.com/detail/stasht/pnmkndkigheholgjnjklmaahpfanhcdg</a> ; <a href="https://www.siliconsnark.com/stasht-turns-your-saved-posts-into-a-map-calendar-and-mild-accusation/">https://www.siliconsnark.com/stasht-turns-your-saved-posts-into-a-map-calendar-and-mild-accusation/</a></li>
+<li><strong>Safari extension</strong> (Mac App Store, works on Mac/iPhone/iPad): &quot;Stasht App for Safari — Bulk import and organize saves&quot;, v1.1.4 &quot;1 hour ago&quot;, 4.1 MB, macOS 10.14+, no ratings. — <a href="https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12">https://apps.apple.com/us/app/stasht-app-for-safari/id6780505483?mt=12</a></li>
+<li><strong>Web/desktop app</strong>: stasht.app/login; public stash pages at stasht.app/stash/<uuid>. — <a href="https://stasht.app/login">https://stasht.app/login</a></li>
+<li>Changelog (&quot;What&#39;s new?&quot;) on Featurebase is empty: &quot;No changes published&quot;. — <a href="https://stasht.featurebase.app/changelog">https://stasht.featurebase.app/changelog</a></li>
+<li>Timeline signals: X account &quot;Joined August 2025&quot;; Terms/Privacy &quot;Last updated: November 2025&quot;; a public stash shows &quot;LAST ENRICHED Jan 20, 2026&quot;; Play release 2 Feb 2026. Exact iOS launch date <strong>unverified</strong> (Internet Archive was offline during research). — <a href="https://x.com/trystasht">https://x.com/trystasht</a> ; <a href="https://stasht.app/terms">https://stasht.app/terms</a> ; <a href="https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f">https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f</a></li>
+</ul>
+<h3 id="product-6"$1>6. Team, company, funding, traction, press, social</h3>
+<ul>
+<li>Legal entity: &quot;Stasht LLC&quot; (App Store seller/copyright); Terms governed by &quot;the laws of the State of New York&quot; with courts in &quot;New York, New York&quot;. Contact: <a href="mailto:info@stasht.app">info@stasht.app</a>, <a href="mailto:support@stasht.app">support@stasht.app</a>, <a href="mailto:business@stasht.app">business@stasht.app</a>. — App Store URL; <a href="https://stasht.app/terms">https://stasht.app/terms</a> ; <a href="https://stasht.app/#faq">https://stasht.app/#faq</a></li>
+<li>Named person: <strong>Andrew</strong> — blog author (Jun–Sep 2026 posts) and Chrome extension developer contact <a href="mailto:andrew@stasht.app">andrew@stasht.app</a>. LinkedIn search shows &quot;Andrew W. Haim – Stasht&quot; (<a href="https://www.linkedin.com/in/andrewhaim/">https://www.linkedin.com/in/andrewhaim/</a>, not readable). His Himalayas profile (no Stasht mention) lists him as founder of Aurora Hill Advisors (fractional CMO/CPO) with prior roles at Peter Arnell/ICI, Group SJR (WPP), EAG. — <a href="https://himalayas.app/@andrewhaim">https://himalayas.app/@andrewhaim</a> ; <a href="https://www.zoominfo.com/p/Andrew-Haim/1971366253">https://www.zoominfo.com/p/Andrew-Haim/1971366253</a> (title &quot;Co-Founder &amp; President at Stasht&quot;, unverified)</li>
+<li>Second cofounder: SiliconSnark says one cofounder &quot;was doing language AI back in 2016&quot; — name not given (unverified). — <a href="https://www.siliconsnark.com/stasht-turns-your-saved-posts-into-a-map-calendar-and-mild-accusation/">https://www.siliconsnark.com/stasht-turns-your-saved-posts-into-a-map-calendar-and-mild-accusation/</a></li>
+<li>Team size: self-described &quot;small team&quot;; no careers page. — App Store description</li>
+<li>Funding: none found (no Crunchbase profile for Stasht LLC; see caveat about a different &quot;Stasht Inc.&quot; below).</li>
+<li>Product Hunt: no listing found (<a href="https://www.producthunt.com/products/stasht">https://www.producthunt.com/products/stasht</a> returns 404; web search found nothing).</li>
+<li>Press: one review, SiliconSnark, 26 Jun 2026 (&quot;The internet&#39;s snarkiest site…&quot;); one third-party roundup, DocentPro (Jul 14 2026), which calls Stasht &quot;the broadest general-purpose saver&quot; but notes it lacks itineraries/booking. — URLs above; <a href="https://docentpro.com/blog/best-apps-to-save-places-from-tiktok-instagram-youtube">https://docentpro.com/blog/best-apps-to-save-places-from-tiktok-instagram-youtube</a></li>
+<li>Traction claims by Stasht: <strong>none</strong> (no user/save counts anywhere). Only external signals: 27 App Store ratings, 500+ Play downloads, 231 Chrome users.</li>
+<li>Social: Instagram @trystasht — 197 followers, 102 following, bio &quot;where people stash their favorites from social…&quot; (<a href="https://www.instagram.com/trystasht/">https://www.instagram.com/trystasht/</a>); X @trystasht — 0 posts, 9 followers, 1 following, joined Aug 2025 (<a href="https://x.com/trystasht">https://x.com/trystasht</a>); TikTok @stasht and Facebook @trystasht linked in footer — counts unverified (TikTok blocked in browser). — <a href="https://stasht.app/">https://stasht.app/</a></li>
+<li>Infrastructure (from privacy policy): AWS hosting; OpenAI and Amazon Bedrock &quot;to analyze text and images you submit (such as extracting text from screenshots or organizing stashes)&quot;; Google Maps Platform; Google Calendar; platform APIs for Instagram/Meta, TikTok, X, YouTube. Map tiles on public pages are Mapbox (logo visible). — <a href="https://stasht.app/privacy">https://stasht.app/privacy</a> ; <a href="https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f">https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f</a></li>
+<li>Feedback board: 21 public posts, oldest &quot;4 months ago&quot; (~May 2026); top asks: nested collections, bulk edit, manual location edit, list/grid toggle, offline mode; bugs: collections not showing all items, crashes with 200+ items, sign-up black screen, Chrome bulk import &quot;non-functional&quot;. — <a href="https://stasht.featurebase.app/">https://stasht.featurebase.app/</a></li>
+</ul>
+<h3 id="product-7"$1>7. Positioning against alternatives</h3>
+<ul>
+<li>vs Instagram saves: &quot;Instagram saves stay on Instagram. They don&#39;t tell you what&#39;s inside, they don&#39;t organize themselves, and they don&#39;t come back to you. Stasht works across every platform and does the work your saves were never going to do on their own.&quot; — <a href="https://stasht.app/#faq">https://stasht.app/#faq</a></li>
+<li>vs ReciMe: &quot;A ReciMe alternative for saves beyond recipes.&quot; ReciMe is &quot;a strong recipe-first app&quot;; &quot;If your saves are mixed across food, places, products, travel, events, articles, and videos, you need a broader stash.&quot; — <a href="https://stasht.app/recime-alternative">https://stasht.app/recime-alternative</a></li>
+<li>vs Stacklist: &quot;A Stacklist alternative for saves that organize themselves.&quot; &quot;Manual collections are useful until the pile gets big.&quot; Use Stacklist &quot;if you mainly want card-based collections and sharing&quot;; use Stasht &quot;if you want social saves interpreted into maps, calendars, reminders, and searchable cards.&quot; — <a href="https://stasht.app/stacklist-alternative">https://stasht.app/stacklist-alternative</a></li>
+<li>vs place-saving apps (their own comparison table, Andrew, Jun 12 2026): Stasht = &quot;iOS, iPad, Android, web, extension / Caption, on-screen text, speech / Events, recipes, products, everything / Map nearby, calendar, reminders / Free&quot;. Rezz &quot;Restaurants-first… Free + subscription&quot;; GoPlaces &quot;more machinery than you need&quot;; Drawer &quot;Places only, iOS-centric&quot;; Mapstr &quot;Less automatic extraction&quot;; Rodeo &quot;No Android, no desktop, no browser extension&quot;; Albo &quot;AI categorization, a map… No calendar at all… Paid tiers&quot;; Google Maps lists &quot;Every save is manual&quot;. Self-declared weakness: &quot;newer than most apps on this list&quot; and no social features yet. — <a href="https://stasht.app/blog/best-apps-to-save-places-from-tiktok">https://stasht.app/blog/best-apps-to-save-places-from-tiktok</a></li>
+<li>vs Pinterest (user voice, quoted on App Store): &quot;my go to app for saves since Pinterest is now an AI slop wasteland.&quot; — App Store review &quot;Caseface21&quot;</li>
+<li>Pocket, Notion, MyMind, Instagram Collections as products: <strong>not mentioned</strong> anywhere on the site (blog posts about Instagram collections are how-to/SEO troubleshooting pieces, not comparisons). — <a href="https://stasht.app/blog">https://stasht.app/blog</a></li>
+</ul>
+<h3 id="product-8"$1>8. Notable UX from screenshots (described in words)</h3>
+<p>Home page (<a href="https://stasht.app/">https://stasht.app/</a>, screenshot taken):</p>
+<ul>
+<li>Light theme only; warm peach-to-cream gradient hero, burnt-orange accent, dark navy headline text; orange squirrel-holding-a-heart logo + &quot;Stasht&quot; wordmark; nav has just &quot;FAQs&quot; and a black pill &quot;Signup Free or Login&quot;.</li>
+<li>Hero headline &quot;Everything you save, finally organized.&quot; (last two words orange); a 4-slide carousel (dots); App Store + Google Play badges; &quot;Get the extensions&quot; Chrome/Safari pills; &quot;Free on iOS, Android, and desktop.&quot; Right side: two angled iPhone mockups — a map full of orange pins over NYC, and a feed with &quot;Find Nearby&quot; card rows and a &quot;What&#39;s around you&quot; thumbnail grid — with floating chips &quot;Calendar&quot;, &quot;Search&quot;, &quot;Weekly Roundups&quot;, &quot;Alerts&quot; and a mock iOS push &quot;Our current coffee shop obsessions — Go this weekend!&quot;.</li>
+<li>Below: &quot;How it works&quot; 3 steps; &quot;See what others are stashing&quot; — a public gallery filterable by category (Wellness, Recipes, Tech, Nightlife, Travel, Disney, Family, Fitness, Shopping), each card showing category label, title, and extracted entity chips (e.g. &quot;Gaston&#39;s Tavern&quot;, &quot;Anthropic / OpenAI&quot;); &quot;Guides&quot; blog row; &quot;POPULAR WAYS TO USE STASHT&quot; SEO links; import section; &quot;Finally, saves that work.&quot; + two-column FAQ accordion.</li>
+<li><strong>No pricing page exists</strong> — the only pricing element is the sentence &quot;Free on iOS, Android, and desktop.&quot;</li>
+</ul>
+<p>Public saved-item page (<a href="https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f">https://stasht.app/stash/00d2b467-92f9-4425-9a7a-37056c76662f</a>, screenshot taken):</p>
+<ul>
+<li>Two-column: left is a vertical <strong>video player of the reel itself</strong> (re-hosted, plays in-page with mute and fullscreen buttons — not an Instagram embed); right shows &quot;View on Instagram&quot; source link, orange &quot;+ Add to my Stasht&quot;, icons for reminder (alarm clock), collection (folder), share, and more; title &quot;Top 10 Sandwiches in NYC&quot;; original caption.</li>
+<li>A &quot;Places&quot; section lists 8–9 extracted venues (Casa della Mozzarella, S&amp;P, Faicco&#39;s, Salt Hank&#39;s, Katz&#39;s Delicatessen, Mama&#39;s Too, Danny and Coop&#39;s, Sal Kris and Charlie&#39;s, Salty Lunch Lady&#39;s) each with Google-style rating and review count (&quot;4.5 (53,716)&quot;), price level, venue type, street address and &quot;Closed until…&quot; hours; then a Mapbox map with clustered orange pins; then an &quot;Explore&quot; row of related public stashes with platform badge and &quot;+ Add&quot;; footer &quot;LAST ENRICHED Jan 20, 2026&quot;.</li>
+</ul>
+<p>App Store screenshots (9, described): (1) &quot;Make your saves worth it&quot; — grid of tiles with platform badges (Instagram/TikTok/Facebook/X/Pinterest) labelled Recipes, Golf, Restaurants, Workouts, Van Life, Friends, Travel Ideas; (2) &quot;You save what you love. From anywhere, all in one place.&quot; — an Instagram post being shared via the iOS share sheet to the Stasht icon; (3) &quot;Stasht brings it back. The right thing, at the right moment.&quot; — a push notification and the item detail page; (4) &quot;Your saves, on a map. Right where you need them.&quot;; (5) &quot;Explore what&#39;s around you. Browse by category, place, or stash.&quot; — card grid; (6) &quot;Organized without lifting a finger. No folders. No sorting. No work.&quot; — a Tags screen with &quot;Your tags&quot;/&quot;Suggested&quot; tabs and counts per tag; (7) &quot;Events on your calendar&quot; — &quot;Your calendar&quot; list for September 2026 (e.g. &quot;NYC Broadway Week&quot;, &quot;CFDA Fashion Week Live at Rockefeller Center&quot;) with a 5-tab bottom bar (Stashes, Events, Map, Places, +1); (8) &quot;Save anywhere. Access everywhere. We support Mobile, Tablet and Desktop.&quot; — laptop web app + phone map; (9) &quot;Start Making Your Saves Worth It!&quot; logo card. All screenshots are light-themed; <strong>dark mode unverified</strong>. — <a href="https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175">https://apps.apple.com/us/app/stasht-app-saves-that-work/id6756032175</a></p>
+<ul>
+<li>Onboarding: web login offers email / Google / Apple / QR code; in-app onboarding not observed (no account created). — <a href="https://stasht.app/login">https://stasht.app/login</a></li>
+</ul>
+<hr>
+<h3 id="product-9"$1>Facts I am unsure about</h3>
+<ol>
+<li><strong>Whether search is semantic (embeddings) or keyword over enriched text</strong> — Stasht only says it searches captions, on-screen text and speech; no &quot;search by meaning&quot; claim found.</li>
+<li><strong>Exact iOS launch date and version cadence</strong> — the App Store version-history dialog would not open; only v7.0.1 (today) is visible. Signals point to late 2025/early 2026.</li>
+<li><strong>Andrew W. Haim&#39;s exact title</strong> — &quot;Co-Founder &amp; President&quot; comes from ZoomInfo (which lists an @stasht.com email); LinkedIn was not readable. The blog/extension author &quot;Andrew&quot; and the LinkedIn &quot;Andrew W. Haim – Stasht&quot; are probably the same person but I could not confirm.</li>
+<li><strong>A separate &quot;Stasht Inc.&quot; (Toronto, founded 2014, stasht.com, employees Christian Beckermann and Mario Sinicropi, &quot;All your memories all in one place!&quot;) exists on LinkedIn and Crunchbase</strong> (<a href="https://www.linkedin.com/company/stasht">https://www.linkedin.com/company/stasht</a> ; <a href="https://www.crunchbase.com/organization/platster-inc">https://www.crunchbase.com/organization/platster-inc</a>). stasht.com is now a parked &quot;2026 Website&quot; page. I could not determine whether this older company is related to today&#39;s Stasht LLC; do not treat its funding/founding data as belonging to stasht.app.</li>
+<li><strong>The second cofounder (&quot;language AI back in 2016&quot;)</strong> — single-source claim from SiliconSnark, no name.</li>
+<li><strong>TikTok (@stasht) and Facebook (@trystasht) follower counts</strong> — could not load either page.</li>
+<li><strong>Whether categories/collections are fully automatic in the current v7 UI</strong> — inferred from &quot;automatically organized&quot;, the &quot;No folders. No sorting.&quot; screenshot, the &quot;category… intent&quot; blog sentence and a user complaint about &quot;AI generated folders&quot;; I did not use the app.</li>
+<li><strong>In-app purchase absence on Google Play</strong> — confirmed only from an India-locale listing view.</li>
+<li><strong>Whether the earlier (pre-7.0) iOS app was a web wrapper</strong> — &quot;Stasht goes native!&quot; implies it, but Stasht does not say what it was before.</li>
+</ol>
+</section><section id="feedback"><h2>Part 3 — What Stasht's customers say (their public feedback board)</h2><p>Source: <a href="https://stasht.featurebase.app/">https://stasht.featurebase.app/</a> (read via the board&#39;s own public <code>/api/v1/submission</code> and <code>/api/v1/comment</code> endpoints, no auth, plus the rendered roadmap page). Nothing was voted, posted, or signed into.</p>
+<h3 id="feedback-1"$1>1. Board overview</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Board created</td>
+<td>2025-08-27 (Featurebase org <code>stasht</code>)</td>
+</tr>
+<tr>
+<td>Posts</td>
+<td><strong>82</strong> total; first 2025-08-27, latest 2026-09-13</td>
+</tr>
+<tr>
+<td>Categories (&quot;boards&quot;)</td>
+<td>Bug (57), Feature Request (22), Questions (3), Positivity (0 — created 2025-10-04, never used)</td>
+</tr>
+<tr>
+<td>Statuses</td>
+<td><strong>80 &quot;In Review&quot;</strong>, 2 &quot;Completed&quot;, 0 Planned, 0 In Progress, 0 Rejected</td>
+</tr>
+<tr>
+<td>Priority tags</td>
+<td>High Priority on 7 posts, Low Priority on 2 (applied by the team)</td>
+</tr>
+<tr>
+<td>Votes</td>
+<td>97 total across 82 posts. Max on any post is <strong>3</strong>. Every post has at least 1, which appears to be the author&#39;s automatic self-vote, so &quot;1 vote&quot; = nobody else voted.</td>
+</tr>
+<tr>
+<td>Comments</td>
+<td>13 total on 10 posts; <strong>11 of them are from the team (Andrew)</strong></td>
+</tr>
+<tr>
+<td>Changelog</td>
+<td>Public changelog endpoint returns <strong>0 entries</strong>. Not linked in the portal menu (menu is only Feedback + Roadmap).</td>
+</tr>
+<tr>
+<td>Roadmaps</td>
+<td>&quot;Main Roadmap&quot; (Backlog 80 / Next up 0 / In Progress 0 / Done 2) and a second &quot;V2 Features&quot; roadmap (&quot;Internal roadmap of what&#39;s to come&quot;) that is just the same status filters — effectively empty. <a href="https://stasht.featurebase.app/roadmap">https://stasht.featurebase.app/roadmap</a></td>
+</tr>
+</tbody></table>
+<p><strong>Who is posting.</strong> 44 posts are anonymous guests; 19 are by &quot;Andrew&quot;, who is clearly the team (signs replies &quot;— Andrew&quot;, points people to <a href="mailto:support@stasht.app">support@stasht.app</a>, and several of his posts link <code>http://localhost:8080/...</code> and say &quot;in prod&quot;); 3 by &quot;kieran&quot; (team — &quot;test as kieran&quot;, &quot;update footer &#39;whats new?&#39; to &#39;Feedback&#39;&quot;). Roughly <strong>23 of the 82 posts are internal QA/test items</strong> from Aug–Oct 2025 (the pre-launch/beta period). That leaves <strong>~59 genuine customer posts</strong>, 36 bugs / 20 feature requests / 3 questions.</p>
+<p><strong>Activity curve.</strong> Burst of 43 posts Sep–Oct 2025 (beta/launch), near-silence Nov 2025–Jun 2026 (13 posts in 8 months), then a second wave Jul–Sep 2026 (18 posts). The team comment on 2026-08-08 explains the second wave: <em>&quot;We&#39;ve just had a ton of new users come in and are doing some scaling work now.&quot;</em></p>
+<p><strong>Responsiveness.</strong> When the team replies, it is fast: 7 of 9 team-answered posts got a first reply within 0–4 hours (two outliers: 16 days, 45 days). But only 9 of 59 customer posts ever got a reply, and <strong>no customer post has ever had its status changed</strong> — not even the two bugs the team says in comments are &quot;resolved&quot; (sign-up black screen, Chrome extension). The only 2 &quot;Completed&quot; items are internal Aug-2025 tweaks. The Featurebase org shows <code>subscriptionStatus: trial_ended</code>, consistent with a board that is used as a lightweight inbox rather than a maintained roadmap.</p>
+<p><strong>In plain English:</strong> this is a small, young board — under 60 real customer posts, no post with more than 2 outside votes, no roadmap and no changelog. The founder answers quickly when he answers, but four out of five posts get no reply and nothing ever moves out of &quot;In Review&quot;. The signal is in the post bodies, not in the vote counts.</p>
+<h3 id="feedback-2"$1>2. Top requests, ranked by votes</h3>
+<p>Votes are nearly flat (3, 2, 1), so I rank by votes, then by team engagement/recency, and cluster the 1-vote requests by need.</p>
+<h4>Tier 1 — 3 votes</h4>
+<ol>
+<li><strong>First days with Stasht</strong> — 3 votes, 1 team reply, Bug, In Review, 2026-07-05 — a review-style post from a recipe saver on Android. Wants: fast reel loading, reliable search, control over what auto-extraction adds, no forced translation, map off the home screen. Quotes: <em>&quot;Loading them in stasht is very slow.&quot;</em> / <em>&quot;Searching in stasht is haphazard. I get unrelated results.&quot;</em> / <em>&quot;Things seem to be added to stashts but I can&#39;t control what is added, why, etc.&quot;</em> / <em>&quot;much much much better than Instagram saved functions but still a lot of work to do.&quot;</em> Team: &quot;This is great feedback - thank you!&quot; <a href="https://stasht.featurebase.app/p/first-days-with-stasht">https://stasht.featurebase.app/p/first-days-with-stasht</a></li>
+<li><strong>Auto tagging</strong> — 3 votes, Feature Request, In Review, 2025-09-28 — AI grouping into folders plus per-folder summaries. <em>&quot;use AI to put some of the stasht posts into folders with each other… summarize the folder or bullet point the contents of each folder for quick retrieval&quot;</em> <a href="https://stasht.featurebase.app/p/auto-tagging">https://stasht.featurebase.app/p/auto-tagging</a></li>
+</ol>
+<h4>Tier 2 — 2 votes</h4>
+<ol start="3">
+<li><strong>Bulk tag edit/move or collection merge</strong> — 2 votes, Feature Request, 2026-09-12. <em>&quot;bulk edit (add/remove) tags from saves and/or mass move saves between different collections or at least merge two collections in one.&quot;</em> Team (same day): <em>&quot;Please let us know if you&#39;d be interested in joining the Beta of our new version which would let you do this and more!&quot;</em> — first public mention of a new version. <a href="https://stasht.featurebase.app/p/bulk-tag-editmove-or-collection-merge">https://stasht.featurebase.app/p/bulk-tag-editmove-or-collection-merge</a></li>
+<li><strong>Migrate collections from your social media?</strong> — 2 votes, Feature Request, tagged Low Priority, 2026-08-21. <em>&quot;I already have plenty of videos saved to lists in Instagram and YouTube. I&#39;d be nice to be able to bulk migrate them.&quot;</em> Team replied with full instructions: bulk import exists via Chrome (Instagram Saves, YouTube Watch Later only — <em>&quot;Other YouTube playlists aren&#39;t supported yet&quot;</em>), Safari on Mac, and Safari on iPhone/iPad. Notable: the feature existed but the user didn&#39;t know. <a href="https://stasht.featurebase.app/p/migrate-collections-from-your-social-media">https://stasht.featurebase.app/p/migrate-collections-from-your-social-media</a></li>
+<li><strong>Purpose of collections</strong> — 2 votes, Question, 2026-08-08, no reply. <em>&quot;What is the purpose of collections? Why not just put everything under stashes?&quot;</em> — the collections-vs-stashes-vs-AI-folders model confuses people (see also #14 below). <a href="https://stasht.featurebase.app/p/purpose-of-collections">https://stasht.featurebase.app/p/purpose-of-collections</a></li>
+<li><strong>Make events editable</strong> — 2 votes, Feature Request, 2026-07-23. <em>&quot;a lot of events taken from IG show up in the calendar as &#39;All Day&#39; when they actually have a designated time… add the ability to delete a calendar event (sometimes it duplicates events, or adds other events from a post that lists multiple).&quot;</em> Team (16 days later): accuracy work ongoing, asked for examples by email. <a href="https://stasht.featurebase.app/p/make-events-editable">https://stasht.featurebase.app/p/make-events-editable</a></li>
+<li><strong>Location based Notifications</strong> — 2 votes, Feature Request, 2026-07-11 — proximity reminders for saved places, explicitly &quot;not a must have&quot;. Contains the strongest praise on the board (see section 4). <a href="https://stasht.featurebase.app/p/location-based-notifications">https://stasht.featurebase.app/p/location-based-notifications</a></li>
+<li><strong>Ai post fact checker</strong> — 2 votes, Feature Request, 2025-09-28. <em>&quot;use ai to fact check posts or help determine if a video or photo was altered&quot;</em> <a href="https://stasht.featurebase.app/p/ai-post-fact-checker">https://stasht.featurebase.app/p/ai-post-fact-checker</a></li>
+</ol>
+<h4>Tier 3 — 1-vote requests, clustered by need (all In Review)</h4>
+<p><strong>Organising and overriding the AI:</strong></p>
+<ul>
+<li><strong>Need for subsections!</strong> (2026-09-13, High Priority) — nested collections like Raindrop.io. <em>&quot;I used to use Raindrop.io, but I prefer this app as I don&#39;t need to open another app to consult the video. The only thing is that I would like to be able to create collection within collection or sub folders&quot;</em> <a href="https://stasht.featurebase.app/p/need-for-subsections">https://stasht.featurebase.app/p/need-for-subsections</a></li>
+<li><strong>manually adding/editing locations</strong> (2026-09-10, High Priority) — <em>&quot;just stasht&#39;d a post from insta about a café. location wasn&#39;t explicitly mentioned in the caption, so it isn&#39;t visible on the map&quot;</em> <a href="https://stasht.featurebase.app/p/manually-addingediting-locations">https://stasht.featurebase.app/p/manually-addingediting-locations</a></li>
+<li><strong>Extra features for Organising Collections</strong> (2026-08-30) — filter for &quot;everything not in a collection&quot;; can&#39;t add to a collection from the Chrome extension. <a href="https://stasht.featurebase.app/p/extra-features-for-organising-collections">https://stasht.featurebase.app/p/extra-features-for-organising-collections</a></li>
+<li><strong>Visited</strong> (2026-08-25, High Priority) — <em>&quot;tick the place if you&#39;ve visited it, to check it off my list!&quot;</em> <a href="https://stasht.featurebase.app/p/visited">https://stasht.featurebase.app/p/visited</a></li>
+<li><strong>Category addition</strong> (2025-09-28) — user-defined categories that the AI then uses going forward. <a href="https://stasht.featurebase.app/p/category-addition">https://stasht.featurebase.app/p/category-addition</a></li>
+<li><strong>Organization of outside links</strong> (2025-09-28) — pick a category at save time, then be offered a reminder. <a href="https://stasht.featurebase.app/p/organization-of-outside-links">https://stasht.featurebase.app/p/organization-of-outside-links</a></li>
+<li><strong>Add tag feature</strong> (2026-01-18) — tag creation looks like a search box. <a href="https://stasht.featurebase.app/p/add-tag-feature">https://stasht.featurebase.app/p/add-tag-feature</a></li>
+<li><strong>Simplify the sorting</strong> (2025-09-27) — <em>&quot;(Type / Intent) are slightly redundant… Too many options, went back to Home Screen to scroll and find all&quot;</em> <a href="https://stasht.featurebase.app/p/simplify-the-sorting">https://stasht.featurebase.app/p/simplify-the-sorting</a></li>
+</ul>
+<p><strong>Layout / density:</strong></p>
+<ul>
+<li><strong>Smaller thumbnails and choice between grid and list</strong> (2026-09-09, High Priority) — <em>&quot;make the thumbnails about 50% smaller. You can see more saved posts in a glance&quot;</em> <a href="https://stasht.featurebase.app/p/smaller-thumbnails-and-choice-between-grid-and-list">https://stasht.featurebase.app/p/smaller-thumbnails-and-choice-between-grid-and-list</a></li>
+<li><strong>Get rid of timer</strong> (2025-10-21) — the circular progress ring after sharing made the user think they had to wait. <a href="https://stasht.featurebase.app/p/get-rid-of-timer">https://stasht.featurebase.app/p/get-rid-of-timer</a></li>
+</ul>
+<p><strong>Travel / places:</strong></p>
+<ul>
+<li><strong>Map</strong> (2025-12-05) — search a city on the map and get a <em>list</em> of saves there. <em>&quot;I am on the road a lot… Currently when I search the city on the map section, it just shows the video which is tough to toggle through&quot;</em> <a href="https://stasht.featurebase.app/p/map">https://stasht.featurebase.app/p/map</a></li>
+<li><strong>Search bar</strong> (2025-10-21) — find restaurants by city. <a href="https://stasht.featurebase.app/p/search-bar">https://stasht.featurebase.app/p/search-bar</a></li>
+<li><strong>Offline Mode</strong> (2026-05-24, High Priority) — <em>&quot;local cache of the last synced data… helpful for travelers&quot;</em> <a href="https://stasht.featurebase.app/p/offline-mode">https://stasht.featurebase.app/p/offline-mode</a></li>
+</ul>
+<p><strong>Content types &amp; AI:</strong></p>
+<ul>
+<li><strong>Could we please get GIF support?</strong> (2026-08-25) — GIF/meme collections for reactions. <a href="https://stasht.featurebase.app/p/could-we-please-get-gif-support">https://stasht.featurebase.app/p/could-we-please-get-gif-support</a></li>
+<li><strong>AI Generated, Recipe-Specific Tips</strong> (2025-08-30) — tips the video skips. <a href="https://stasht.featurebase.app/p/ai-generated-recipe-specific-tips-2">https://stasht.featurebase.app/p/ai-generated-recipe-specific-tips-2</a></li>
+<li><strong>Better image AI generated captions</strong> (2025-08-27) — <em>&quot;Dont want something that says &#39;image of…&#39;&quot;</em> <a href="https://stasht.featurebase.app/p/better-image-ai-generated-captions">https://stasht.featurebase.app/p/better-image-ai-generated-captions</a></li>
+<li><strong>Stasht AI</strong> (filed as Bug, 2025-10-08) — <em>&quot;It feels too limited… needs to be able to pull from the internet to give complete and helpful answers.&quot;</em> <a href="https://stasht.featurebase.app/p/stasht-ai">https://stasht.featurebase.app/p/stasht-ai</a></li>
+</ul>
+<p><strong>Accounts / social:</strong></p>
+<ul>
+<li><strong>Stasht between accounts</strong> (2025-09-30, team-filed on behalf of a creator) — consolidate saves from two IG accounts. <a href="https://stasht.featurebase.app/p/stasht-between-accounts">https://stasht.featurebase.app/p/stasht-between-accounts</a></li>
+<li><strong>Network showing</strong> (2025-10-03, team-filed) — see what friends have stashed. <a href="https://stasht.featurebase.app/p/network-showing">https://stasht.featurebase.app/p/network-showing</a></li>
+</ul>
+<h3 id="feedback-3"$1>3. Complaints and bugs</h3>
+<p><strong>Extraction / auto-organisation gets it wrong (the largest cluster, ~20 posts).</strong></p>
+<ul>
+<li>Wrong location: <strong>Venues with Multiple locations?</strong> — <em>&quot;live in Florida, the Stasht saved to my map in Sterling, Virginia. Does this track the influencer I.P address?&quot;</em> <a href="https://stasht.featurebase.app/p/venues-with-multiple-locations">https://stasht.featurebase.app/p/venues-with-multiple-locations</a> and team&#39;s own <strong>Target in Virginia</strong> <a href="https://stasht.featurebase.app/p/target-in-virginia">https://stasht.featurebase.app/p/target-in-virginia</a></li>
+<li>Wrong category: <strong>Pregnancy Workout Labeled As Travel</strong> (screenshot only) <a href="https://stasht.featurebase.app/p/pregnancy-workout-labeled-as-travel">https://stasht.featurebase.app/p/pregnancy-workout-labeled-as-travel</a> ; <strong>Why are all my recipes categorized as &quot;other?&quot;</strong> <a href="https://stasht.featurebase.app/p/why-are-all-my-recipes-categorized-as-other">https://stasht.featurebase.app/p/why-are-all-my-recipes-categorized-as-other</a> ; <strong>Recipe isnt formatted or categorized at all</strong> <a href="https://stasht.featurebase.app/p/test">https://stasht.featurebase.app/p/test</a></li>
+<li>Missed entities: <strong>A tourist Valencia guide</strong> — <em>&quot;Did not capture all the places listed out&quot;</em> <a href="https://stasht.featurebase.app/p/a-tourist-valencia-guide">https://stasht.featurebase.app/p/a-tourist-valencia-guide</a> ; internal: Missed Entities, Missed events, Didnt get all the places.</li>
+<li>Wrong entity type (internal QA, but shows the taxonomy problem): Product as event, Place as events, location as event, Restaurant when should be a &quot;place&quot;, wrong entity.</li>
+<li><strong>Duplicate Events</strong> — <em>&quot;Two Halloween events one has one post the second has 4 related posts&quot;</em> <a href="https://stasht.featurebase.app/p/duplicate-events">https://stasht.featurebase.app/p/duplicate-events</a> ; <strong>wrong date (it&#39;s 10/2)</strong> <a href="https://stasht.featurebase.app/p/wrong-date-its-102">https://stasht.featurebase.app/p/wrong-date-its-102</a></li>
+<li>Junk enrichment: <strong>First days</strong> — <em>&quot;links have been added by stasht which are completely off-the-mark (Chinese links…)&quot;</em>; internal <strong>Enriched bullshit</strong> — <em>&quot;Confirming we have the logic to not generate events based on vision descriptions unless OCR?&quot;</em> <a href="https://stasht.featurebase.app/p/enriched-bullshit">https://stasht.featurebase.app/p/enriched-bullshit</a></li>
+<li>Unwanted translation of Japanese reels into English (First days).</li>
+<li><strong>Category count is wrong</strong> — <em>&quot;Says 14 but when I filter by that I only have 8&quot;</em> <a href="https://stasht.featurebase.app/p/category-count-is-wrong">https://stasht.featurebase.app/p/category-count-is-wrong</a></li>
+</ul>
+<p><strong>Search is unreliable (7 posts).</strong> <strong>Search</strong> — <em>&quot;Doesn&#39;t find everything and includes things it shouldn&#39;t.&quot;</em> <a href="https://stasht.featurebase.app/p/search">https://stasht.featurebase.app/p/search</a> ; <strong>Search results incorrect</strong> — <em>&quot;Halloween post showing up when searching &#39;Christmas&#39;&quot;</em> <a href="https://stasht.featurebase.app/p/search-results-incorrect">https://stasht.featurebase.app/p/search-results-incorrect</a> ; <strong>Bad results</strong> — <em>&quot;Typed in NJ bookstores, got a whole bunch not in NJ&quot;</em> <a href="https://stasht.featurebase.app/p/bad-results">https://stasht.featurebase.app/p/bad-results</a> ; <strong>Search results didn&#39;t load</strong> <a href="https://stasht.featurebase.app/p/search-results-didnt-load">https://stasht.featurebase.app/p/search-results-didnt-load</a> ; <strong>Included in recipe search result</strong> <a href="https://stasht.featurebase.app/p/included-in-recipe-search-result">https://stasht.featurebase.app/p/included-in-recipe-search-result</a> ; <strong>Keyboard won&#39;t go away</strong> — <em>&quot;unable to scroll and see all results when searching&quot;</em> <a href="https://stasht.featurebase.app/p/keyboard-wont-go-away">https://stasht.featurebase.app/p/keyboard-wont-go-away</a></p>
+<p><strong>Performance and scale.</strong> <strong>A lot of items in a collection</strong> (High Priority) — <em>&quot;200+, the collection doesn&#39;t load anymore and the auto-discover places never shows up and the whole screen is laggy&quot;</em> <a href="https://stasht.featurebase.app/p/a-lot-of-items-in-a-collection">https://stasht.featurebase.app/p/a-lot-of-items-in-a-collection</a> ; <strong>Unable to access all saved content</strong> — collection says 12 videos, shows 6 plus <em>&quot;a bunch of AI generated folders with only one video in them&quot;</em> <a href="https://stasht.featurebase.app/p/unable-to-access-all-saved-content">https://stasht.featurebase.app/p/unable-to-access-all-saved-content</a> ; <strong>Unable to load past here</strong> (iPad) <a href="https://stasht.featurebase.app/p/unable-to-load-past-here">https://stasht.featurebase.app/p/unable-to-load-past-here</a> ; <strong>Loading</strong> <a href="https://stasht.featurebase.app/p/loading">https://stasht.featurebase.app/p/loading</a></p>
+<p><strong>Thumbnails / media missing (6 posts).</strong> <strong>Media missing</strong> <a href="https://stasht.featurebase.app/p/media-missing">https://stasht.featurebase.app/p/media-missing</a> ; <strong>More thumbnails not populating</strong> — also asks <em>&quot;one error message says &#39;no media&#39; if a reel is removed from the original post / account. Does it reflect here?&quot;</em> <a href="https://stasht.featurebase.app/p/more-thumbnails-not-populating">https://stasht.featurebase.app/p/more-thumbnails-not-populating</a> ; <strong>Thumbnail image not showing</strong> <a href="https://stasht.featurebase.app/p/thumbnail-image-not-showing">https://stasht.featurebase.app/p/thumbnail-image-not-showing</a> ; <strong>Video thumbnail isnt showing</strong> <a href="https://stasht.featurebase.app/p/video-thumbnail-isnt-showing">https://stasht.featurebase.app/p/video-thumbnail-isnt-showing</a> ; <strong>Where&#39;s my picture</strong> <a href="https://stasht.featurebase.app/p/wheres-my-picture">https://stasht.featurebase.app/p/wheres-my-picture</a> ; <strong>Image fallback</strong> <a href="https://stasht.featurebase.app/p/image-fallback">https://stasht.featurebase.app/p/image-fallback</a></p>
+<p><strong>Onboarding / auth.</strong> <strong>Unable to sign up</strong> — <em>&quot;removed and installed 3 times… the screen goes black&quot;</em> — team fixed within a day (2026-09-05 → 06) <a href="https://stasht.featurebase.app/p/unable-to-sign-up">https://stasht.featurebase.app/p/unable-to-sign-up</a> ; <strong>Can&#39;t scroll to log in page</strong> (screenshot only) <a href="https://stasht.featurebase.app/p/cant-scroll-to-log-in-page">https://stasht.featurebase.app/p/cant-scroll-to-log-in-page</a> ; <strong>Facebook posts don&#39;t show up well</strong> — <em>&quot;Sometimes I just get a login page.&quot;</em> <a href="https://stasht.featurebase.app/p/facebook-posts-dont-show-up-well">https://stasht.featurebase.app/p/facebook-posts-dont-show-up-well</a></p>
+<p><strong>Capture failures.</strong> <strong>Problem with Chrome Extension</strong> — bulk import did nothing for TikTok, Instagram, Reddit, YouTube; X bounced back to login. Team replied 45 days later: &quot;should have been resolved&quot;. <a href="https://stasht.featurebase.app/p/problem-with-chrome-extension">https://stasht.featurebase.app/p/problem-with-chrome-extension</a> ; <strong>Resy app shares fail</strong> — <em>&quot;failed to upload&quot;</em>; from web only a generic description. <a href="https://stasht.featurebase.app/p/resy-app-shares-fail">https://stasht.featurebase.app/p/resy-app-shares-fail</a> ; <strong>Should be merged with the message I sent it with</strong> (screenshot only) <a href="https://stasht.featurebase.app/p/should-be-merged-with-the-message-i-sent-it-with">https://stasht.featurebase.app/p/should-be-merged-with-the-message-i-sent-it-with</a></p>
+<p><strong>Data loss / trust.</strong> <strong>Deleted Post When I Hit Cancel</strong> — <em>&quot;I hit cancel (a few times…) and then it said deleting post and then my post was deleted.&quot;</em> <a href="https://stasht.featurebase.app/p/deleted-post-when-i-hit-cancel">https://stasht.featurebase.app/p/deleted-post-when-i-hit-cancel</a></p>
+<p><strong>Small UX papercuts.</strong> <strong>Suggested tags are not applying</strong> — tapping the tag navigates instead of applying; the &quot;+&quot; is the apply target. User: <em>&quot;the hit area is too small. I actually pressed the tag in several places&quot;</em> <a href="https://stasht.featurebase.app/p/suggested-tags-are-not-applying">https://stasht.featurebase.app/p/suggested-tags-are-not-applying</a> ; <strong>Adding Tags</strong> <a href="https://stasht.featurebase.app/p/adding-tags">https://stasht.featurebase.app/p/adding-tags</a> ; <strong>Keyboard blocking view of input</strong> <a href="https://stasht.featurebase.app/p/keyboard-blocking-view-of-input">https://stasht.featurebase.app/p/keyboard-blocking-view-of-input</a> ; <strong>Distance</strong> — <em>&quot;should be in miles not meters&quot;</em> <a href="https://stasht.featurebase.app/p/distance">https://stasht.featurebase.app/p/distance</a> ; <strong>Positive Feedback</strong> — <em>&quot;no place to add positive feedback of any kind&quot;</em> (led to the Positivity category, which nobody has used) <a href="https://stasht.featurebase.app/p/positive-feedback">https://stasht.featurebase.app/p/positive-feedback</a></p>
+<h3 id="feedback-4"$1>4. Praise (in their words)</h3>
+<ul>
+<li><em>&quot;Great UI. Easy to use.&quot;</em> and <em>&quot;much much much better than Instagram saved functions&quot;</em> — <a href="https://stasht.featurebase.app/p/first-days-with-stasht">https://stasht.featurebase.app/p/first-days-with-stasht</a></li>
+<li><em>&quot;Love the whole platform and have been using it religiously since you launched.&quot;</em> / <em>&quot;I quite like the weekly summaries and the intentionality of having to open the app.&quot;</em> / <em>&quot;If you&#39;re ever looking for investors, you should open it up to the Stasht community! I think several of us would be keen to support&quot;</em> — <a href="https://stasht.featurebase.app/p/location-based-notifications">https://stasht.featurebase.app/p/location-based-notifications</a></li>
+<li><em>&quot;I love the app compared to other apps of the same kind. I used to use Raindrop.io, but I prefer this app as I don&#39;t need to open another app to consult the video.&quot;</em> — <a href="https://stasht.featurebase.app/p/need-for-subsections">https://stasht.featurebase.app/p/need-for-subsections</a></li>
+<li><em>&quot;tags are perfectly suggested&quot;</em> (before the tap problem) — <a href="https://stasht.featurebase.app/p/suggested-tags-are-not-applying">https://stasht.featurebase.app/p/suggested-tags-are-not-applying</a></li>
+<li><em>&quot;It does a good job of taking information from the videos I&#39;ve stasht&quot;</em> — <a href="https://stasht.featurebase.app/p/stasht-ai">https://stasht.featurebase.app/p/stasht-ai</a></li>
+<li>The Positivity category (0 posts) shows praise doesn&#39;t get posted unprompted; it arrives as a preamble to a complaint.</li>
+</ul>
+<h3 id="feedback-5"$1>5. Integrations and platforms mentioned</h3>
+<table>
+<thead>
+<tr>
+<th>Platform / surface</th>
+<th>Posts (votes)</th>
+<th>What was said</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Instagram</td>
+<td>First days (3), Migrate (2), Make events editable (2), Suggested tags (2), manually add locations (1), Chrome ext (2)</td>
+<td>Dominant source. Reels/recipes, IG saves bulk import exists via Chrome + Safari.</td>
+</tr>
+<tr>
+<td>YouTube</td>
+<td>Migrate (2), Chrome ext (2)</td>
+<td>Only Watch Later importable; other playlists not supported.</td>
+</tr>
+<tr>
+<td>TikTok, X, Reddit</td>
+<td>Chrome ext (2)</td>
+<td>Bulk import failed for all; X login loop.</td>
+</tr>
+<tr>
+<td>Facebook</td>
+<td>Facebook posts don&#39;t show up well (1)</td>
+<td>No photos, sometimes a login page.</td>
+</tr>
+<tr>
+<td>Chrome extension</td>
+<td>Chrome ext (2), Extra features (1)</td>
+<td>Import failures; can&#39;t add to a collection from the extension.</td>
+</tr>
+<tr>
+<td>Safari extension (Mac/iOS)</td>
+<td>Team reply on Migrate</td>
+<td>Exists; IG import via Safari on iPhone/iPad.</td>
+</tr>
+<tr>
+<td>Android</td>
+<td>First days (3)</td>
+<td>Slow reel loading; unwanted translation.</td>
+</tr>
+<tr>
+<td>iPad</td>
+<td>Unable to load past here (1)</td>
+<td>Layout/loading issue.</td>
+</tr>
+<tr>
+<td>Desktop vs mobile</td>
+<td>Related posts thumbnails (internal)</td>
+<td>Works on desktop, not mobile.</td>
+</tr>
+<tr>
+<td>Resy</td>
+<td>Resy app shares fail (1)</td>
+<td>Share fails; web share gets generic description.</td>
+</tr>
+<tr>
+<td>Google Gemini (AI chat links)</td>
+<td>First days (3)</td>
+<td>Saved Gemini instructions come through empty.</td>
+</tr>
+<tr>
+<td>GIFs</td>
+<td>GIF support (1)</td>
+<td>Meme/reaction collections.</td>
+</tr>
+<tr>
+<td>Multiple social accounts</td>
+<td>Stasht between accounts (1)</td>
+<td>Creator with two IG accounts.</td>
+</tr>
+<tr>
+<td>Offline</td>
+<td>Offline Mode (1, High Priority)</td>
+<td>Travel with spotty internet.</td>
+</tr>
+<tr>
+<td>Raindrop.io (competitor)</td>
+<td>Need for subsections (1)</td>
+<td>Switched from it; misses nested collections.</td>
+</tr>
+</tbody></table>
+<p>Nobody asked for a Pinterest, WhatsApp, Threads, or web-app integration on this board. Stasht&#39;s marketing site lists Instagram, TikTok, X, YouTube, Pinterest, Reddit, iOS, Android, desktop, Chrome, Safari, free pricing.</p>
+<h3 id="feedback-6"$1>6. Shipped vs promised</h3>
+<p><strong>Changelog:</strong> empty (0 entries). <strong>Roadmap:</strong> nothing in Planned or In Progress; the &quot;V2 Features&quot; roadmap is a duplicate view with no content.</p>
+<p><strong>Only 2 posts ever marked Completed</strong> (both internal, Aug 2025): <strong>Move search to be first</strong> — <em>&quot;This is my primary use for stasht - I am looking for something specific and I could not immediately find the search bar&quot;</em> <a href="https://stasht.featurebase.app/p/move-search-to-be-first">https://stasht.featurebase.app/p/move-search-to-be-first</a> ; <strong>Search drawer</strong> (fixed height) <a href="https://stasht.featurebase.app/p/search-drawer">https://stasht.featurebase.app/p/search-drawer</a></p>
+<p><strong>Promises/claims made in comments (never reflected in a status):</strong></p>
+<ul>
+<li>2025-10-08 Search: screenshot-only team reply, no text.</li>
+<li>2026-07-23 Chrome extension: &quot;This should have been resolved&quot; — status still In Review.</li>
+<li>2026-08-08 Make events editable: &quot;actively working to make the accuracy better&quot;.</li>
+<li>2026-08-08 Large collections: &quot;doing some scaling work now&quot;.</li>
+<li>2026-08-21 Migrate: bulk import documented (Chrome, Safari Mac, Safari iOS).</li>
+<li>2026-09-06 Unable to sign up: &quot;this has been resolved!&quot; — status still In Review.</li>
+<li>2026-09-12 Bulk tag/move/merge: &quot;Beta of our new version which would let you do this and more&quot; — invite by email.</li>
+</ul>
+<p><strong>Gap:</strong> the team says things are fixed or coming, but the public board never shows it. A visitor sees 80 backlog items and 2 done from a year ago, which undersells the actual activity (fast fixes, an import feature, a V2 beta).</p>
+<h3 id="feedback-7"$1>7. Underlying themes</h3>
+<ol>
+<li><strong>Trust in automatic extraction.</strong> Users like that Stasht pulls places, events, recipes, and categories out of a reel, but every failure (wrong state for Target, Halloween as Christmas, workout as travel, &quot;All Day&quot; events, duplicates, Chinese junk links, forced translation) erodes it. Evidence: ~20 bug posts, the top-voted &quot;First days&quot; post, Make events editable (2), Venues with Multiple locations. The requester&#39;s words: <em>&quot;I can&#39;t control what is added, why.&quot;</em></li>
+<li><strong>Manual control as the safety valve.</strong> The most recent High-Priority requests are all overrides: edit/delete events, add/edit locations, custom categories that persist, subfolders, bulk tag/move/merge, a &quot;not in any collection&quot; filter, visited checkmark. People accept imperfect AI if they can fix it in two taps.</li>
+<li><strong>Search is the primary retrieval path and it is not reliable.</strong> &quot;Move search to be first&quot; was the first thing shipped; 7 later posts say search returns wrong or missing results, especially geographic queries (&quot;NJ bookstores&quot;, &quot;restaurants by city&quot;).</li>
+<li><strong>A confusing information architecture.</strong> Stashes vs collections vs AI-generated folders vs tags vs categories vs &quot;Type/Intent&quot; sorting. Direct evidence: <em>&quot;What is the purpose of collections? Why not just put everything under stashes?&quot;</em>, &quot;Simplify the sorting&quot;, the 12-videos-shows-6 bug caused by auto-folders, tag creation mistaken for search, &quot;+&quot; vs tap on suggested tags.</li>
+<li><strong>Recipes and places are the two killer use cases.</strong> Recipe savers (Japanese reels, bread, carbonara tips, &quot;all my recipes categorized as other&quot;) and travellers (&quot;on the road a lot&quot;, map by city, visited, offline mode, distance in miles, location notifications). The map matters to travellers and is clutter to recipe people (<em>&quot;I do not need the map thing… it takes a lot of place on the screen&quot;</em>).</li>
+<li><strong>Performance is the first thing power users hit.</strong> 200+ item collections lag, slow reel loading, missing thumbnails, iPad loading. The team&#39;s own admission: scaling work after a user influx.</li>
+<li><strong>Getting existing saves in, from everywhere.</strong> Bulk import from IG/YouTube, Chrome extension failures across five networks, Facebook, Resy, GIFs, Gemini links, two accounts. The import feature existed but a user with 2 votes didn&#39;t know — discoverability, not capability.</li>
+<li><strong>Density and glanceability.</strong> Smaller thumbnails, grid/list toggle, fewer sort options, no loading ring after share.</li>
+</ol>
+<h3 id="feedback-8"$1>8. Lessons for a competitor building the same product</h3>
+<p><strong>Make sure we do:</strong></p>
+<ul>
+<li>Ship an override for every automatic decision (category, location, event date/time, entity type, tags) and make deleting a wrong event/duplicate trivial. This is the single most repeated need on the board (themes 1–2).</li>
+<li>Treat search as the core feature: full-text over captions + transcripts + extracted entities, with place/city filtering. The city-search-returns-list request appears three times (Map, Search bar, Bad results).</li>
+<li>Keep the hierarchy simple and explainable. One container concept with optional nesting (the Raindrop comparison was explicit) beats stashes + collections + AI folders + tags.</li>
+<li>Bulk operations from day one: multi-select, move, tag, merge collections, &quot;uncategorised&quot; filter. Stasht only offers this in an unreleased V2 beta.</li>
+<li>Performance budget for 200+ item collections and thumbnail reliability; Stasht&#39;s thumbnail bugs are 6 posts across a year. Cache the thumbnail at save time and show a fallback when the source is deleted (users asked what happens when a reel is removed).</li>
+<li>Import discoverability: if we have IG/YouTube import, surface it in onboarding; Stasht&#39;s user asked for a feature that already existed.</li>
+<li>Confirm destructive actions properly and never let &quot;Cancel&quot; delete (Deleted Post When I Hit Cancel).</li>
+<li>Close the loop publicly: mark things Completed, keep a changelog. Stasht&#39;s fast fixes are invisible on its own board.</li>
+</ul>
+<p><strong>Avoid:</strong></p>
+<ul>
+<li>Auto-translating or auto-enriching without an opt-out; both drew complaints on the top-voted post.</li>
+<li>Creating AI-generated folders that fragment a user&#39;s collection (the 12-shows-6 bug).</li>
+<li>A share-sheet loading ring that implies the user must wait.</li>
+<li>Forcing the map onto the home screen for users who save recipes, not places.</li>
+<li>Metric units for a US audience (small, but noticed).</li>
+</ul>
+<p><strong>Openings (unmet on Stasht as of 2026-09-13):</strong></p>
+<ul>
+<li>Nested collections / subfolders (High Priority, unanswered).</li>
+<li>Manual location add/edit and &quot;visited&quot; state for places (both High Priority, unanswered).</li>
+<li>Editable/deletable calendar events with correct times.</li>
+<li>Grid/list toggle and compact thumbnails.</li>
+<li>Offline cache for travellers.</li>
+<li>Import beyond IG saves and YouTube Watch Later (arbitrary YouTube playlists, TikTok favourites, X bookmarks, Reddit saved — Stasht&#39;s extension failed on all of these for one user).</li>
+<li>GIF/meme collections; Facebook posts; reservation-app shares (Resy).</li>
+<li>A &quot;why was this added&quot; explanation for each auto-extracted item, since the top post&#39;s core complaint is opacity.</li>
+</ul>
+<p><strong>Caveats / not opened:</strong> Eight posts are screenshot-only with no text (Pregnancy Workout Labeled As Travel, Can&#39;t scroll to log in page, Where&#39;s my picture, Should be merged…, Included in recipe search result, Search results didn&#39;t load, Thumbnail image not showing, Enriched bullshit); I read their titles and metadata but did not inspect the images. The team&#39;s reply on the &quot;Search&quot; post is image-only. Everything else (all 82 bodies, all 13 comments, both roadmaps, the changelog) was read in full. Vote counts are as of 2026-09-14/15 UTC.</p>
+<p>Local working files (post JSON, comments JSON) are in <code>/private/tmp/claude-501/-Users-pranavaditya-projects-allkept/a46b23e0-7033-426a-85d5-7e5685eefb77/scratchpad/</code> (all_posts.json, comments.json) if the parent wants to re-query.</p>
+</section>
+<hr><p class="note">Sources: stasht.app and its blog, App Store and Google Play listings, the Chrome Web Store, stasht.featurebase.app (via its public read endpoints), SiliconSnark, DocentPro, LinkedIn/ZoomInfo search results; and for Allkept the repository at the commit of this report. Vote counts and versions are as of 14–15 September 2026 UTC.</p>
+</main></body></html>
