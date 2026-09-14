@@ -1,15 +1,14 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Icon } from "./Icon";
-import { tint } from "../lib/categories";
 import { interestStyle, isNewInterest, type Interest } from "../lib/interests";
 import { radius, space, type, usePalette } from "../lib/theme";
 
 /**
  * The row of things a person keeps saving. Chips, not cards: a category is a place you can drop
  * a save into, an interest is a thread you can only follow, and the shape says which is which
- * before the label does. Each is a soft-cornered box washed in one colour, with a filled mark and
- * the name in that same colour — the way a calendar chip carries a calendar and a location chip
- * an arrow — so the kind of thing reads before the word does.
+ * before the label does. So these are the same quiet capsules as the platform chips above them —
+ * a hairline on the surface, the name in ink — and only the mark carries colour, one per kind of
+ * thing, so a person and a place still never look alike. The cards below are the coloured ones.
  */
 export function InterestPills({ interests, now, onPress }: { interests: Interest[]; now: Date; onPress: (interest: Interest) => void }) {
   return (
@@ -30,31 +29,29 @@ export function InterestPill({ interest, fresh, onPress }: { interest: Interest;
       accessibilityRole="button"
       accessibilityLabel={`${interest.name}, ${saves}${fresh ? ", new" : ""}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.pill, { backgroundColor: tint(hue, p.blur === "dark" ? 0.22 : 0.12) }, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.pill, { backgroundColor: p.surface, borderColor: p.border }, pressed && styles.pressed]}
     >
       <Icon name={glyph} size={MARK} color={hue} />
-      <Text numberOfLines={1} style={[styles.name, { color: hue }]}>{interest.name}</Text>
+      <Text numberOfLines={1} style={[type.label, styles.name, { color: p.ink }]}>{interest.name}</Text>
       {/* Crossed the floor this week: the small sign that this is something Allkept noticed, not something set up. */}
       {fresh && <View style={[styles.fresh, { backgroundColor: hue, borderColor: p.bg }]} />}
     </Pressable>
   );
 }
 
-/** The mark's size. The chip is a little over twice it, so the mark reads as the chip's subject rather than a bullet. */
-const MARK = 20;
-const HEIGHT = 44;
+/** The same mark size as the platform chips' logos, so the two rows read as one kind of thing. */
+const MARK = 18;
 
 const styles = StyleSheet.create({
   rail: { marginHorizontal: -space.lg },
   railInner: { paddingHorizontal: space.lg, gap: space.sm },
+  // The platform chip's own measurements: a capsule with a hairline, 36pt at the usual text size.
   pill: {
-    flexDirection: "row", alignItems: "center", gap: space.sm,
-    // A floor, not a fixed height: the largest accessibility text sizes grow the chip rather than clip in it.
-    minHeight: HEIGHT, paddingVertical: space.sm, paddingHorizontal: space.md + 2,
-    // A soft-cornered box, not a capsule: the corner is about a quarter of the height.
-    borderRadius: radius.md,
+    flexDirection: "row", alignItems: "center", gap: space.xs + 2,
+    borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill,
+    paddingHorizontal: space.md, paddingVertical: space.xs + 2, minHeight: 36,
   },
-  name: { fontSize: type.body.fontSize, fontWeight: "600", maxWidth: 180 },
+  name: { maxWidth: 180 },
   fresh: { position: "absolute", top: 5, right: 5, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
   pressed: { opacity: 0.7 },
 });
