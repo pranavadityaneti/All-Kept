@@ -199,3 +199,14 @@ again — which also explains why my later taps to restore the interests switch 
 ## 2026-09-13 — zsh: `${PIPESTATUS[0]}` is bash; in zsh it is `$pipestatus[1]`
 - **Symptom:** `cmd | head; echo "exit ${PIPESTATUS[0]}"` prints an empty exit code in the Bash tool's zsh, so a "commit only on green" guard silently refuses to commit even when everything passed.
 - **Fix:** run the command without a pipe and read `$?`, or use zsh's `$pipestatus[1]`.
+
+## 2026-09-14 — Vercel's restored build cache fails a type check that a clean build passes
+- **Symptom:** a Next 16.3.4 static export failed on Vercel in 12 s at "Running TypeScript": `Tracking.tsx: Type '{ src: string; strategy: "afterInteractive" }' is not assignable to 'IntrinsicAttributes & ScriptProps' — Property 'src' does not exist`. Local `tsc` and `next build` were clean, and a fresh `git clone` + `npm ci` + `next build` of the same commit passed. The log's first lines said "Restored build cache from previous deployment".
+- **Cause (as far as it can be seen):** the restored cache carried a stale type picture of `next/script`; nothing in the committed code was wrong.
+- **Fix:** don't lean on that prop — the GA loader is appended from the inline snippet (`document.createElement('script')`), as the Meta Pixel's own snippet does. Alternative when something like this recurs: Redeploy in Vercel with "Use existing Build Cache" unticked.
+- **Remember:** when Vercel fails a build that a clean clone passes, suspect the cache before the code; the deployment page → Build Logs → "all lines" is where the real error is (the runtime Logs tab is empty for a failed build).
+
+## 2026-09-15 — Simulator: drag the knob to toggle a `Switch`; tap the pills at their real points
+- **Symptom:** the 13 Sep entry above left toggling a `Switch` from the simulator tool as "verify by hand". Separately, taps aimed at the home screen's platform pills from a downscaled screenshot landed on the wrong control and toggled two filters.
+- **Fix:** the iOS Simulator tool's `swipe` across the switch knob (about 26pt, left→right for on, right→left for off) toggles it once, cleanly; dark mode was switched on and back off that way. For coordinates, convert from the screenshot you actually measured on: a `sips -Z 460` copy of a 1206×2622 shot is 212×460, so points are `x/212*402, y/460*874`; a full-size shot shown at 920 wide is `displayed × 0.437`.
+- **Remember:** drag, don't tap, a Switch. Undo any filter you toggled by accident before moving on — the person's home screen keeps that state.
