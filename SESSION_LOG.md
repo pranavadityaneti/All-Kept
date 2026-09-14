@@ -1326,3 +1326,25 @@ categories.
   the Settings credit row itself (the simulator tool crashed before I could scroll to it) — it is
   a SettingsRow like Privacy/Terms; and Android rendering (no emulator today).
 - Not pushed. Another session committed `1b989a4` (marketing) to main in between; mine sit on top.
+
+---
+
+## 2026-09-15 — Square cards, quiet chips, the heart, the logo, Manrope
+
+- Pranav's three notes on the new cards: the two large cards are squares now (`6f6ac0c`); the
+  interest chips looked like small cards once the cards took colour, so they became the platform
+  chips' capsule with only the mark in colour (`f1ba6da`, reverses the 14 Sep tinted chip); "Love
+  Quotes" and "Life" shared the set's one heart — Life wears two people, the heart is the picker's
+  and every old heart emoji still maps to it (`8d6208b`). Pushed on his Yes.
+- Why the simulator showed no logo: the wordmark files had spaces in their names; iOS re-encodes
+  an address it cannot parse and Metro looked for `.%2Fassets` (forlater 35, now closed). Renamed
+  to `assets/brand/wordmark-{light,dark}.png`, five references updated incl. the admin dashboard
+  (built locally the way Vercel does) and two design pages (`4b31db8`, pushed).
+- Manrope: `@expo-google-fonts/manrope` + `expo-font` (runtime load, no native change); `FONT`,
+  `MANROPE`, `font()` in `lib/theme.ts`; the scale and every inline weight go through `font()`
+  (static cuts, never a fontWeight on top); `_layout.tsx` gates first paint on `useFonts`. Metro
+  restarted for the new package (pid 6808, log in the scratchpad). Verified Home/Library/Settings;
+  Pranav kept it (`cad1ff7`, pushed). Note for later: Manrope runs wider than SF, body 17 → 16 may
+  read better; he did not ask for it.
+- The iOS Simulator control tool stopped working mid-session ("re-open the simulator panel");
+  screens were driven by deep link (`allkept:///settings`, `/library`) and `simctl` screenshots.
