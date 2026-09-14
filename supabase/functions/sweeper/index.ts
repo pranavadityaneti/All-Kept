@@ -46,7 +46,11 @@ Deno.serve(async (req) => {
     const dayAgo = new Date(Date.now() - 24 * 3_600_000).toISOString();
     const { data: noThumb, error: e3 } = await db.from("items").select("id").in("status", ["ready", "no_link", "preview_unavailable"]).is("thumbnail_path", null).not("thumbnail_url_remote", "is", null).lt("enrich_attempts", MAX_SNAPSHOT_ATTEMPTS).gt("created_at", dayAgo).lt("created_at", twoMinAgo).limit(BATCH);
     if (e3) throw e3;
-    const ids = [...new Set([...(due ?? []).map((r) => r.id as string), ...((unclassified ?? []) as { id: string }[]).map((r) => r.id), ...(noThumb ?? []).map((r) => r.id as string)])];
+    // 4. Settled cards with no picture at all whose page said "not now" — Instagram's login wall in
+    //    place of the post — and whose time to ask again has come. Bounded by the retry ladder.
+    const { data: previewDue, error: e4 } = await db.from("items").select("id").in("status", ["ready", "preview_unavailable"]).is("thumbnail_path", null).is("thumbnail_url_remote", null).lte("next_attempt_at", nowIso).limit(BATCH);
+    if (e4) throw e4;
+    const ids = [...new Set([...(due ?? []).map((r) => r.id as string), ...((unclassified ?? []) as { id: string }[]).map((r) => r.id), ...(noThumb ?? []).map((r) => r.id as string), ...(previewDue ?? []).map((r) => r.id as string)])];
     let ok = 0, failed = 0;
     // Stop taking new work before the Edge Function wall-time limit. Unstarted rows stay due.
     const deadline = Date.now() + 80_000;
@@ -63,7 +67,7 @@ Deno.serve(async (req) => {
       try { indexed = await indexSearchBatch(db, embedder(embeddingKey)); }
       catch { console.error("sweeper: search indexing failed; leases will expire for retry"); }
     }
-    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, processed: ok, failed, classifier: choice?.model ?? null });
+    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, processed: ok, failed, classifier: choice?.model ?? null });
   } catch (e) {
     console.error("sweeper failed", e);
     return new Response("internal error", { status: 500 });

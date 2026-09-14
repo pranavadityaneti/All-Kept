@@ -1,6 +1,6 @@
 // Runs enrichment and classification for one item against the database. Used by the webhook (right after capture), the poller and the sweeper.
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
-import { enrich, type EnrichableItem } from "./enrich.ts";
+import { enrich, type EnrichableItem, type EnrichResult } from "./enrich.ts";
 import { duplicateDeps, foldDuplicate } from "./duplicate.ts";
 import type { ItemIdentity } from "./contracts.ts";
 import { PROMPT_VERSION, type ClassifyDeps, type ModelUsage } from "./classify.ts";
@@ -65,6 +65,23 @@ export async function snapshotTo(db: SupabaseClient, fetchImpl: typeof fetch, us
 
 const reasonOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 200);
 
+/**
+ * A settled card with no picture at all whose page said "not now" — Instagram's login wall in place
+ * of the post — and whose time to ask again has come. A held address is the snapshot pass's
+ * business, not this one's; pending and failed saves have their own path.
+ */
+export function previewRetryDue(row: { status: string; thumbnail_path: string | null; thumbnail_url_remote: string | null; next_attempt_at: string | null }, now: Date): boolean {
+  if (row.status !== "ready" && row.status !== "preview_unavailable") return false;
+  if (row.thumbnail_path || row.thumbnail_url_remote || !row.next_attempt_at) return false;
+  return new Date(row.next_attempt_at).getTime() <= now.getTime();
+}
+
+/** When the sweeper should look at this save again: a failure's ladder, a settled card's preview retry, or never. */
+export function nextAttemptAfter(r: EnrichResult, now: Date): string | null {
+  const ms = r.status === "failed" ? r.retryAfterMs : r.retryPreviewAfterMs;
+  return ms && ms > 0 ? new Date(now.getTime() + ms).toISOString() : null;
+}
+
 /** The database side of sending a push, kept next to the only place that builds it. */
 function pushDeps(db: SupabaseClient, deps: PipelineDeps): PushDeps {
   return {
@@ -124,12 +141,14 @@ async function announce(db: SupabaseClient, deps: PipelineDeps, itemId: string, 
 
 /** Enriches (if pending/failed/no_link without thumbnail) and claims due classification work. Returns the category when known. */
 export async function runPipeline(db: SupabaseClient, itemId: string, deps: PipelineDeps, retryClassification = false): Promise<string | null> {
-  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, media_meta, captured_via, saved_at").eq("id", itemId).maybeSingle();
+  const { data: item, error } = await db.from("items").select("id, user_id, platform, kind, status, source_url, canonical_url, external_id, needs_expansion, title, text, note, author_name, thumbnail_url_remote, thumbnail_path, enrich_attempts, next_attempt_at, media_meta, captured_via, saved_at").eq("id", itemId).maybeSingle();
   if (error) throw error;
   if (!item) return null;
-  const it = item as EnrichableItem & { note: string | null; media_meta: Record<string, unknown> | null; captured_via: string; saved_at: string };
+  const it = item as EnrichableItem & { note: string | null; next_attempt_at: string | null; media_meta: Record<string, unknown> | null; captured_via: string; saved_at: string };
 
-  const needsEnrich = it.status === "pending" || it.status === "failed";
+  // A settled card asked to look for its preview again is enriched again: the patch only ever fills
+  // what is missing, so what the card already has stays.
+  let needsEnrich = it.status === "pending" || it.status === "failed" || previewRetryDue(it, new Date());
   // A card whose remote image was not stored yet (first try for no-link posts, or a failed fetch) gets a bounded number of further tries.
   // preview_unavailable is included deliberately: a provider that describes nothing — TikTok answers
   // 400 for every photo post — can still have a picture, found by the phone from the page itself.
@@ -139,16 +158,22 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
   if (needsSnapshot) {
     const meta: Record<string, unknown> = { ...(it.media_meta ?? {}) };
     let path: string | null = null;
+    let notAPicture = false;
     try {
       path = await snapshotTo(db, deps.fetch, it.user_id, it.id, it.thumbnail_url_remote!);
       delete meta["snapshot_error"];
     } catch (e) {
       meta["snapshot_error"] = reasonOf(e);
+      // The address was never a picture (a video post's video file): it comes off the save, and
+      // enrichment runs now to find the post's poster instead of this pass trying the file again.
+      notAPicture = String(meta["snapshot_error"]).startsWith("not an image");
       deps.log("pipeline: snapshot failed", { item: itemId, attempt: it.enrich_attempts + 1, reason: meta["snapshot_error"] });
     }
-    const { error: e4 } = await db.from("items").update({ ...(path ? { thumbnail_path: path } : {}), enrich_attempts: it.enrich_attempts + 1, media_meta: meta }).eq("id", itemId);
+    const { error: e4 } = await db.from("items").update({ ...(path ? { thumbnail_path: path } : {}), ...(notAPicture ? { thumbnail_url_remote: null } : {}), enrich_attempts: it.enrich_attempts + 1, media_meta: meta }).eq("id", itemId);
     if (e4) throw e4;
+    it.enrich_attempts += 1;
     if (path) it.thumbnail_path = path;
+    if (notAPicture) { it.thumbnail_url_remote = null; needsEnrich = true; }
   }
   if (needsEnrich) {
     // The same key the playlist door uses. Absent, a video's shape is simply not learned.
@@ -159,8 +184,7 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
       log: deps.log,
       ...(youtubeKey ? { youtubeKey } : {}),
     });
-    const patch: Record<string, unknown> = { ...r.patch, status: r.status, enrich_attempts: it.enrich_attempts + 1, next_attempt_at: null };
-    if (r.status === "failed") patch["next_attempt_at"] = r.retryAfterMs && r.retryAfterMs > 0 ? new Date(Date.now() + r.retryAfterMs).toISOString() : null;
+    const patch: Record<string, unknown> = { ...r.patch, status: r.status, enrich_attempts: it.enrich_attempts + 1, next_attempt_at: nextAttemptAfter(r, new Date()) };
     if (r.error) patch["media_meta"] = { ...(r.patch.media_meta ?? {}), last_error: r.error };
     const { error: e2 } = await db.from("items").update(patch).eq("id", itemId);
     if (e2) {
