@@ -184,7 +184,7 @@ export default function Home() {
               <View style={styles.grid}>
                 {grid.wide.map((c) => (
                   <View key={c.value} style={styles.wideCell}>
-                    <CategoryTile name={c.value} chosen={c.icon} wide onPress={() => openCategory(c.value)} />
+                    <CategoryTile name={c.value} chosen={c.icon} large onPress={() => openCategory(c.value)} />
                   </View>
                 ))}
               </View>
