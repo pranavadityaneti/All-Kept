@@ -63,17 +63,48 @@ describe("whether the row appears at all", () => {
 });
 
 describe("how a pill is drawn", () => {
+  const of = (kind: string, name = "Something") => interestStyle({ name, kind });
   it("gives every kind of thing its own colour and its own mark, so a person and a place never look alike", () => {
     const kinds = ["person", "brand", "product", "place", "recipe", "tool", "other"];
-    const styles = kinds.map((k) => interestStyle(k));
+    const styles = kinds.map((k) => of(k));
     expect(new Set(styles.map((s) => s.hue)).size).toBe(kinds.length);
     expect(new Set(styles.map((s) => s.glyph)).size).toBe(kinds.length);
     // The marks are filled glyphs, tinted in the pill's own colour; an outline would read as a button.
     for (const s of styles) expect(s.glyph).not.toMatch(/-outline$/);
-    expect(interestStyle("person").glyph).toBe("person-circle");
-    expect(interestStyle("place").glyph).toBe("navigate");
+    expect(of("person").glyph).toBe("person-circle");
+    expect(of("place").glyph).toBe("navigate");
   });
   it("draws a kind it has never heard of the way it draws 'other', rather than blank", () => {
-    expect(interestStyle("galaxy")).toEqual(interestStyle("other"));
+    expect(of("galaxy")).toEqual(of("other"));
+  });
+  it("wears the brand's own logo when the icon font carries one, in the pill's colour", () => {
+    expect(of("brand", "Google")).toEqual({ hue: of("brand").hue, glyph: "logo-google" });
+    expect(of("brand", "Apple").glyph).toBe("logo-apple");
+    expect(of("tool", "GitHub").glyph).toBe("logo-github");
+    expect(of("tool", "Figma").glyph).toBe("logo-figma");
+  });
+  it("matches the name as people write it: any case, spaces, dots and the names that differ from the glyph's", () => {
+    for (const [name, glyph] of [
+      ["google", "logo-google"], ["GOOGLE", "logo-google"], [" Google ", "logo-google"],
+      ["Node.js", "logo-nodejs"], ["NodeJS", "logo-nodejs"], ["Stack Overflow", "logo-stackoverflow"],
+      ["Hacker News", "logo-hackernews"], ["Linux", "logo-tux"], ["App Store", "logo-apple-appstore"],
+      ["Google Play", "logo-google-playstore"], ["Play Store", "logo-google-playstore"], ["Microsoft Edge", "logo-edge"],
+    ] as const) expect(of("brand", name).glyph, name).toBe(glyph);
+  });
+  it("falls back to the kind's mark for a brand the font has no logo for, and two such brands still share it", () => {
+    expect(of("brand", "IMDb").glyph).toBe(of("brand").glyph);
+    expect(of("tool", "Claude").glyph).toBe(of("tool").glyph);
+  });
+  it("matches the whole name only: a product line is not the house, and a word is not a brand", () => {
+    expect(of("brand", "Google Maps").glyph).toBe(of("brand").glyph);
+    expect(of("brand", "Apple Watch").glyph).toBe(of("brand").glyph);
+    expect(of("brand", "Chrome Hearts").glyph).toBe(of("brand").glyph);
+  });
+  it("wears a logo only as a brand or a tool: a product called Windows may be the ones in a house, and a recipe called Apple is never the company", () => {
+    expect(of("product", "Windows").glyph).toBe(of("product").glyph);
+    expect(of("recipe", "Apple").glyph).toBe(of("recipe").glyph);
+    expect(of("place", "Amazon").glyph).toBe(of("place").glyph);
+    expect(of("person", "Medium").glyph).toBe(of("person").glyph);
+    expect(of("other", "Steam").glyph).toBe(of("other").glyph);
   });
 });

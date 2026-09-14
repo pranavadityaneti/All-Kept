@@ -23,7 +23,7 @@ export function InterestPills({ interests, now, onPress }: { interests: Interest
 
 export function InterestPill({ interest, fresh, onPress }: { interest: Interest; fresh: boolean; onPress: () => void }) {
   const p = usePalette();
-  const { hue, glyph } = interestStyle(interest.kind);
+  const { hue, glyph } = interestStyle(interest);
   const saves = `${interest.n} ${interest.n === 1 ? "save" : "saves"}`;
   return (
     <Pressable

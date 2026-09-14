@@ -134,5 +134,46 @@ const LOOKS: Record<string, { hue: string; glyph: Glyph }> = {
   other: { hue: "#5F6675", glyph: "sparkles" },
 };
 
-/** A kind the classifier has not been taught yet is drawn like "other", never blank. */
-export const interestStyle = (kind: string): { hue: string; glyph: Glyph } => LOOKS[kind] ?? LOOKS["other"]!;
+/**
+ * The brand marks the icon font carries, keyed by the name as people write it: "Node.js", "node js"
+ * and "NodeJS" are one key, and a few names differ from the glyph's own ("Linux" is the penguin).
+ * Only ever a whole name — "Google" wears the logo, "Google Maps" does not, and "Chrome Hearts" is
+ * a fashion label — and only as a brand or a tool: a product called Windows may be the ones in a
+ * house, and a recipe called Apple is never the company. Typed against the font, so a misspelt
+ * glyph is a compile error rather than a blank chip.
+ */
+const LOGOS = {
+  alipay: "logo-alipay", amazon: "logo-amazon", android: "logo-android", angular: "logo-angular", apple: "logo-apple",
+  appstore: "logo-apple-appstore", appleappstore: "logo-apple-appstore", awsamplify: "logo-amplify",
+  behance: "logo-behance", bitbucket: "logo-bitbucket", bitcoin: "logo-bitcoin", chrome: "logo-chrome", googlechrome: "logo-chrome",
+  codepen: "logo-codepen", css: "logo-css3", css3: "logo-css3", deviantart: "logo-deviantart", discord: "logo-discord",
+  docker: "logo-docker", dribbble: "logo-dribbble", dropbox: "logo-dropbox", electron: "logo-electron", facebook: "logo-facebook",
+  figma: "logo-figma", firebase: "logo-firebase", firefox: "logo-firefox", flickr: "logo-flickr", foursquare: "logo-foursquare",
+  github: "logo-github", gitlab: "logo-gitlab", google: "logo-google", googleplay: "logo-google-playstore",
+  googleplaystore: "logo-google-playstore", playstore: "logo-google-playstore", hackernews: "logo-hackernews",
+  html: "logo-html5", html5: "logo-html5", instagram: "logo-instagram", javascript: "logo-javascript", laravel: "logo-laravel",
+  linkedin: "logo-linkedin", linux: "logo-tux", markdown: "logo-markdown", mastodon: "logo-mastodon", medium: "logo-medium",
+  microsoft: "logo-microsoft", microsoftedge: "logo-edge", node: "logo-nodejs", nodejs: "logo-nodejs", npm: "logo-npm",
+  paypal: "logo-paypal", pinterest: "logo-pinterest", playstation: "logo-playstation", python: "logo-python", react: "logo-react",
+  reactjs: "logo-react", reddit: "logo-reddit", rss: "logo-rss", sass: "logo-sass", skype: "logo-skype", slack: "logo-slack",
+  snapchat: "logo-snapchat", soundcloud: "logo-soundcloud", stackoverflow: "logo-stackoverflow", steam: "logo-steam",
+  tableau: "logo-tableau", threads: "logo-threads", tiktok: "logo-tiktok", tumblr: "logo-tumblr", twitch: "logo-twitch",
+  twitter: "logo-twitter", venmo: "logo-venmo", vercel: "logo-vercel", vimeo: "logo-vimeo", vk: "logo-vk", vue: "logo-vue",
+  vuejs: "logo-vue", wechat: "logo-wechat", whatsapp: "logo-whatsapp", windows: "logo-windows", wordpress: "logo-wordpress",
+  x: "logo-x", xbox: "logo-xbox", xing: "logo-xing", yahoo: "logo-yahoo", youtube: "logo-youtube",
+} as const satisfies Record<string, Glyph>;
+
+/** Lowercase letters and digits only, so the spelling on the pill never decides whether it wears a logo. */
+const logoKey = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+const WEARS_LOGO = new Set(["brand", "tool"]);
+
+/**
+ * How an interest is drawn: its kind's colour, and the most specific mark known for it — the brand's
+ * own logo where the font has one, else the kind's mark. A kind the classifier has not been taught
+ * yet is drawn like "other", never blank.
+ */
+export function interestStyle(interest: Pick<Interest, "name" | "kind">): { hue: string; glyph: Glyph } {
+  const look = LOOKS[interest.kind] ?? LOOKS["other"]!;
+  const logo = WEARS_LOGO.has(interest.kind) ? (LOGOS as Record<string, Glyph>)[logoKey(interest.name)] : undefined;
+  return { hue: look.hue, glyph: logo ?? look.glyph };
+}
