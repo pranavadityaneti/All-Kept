@@ -95,3 +95,20 @@ Deno.test("the twenty-sixth save answers 402 with a code the app and the extensi
   assertEquals(res.status, 402);
   assertEquals((await res.json() as { code: string }).code, "payment_required");
 });
+
+Deno.test("a picture the phone read from the post's own page travels with the save", async () => {
+  // The server is walled by Instagram now and then; the phone is not. What it read is stored the
+  // way any other picture address is — after the same host check the picture door applies.
+  const f = fake();
+  const poster = "https://scontent.cdninstagram.com/v/t51.82787-15/784075060_n.jpg?stp=cmp1_dst-jpg_e35_s640x640&_nc_ht=x";
+  assertEquals((await handleSaveLink(req({ text: URL, requestId: "request-123", pictureUrl: poster }), f.deps)).status, 200);
+  assertEquals(f.captured[0]!.snapshotUrl, poster);
+});
+
+Deno.test("a picture address that does not belong to the link's platform is left out, and the save still lands", async () => {
+  for (const pictureUrl of ["https://evil.example.com/a.jpg", "https://preview.redd.it/a.jpg", 42, null]) {
+    const f = fake();
+    assertEquals((await handleSaveLink(req({ text: URL, requestId: "request-123", pictureUrl }), f.deps)).status, 200);
+    assertEquals(f.captured[0]!.snapshotUrl, undefined, String(pictureUrl));
+  }
+});

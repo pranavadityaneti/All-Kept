@@ -3,6 +3,7 @@ import { LIMITS, type CaptureInput, type CaptureResult } from "../_shared/contra
 import { apiError, json, readJson } from "../_shared/http.ts";
 import { PaymentRequiredError } from "../_shared/capture.ts";
 import { ShareTokenRateLimited } from "../_shared/share-token.ts";
+import { isPictureHost } from "../_shared/picture-hosts.ts";
 
 export interface SaveLinkDeps {
   userId(req: Request): Promise<string | null>;
@@ -36,11 +37,18 @@ export async function handleSaveLink(req: Request, deps: SaveLinkDeps): Promise<
     return apiError("bad_request", "Stories disappear after 24 hours, so there is nothing to keep. Save the post or the profile instead.");
   }
 
+  // The phone may have read the post's own page for its picture: Instagram walls a datacentre now
+  // and then, never a phone. Only an address on the platform's own picture hosts is taken, because
+  // the server fetches what it is handed. Anything else is left out, and the save still lands.
+  const picture = body?.["pictureUrl"];
+  const pictureUrl = typeof picture === "string" && isPictureHost(picture, link.platform) ? picture : undefined;
+
   let result: CaptureResult;
   try {
     result = await deps.capture({
       userId, sourceId: null, sourceKind: "share", sourceEventId: requestId,
       savedAt: new Date().toISOString(), sharedUrl: link.canonicalUrl ?? link.sourceUrl!, sharedText: text,
+      ...(pictureUrl ? { snapshotUrl: pictureUrl } : {}),
     });
   } catch (e) {
     // The free saves are used and there is no subscription. 402 rather than 400: the app opens the
