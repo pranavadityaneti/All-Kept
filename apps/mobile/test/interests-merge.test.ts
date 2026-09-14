@@ -40,3 +40,12 @@ describe("one thread, not two", () => {
     expect(out[0]?.lastSavedAt).toBe(daysAgo(0));
   });
 });
+
+describe("the mark a folded thread wears", () => {
+  it("keeps the mark of the name that kept the label, and takes the other's when it has none", () => {
+    const withIcon = (name: string, n: number, icon: string | null) => ({ ...row(name, n, 0), icon });
+    expect(rankInterests([withIcon("Claude", 5, "chatbubbles"), withIcon("Claude Code", 4, "code-slash")], { taken: [], now })[0]!.icon).toBe("chatbubbles");
+    expect(rankInterests([withIcon("Claude", 5, null), withIcon("Claude Code", 4, "code-slash")], { taken: [], now })[0]!.icon).toBe("code-slash");
+    expect(rankInterests([withIcon("Claude", 5, null), withIcon("Claude Code", 4, null)], { taken: [], now })[0]!.icon).toBeNull();
+  });
+});

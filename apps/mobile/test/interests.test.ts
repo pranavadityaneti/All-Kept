@@ -9,6 +9,10 @@ const row = (name: string, n: number, lastDays: number, extra: Partial<InterestR
 });
 
 describe("ranking interests", () => {
+  it("carries the mark the sorting chose for a name, and drops one the app's font does not have", () => {
+    const out = rankInterests([{ ...row("IMDb", 4, 1), icon: "film" }, { ...row("Uber", 4, 1), icon: "not-a-glyph" }, row("Lyft", 4, 1)], { taken: [], now });
+    expect(out.map((i) => [i.name, i.icon])).toEqual([["IMDb", "film"], ["Uber", null], ["Lyft", null]]);
+  });
   it("keeps the floor even if the database were lenient", () => {
     expect(INTEREST_FLOOR).toBe(3);
     const out = rankInterests([row("Minecraft", 2, 1), row("Ariana Grande", 3, 1)], { taken: [], now });
@@ -63,7 +67,7 @@ describe("whether the row appears at all", () => {
 });
 
 describe("how a pill is drawn", () => {
-  const of = (kind: string, name = "Something") => interestStyle({ name, kind });
+  const of = (kind: string, name = "Something", icon: string | null = null) => interestStyle({ name, kind, icon: icon as never });
   it("gives every kind of thing its own colour and its own mark, so a person and a place never look alike", () => {
     const kinds = ["person", "brand", "product", "place", "recipe", "tool", "other"];
     const styles = kinds.map((k) => of(k));
@@ -99,6 +103,15 @@ describe("how a pill is drawn", () => {
     expect(of("brand", "Google Maps").glyph).toBe(of("brand").glyph);
     expect(of("brand", "Apple Watch").glyph).toBe(of("brand").glyph);
     expect(of("brand", "Chrome Hearts").glyph).toBe(of("brand").glyph);
+  });
+  it("wears the mark the sorting chose for the name, ahead of the kind's, and a logo ahead of both", () => {
+    expect(of("brand", "IMDb", "film").glyph).toBe("film");
+    expect(of("tool", "Claude", "chatbubbles").glyph).toBe("chatbubbles");
+    expect(of("person", "Julian Goldie", "book").glyph).toBe("book");
+    expect(of("brand", "Google", "cart").glyph).toBe("logo-google");
+    expect(of("brand", "IMDb", null).glyph).toBe(of("brand").glyph);
+    // The colour is still the kind's: a mark says what the thing is, the wash says what sort of thing.
+    expect(of("brand", "IMDb", "film").hue).toBe(of("brand").hue);
   });
   it("wears a logo only as a brand or a tool: a product called Windows may be the ones in a house, and a recipe called Apple is never the company", () => {
     expect(of("product", "Windows").glyph).toBe(of("product").glyph);

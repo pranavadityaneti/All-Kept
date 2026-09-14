@@ -7,9 +7,12 @@
  * the query that counts them is user_interests() and the hook is in home.ts. Kept free of runtime
  * imports so the rules can be tested without a renderer.
  */
-import { CATEGORIES } from "@allkept/contracts";
+import { CATEGORIES, ENTITY_ICONS, isEntityIcon, type EntityIcon } from "@allkept/contracts";
 import { categoryDisplayName } from "./category-names";
 import type { Glyph } from "./icon-names";
+
+/** Every mark the sorting may choose is a glyph the font has: a name that is not is a build error here, never a blank chip. */
+ENTITY_ICONS satisfies readonly Glyph[];
 import { RESERVED_NAMES } from "./user-categories";
 
 /** What user_interests() returns, one row per name. */
@@ -20,6 +23,8 @@ export interface InterestRow {
   last_saved_at: string;
   crossed_at: string | null;
   category: string | null;
+  /** The mark the sorting chose for the name; null until the sweeper's icon pass has been round. Absent from a server that predates it. */
+  icon?: string | null;
 }
 
 export interface Interest {
@@ -29,6 +34,8 @@ export interface Interest {
   lastSavedAt: string;
   crossedAt: string | null;
   category: string | null;
+  /** The mark the sorting chose, when it is one the font has. */
+  icon: EntityIcon | null;
   score: number;
 }
 
@@ -70,8 +77,8 @@ const wordOf = (short: string, long: string): boolean => new RegExp(`(^|\\s)${es
  * One thread, not two. "Claude" and "Claude Code" are the same interest, and so are "Ariana" and
  * "Ariana Grande": where one name is a whole word of the other, the two fold into one. The name
  * saved more often keeps the label — it is the spelling the person uses — and takes the other's
- * count, the more recent save, and the earlier crossing. Folded before the floor is applied, so two
- * halves of one thread can make an interest between them.
+ * count, the more recent save, the earlier crossing, and the mark when it has none of its own.
+ * Folded before the floor is applied, so two halves of one thread can make an interest between them.
  */
 export function mergeThreads(rows: readonly InterestRow[]): InterestRow[] {
   const ordered = [...rows].sort((a, b) => b.n - a.n || a.name.length - b.name.length);
@@ -83,6 +90,7 @@ export function mergeThreads(rows: readonly InterestRow[]): InterestRow[] {
     home.n += r.n;
     if (r.last_saved_at > home.last_saved_at) home.last_saved_at = r.last_saved_at;
     if (r.crossed_at && (!home.crossed_at || r.crossed_at < home.crossed_at)) home.crossed_at = r.crossed_at;
+    if (!home.icon && r.icon) home.icon = r.icon;
   }
   return groups;
 }
@@ -107,6 +115,7 @@ export function rankInterests(rows: readonly InterestRow[], options: { taken: re
       lastSavedAt: r.last_saved_at,
       crossedAt: r.crossed_at,
       category: r.category,
+      icon: isEntityIcon(r.icon) ? r.icon : null,
       score: r.n * (1 + Math.max(0, 1 - daysSince(r.last_saved_at, now) / RECENCY_DAYS)),
     }))
     .sort((a, b) => b.score - a.score || b.lastSavedAt.localeCompare(a.lastSavedAt))
@@ -169,11 +178,13 @@ const WEARS_LOGO = new Set(["brand", "tool"]);
 
 /**
  * How an interest is drawn: its kind's colour, and the most specific mark known for it — the brand's
- * own logo where the font has one, else the kind's mark. A kind the classifier has not been taught
- * yet is drawn like "other", never blank.
+ * own logo where the font has one, else the mark the sorting chose for the name (film for IMDb),
+ * else the kind's mark. The wash stays the kind's whatever the mark: the mark says what the thing
+ * is, the colour what sort of thing. A kind the classifier has not been taught yet is drawn like
+ * "other", never blank.
  */
-export function interestStyle(interest: Pick<Interest, "name" | "kind">): { hue: string; glyph: Glyph } {
+export function interestStyle(interest: Pick<Interest, "name" | "kind" | "icon">): { hue: string; glyph: Glyph } {
   const look = LOOKS[interest.kind] ?? LOOKS["other"]!;
   const logo = WEARS_LOGO.has(interest.kind) ? (LOGOS as Record<string, Glyph>)[logoKey(interest.name)] : undefined;
-  return { hue: look.hue, glyph: logo ?? look.glyph };
+  return { hue: look.hue, glyph: logo ?? interest.icon ?? look.glyph };
 }
