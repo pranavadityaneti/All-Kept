@@ -3,10 +3,11 @@ import { cardsFor } from "./cards";
 import type { WaitlistAdProps } from "./props";
 import { Hook } from "./scenes/Hook";
 import { Pile } from "./scenes/Pile";
+import { Search } from "./scenes/Search";
 import { Sort } from "./scenes/Sort";
-import { HOOK, PILE, SORT } from "./timeline";
+import { HOOK, PILE, SEARCH, SORT } from "./timeline";
 
-export const WaitlistAd: React.FC<WaitlistAdProps> = ({ country, headline, subline, categories }) => {
+export const WaitlistAd: React.FC<WaitlistAdProps> = ({ country, headline, subline, categories, searchTerm }) => {
   const cards = cardsFor(country);
   return (
     <AbsoluteFill>
@@ -18,6 +19,9 @@ export const WaitlistAd: React.FC<WaitlistAdProps> = ({ country, headline, subli
       </Sequence>
       <Sequence from={SORT.from} durationInFrames={SORT.length} name="Sort">
         <Sort cards={cards} categories={categories} />
+      </Sequence>
+      <Sequence from={SEARCH.from} durationInFrames={SEARCH.length} name="Search">
+        <Search cards={cards} categories={categories} term={searchTerm} />
       </Sequence>
     </AbsoluteFill>
   );

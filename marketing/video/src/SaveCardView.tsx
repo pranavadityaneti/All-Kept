@@ -1,7 +1,7 @@
 import { Img, staticFile } from "remotion";
 import type { Ratio, SaveCard } from "./cards";
 import { PlatformBadge } from "./PlatformBadge";
-import { INK } from "./theme";
+import { INK, PURPLE } from "./theme";
 
 /** Picture box per shape. Widths differ so a Short reads tall and a YouTube video reads wide. */
 const PICTURE: Record<Ratio, { w: number; h: number }> = {
@@ -36,7 +36,21 @@ const TextPost: React.FC<{ title: string; icon: string; width: number }> = ({ ti
 );
 
 /** Looks like an All Kept library card: picture, title, platform badge — in the shape the platform is known for. */
-export const SaveCardView: React.FC<{ card: SaveCard; fontFamily: string }> = ({ card, fontFamily }) => {
+/** The title, with the searched-for word set on the brand purple when there is one. */
+const Title: React.FC<{ text: string; highlight?: string | undefined }> = ({ text, highlight }) => {
+  if (!highlight) return <>{text}</>;
+  const at = text.toLowerCase().indexOf(highlight.toLowerCase());
+  if (at === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, at)}
+      <span style={{ background: PURPLE, color: "white", borderRadius: 8, padding: "0 6px" }}>{text.slice(at, at + highlight.length)}</span>
+      {text.slice(at + highlight.length)}
+    </>
+  );
+};
+
+export const SaveCardView: React.FC<{ card: SaveCard; fontFamily: string; highlight?: string | undefined }> = ({ card, fontFamily, highlight }) => {
   const pic = PICTURE[card.ratio];
   const { w, h } = cardSize(card);
   return (
@@ -111,7 +125,7 @@ export const SaveCardView: React.FC<{ card: SaveCard; fontFamily: string }> = ({
       </div>
       {card.photo ? (
         <div style={{ padding: "18px 22px 0", color: INK, fontSize: 30, fontWeight: 600, lineHeight: 1.2 }}>
-          {card.title}
+          <Title text={card.title} highlight={highlight} />
         </div>
       ) : null}
     </div>
