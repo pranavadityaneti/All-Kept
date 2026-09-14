@@ -24,6 +24,14 @@ describe("marks", () => {
     expect(markFor("bed-outline")).toBe("hotel-bed-5");
   });
 
+  it("keeps the heart for categories people make, so a 'Love Quotes' never wears a built-in's mark", () => {
+    for (const heart of ["red_heart", "yellow_heart", "two_hearts", "heart-outline"]) {
+      expect(markFor(heart), heart).toBe("user-feedback-heart");
+      for (const c of CATEGORIES) expect(builtInMark(c), c).not.toBe(markFor(heart));
+    }
+    expect(PICKER_MARKS).toContain("user-feedback-heart");
+  });
+
   it("draws the default for a value it does not recognise rather than nothing", () => {
     expect(markFor("not-a-mark")).toBe(DEFAULT_MARK);
     expect(markFor(null)).toBe(DEFAULT_MARK);

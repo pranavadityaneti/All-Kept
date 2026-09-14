@@ -28,7 +28,7 @@ export const MARK_KEYS = [
   "sail-ship", "scissors", "screen-1", "shipping-box-1", "shopping-basket-1", "smiley-laughing-1", "sofa",
   "star-circle", "star-medal", "steps-1", "strawberry", "suitcase-rolling", "sun", "tablet-capsule", "tag-alt",
   "telescope", "theater-mask", "ticket-1", "tool-box", "treasure-chest", "tree-1", "user-feedback-heart",
-  "user-podcast", "watch-1", "wine",
+  "user-multiple-accounts", "user-podcast", "watch-1", "waving-hand", "wine",
 ] as const;
 
 export type MarkKey = (typeof MARK_KEYS)[number];
@@ -52,11 +52,13 @@ const BUILT_IN: Record<string, MarkKey> = {
   "Entertainment": "film-slate",
   "Humour & memes": "smiley-laughing-1",
   "News & opinion": "news-paper",
-  "Life & relationships": "user-feedback-heart",
+  // Two people, not the heart: the heart is the mark people reach for when they make a category of
+  // their own ("Love Quotes"), and a built-in must not wear what a person's own category wears.
+  "Life & relationships": "user-multiple-accounts",
   "Other": "file-folder",
   "Fashion & shopping": "bag",
   "Quotes & motivation": "user-feedback-heart",
-  "People & personal": "user-feedback-heart",
+  "People & personal": "user-multiple-accounts",
 };
 
 /** The Fluent emoji keys the second version stored. Each maps to the nearest mark rather than to the default. */
@@ -103,7 +105,7 @@ export const PICKER_MARKS: readonly MarkKey[] = [
   "burger", "chef-toque-hat", "cake-slice", "coffee-mug", "wine", "ice-cream-2", "strawberry", "cherries",
   "beach", "suitcase-rolling", "map-fold", "earth-1", "hot-air-balloon", "sail-ship", "bus", "bicycle-bike",
   "home-1", "hotel-bed-5", "potted-flower", "tree-1", "candle", "hot-spring", "sun", "moon-stars",
-  "pet-paw", "dog-1", "fish", "steps-1", "ball", "star-medal", "tablet-capsule",
+  "user-feedback-heart", "waving-hand", "pet-paw", "dog-1", "fish", "steps-1", "ball", "star-medal", "tablet-capsule",
   "piggy-bank", "shopping-basket-1", "diamond-1", "watch-1", "scissors", "paintbrush-2", "magic-wand-1",
   "tool-box", "padlock-key", "module", "ai-science-robot", "telescope", "multiple-stars", "treasure-chest",
 ];
