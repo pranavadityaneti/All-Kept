@@ -20,6 +20,32 @@ export type Category = (typeof CATEGORIES)[number];
 export const ENTITY_TYPES = ["place", "product", "recipe", "tool", "person", "brand", "other"] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
+/**
+ * The marks an interest may wear: names of filled glyphs in the app's icon font, chosen by the
+ * sorting model for each named thing so that IMDb reads as film and a cookbook as a book, rather
+ * than every brand wearing the same tag. The first seven are the kinds' own marks, so there is
+ * always an honest choice when nothing more specific fits. The app checks each name against the
+ * font at compile time; a name that is not a glyph there is a build error, never a blank chip.
+ */
+export const ENTITY_ICONS = [
+  "person-circle", "pricetag", "cube", "navigate", "restaurant", "construct", "sparkles",
+  "film", "videocam", "tv", "game-controller", "dice", "musical-notes", "headset", "mic", "radio", "ticket",
+  "book", "library", "newspaper", "document-text", "school", "language", "calculator",
+  "code-slash", "terminal", "hardware-chip", "server", "cloud", "git-branch", "bug", "hammer", "cut", "layers", "apps",
+  "extension-puzzle", "phone-portrait", "laptop", "desktop", "watch", "key", "lock-closed", "shield-checkmark",
+  "camera", "image", "color-palette", "brush", "shirt", "glasses", "diamond", "gift",
+  "bag-handle", "cart", "storefront", "cash", "card", "wallet", "trending-up", "stats-chart", "business", "briefcase",
+  "rocket", "bulb", "chatbubbles", "mail", "calendar", "time",
+  "globe", "map", "compass", "airplane", "car", "bicycle", "boat", "train", "bed", "home",
+  "leaf", "flower", "paw", "fish", "planet", "telescope", "sunny", "moon", "thunderstorm", "snow", "flame", "water", "umbrella",
+  "fast-food", "pizza", "cafe", "wine", "beer", "ice-cream", "nutrition",
+  "fitness", "barbell", "football", "basketball", "tennisball", "golf", "baseball", "american-football", "trophy", "walk",
+  "body", "heart", "pulse", "medkit", "bandage", "flask",
+  "people", "happy", "star", "ribbon", "flag", "balloon",
+] as const;
+export type EntityIcon = (typeof ENTITY_ICONS)[number];
+export const isEntityIcon = (v: unknown): v is EntityIcon => typeof v === "string" && (ENTITY_ICONS as readonly string[]).includes(v);
+
 export const ACTIONABILITY = ["watch", "try", "buy", "go", "read", "reference", "none"] as const;
 export type Actionability = (typeof ACTIONABILITY)[number];
 
@@ -87,7 +113,8 @@ export interface ItemAiOutput {
   category: Category;
   tags: string[];
   summary: string;
-  entities: { type: EntityType; name: string }[];
+  /** The icon is absent until the sweeper's icon pass has chosen one for the name. */
+  entities: { type: EntityType; name: string; icon?: EntityIcon }[];
   language: string;
   actionability: Actionability;
   confidence: number;
