@@ -5,6 +5,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { Stack, useRouter } from "expo-router";
 import { configureBilling, entitlementKey, reportStorefront, setShareQueueBlocked } from "../lib/billing";
 import { ensureShareToken, flushShareQueue } from "../lib/share-save";
+import { backfillInstagramPictures, pictureDeps } from "../lib/instagram-picture";
 import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
 import { backfillUnresolvedLinks, resolveDeps } from "../lib/resolve-backfill";
 import { StatusBar } from "expo-status-bar";
@@ -80,6 +81,8 @@ function Shell() {
       void ensureShareToken().then(() => flushShareQueue(queryClient)).then((r) => setShareQueueBlocked(queryClient, r.blocked)).catch(() => undefined);
       // Reddit tells only a phone where a post's picture is, so the phone looks while it is awake.
       void backfillRedditThumbnails(backfillDeps()).catch(() => undefined);
+      // And Instagram shows a phone the post it walls a datacentre from: the share-sheet saves it left pictureless.
+      void backfillInstagramPictures(pictureDeps()).catch(() => undefined);
       // And only a phone may follow the short links the share sheet posts straight to the server.
       void backfillUnresolvedLinks(resolveDeps()).then((r) => { if (r.resolved > 0) invalidateLibrary(queryClient); }).catch(() => undefined);
     };

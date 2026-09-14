@@ -7,6 +7,7 @@ import { saveLink } from "@allkept/normalize";
 import { IconButton } from "./IconButton";
 import { invalidateLibrary } from "../lib/library";
 import { isPaymentRequired } from "../lib/paywall";
+import { pictureForSave } from "../lib/instagram-picture";
 import { resolveForSave } from "../lib/resolve-link";
 import { supabase } from "../lib/supabase";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -61,10 +62,12 @@ export function SaveLinkField() {
     try {
       // Followed here rather than on the server: some sites refuse their own share links to a datacentre.
       const value = await resolveForSave(text);
+      // Instagram walls a datacentre now and then, never a phone: the post's poster is read here and travels with the save.
+      const pictureUrl = await pictureForSave(value);
       // The same id on a retry, so a save that already landed is not made twice.
       if (attempt.current?.text !== value) attempt.current = { text: value, id: `${Date.now()}-${Math.random().toString(36).slice(2)}` };
       const { data, error } = await supabase.functions.invoke<SaveLinkResponse>("save-link", {
-        body: { text: value, requestId: attempt.current.id },
+        body: { text: value, requestId: attempt.current.id, ...(pictureUrl ? { pictureUrl } : {}) },
       });
       // The free saves are used: the link stays in the field, and the paywall opens over it.
       if (isPaymentRequired(error)) { router.push("/subscribe"); return; }

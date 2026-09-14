@@ -7,6 +7,7 @@ import type { SaveLinkResponse } from "@allkept/contracts";
 import { saveLink } from "@allkept/normalize";
 import { Button } from "../components/Button";
 import { Screen } from "../components/Screen";
+import { pictureForSave } from "../lib/instagram-picture";
 import { resolveForSave } from "../lib/resolve-link";
 import { invalidateLibrary } from "../lib/library";
 import { isPaymentRequired } from "../lib/paywall";
@@ -36,10 +37,12 @@ export default function SaveLink() {
     // Resolved here rather than on the server: a phone is an ordinary client, and some sites refuse
     // to follow their own share links for anything running in a datacentre.
     const value = await resolveForSave(text);
+    // Instagram walls a datacentre now and then, never a phone: the post's poster is read here and travels with the save.
+    const pictureUrl = await pictureForSave(value);
     if (attempt.current?.text !== value) attempt.current = { text: value, id: `${Date.now()}-${Math.random().toString(36).slice(2)}` };
     try {
       const { data, error: failure } = await supabase.functions.invoke<SaveLinkResponse>("save-link", {
-        body: { text: value, requestId: attempt.current.id },
+        body: { text: value, requestId: attempt.current.id, ...(pictureUrl ? { pictureUrl } : {}) },
       });
       // The free saves are used: the link stays where it is, and the paywall opens over it.
       if (isPaymentRequired(failure)) { router.push("/subscribe"); return; }
