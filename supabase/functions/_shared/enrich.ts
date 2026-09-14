@@ -484,14 +484,19 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         // A declared og:title is trusted; a bare <title> is not, because that is where a block page
         // puts its own name.
         const declared = og.ogTitle ?? og.twitterTitle;
-        const usable = declared ?? (looksLikeBlockTitle(og.title) ? undefined : og.title);
+        const walled = !declared && looksLikeBlockTitle(og.title);
+        const usable = declared ?? (walled ? undefined : og.title);
         const description = isJustTheSiteName(og.description, platform, og.siteName) ? undefined : og.description;
         if (usable && !item.title) patch.title = usable;
         if (description && !item.text) patch.text = description;
         if (og.image && !item.thumbnail_url_remote) patch.thumbnail_url_remote = og.image;
         if (og.author && !item.author_name) patch.author_name = og.author;
         if (og.siteName) patch.media_meta = { site_name: og.siteName };
-        if (!usable && !description) status = "preview_unavailable";
+        if (!usable && !description) {
+          status = "preview_unavailable";
+          // A wall's own page is "not now", the same as Instagram's login page: asked again along the ladder.
+          if (walled) pageRead = { page: null, denied: true };
+        }
       }
 
       if (askThePage && /^https?:\/\//.test(target)) {

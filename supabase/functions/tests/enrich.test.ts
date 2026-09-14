@@ -651,3 +651,12 @@ Deno.test("a snapshot that failed for any other reason keeps the address for the
   assertEquals([r.status, r.patch.thumbnail_url_remote, r.retryPreviewAfterMs], ["ready", POSTER, undefined]);
   assertEquals((r.patch.media_meta as Record<string, unknown>)["snapshot_error"], "http 503");
 });
+
+Deno.test("a captcha wall on an ordinary link is 'not now' as well: unavailable meanwhile, asked again along the ladder", async () => {
+  const wall = '<html><head><title>Just a moment...</title></head></html>';
+  const r = await enrich(base({ platform: "web", kind: "article", canonical_url: "https://site/page", external_id: null, text: null }), deps(fakeFetch({ "https://site/page": () => new Response(wall, { headers: { "content-type": "text/html" } }) })));
+  assertEquals([r.status, r.patch.title, r.retryPreviewAfterMs], ["preview_unavailable", undefined, RETRY_LADDER_MS[0]]);
+  // A page that is simply empty is not a wall: final.
+  const empty = await enrich(base({ platform: "web", kind: "article", canonical_url: "https://site/blank", external_id: null, text: null }), deps(fakeFetch({ "https://site/blank": () => new Response("<html></html>", { headers: { "content-type": "text/html" } }) })));
+  assertEquals([empty.status, empty.retryPreviewAfterMs], ["preview_unavailable", undefined]);
+});
