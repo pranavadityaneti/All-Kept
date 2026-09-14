@@ -23,7 +23,9 @@ export interface EnrichableItem {
 
 export interface EnrichPatch {
   platform?: Platform; kind?: Kind; source_url?: string; canonical_url?: string | null; external_id?: string | null; needs_expansion?: boolean;
-  title?: string; text?: string; author_name?: string; author_handle?: string; thumbnail_url_remote?: string; thumbnail_path?: string;
+  title?: string; text?: string; author_name?: string; author_handle?: string; thumbnail_path?: string;
+  /** null takes a held address off the save: the door handed over something that is not a picture. */
+  thumbnail_url_remote?: string | null;
   media_meta?: Record<string, unknown>;
 }
 
@@ -32,6 +34,12 @@ export interface EnrichResult {
   patch: EnrichPatch;
   /** Set when the fetch failed in a retryable way (429, 5xx, network). */
   retryAfterMs?: number;
+  /**
+   * Set when the card is settled but its page said "not now" — a login wall answered instead of the
+   * post, or the page could not be read — and no picture is held at all. The status stands, the
+   * card is shown and sorted meanwhile, and the page is asked for again after this long.
+   */
+  retryPreviewAfterMs?: number;
   error?: string;
 }
 
@@ -333,11 +341,32 @@ function classifyHttp(status: number): "unavailable" | "retry" | "ok" {
   return "unavailable";
 }
 
+const reasonOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 200);
+
 export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<EnrichResult> {
   const patch: EnrichPatch = {};
   const retry = (error: string): EnrichResult => ({
     status: "failed", patch, error, retryAfterMs: item.enrich_attempts < RETRY_LADDER_MS.length ? RETRY_LADDER_MS[item.enrich_attempts]! : 0,
   });
+  /** The picture address this run leaves on the save. A patch of null has taken the item's own away, so ?? would be wrong here. */
+  const heldPicture = () => (patch.thumbnail_url_remote === undefined ? item.thumbnail_url_remote : patch.thumbnail_url_remote);
+
+  /**
+   * The permalink's own page, read at most once per run. `page` is the page we asked for, or null;
+   * `denied` says the page was withheld — a wall answered with a different page (Instagram serves
+   * its front door, logo and all, to a datacentre), or it could not be read at all. Withheld is
+   * "not now", which is not the same as a page that honestly names no picture.
+   */
+  let pageRead: { page: Awaited<ReturnType<typeof fetchOpenGraph>>; denied: boolean } | null = null;
+  const readPage = async (target: string | null) => {
+    if (pageRead) return pageRead;
+    if (!target || !/^https?:\/\//.test(target)) return (pageRead = { page: null, denied: false });
+    const page = await fetchOpenGraph(deps.fetch, target);
+    const wrong = !!page && isWrongPage(page.og.url, patch.external_id ?? item.external_id);
+    if (wrong) deps.log("enrich: fallback page is not the one asked for", { item: item.id, declared: page.og.url?.slice(0, 80) });
+    else if (!page) deps.log("enrich: link-preview fallback unavailable", { item: item.id, platform: item.platform });
+    return (pageRead = { page: wrong ? null : page, denied: wrong || !page });
+  };
 
   /**
    * Every way out of here but a retry. A provider that answered and taught us nothing has not made a
@@ -346,13 +375,17 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
    */
   const settled = (final: ItemStatus, error?: string): EnrichResult => {
     const known = !!(patch.title ?? item.title) || !!(patch.text ?? item.text)
-      || !!(patch.author_name ?? item.author_name) || !!(patch.thumbnail_url_remote ?? item.thumbnail_url_remote);
+      || !!(patch.author_name ?? item.author_name) || !!heldPicture();
     let out = final;
     if (out === "ready" && platform !== "note" && !known) {
       deps.log("enrich: nothing learned", { item: item.id, platform });
       out = "preview_unavailable";
     }
-    return error === undefined ? { status: out, patch } : { status: out, patch, error };
+    // The page said "not now" and no picture is held at all: ask again, a few times, spaced out.
+    // Bounded by the same ladder as a failure, but the card is not one — it stands meanwhile.
+    const askAgain = pageRead?.denied && !heldPicture() && !(patch.thumbnail_path ?? item.thumbnail_path)
+      ? RETRY_LADDER_MS[item.enrich_attempts] : undefined;
+    return { status: out, patch, ...(askAgain !== undefined ? { retryPreviewAfterMs: askAgain } : {}), ...(error !== undefined ? { error } : {}) };
   };
 
   let platform = item.platform;
@@ -440,7 +473,7 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         // Reddit answers our server 403 for the post page, and every non-browser client a JS
         // challenge, so asking it is a wasted request on every single save. Its picture comes from
         // the feed in step 3b instead. See ERRORS.md, 12 Sep.
-        askThePage = platform !== "reddit" && (!(patch.author_name ?? item.author_name) || !(patch.thumbnail_url_remote ?? item.thumbnail_url_remote));
+        askThePage = platform !== "reddit" && (!(patch.author_name ?? item.author_name) || !heldPicture());
       } else {
         const html = await readHead(res, MAX_HTML_BYTES);
         const og = parseOpenGraph(html);
@@ -462,19 +495,15 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       }
 
       if (askThePage && /^https?:\/\//.test(target)) {
-        const page = await fetchOpenGraph(deps.fetch, target);
-        // The fallback reads a page too, and can be handed the same substitute.
-        if (page && isWrongPage(page.og.url, patch.external_id ?? item.external_id)) {
-          deps.log("enrich: fallback page is not the one asked for", { item: item.id, declared: page.og.url?.slice(0, 80) });
-          return settled(verdict === "unavailable" ? "preview_unavailable" : status);
-        }
+        // The fallback reads a page too, and can be handed the same substitute; readPage keeps that out.
+        const { page } = await readPage(target);
         const ig = page && platform === "instagram" ? parseInstagramOpenGraph(page.html) : {};
         const description = page && !isJustTheSiteName(page.og.description, platform, page.og.siteName) ? page.og.description : undefined;
         let learned = false;
         if (page) {
           if (!(patch.author_name ?? item.author_name) && (ig.authorName ?? page.og.author)) { patch.author_name = ig.authorName ?? page.og.author; learned = true; }
           if (ig.authorHandle && !patch.author_handle) { patch.author_handle = ig.authorHandle; learned = true; }
-          if (!(patch.thumbnail_url_remote ?? item.thumbnail_url_remote) && page.og.image) { patch.thumbnail_url_remote = page.og.image; learned = true; }
+          if (!heldPicture() && page.og.image) { patch.thumbnail_url_remote = page.og.image; learned = true; }
           if (!item.text && !patch.text && (ig.caption ?? description)) { patch.text = ig.caption ?? description; learned = true; }
           // Only a declared preview title, never the page's own <title>, which on a login wall reads "Login".
           if (!item.title && !patch.title && !patch.text && page.og.ogTitle) { patch.title = page.og.ogTitle; learned = true; }
@@ -483,7 +512,8 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
           patch.media_meta = { ...(patch.media_meta ?? {}), link_preview: true };
           status = "ready"; // no-link posts never reach here, so a card is what this becomes
         } else {
-          deps.log(page ? "enrich: link-preview tags absent" : "enrich: link-preview fallback unavailable", { item: item.id, platform });
+          // A page with no preview tags at all is a script shell (x.com serves one): final, unlike a wall.
+          if (page) deps.log("enrich: link-preview tags absent", { item: item.id, platform });
           // Only now is there truly nothing to show.
           if (verdict === "unavailable") status = "preview_unavailable";
         }
@@ -509,15 +539,35 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
   }
 
   // 4. Thumbnail snapshot (never fails the item).
-  const thumbUrl = patch.thumbnail_url_remote ?? item.thumbnail_url_remote;
+  const thumbUrl = heldPicture();
   if (thumbUrl && !item.thumbnail_path) {
     try {
       const path = await deps.snapshot(item.user_id, item.id, thumbUrl);
       if (path) patch.thumbnail_path = path;
     } catch (e) {
-      const reason = (e instanceof Error ? e.message : String(e)).slice(0, 200);
+      let reason = reasonOf(e);
       deps.log("enrich: snapshot failed", { item: item.id, reason });
-      patch.media_meta = { ...(patch.media_meta ?? {}), snapshot_error: reason }; // the sweeper retries while the remote link is fresh
+      if (reason.startsWith("not an image")) {
+        // The address a door handed over is not a picture: Instagram's DM sends a video post as its
+        // video file. The post's own page names its poster, and that is the picture. Failing that
+        // the address comes off the save, so nothing keeps trying a video as a picture — and, if the
+        // page was withheld, it is asked for again later like any other.
+        const poster = (await readPage(target)).page?.og.image;
+        if (poster && poster !== thumbUrl) {
+          patch.thumbnail_url_remote = poster;
+          try {
+            const path = await deps.snapshot(item.user_id, item.id, poster);
+            if (path) patch.thumbnail_path = path;
+            reason = "";
+          } catch (e2) {
+            reason = reasonOf(e2);
+            deps.log("enrich: snapshot failed", { item: item.id, reason });
+          }
+        } else {
+          patch.thumbnail_url_remote = null;
+        }
+      }
+      if (reason) patch.media_meta = { ...(patch.media_meta ?? {}), snapshot_error: reason }; // the sweeper retries while the remote link is fresh
     }
   }
 

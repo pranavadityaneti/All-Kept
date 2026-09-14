@@ -113,6 +113,8 @@ Deno.test("instagram: a failing link-preview fetch leaves the item ready with wh
   const r = await enrich(base(), d);
   assertEquals([r.status, r.patch.author_name, r.patch.thumbnail_url_remote, r.retryAfterMs], ["ready", undefined, undefined, undefined]);
   assertEquals(logged, ["enrich: link-preview fallback unavailable"]);
+  // A page that could not be read now is asked for again later: the card is settled, not failed.
+  assertEquals(r.retryPreviewAfterMs, RETRY_LADDER_MS[0]);
 });
 
 Deno.test("oEmbed that already names the author and thumbnail never touches the page", async () => {
@@ -139,13 +141,14 @@ Deno.test("parseOpenGraph keeps apostrophes inside double-quoted content and rea
   assertEquals([og.title, og.description], ["Don't stop", 'He said "hi"']);
 });
 
-Deno.test("instagram: a page without link-preview tags (login wall) is logged and adds nothing", async () => {
+Deno.test("a page without any link-preview tags (a script shell, as x.com serves) is logged, adds nothing, and is not asked again", async () => {
   const logged: string[] = [];
   const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, "https://www.instagram.com/reel/DcVMQIIMa5-/": () => new Response("<html><head><title>Login</title></head></html>") }));
   d.log = (m) => { logged.push(m); };
   const r = await enrich(base(), d);
   assertEquals([r.status, r.patch.author_name, (r.patch.media_meta as Record<string, unknown>)["link_preview"]], ["ready", undefined, undefined]);
   assertEquals(logged, ["enrich: link-preview tags absent"]);
+  assertEquals(r.retryPreviewAfterMs, undefined);
 });
 
 Deno.test("a failed snapshot is recorded on the item for the sweeper to retry, and the card stays ready", async () => {
@@ -553,6 +556,7 @@ Deno.test("a post whose provider says nothing and whose page is a login wall is 
   const r = await enrich(base({ kind: "post", text: null }), deps(f));
   assertEquals(r.status, "preview_unavailable");
   assertEquals([r.patch.title, r.patch.text, r.patch.author_name, r.patch.thumbnail_url_remote], [undefined, undefined, undefined, undefined]);
+  assertEquals(r.retryPreviewAfterMs, RETRY_LADDER_MS[0]);
 });
 
 Deno.test("a short link that resolved to nothing readable is still reported as unresolved", async () => {
@@ -563,4 +567,87 @@ Deno.test("a short link that resolved to nothing readable is still reported as u
   const r = await enrich(base({ platform: "tiktok", kind: "short_video", source_url: "https://vm.tiktok.com/ZS9dHGEcApLyX", canonical_url: null, external_id: null, needs_expansion: true, text: null }), deps(f));
   assertEquals(r.status, "preview_unavailable");
   assert((r.error ?? "").includes("unrecognised"));
+});
+
+/** What Instagram serves a datacentre instead of a post, as observed on 14 Sep 2026: its own front page, logo and all. */
+const IG_WALL = `<html><head><meta property="og:site_name" content="Instagram" /><meta property="og:title" content="Instagram" />
+<meta property="og:image" content="https://static.cdninstagram.com/rsrc.php/v4/yD/r/R0fBIMurK8v.png" />
+<meta property="og:url" content="https://instagram.com/" /><title>Instagram</title></head></html>`;
+const IG_POST = "https://www.instagram.com/reel/DcVMQIIMa5-/";
+const POSTER = "https://scontent.cdninstagram.com/v/t51.82787-15/784075060_n.jpg?stp=cmp1_dst-jpg_e35_s640x640&_nc_ht=x";
+const MP4 = "https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=1&signature=x";
+/** Stores pictures and refuses videos, the way the real snapshot does. */
+const pictureOnlySnapshot = (snaps: string[]) => async (_u: string, id: string, url: string) => {
+  snaps.push(url);
+  if (url === MP4) throw new Error("not an image: video/mp4");
+  return `u1/${id}.jpg`;
+};
+
+Deno.test("instagram: the login wall is 'not now', not 'never' — the page is asked for again along the ladder", async () => {
+  const logged: string[] = [];
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, [IG_POST]: () => new Response(IG_WALL, { headers: { "content-type": "text/html" } }) }));
+  d.log = (m) => { logged.push(m); };
+  const r = await enrich(base(), d);
+  // The caption Meta sent is still a card; the wall's logo and front-page title are never adopted.
+  assertEquals([r.status, r.patch.thumbnail_url_remote, r.patch.author_name, r.patch.title], ["ready", undefined, undefined, undefined]);
+  assertEquals(r.retryPreviewAfterMs, RETRY_LADDER_MS[0]);
+  assertEquals(r.retryAfterMs, undefined); // settled, not failed: the card is shown and sorted meanwhile
+  assertEquals(logged, ["enrich: fallback page is not the one asked for"]);
+  // A share-sheet save with nothing else known is honestly unavailable meanwhile, and still asked again.
+  const bare = await enrich(base({ text: null, enrich_attempts: 2 }), d);
+  assertEquals([bare.status, bare.retryPreviewAfterMs], ["preview_unavailable", RETRY_LADDER_MS[2]]);
+  // The ladder ends.
+  const spent = await enrich(base({ enrich_attempts: RETRY_LADDER_MS.length }), d);
+  assertEquals(spent.retryPreviewAfterMs, undefined);
+});
+
+Deno.test("a right page that names no picture is the honest answer, and is not asked again", async () => {
+  const noImage = IG_PAGE.replace(/<meta property="og:image"[^>]*>/, "");
+  const r = await enrich(base(), deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, [IG_POST]: () => new Response(noImage) })));
+  assertEquals([r.status, r.patch.author_name, r.patch.thumbnail_url_remote, r.retryPreviewAfterMs], ["ready", "David Senra", undefined, undefined]);
+});
+
+Deno.test("a picture address that turns out to be a video is replaced by the post's own poster", async () => {
+  // Instagram's DM door hands over the attachment's file. For a video post that file is the video,
+  // which used to be tried as a picture four times and then given up on, poster and all.
+  const snaps: string[] = [];
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, [IG_POST]: () => new Response(IG_PAGE) }));
+  d.snapshot = pictureOnlySnapshot(snaps);
+  const r = await enrich(base({ thumbnail_url_remote: MP4 }), d);
+  assertEquals([r.status, r.patch.thumbnail_url_remote, r.patch.thumbnail_path], ["ready", POSTER, "u1/item-1.jpg"]);
+  assertEquals(snaps, [MP4, POSTER]);
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["snapshot_error"], undefined);
+  assertEquals(r.retryPreviewAfterMs, undefined);
+});
+
+Deno.test("the poster is fetched on demand when the page was not otherwise needed", async () => {
+  // A provider that names the author leaves no reason to read the page — until the picture it
+  // handed over turns out to be a video.
+  const snaps: string[] = [];
+  const seen: string[] = [];
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": () => Response.json({ author_name: "davidsenra", provider_name: "Instagram", type: "rich" }), [IG_POST]: () => new Response(IG_PAGE) }, seen));
+  d.snapshot = pictureOnlySnapshot(snaps);
+  const r = await enrich(base({ thumbnail_url_remote: MP4 }), d);
+  assertEquals(seen.filter((u) => u === IG_POST).length, 1);
+  assertEquals([r.patch.thumbnail_url_remote, r.patch.thumbnail_path, snaps], [POSTER, "u1/item-1.jpg", [MP4, POSTER]]);
+});
+
+Deno.test("a video address with no poster to be had is dropped, and the page asked for again later", async () => {
+  const snaps: string[] = [];
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, [IG_POST]: () => new Response(IG_WALL) }));
+  d.snapshot = pictureOnlySnapshot(snaps);
+  const r = await enrich(base({ thumbnail_url_remote: MP4 }), d);
+  // null, not undefined: the address is taken off the save, so nothing keeps trying a video as a picture.
+  assertEquals([r.status, r.patch.thumbnail_url_remote, r.patch.thumbnail_path], ["ready", null, undefined]);
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["snapshot_error"], "not an image: video/mp4");
+  assertEquals(r.retryPreviewAfterMs, RETRY_LADDER_MS[0]);
+  assertEquals(snaps, [MP4]); // the wall's logo is never tried
+});
+
+Deno.test("a snapshot that failed for any other reason keeps the address for the sweeper, and asks for no new preview", async () => {
+  const d = deps(fakeFetch({ "https://graph.facebook.com/v23.0/instagram_oembed": TOKENLESS_OEMBED, [IG_POST]: () => new Response(IG_PAGE) }));
+  d.snapshot = async () => { throw new Error("http 503"); };
+  const r = await enrich(base(), d);
+  assertEquals([r.status, r.patch.thumbnail_url_remote, r.retryPreviewAfterMs], ["ready", POSTER, undefined]);
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["snapshot_error"], "http 503");
 });
