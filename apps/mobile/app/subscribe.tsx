@@ -27,9 +27,9 @@ import { radius, space, type, usePalette } from "../lib/theme";
  */
 const KEEPS: { mark: MarkKey; title: string; detail: string }[] = [
   { mark: "bookmark", title: "Save without a cap", detail: "Paste it, share it, DM it — every link lands." },
-  { mark: "sparkles", title: "Sorted as it lands", detail: "Filed into a category before you go looking." },
-  { mark: "light_bulb", title: "Found by what it was about", detail: "Search by meaning, not only by the words." },
-  { mark: "speech_balloon", title: "The doors stay open", detail: "Instagram DMs and YouTube playlists keep coming in." },
+  { mark: "multiple-stars", title: "Sorted as it lands", detail: "Filed into a category before you go looking." },
+  { mark: "lightbulb", title: "Found by what it was about", detail: "Search by meaning, not only by the words." },
+  { mark: "chat-bubble-text-square", title: "The doors stay open", detail: "Instagram DMs and YouTube playlists keep coming in." },
 ];
 
 /** How long to wait for the server to hear from the store before saying so. The webhook usually lands in seconds. */

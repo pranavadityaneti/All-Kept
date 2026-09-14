@@ -7,7 +7,8 @@ import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { CategoryMark } from "./CategoryMark";
-import { categoryStyle, tint } from "../lib/categories";
+import { tint } from "../lib/categories";
+import { categoryPalette } from "../lib/category-marks";
 import { FLAG_ICON, SHAPE_ICON, filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
 import { countFilters, type Facets, type Filters } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -101,7 +102,7 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
               <Group title="Category">
                 {categories.map((o) => {
                   // The same mark and hue the home grid uses, so a category is the same thing in both places.
-                  const { hue } = categoryStyle(o.value);
+                  const hue = categoryPalette(o.value).ink;
                   return (
                     <Option
                       key={o.value}

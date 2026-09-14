@@ -5,7 +5,7 @@ import { Button } from "./Button";
 import { IconButton } from "./IconButton";
 import { tint } from "../lib/categories";
 import { CategoryMark } from "./CategoryMark";
-import { DEFAULT_MARK, PICKER_MARKS, markFor, type MarkKey } from "../lib/category-marks";
+import { DEFAULT_MARK, PICKER_MARKS, categoryPalette, markFor, type MarkKey } from "../lib/category-marks";
 import { MAX_NAME, checkCategoryName, nameProblemMessage } from "../lib/user-categories";
 import { radius, space, type, usePalette } from "../lib/theme";
 
@@ -97,7 +97,7 @@ export function CategorySheet({ visible, initial, existing, onClose, onSubmit }:
                     pressed && styles.pressed,
                   ]}
                 >
-                  <CategoryMark mark={option} size={30} />
+                  <CategoryMark mark={option} palette={categoryPalette(name)} size={30} />
                 </Pressable>
               );
             })}

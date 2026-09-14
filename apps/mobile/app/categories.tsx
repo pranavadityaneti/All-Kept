@@ -9,7 +9,7 @@ import { Icon } from "../components/Icon";
 import { IconButton } from "../components/IconButton";
 import { TAB_BAR_CLEARANCE } from "../components/FloatingTabBar";
 import { CategoryMark } from "../components/CategoryMark";
-import { markFor } from "../lib/category-marks";
+import { categoryPalette, markFor } from "../lib/category-marks";
 import { useDeleteCategory, useCreateCategory, useEditCategory, useFacets, ownCategories } from "../lib/library";
 import { useSession } from "../lib/session";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -73,7 +73,7 @@ export default function Categories() {
             {mine.map((c, i) => (
               <View key={c.value} style={[styles.row, i < mine.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: p.border }]}>
                 <View style={[styles.mark, { backgroundColor: p.surfaceAlt, borderColor: p.border }]}>
-                  <CategoryMark mark={c.icon} size={26} />
+                  <CategoryMark mark={c.icon} palette={categoryPalette(c.value)} size={26} />
                 </View>
                 <View style={styles.rowText}>
                   <Text numberOfLines={1} style={[type.body, { color: p.ink }]}>{c.value}</Text>
