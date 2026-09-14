@@ -828,3 +828,407 @@ categories.
 - **Next:** Part 2, the categories a person makes. Design agreed and written down in
   `docs/superpowers/specs/2026-09-12-categories-tiles-and-user-categories-design.md`.
 
+
+## 12 Sep 2026 (~22:30) — Task 6: the site is a plain Next static export; website branch pushed
+- CI on main was red since 4e63216 — mine: the waitlist types were added to the GENERATED
+  `_shared/contracts.ts` instead of `packages/contracts/src/index.ts`. Fixed in `5da076e`
+  (source + regenerate; `sync-shared --check` clean), pushed.
+- **Vercel status, read from GitHub statuses/DNS (no dashboard access here):** one project
+  `ideaye/all-kept` builds every commit on main (which has no apps/website) → it is the admin.
+  Deployment Protection on (login wall on *.vercel.app). `allkept.app` is GoDaddy-parked
+  (Server: DPS), DNS at domaincontrol.com; www answers nothing. Not on Vercel at all yet.
+- **Conversion `6a59abe` on website:** vinext/Cloudflare/sites-plugin/D1/Tailwind/shadcn (+ its
+  hook, oxlint configs, `.openai/`) removed → `@allkept/website`, Next 16.3.4, `output: "export"`.
+  Policy pages read content/ with fs at build. Root lockfile regenerated (505 added / 396 removed).
+  tsc clean for the WHOLE app (first time). `next build` → 6 static routes. Verified on the export
+  served by `serve`: 24 images/0 broken, Inter, both pills against the live function, privacy page,
+  0 console errors. Smoke row deleted; the list holds only Pranav's real sign-up.
+- Found and moved aside (scratchpad `nested-website-dot-git`): a stale nested `.git` inside
+  apps/website from the site-builder tool (one commit b0cc702). Untracked by the outer repo.
+- Pushed `website` → origin (new branch). Vercel built it in seconds **under the same `all-kept`
+  project** → a preview of the admin, not the site. The website needs its own project (root
+  `apps/website`, production branch `website`, the two NEXT_PUBLIC_* vars), then the domain.
+- Still untracked leftovers in apps/website/public: hero-saved-cards.png (untracked),
+  hero-hand-phone.png, brand/, platforms/ (tracked, unused) — exported with the site, harmless.
+
+## 12 Sep 2026 (~23:30) — The landing page is live on Vercel
+- Pranav's second project ended up named `all-kept-admin` (root was apps/admin at creation, preset
+  auto-detected as Vite; fixed to root `apps/website`, preset Next.js, production branch `website`,
+  then the two NEXT_PUBLIC_* vars). Vercel's exact recipe reproduced locally first (fresh clone,
+  `npm ci` at root, `next build`) to rule the code out.
+- `WAITLIST_ORIGINS=https://all-kept-admin.vercel.app` set on the function so the vercel.app origin
+  may post (preflight 204).
+- **Verified on https://all-kept-admin.vercel.app in a real browser:** hero → joined, footer same
+  address → already, 24 images/0 broken, 0 console errors, all 5 routes 200. Smoke row deleted; the
+  list holds only Pranav's real sign-up.
+- Remaining for the site: domain (allkept.app is GoDaddy-parked; add in Vercel → Domains, set the
+  records at GoDaddy), then WAITLIST_ORIGINS can drop the vercel.app entry; rename the project;
+  merge `website` → main and flip production branch to main. forlater #5 updated; #9/#10/#11 wait
+  on the domain.
+
+## 13 Sep 2026 — user categories proven, cards redesign agreed, Explore Interests built
+- **The categories loop, verified by hand on the simulator** once the MCP came back: create (Pranav
+  did it overnight), duplicate check firing as you type, rename + mark change (`Wedding` → `Wedding
+  ideas`, gift → star), filing a save into it, See all ⇄ Show less, delete sending the save back to
+  Tech (68 → 69). Three defects found by walking it and fixed in `ff13856`: the tile ignored the
+  chosen mark, a two-item last row spread to the edges, and the delete alert said "1 save go back".
+- **Cards redesign agreed** against a Square Go reference: grey borderless tiles, mark centred,
+  label centred below, no count, no cover; `+ Custom` as an accent pill beside See all (no `+`
+  card); the top two categories of the last 30 days as wide cards; six collapsed; state labels off
+  the grid. Marks are **Microsoft Fluent Emoji** (MIT, pulled from GitHub by script — the Figma link
+  is a community mirror of the same set). All fifteen mappings verified to exist. **Waiting on
+  Pranav:** 3D or Color style; approval of the fifteen; whether user categories pick from the set
+  only.
+- **Explore Interests built** (`9f0eb57`, `0e364fb`, `f077ccd`): `user_interests()` counts the
+  entities the classifier already extracts; the app applies the floor of three, a recency nudge,
+  and suppression of anything that reads like a category, a state label, or a platform. Pills on
+  Home; a just-in-time consent card the first time there are three to show; a Settings switch;
+  `profiles.interests_enabled` null until asked. Tapping a pill opens search with the name.
+  183 tests. **Migration `20260913090000_interests.sql` awaits Pranav's push.**
+- **Grant finding, untested until the push:** no migration grants `authenticated` update on
+  `notify_*` or `ai_sorting_enabled` — only on five profile columns. Either the hosted DB has a
+  grant outside migrations or those switches silently roll back. Will flip one after the push.
+- **Privacy line for interests** queued on forlater item 15 — another session holds `privacy.html`.
+- **Spec:** `docs/superpowers/specs/2026-09-13-explore-interests-design.md` (includes the
+  categories-vs-interests distinction Pranav asked for: you file a save into a category; an
+  interest files itself).
+- **Later on 13 Sep:** the switch finding was a false alarm — Pranav's finger works, my simulated
+  taps double-fired (ERRORS.md). Cards redesigned to the reference (`29d6145`): Fluent 3D marks,
+  `+ Custom` pill, two wide top cards by 30-day activity (`category_activity()` — **push pending**),
+  covers removed. Interests fold near-duplicates (`77b9c46`). **Security audit** run by an Opus
+  agent: 31 findings, no Critical, RLS sound on all 18 tables; four High — notifications follow the
+  phone after sign-out, SSRF in the link fetcher, **the repo is public and GitHub Pages serves
+  docs/** (internal docs, roadmap, session logs readable by anyone — verified with `gh`), privacy
+  policy drifted from code in five places. Report moved to `private/` (gitignored, `6bce87b`) —
+  **never commit it into docs/**. Onboarding set-up cards planned; three decisions open.
+- **13 Sep, afternoon — three audit fixes, in the order Pranav set:** `7af92b5` push tokens move to
+  whoever holds the phone (`claim_push_token()`, security definer; the client's upsert never could)
+  and sign-out forgets the device; `0dee186` the pipeline dials only public addresses on every hop
+  after DNS (`_shared/safe-address.ts`, installed in sweeper + reprocess-item, 11 tests); `072044b`
+  `docs/` pruned to the seven public pages, the rest in `internal/`. **Awaiting Pranav:** push of
+  `claim_push_token` + `category_activity`; yes to deploy `sweeper`/`reprocess-item`; yes to
+  `git push` — the public site only changes when main reaches GitHub. Remaining audit findings
+  queued as forlater 32; the private-repo path as 33; policy drift on 15.
+- **13 Sep, later:** Pranav pushed the migrations; `sweeper` and `reprocess-item` deployed; `main`
+  pushed to GitHub (`5da076e..072044b`). Verified: the hosted token-move test passes against the
+  live project; `unit-economics.html` and `whatsapp-x-plan.html` now 404 on the public site while
+  `privacy.html` still serves. All three audit fixes are live.
+
+## 13 Sep 2026, evening — paid in the US: seven of nine tasks in
+- **Decided:** the app is paid in the US, free in India; 25 free saves everywhere, no time trial;
+  $2.99/month, $27.99/year; RevenueCat. Stripe not needed (stores are merchant of record); if a
+  Stripe account is ever made it is for the Indian entity, MECA Engineering Solutions (OPC) Pvt Ltd.
+- **In (commits `b21a1f4`…`998f054`):** T1 the server record (`subscriptions`, `billing_events`,
+  `saves_used`, `storefront`, `entitled()`, `admit_save()`, `my_entitlement()`); T2 the gate in
+  `capture()`, the one door; T3 every door answers 402 honestly (paste, share queue keeps the item,
+  Instagram replies once an hour, playlists pause with a reason); T4 `billing-webhook` — HMAC in
+  constant time, idempotent, every event type mapped; T5 `lib/billing.ts` + `lib/standing.ts`
+  (RevenueCat configured with the user id, storefront reported, five standings); T7 Android
+  extension keeps a refused share (it used to drop it — a real bug found by reading); T8 terms §12.
+- **Awaiting Pranav:** push of `20260913150000_paid_in_the_us` and `20260913160000_source_pause`;
+  the console work (`internal/billing-setup.html`) → two public keys, the webhook secret; his UI
+  references for **T6, the paywall** — paused there on his request; the build (T9).
+- **Not deployed yet:** `billing-webhook` — `env("REVENUECAT_WEBHOOK_SECRET")` throws without the
+  secret, so deploy after `supabase secrets set`.
+- Tests: 227 function, 203 app. Kotlin edits uncompiled (no local Gradle by rule); the EAS build is
+  the compiler.
+- **13 Sep, later — T6, the paywall (`0d988f6`):** Pranav's reference was a Stacks+ paywall
+  (light + dark); built to it. `app/subscribe.tsx` as a sheet: ✕, "Keep saving", four rows of what
+  a subscription keeps going (marks + ✓), two price cards — Yearly highlighted with a "Save N%"
+  badge worked out from the two store prices (22% at $27.99, never written down), per-month line,
+  the stores' renew/cancel words, one button, Terms · Privacy · Restore. Six states by standing
+  and phase: offer / confirming (polls `my_entitlement` every 2 s for 30 s, then every 10 s while
+  open) / done / unconfirmed / subscribed (Manage + Done) / billing problem / free region. Pure rules
+  in `lib/paywall.ts` (12 tests): `plansFrom`, `savingsPercent`, `perMonthOf`, `standingLine`,
+  `subscriptionRow`, `shortDate`, `isPaymentRequired`. Plugged in: paste field + save screen open
+  the sheet on a 402 and keep the link; Home counts the last five free saves down and says when a
+  shared link is waiting (`components/SavesStanding.tsx`, flag in the query cache set by every
+  flush); Settings "Subscription" row (hidden for free regions), Manage via `Linking` to the
+  store's page; standing re-read on every foreground; purchase → confirmed → share queue flushed.
+  **Verified on the simulator:** sheet opens by deep link and from the stack, modal presentation,
+  ✕ works, free-region state (Pranav's profile reports storefront IN), Home line and Settings row
+  correctly absent. **Not seen on device:** ramp / blocked / 402 / price cards — the simulator's
+  locale is en-IN and the classifier (rightly) refused both a simulator-locale change and a
+  service-role write to his profile row; those states are covered by tests only until the build
+  with the native module + a US sandbox tester, or until Pranav sets `storefront='US'`,
+  `saves_used=20/25` on his own row to look. Dark mode unverified by tap (Switch double-fire).
+  Tests: 216 app, 227 function. Both billing migrations are already live (Pranav pushed).
+- **13 Sep, evening — RevenueCat console + deploys:** Pranav walked the console with me over
+  screenshots. Framework React Native / npm (nothing to install, `-ui` package deliberately not
+  used); the auto-created **Test Store** key (`test_…`, public) noted for the dev build so the
+  paywall can be tapped through with pretend purchases before Apple is ready. Talked him out of a
+  v2 **secret** API key (every permission Read & write; nothing of ours calls their API — the
+  webhook calls us). Webhook created: name All Kept, URL `…/functions/v1/billing-webhook`, no
+  Authorization header, **HMAC signing on**, both environments, all apps, all events. Secret pasted
+  in chat → `supabase secrets set REVENUECAT_WEBHOOK_SECRET` (never in a file). Docs re-read:
+  key = secret's UTF-8 text, message = `t.rawBody`, 300 s tolerance — matches `_shared/billing.ts`.
+  Found + fixed `8235b81`: `config.toml` had no `[functions.billing-webhook]`, so the gateway would
+  have demanded a JWT and answered 401 before the handler ran. **Deployed on "deploy all four":**
+  `billing-webhook` v1 (verify_jwt false), `save-link` v17, `instagram-webhook` v34, `youtube-poll`
+  v13. Probed live: GET 405; unsigned POST 401; forged signature 401; `billing_events` and
+  `subscriptions` both empty. Next: Pranav presses Send test event → confirm the row lands.
+- **13 Sep, evening — webhook test-page mystery:** Pranav's two "Send test event" deliveries
+  landed in `billing_events` (TEST, signatures verified) yet RevenueCat's test page said "It
+  wasn't possible to connect" both times and its Webhook Events table stays empty. Measured from
+  here: unsigned 0.25 s; signed full path 1.0–1.2 s cold or warm (two DB round trips), against
+  their documented 60 s deadline. Community thread (2595): staff say "return 200 as soon as
+  possible"; another user saw the same message from a working 200 endpoint, unresolved. Made the
+  one honest improvement: ignorable events (TEST etc.) are answered right after being recorded,
+  skipping the user lookup — one round trip instead of two (test first, `228 passed`). Committed;
+  awaiting Pranav's Yes to redeploy `billing-webhook`, then a retest. Three `local-probe-*` TEST
+  rows in `billing_events` are mine, from signed probes; harmless, service-role-deletable later.
+  Verdict so far: the door works; the page's verdict is RevenueCat's tool, not our endpoint.
+- **13 Sep, evening — webhook green:** `billing-webhook` v2 deployed on Pranav's Yes (`5507084`).
+  His next Send test event came back **200** on RevenueCat's page with the full request shown
+  (TEST, PLAY_STORE, SANDBOX, country US, a UUID app_user_id), and the same id `790F0C43-…` is in
+  `billing_events` at 13:36:20 UTC. Door verified from both ends. Six `local-probe-*` TEST rows in
+  `billing_events` are my signed probes — harmless; delete only on Pranav's say-so.
+- **13 Sep, evening — dev build (Pranav's Yes):** `pod install` with UTF-8 locale added
+  RNPurchases 10.9.1 / PurchasesHybridCommon 18.37.0 / RevenueCat 5.88.0 to `ios/`. Test Store key
+  in `.env.development` (gitignored; `.env.example` documents it). Guard `31b2840`: `app.config.ts`
+  throws on a `test_` key when NODE_ENV=production (store builds, OTA exports), `billingAvailable()`
+  refuses it outside `__DEV__` — closes the class "local .env leaks a test key into an OTA bundle"
+  (`scripts/ota.mjs` exports with production NODE_ENV and would otherwise read `.env`). Metro
+  (1-day-old `expo start --dev-client --port 8081`, mine) restarted so the manifest carries the key
+  — verified via the served manifest. First `expo run:ios` died in pod install (no UTF-8 locale,
+  ERRORS.md); second run with `LANG=en_US.UTF-8` in progress.
+- **13 Sep, evening — dev build done (19:15):** `expo run:ios` with UTF-8 locale: Build Succeeded,
+  installed and opened on the simulator. Module confirmed in the bundle: Xcode 26 puts a debug app's
+  code in `Allkept.debug.dylib` (RNPurchases ×2, RevenueCat ×190; `RevenueCat.bundle` +
+  `PurchasesHybridCommon.bundle` present) — the main `Allkept` binary is a stub, so `strings` on it
+  shows nothing (don't be fooled again). The build evaluated `.env.development` + `.env`; Metro
+  (restarted, pid 25802) serves the key in its manifest. **The reinstall signed the simulator
+  out** (welcome screen) — Pranav must sign in himself; on-device verification of the paywall with
+  the Test Store waits on that. Metro logged one `ENOENT scandir '.%2Fassets'` on an asset request
+  (URL-encoded `./assets`); images render, so noted only.
+- **13 Sep, evening — the loop, end to end, on the simulator (Pranav signed in):** RevenueCat SDK
+  live in the new build (offerings fetched from the Test Store: products `monthly`/`yearly`, its
+  own placeholder prices $9.99/$79.99); `/subscribe` showed the two cards, badge computed 33%,
+  disclosure, button; Test Store sheet → "Test valid purchase" → INITIAL_PURCHASE in
+  `billing_events` 2 s later → `subscriptions` row (yearly, active, TEST_STORE, SANDBOX, period
+  end +1 h) → sheet "You're all set" within 5 s → Settings "Subscription · Subscribed · renews
+  13 Sep". **Bug found on the way, fixed:** Apple's storefront `countryCode` is alpha-3 ("USA";
+  an Indian iPhone would say "IND" and match nothing → charged). `normalizeRegion()` in
+  `standing.ts` (full alpha-3→alpha-2 table, 249, tested), `reportStorefront()` uses it; migration
+  `20260913170000_storefront_shape` nulls any non-alpha-2 row and adds a CHECK — **needs Pranav's
+  `db push`**. Not pushed to GitHub: 6 commits.
+- **13 Sep, evening — pushed:** Pranav pushed `20260913170000_storefront_shape` (applied remotely,
+  profile still `US`); on his Yes, `git push` main `072044b..9929aa1` (19 commits) → public site
+  picks up terms §12. Open: Android build (Task 7 Kotlin compiles there), Apple/Google apps in
+  RevenueCat + `appl_`/`goog_` keys into EAS env vars once the paid-apps agreement clears, real
+  products at $2.99/$27.99, Apple's review screenshot with real prices, lawyer pass on terms,
+  forlater 15 privacy lines, forlater 35 Metro asset nit. The Test Store subscription on Pranav's
+  account renews hourly up to five times then ends — check `subscriptions`/`billing_events` later
+  for RENEWAL/EXPIRATION as a free lifecycle test.
+- **13 Sep, late — admin dashboard, the truth:** never published. Vercel (team Ideaye) has
+  `all-kept` (deploys main; no root dir, no preset → builds the repo root → "Ready" but
+  `all-kept.vercel.app` is 404; no domain, no env vars) and `all-kept-website` (the site, still
+  at `all-kept-admin.vercel.app`). `allkept.app`/`www` already point at Vercel; `admin.` has no
+  record. Admin app itself is healthy (tsc clean, 7 tests, function v8 live, 2 operators in
+  `admin_members`). Committed `bde743c` (`apps/admin/vercel.json` SPA rewrite for `/auth/callback`),
+  not pushed. My attempt to set the Vercel root directory via Chrome did not persist and the
+  classifier blocked the env-var form — correctly: account settings are Pranav's. Checklist in
+  forlater 36. Two gated commands wait on his Yes: `ADMIN_ALLOWED_ORIGINS` secret, `git push`.
+- **13 Sep, late — admin publish, agent's part done:** on "yes both": `ADMIN_ALLOWED_ORIGINS` set
+  to admin.allkept.app + all-kept.vercel.app + local (preflight 204 with origin echoed; stranger
+  403); `git push` `9929aa1..bde743c` → Vercel build of `all-kept` with Pranav's new settings
+  (root `apps/admin`, Vite, env vars, domain added). DNS `admin` CNAME at GoDaddy: see the check
+  above this line's verification in chat.
+- **13 Sep, late — admin.allkept.app live:** GoDaddy CNAME `admin` → `48fdf6dd9ea20872.vercel-dns-017.com`
+  (ns38 published first, ns37 a minute behind); Vercel issued the Let's Encrypt certificate within
+  a minute of seeing it; `https://admin.allkept.app` → 200 "Allkept · Admin", `/auth/callback`
+  200, Google + Cloudflare resolvers agree. Also live at `https://all-kept.vercel.app`. Two
+  operators in `admin_members`; first sign-in on the new address is Pranav's. forlater 36 archived.
+- **13 Sep, late — admin sign-in:** first attempt bounced to `localhost:3000?code=…` (Site URL
+  fallback: the admin's address was not on the Redirect URLs list). Pranav added
+  `https://admin.allkept.app/**` and `https://all-kept.vercel.app/**` (Site URL left at
+  localhost:3000 — mobile sign-in does not use redirect URLs; the list had been empty). Still
+  "not working": auth users showed no sign-in since 13:49 and a **new user `6d55afe1` created
+  16:19 with an @allkept.app email** — his work Google account, not in `admin_members`, so the
+  dashboard would refuse it after a perfect return. On his Yes: inserted `6d55afe1` as operator
+  (16:30 UTC); `admin_members` now 3. Next: his retry; confirm via `last_sign_in_at`.
+  Note for later: GoTrue's OAuth `state` here is opaque (not a JWT) — the referrer cannot be
+  read from it; test the allow-list by observation, not by decoding.
+- **13 Sep, late — admin sign-in, the auth log's verdict (correction to the line above):** the
+  mobile app DOES use the redirect list — `lib/google.ts` calls `signInWithOAuth` with
+  `redirectTo: Linking.createURL("auth-callback")` = `allkept://auth-callback`; the earlier note
+  "mobile sign-in does not use redirect URLs" was wrong. If that entry was on the hosted list before
+  Pranav's edit (his screenshot after it shows only the two web entries), phone sign-in is broken
+  until it is re-added. Auth log facts (dashboard, IST): 21:56:01 "reloading api with new
+  configuration" (his save); my curl `/authorize` tests at 21:57:28 were logged with
+  `referer` = the requested redirect for BOTH `https://admin.allkept.app/auth/callback` and
+  `https://all-kept.vercel.app/auth/callback` → GoTrue's `referer` field is the *chosen* return
+  address (`GetReferrer`), and the list is live and matching. His attempts (21:56:21, 22:01:26 →
+  callback 22:01:33, actor hi@allkept.app) were logged with `referer: http://localhost:3000` →
+  his page asked for an address not on the list → he is not on admin.allkept.app /
+  all-kept.vercel.app when pressing the button; most likely a Vercel deployment link
+  (`all-kept-<hash>-ideaye.vercel.app`). Asked him for the address bar; suggested adding
+  `https://all-kept-*-ideaye.vercel.app/**` and `allkept://auth-callback`.
+- **13 Sep, late — admin sign-in, narrowed:** Pranav confirmed the bar reads admin.allkept.app;
+  bounce reproducible (code 1d983580…). My own run from the real page in his Chrome (Claude in
+  Chrome, no sign-in) reached Google's chooser with `redirect_to=https://admin.allkept.app/auth/callback`
+  intact (Google's URL echoes it in `opparams`; state is a UUID, server-side flow state). GoTrue
+  source (`utilities/request.go`): GetReferrer = redirect_to if allowed → Referer if allowed →
+  SiteURL; IsRedirectURLValid globs `**`. My curl for the same value was accepted (auth log
+  `referer` = the value). So the page is right, the list is right, and his attempts are still
+  answered with SiteURL. Two live hypotheses: (1) his browser session alters the request —
+  Incognito test; (2) a stale auth replica that never reloaded the list — re-save the list to
+  force a reload / restart services. Direct psql read of `auth.flow_state` was blocked by the
+  classifier (DB password) — not attempted further. Dashboard log pages stopped rendering for
+  the browser tool. Mobile's flow also PKCE (`flowType: "pkce"`, `exchangeCodeForSession`), so
+  PKCE itself is not the difference; `allkept://auth-callback` re-added by Pranav (Total 3).
+- **13 Sep, late — admin sign-in, Incognito result:** in Incognito the server returned to
+  `admin.allkept.app/auth/callback?code=…` correctly → the earlier localhost bounce is his normal
+  Chrome profile (extension stripping the request, most likely). New failure: the page never traded
+  the code (no session issued; my probe with a wrong verifier got `bad_code_verifier`, so the code
+  is real and unused). Reproduced from my tab: loading the callback address makes **no** request to
+  Supabase. supabase-js 2.116.0 (admin + mobile): per-flow verifier slots + a mirror of the latest
+  flow under the legacy key; `_isPKCECallback` needs `code` + (slot for `sb_flow_id` | legacy key);
+  `sb_flow_id` is appended only with `experimental.appendPkceFlowIdToRedirects`; a failed exchange
+  deletes the legacy key and the app swallowed `initialize()`'s error → blank sign-in page with
+  the code still in the address. My tab's legacy key was gone because my first load tried his code
+  with my verifier. **`7dca5ab`:** the admin now shows `initialize()`'s error ("Could not complete
+  sign-in: …") and says when a link was opened in a different window (code present, no session,
+  no error); 3 tests (fake client announces INITIAL_SESSION). Not pushed — needs Yes; then Pranav
+  retries in Incognito and the screen names the cause.
+- **13 Sep, late — admin sign-in, ROOT CAUSE:** with `7dca5ab` deployed, the Incognito retry
+  showed "Could not complete sign-in: Invalid API key". The live bundle's `VITE_SUPABASE_ANON_KEY`
+  is a valid anon JWT for a *different* Supabase project (`ref fmphgdjufimtrrkwealx`); the URL var
+  is right. `/authorize` never carries the key (a plain navigation) so everything up to the code
+  exchange worked; the first keyed call, `/token`, was refused. Fix is Pranav's: replace the Vercel
+  env var with AllKept's anon key and Redeploy. Problem 1 (localhost bounce in his normal profile)
+  remains an extension in that profile — Incognito returns correctly.
+- **13 Sep, late — admin sign-in, second paste:** after Pranav replaced the Vercel key, the screen
+  said "Failed to read the 'headers' property … non ISO-8859-1 code point". The live bundle holds
+  `eyJhbGci` + 200 × U+2022 (•): the key was copied from a *masked* display (Supabase shows the
+  first 8 chars then bullets), so bullets were stored and baked in. Fix: paste the real key (the
+  Copy button, or the value given in chat) into `VITE_SUPABASE_ANON_KEY` and Redeploy.
+- **13 Sep, late — admin sign-in WORKS:** after the clean key redeploy (bundle key identical to
+  the mobile anon key, Supabase 200), Pranav's sign-in on `all-kept-git-main-ideaye.vercel.app`
+  exchanged the code (URL stripped of `code`, "Check access again" shown) and the server issued a
+  session for 8af3b6eb at 17:46 UTC. The remaining "Failed to fetch" there is the function's origin
+  list (`ADMIN_ALLOWED_ORIGINS`) refusing the branch alias (preflight 403; admin.allkept.app 204).
+  The Incognito localhost bounce seen just before was almost certainly an attempt from a Vercel
+  deployment link before the wildcard entry existed. Told Pranav to use admin.allkept.app; offered
+  adding the git-main alias to the origin list on his Yes.
+- **13 Sep, late — admin live and used:** Pranav signed in at admin.allkept.app and it works. On
+  his Yes, `ADMIN_ALLOWED_ORIGINS` now also carries `https://all-kept-git-main-ideaye.vercel.app`
+  (preflight 204 for all four addresses, 403 for a stranger). Left for another day: which extension
+  in his normal Chrome profile bounced the sign-in to localhost (Incognito and the real address
+  both work now, so it may be moot).
+
+## 13 Sep 2026, night — close of session
+- **Stores for real prices, started; both blocked outside our code.** Apple: an App Store Connect
+  issue, Pranav raised a ticket (Phase 1 not started: agreements, Small Business Program, group
+  `Allkept`, `allkept_monthly` $2.99 / `allkept_yearly` $27.99 US-only, sandbox tester, IAP key).
+  Google: app **Allkept** created in Play Console (package `app.allkept.mobile`, en-US, App, Free);
+  Subscriptions locked until (a) a build with the billing library is uploaded — the Android store
+  build, Pranav's Yes — and (b) the developer account's **payments (merchant) profile**, which has
+  an issue Pranav will sort tomorrow (owner-only, at All apps → Developer account → Payments
+  profile). Independent of both: Google Cloud service account + RevenueCat Play app → `goog_` key
+  → EAS env (`EXPO_PUBLIC_REVENUECAT_ANDROID`, preview + production; EAS login live on this Mac).
+- **Done today, all live:** paywall (T6) with the Test Store loop proven; webhook signed + green;
+  dev build with the purchases module; storefront alpha-2 fix + CHECK; Test Store key guard;
+  admin published at https://admin.allkept.app (+ vercel aliases), signed into, six causes fixed;
+  forlater tidied (36 archived). `main` at `7dca5ab` pushed. Uncommitted: SESSION_LOG.md,
+  forlater.md (shared), `deno.lock` (touched by deno test; not ours to commit).
+- **Tomorrow, in order:** Google payments profile → service account + `goog_` key → Android store
+  build (Yes) → upload to Internal testing → subscriptions + licence tester → RevenueCat products,
+  entitlement `allkept`, offering `default` → test purchase. Apple as soon as the ticket clears.
+
+## 14 Sep 2026 — website essentials (branch `website`, worktree)
+- On Pranav's ask ("pixel and other essentials"): commit on `website` — Meta Pixel `1608009750873679`
+  and GA4 `G-WZDX3LHXGB` via `next/script` after-interactive (`components/site/Tracking.tsx`, ids in
+  `lib/site.ts`, public by nature); `trackLead()` on waitlist success (`Lead` / `generate_lead`);
+  share preview (`metadataBase` www, OG + Twitter, `app/opengraph-image.png` 1200×630 composed
+  from the hero fan + horizontal lockup + "Your saves, sorted."); canonical per page; apex→www
+  redirect in `apps/website/vercel.json`; `robots.ts` + `sitemap.ts`; `apple-itunes-app` banner
+  (id 6809901300); `@vercel/analytics` + `@vercel/speed-insights`; `scripts/verify-head.mjs`
+  (`npm run verify:head`) proves all of it in `out/` — 18 checks green; `verify:content` green;
+  tsc clean. Not pushed (Vercel deploys production from `website`). Pranav's clicks after: enable
+  Analytics + Speed Insights in Vercel; Search Console → submit sitemap. Privacy wording queued
+  on forlater 15 for the session that holds privacy.html.
+- Audit catch, fixed (`website` branch, second commit): a page-level `openGraph` replaces the
+  layout's whole block in Next, so the four legal pages had lost og:image/site_name/type.
+  `pageMetadata(title, path)` in `lib/site.ts` spreads one shared preview; verifier now requires
+  image + site name + address on every page (21 checks green). Two commits on `website` unpushed.
+- **14 Sep — website deploy:** Pranav set the apex→www redirect in Vercel, enabled Analytics +
+  Speed Insights, said Push. First deploy of `86bb59d` **failed** (12 s, TypeScript: `src` not on
+  ScriptProps) while a clean clone of the same commit built fine → Vercel's restored build cache.
+  `17289cf`: GA loader injected from the inline snippet (no `src` prop); pushed `website` again
+  with `99c37be` (privacy wording, both branches; website copy regenerated + verified). Also
+  noticed: every push to `main` triggers a 1-second failed Preview build on `all-kept-website`
+  (it watches main too) — harmless noise; an "Ignored Build Step" for branches ≠ website would
+  silence it (Pranav's setting). `main` has `209bd91` (privacy) unpushed — needs Yes.
+- **14 Sep — website live + verified:** build `17289cf` live in ~45 s; every essential confirmed
+  against the live site (pixel, GA4, OG/Twitter, canonical, App Store banner, sitemap, robots,
+  apex→www 308, privacy paragraph, `_vercel/insights` 200). Follow-up `122659b`: the share image
+  was a 911 KB PNG — WhatsApp shows previews only under ~300 KB — replaced by a 124 KB JPEG, and
+  the export check now enforces the limit. Pushed. `main` still holds `209bd91` (privacy) unpushed.
+- **14 Sep — consent + hero share image (website):** Pranav: "we need a consent banner" and "the
+  WhatsApp image must use the current website hero". Built: `lib/consent.ts` (localStorage
+  `allkept-consent`, Google consent-mode update + Meta grant/revoke, reset event),
+  `ConsentBanner` (Accept/Decline, footer "Cookie choices" reopens it), tag snippets start with
+  `gtag('consent','default', denied…)` / `fbq('consent','revoke')` unless already granted; export
+  check proves ordering. Share image: headless Chrome capture of the live hero at 1440×1000
+  (`--virtual-time-budget` never settles because of the countdown — Chrome wrote the PNG but did
+  not exit; killed the anchored headless process), cropped below the countdown → 1200×630 JPEG
+  102 KB. Policy sentence about the banner on both branches (website copy regenerated). Three
+  commits pushed on `website`; `main` has the policy commit unpushed. GA wizard: Pranav to choose
+  "I use a custom consent banner".
+
+---
+
+## 2026-09-14 — audit of an external repo: github.com/666ghj/MiroFish
+
+- Pranav asked for a comprehensive audit of `666ghj/MiroFish` (open-source "swarm intelligence
+  prediction engine": Flask + Vue, OASIS multi-agent social simulation, Zep Cloud graph). Not
+  Allkept code; no Allkept files changed except this log.
+- Method: cloned at `39d8491` into the session scratchpad; installed backend (uv, py3.12) + frontend
+  (npm ci); ran pytest (129 pass), vite build, pip-audit (132 advisories / 25 pkgs), npm audit,
+  bandit (0 high), ruff, license scan; five parallel read-only review agents (backend API, engine
+  reliability/cost, frontend, quality/CI/licensing). Reproduced by hand: no-auth route table, the
+  path-traversal helper escaping uploads dir, renderMarkdown XSS payloads. Backend agent reproduced
+  the delete_report("..") rmtree wiping uploads.
+- Result: 3 Critical (no auth #487; DELETE traversal wipes data volume; stored XSS via v-html),
+  11 High, 18 Medium, 10 Low. All three public security issues (#306/#487/#488) confirmed;
+  maintainer's triage bot had already acknowledged them as valid, still unfixed. Repo is 73k stars
+  but code-dormant since 3 Aug 2026.
+- Deliverable: `~/projects/Random Tasks/docs/mirofish-repo-audit.html` (self-contained HTML, TOC,
+  print CSS), also published as a private artifact and sent in chat.
+- Side effects on this machine: MiroFish clone + venv live only in the session scratchpad (discarded
+  with the session). No local databases created this time (unlike the QM audit). QM's four scratch
+  Postgres DBs (`qm_audit`..`qm_audit4`) may still be around from 11 Sep — drop cmd is in that log.
+- Open threads: none for Allkept. This session earlier also drafted Allkept bios (IG/TikTok) and a
+  two-liner; nothing committed.
+
+---
+
+## 2026-09-14 — Instagram thumbnails: why five saves had none, and the fix
+
+- Diagnosis (77 Instagram saves, 5 without a picture): three causes. (1) Instagram's login wall
+  for a datacentre — it answers with its own front page, `og:url https://instagram.com/` and the
+  Instagram logo as `og:image`; the wrong-page check refused it correctly but the refusal was
+  final (`p/DdPficfHPyL`, `p/DdNFvWBkxgD`, `reel/DdJsVxhCCLM`). (2) The DM door handed a video
+  post's video file as the picture; the snapshot refused it four times and never fell back to the
+  poster (`p/DdH1aXsk4C9`). (3) `reel/DdLnijyiVGa` has no picture for anyone. Also learned:
+  x.com serves a script shell with no preview tags at all — "no tags" must stay final, or every X
+  save would retry five times.
+- Fix, one change per commit (7d66e06 ffa1335 fcbc406 3eefa6d 4dce27d cf26c2d a5d4dcd b93addf ):
+  enrich — a withheld page (wrong page, unreadable, or a captcha wall on a web link) leaves the
+  card settled and carries `retryPreviewAfterMs` along `RETRY_LADDER_MS`; a held address that
+  is not a picture is replaced by the page's poster (read on demand) or taken off the save.
+  pipeline/sweeper — `previewRetryDue`/`nextAttemptAfter`; a settled card with a due
+  `next_attempt_at` is enriched again (sweeper pass 4); the snapshot pass drops a non-picture
+  address and enriches at once. Picture door — host rule moved to `_shared/picture-hosts.ts`
+  with Instagram (`cdninstagram.com`, `fbcdn.net`); guard also accepts a save whose address
+  proved not a picture. save-link — optional `pictureUrl`, same host rule. Phone —
+  `lib/instagram-picture.ts`: page reader (wall known by declared address), `pictureForSave`
+  in both paste fields (4 s budget), foreground backfill through the Reddit door, walls counted
+  (`MAX_WALLS` 5).
+- Tests: functions 242 pass, `check:functions` clean; app 236 pass, `tsc` clean. Live read-only
+  check: the candidate filter selects exactly the five pictureless saves.
+- Not done without a Yes: deploy `sweeper`, `reprocess-item`, `save-link`, `reddit-thumbnail`;
+  `git push`. Step 4 (the four stuck saves) happens on the phone's next foreground with the new
+  JS, through the backfill; the sweeper's pass 4 only covers saves walled from now on.
+- Deferred to forlater: sweeper pass-4 index; the Reddit backfill's unbounded re-reads (sibling).

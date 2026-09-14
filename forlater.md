@@ -30,13 +30,6 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-11
 - **Originated from:** 10 Sep 2026 design sessions
 
-### 5. Website landing page — implement the Claude Design hero
-- **What + why:** The Claude Design page "Allkept Hero" (project `ac757901…`) is now implemented in `apps/website` on the `website` worktree, replacing the earlier half-finished edits (those are preserved as a patch in the session scratchpad, not in git). All assets now in place from Pranav's export (12 Sep); local D1 migrated. Remaining: Contact link address; commit on Pranav's approval.
-- **Scope:** `apps/website/` in the `website` worktree.
-- **Status:** in progress (12 Sep 2026)
-- **Date added:** 2026-09-11
-- **Originated from:** website session (date unknown — before 10 Sep); re-scoped 12 Sep 2026 to the Claude Design hero
-
 ### 6. Remove the `category-artwork` worktree
 - **What + why:** `.worktrees/category-artwork` is 31 commits behind main with nothing ahead and a clean tree — its work landed via `8df1c78`. Dead weight; `git worktree remove` it (needs explicit OK — deletion).
 - **Scope:** git housekeeping only.
@@ -60,7 +53,7 @@ Each item records: what + why · scope · status · date added · originated fro
 
 ### 9. App links → www.allkept.app
 - **What + why:** `apps/mobile/app/(tabs)/settings.tsx` links privacy and terms to the GitHub Pages URLs. Once www.allkept.app serves `/privacy` and `/terms`, switch them. JS-only change → ships over the air on both platforms.
-- **Scope:** `settings.tsx` link constants only.
+- **Scope:** `TERMS_URL` / `PRIVACY_URL` in `apps/mobile/lib/paywall.ts` (moved there 13 Sep; Settings and the paywall both read them).
 - **Status:** queued — blocked on the domain being live.
 - **Date added:** 2026-09-11
 - **Originated from:** website spec, 11 Sep 2026
@@ -73,7 +66,7 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Originated from:** website spec, 11 Sep 2026
 
 ### 11. Store worksheet URLs → www.allkept.app
-- **What + why:** `docs/store-submission.html` names GitHub Pages URLs for privacy, support and marketing. Replace with the domain once live.
+- **What + why:** `internal/store-submission.html` names GitHub Pages URLs for privacy, support and marketing. Replace with the domain once live.
 - **Scope:** the worksheet only.
 - **Status:** queued — blocked on the domain being live.
 - **Date added:** 2026-09-11
@@ -96,16 +89,20 @@ Each item records: what + why · scope · status · date added · originated fro
 ### 14. Pricing: paid tier in the US, free in India, no ads anywhere
 - **What + why:** Decided 11 Sep 2026 (Pranav): charge US customers, India free without ads. The app has no purchases today. Needs its own design: subscription via StoreKit / Play Billing, availability limited to the US storefront in both consoles, paywall keyed off the store-reported storefront (not IP), server-side entitlement, restore purchases, auto-renewal disclosures. Adding IAP later means a new build and IAP review — not a store-launch blocker.
 - **Scope:** mobile app + Supabase entitlement + both consoles' subscription setup.
-- **Status:** queued — brainstorm first when Pranav wants it.
+- **Status:** **building, 13 Sep 2026 (night)** — app side done and proven with RevenueCat's Test Store (paywall → pretend purchase → webhook → subscription row); iOS dev build made; webhook live. **Stores:** Apple blocked on an App Store Connect issue (ticket raised) — Phase 1 in `internal/billing-setup.html` not started. Google: app `Allkept` created (package `app.allkept.mobile`); blocked on the developer account's payments/merchant profile (owner-only; All apps → Developer account → Payments profile) and on an Android build with the billing library being uploaded to Internal testing (Pranav's Yes). Independent next step: Google Cloud service account → RevenueCat Play app → `goog_` key → EAS env vars. Then subscriptions ($2.99 / $27.99, US only), licence tester, RevenueCat products + entitlement `allkept` + offering `default`, test purchase. Lawyer pass on terms before the first charge.
 - **Date added:** 2026-09-11
 - **Originated from:** launch questions, 11 Sep 2026
 
 ### 15. Privacy policy content after the onboarding change
 - **What + why:** Phone collection has stopped and the photo is optional (11 Sep), so the policy's data inventory must say so. It still mentions gender (removed 10 Sep). It should state plainly that there are no ads. It also says Allkept "takes no payments" (wrong once the US tier ships) and lacks the three statements YouTube's API terms require (Terms agent, 11 Sep). **And it names the wrong region:** it says the backend is in Mumbai (ap-south-1), but the Supabase project `yurbmcqoqyehbpoqplcr` is in **ap-southeast-1 (Singapore)** — a factual error on a legal page, to fix in the same pass. Content change to a public page → needs Pranav's approval; then re-run `npm run extract` in `apps/website` so the site copy follows.
 - **Scope:** `docs/privacy.html` (+ `apps/website/content/privacy.html` via extract).
+- **Website measurement (added 14 Sep):** once the website commit ships, the policy's website section must say: "The website at allkept.app uses the Meta Pixel and Google Analytics to measure visits and sign-ups, and Vercel's cookieless analytics for page speed. These set cookies or identifiers in your browser and share the pages you visit with Meta and Google under their own policies. The app itself contains no third-party analytics or tracking SDK." The other session holds privacy.html; hand it this paragraph.
 - **Status:** queued — after the onboarding change lands.
 - **Date added:** 2026-09-11
 - **Originated from:** 11 Sep 2026 onboarding decision
+- **13 Sep 2026 — the audit found the policy drifted from the code in five places (report §F):** the notification-after-sign-out promise (now true again after `7af92b5`, once deployed), "your IP never reaches the site you saved" is false for Reddit and TikTok (the phone fetches those itself), two third parties are not named, and the "complete list" of stored data is missing three items. Fix these with the interests line below.
+- **13 Sep 2026 — payments (from the paid-in-the-US build):** "In the United States, subscriptions are bought through Apple's App Store or Google Play, which take the payment and hold your card details; we never receive them. RevenueCat, a subscription service in the United States, receives your Allkept user id, your purchase history and the country of your store account, and tells us whether a subscription is active. We store that status, the product, the renewal date and the store country, and a count of the saves you have made. India: none of this applies — the app is free and nothing is bought." Section 3 (what we collect) and the processors table.
+- **13 Sep 2026 — one more line needed, from the interests feature:** "Interests are counted from the named things the sorting already found in your saves — people, brands, products, places, recipes, tools. They are shown only to you, never stored as a profile, computed each time you open the app, and switched off under Settings → Interests from your saves. We ask before showing them the first time." Goes with §3.5 (what the sorting produced) and §6 (AI processing). Left for whoever holds `docs/privacy.html` — another session was editing it when this was written.
 
 ### 16. Admin dashboard: drop the dead "Phone" row
 - **What + why:** `apps/admin/src/App.tsx:1182` renders `["Phone", detail.phone]` from the `admin_dashboard_read` RPC (`demo.ts:25` seeds it too). Phone is no longer collected and stored values are null, so the row is always empty. Remove the row and the RPC's `phone` column in the same change; later, drop `profiles.phone` itself (migration).
@@ -134,14 +131,14 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Scope:** pipeline push trigger + the library query migration + the app's filter copy.
 - **Status:** queued — decide the definition first (Pranav).
 - **Date added:** 2026-09-12
-- **Originated from:** `docs/home-screen-plan.html`
+- **Originated from:** `internal/home-screen-plan.html`
 
 ### 20. Nothing records which save was opened
 - **What + why:** `items.opened_at` exists in the schema but nothing writes it, and the `item_open` event carries no item id — so "saved, never opened" (the founding pitch, and the natural "Rediscover" section) cannot be built. Recording per-item opens is new personal-data processing → privacy-policy pass (item 15) before shipping.
 - **Scope:** `app_events` props or `items.opened_at` write on open; privacy policy.
 - **Status:** queued — Pranav to decide whether to record it.
 - **Date added:** 2026-09-12
-- **Originated from:** `docs/home-screen-plan.html`
+- **Originated from:** `internal/home-screen-plan.html`
 
 ### 21. Live progress card on the home screen while a YouTube playlist syncs and sorts
 - **What + why:** Pranav (12 Sep): pasting a YouTube playlist link starts a sync + sort that takes time; the home screen should show an animated progress card with live progress (videos captured, sorted) until done. Design first: what "progress" is measurable (playlist size from the API, items captured, items classified), how it updates (realtime subscription already exists), what it shows when done or stuck.
@@ -151,56 +148,25 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Originated from:** Pranav, 12 Sep 2026
 
 ### 22. Build the home screen's three recommended sections
-- **What + why:** Pranav (12 Sep): build the three sections from `docs/home-screen-plan.html` — "Needs you", "Start here", "A year ago today". Depends on decisions in that doc (notably one definition of "needs you", item 19) — defaults from the doc unless Pranav says otherwise.
+- **What + why:** Pranav (12 Sep): build the three sections from `internal/home-screen-plan.html` — "Needs you", "Start here", "A year ago today". Depends on decisions in that doc (notably one definition of "needs you", item 19) — defaults from the doc unless Pranav says otherwise.
 - **Scope:** home screen, one query each, Library filter alignment for "needs you".
 - **Status:** queued — after the progress card.
 - **Date added:** 2026-09-12
 - **Originated from:** Pranav, 12 Sep 2026
-
-### 23b. Reddit card pictures — DONE 12 Sep (`9bd0511`)
-- Resolved: the phone reads Reddit's feed and a validating endpoint stores the address; the sweeper snapshots it. Text posts keep the logo because they have no picture. See ERRORS.md for the four routes that do not work.
 
 ### 23. X cards are broken-looking — three defects found by the WhatsApp/X audit
 - **What + why:** the audit agent (12 Sep) checked X's live endpoints: (a) `enrich.ts` still calls `publish.twitter.com/oembed`, which now answers 301 → `publish.x.com` (we follow it, but it is a hop we need not make and a host that may stop redirecting); (b) X's oEmbed never returns a title or a picture, and `askThePage` is therefore always true for X — every X save makes a second fetch of `x.com` that returns a JS shell with no preview tags, pure waste; (c) `decodeEntities` lacks `mdash`, so `&mdash;` is stored glued to the caption. The existing test at `enrich.test.ts:64` mocks a kinder response than reality. Fix together: switch the host, skip the page fallback for platforms whose pages never carry tags (X, TikTok), add the entity. X's picture can only come from X's official embed (Phase 4 of the plan).
 - **Scope:** `supabase/functions/_shared/enrich.ts`, its tests. About a day.
 - **Status:** queued.
 - **Date added:** 2026-09-12
-- **Originated from:** WhatsApp/X audit agent, `docs/whatsapp-x-plan.html`
+- **Originated from:** WhatsApp/X audit agent, `internal/whatsapp-x-plan.html`
 
 ### 24. WhatsApp and X — decisions on the plan
-- **What + why:** `docs/whatsapp-x-plan.html` (12 Sep) needs seven answers: (1) is X a promised platform or merely handled; (2) build the WhatsApp number door (free in Meta fees, no App Review, needs a never-used-on-WhatsApp phone number, a migration widening four check constraints, and a phone-number line back in the privacy policy); (3) a second Meta app for WhatsApp until the Instagram review lands; (4) X bookmarks import — pay-per-use at $0.005 per Post read (likes are not buyable at all), or first check whether the free X archive holds likes/bookmarks; (5) X official embed before or after store submission (it is also the Display Requirements fix); (6) WhatsApp chat-export import — a principles question (other people's messages); (7) one generic refresh-or-expire job for X's 24-hour deletion rule and YouTube's 30-day rule (item 17).
+- **What + why:** `internal/whatsapp-x-plan.html` (12 Sep) needs seven answers: (1) is X a promised platform or merely handled; (2) build the WhatsApp number door (free in Meta fees, no App Review, needs a never-used-on-WhatsApp phone number, a migration widening four check constraints, and a phone-number line back in the privacy policy); (3) a second Meta app for WhatsApp until the Instagram review lands; (4) X bookmarks import — pay-per-use at $0.005 per Post read (likes are not buyable at all), or first check whether the free X archive holds likes/bookmarks; (5) X official embed before or after store submission (it is also the Display Requirements fix); (6) WhatsApp chat-export import — a principles question (other people's messages); (7) one generic refresh-or-expire job for X's 24-hour deletion rule and YouTube's 30-day rule (item 17).
 - **Scope:** decisions first; engineering after.
 - **Status:** waiting on Pranav.
 - **Date added:** 2026-09-12
 - **Originated from:** Pranav's request for the audit, 12 Sep 2026
-
-### 25. Videos play automatically on the save screen — DONE 12 Sep (`05e3239`, `d97fd51`, `671a731`, `b542edc`)
-- **What + why:** Pranav (12 Sep): "I would rather want the video play automatically" for saved videos across platforms, instead of tapping Play. Today `EmbedPlayer` sets `mediaPlaybackRequiresUserAction` and a tap injects `play()`. Both iOS WebKit and Android WebView allow autoplay only when muted (or after a user gesture); YouTube's embed takes `autoplay=1&mute=1`, Instagram's embed is a card whose `<video>` can be started by injected script once loaded. Design questions: muted-first with a tap to unmute, or sound on (needs a gesture on iOS); only on the save screen or also in the library grid; data use on cellular; what "active" means when scrolling.
-- **Scope:** `apps/mobile/components/EmbedPlayer.tsx`, `apps/mobile/lib/embed.ts`, `ItemDetail.tsx`. App change — ships in a build (gated by the explicit-Yes rule).
-- **Status:** DONE — muted autoplay with a speaker button; sound carries to the next video until the app is left for 30s. Verified on the simulator for Instagram, YouTube and TikTok. Not on any phone until the next build.
-- **Date added:** 2026-09-12
-- **Originated from:** Pranav, 12 Sep 2026
-
-### 26. TikTok Phase 2 — play TikTok inside Allkept — DONE 12 Sep (`53a1ad4`, `05e3239`, `c7515f1`)
-- **What + why:** TikTok cards now fill in (Phase 1 closed 12 Sep), but a TikTok video opens the original instead of playing in place. Add TikTok to `embed.ts` using TikTok's embed page (the one its oEmbed HTML points at) with the same stay-in-the-card treatment as Instagram; 9:16 box; photo posts embed-or-snapshot decision. Cannot be tested from India without a VPN.
-- **Scope:** `apps/mobile/lib/embed.ts`, `EmbedPlayer.tsx`, tests. App change (build-gated).
-- **Status:** DONE — TikTok's player, driven by the message API TikTok documents, not by `<video>`. Videos autoplay; photo carousels render, swipe and keep their first picture on the card. Proven through a US VPN on the simulator.
-- **Date added:** 2026-09-12
-- **Originated from:** `docs/tiktok-plan.html` Phase 2; Pranav's "wasn't able to play" on 12 Sep
-
-### 32. Categories a person makes — Part 2 of the category work
-- **What + why:** Pranav, 12 Sep: "we do not have an option for the user to create their own respective categories." Design agreed and written down in `docs/superpowers/specs/2026-09-12-categories-tiles-and-user-categories-design.md`: a `user_categories` table with RLS and a case-insensitive unique index; the name stored on a save in `item_ai.user_category`, which is already free text and already wins over the model's answer everywhere; `Sorting` / `Uncategorized` / `Needs attention` blocked in SQL because the database invents those for a save with no category; delete clears `user_category` so each save falls back to the model's original answer rather than being orphaned; rename and delete through RPCs so they cannot half-finish. Three entry points — a `+ New category` chip in a save's "Put this under" row, a `+` in the home grid, and "Your categories" in Settings. The merge happens once, in `useFacets`, which is what four of the five surfaces read. The classifier keeps choosing from the fixed fifteen; custom categories are folders a person files into, and the copy says so.
-- **Scope:** one migration, `lib/` hooks, `ItemDetail`, home grid, Settings, tests. Part 1 (tiles) is done and shipped to `main`.
-- **Status:** next up — Pranav confirmed rename and the home-grid `+`.
-- **Date added:** 2026-09-12
-- **Originated from:** Pranav's three changes, 12 Sep 2026
-
-### 31. Category confirmation when a save arrives from the share sheet
-- **What + why:** Pranav (12 Sep): when someone shares a link into Allkept, show a bottom sheet with the category it has been filed under, and let them change it or create their own. The obstacle found while scoping it: **at the moment the share sheet is open the category does not exist yet** — the extension posts the link and the category arrives seconds later, after enrichment and one AI call. Both extensions are built to vanish (iOS hands the upload to a background URL session and dismisses immediately; Android's activity is invisible and never launches the app). So three routes: (A) the sheet asks instead of showing — a picker defaulting to "Let Allkept sort it", native UI in Swift and Kotlin, a build on both platforms, and a decision on every share; (B) an in-app bottom sheet on next open — "Saved — filed under Food. Change?" — pure React, no native work, batches several shares; (C) a second push once sorted — "Filed under Food · tap to change" — push already exists server-side. Recommendation on record: B, then C.
-- **Scope:** B is `apps/mobile` only. A is `targets/share/ShareViewController.swift` + `modules/share-save/.../ShareActivity.kt` + a native category list in the app group + a build.
-- **Status:** deferred by Pranav, 12 Sep 2026 — "save for later". Route not yet chosen.
-- **Date added:** 2026-09-12
-- **Originated from:** Pranav's three changes, 12 Sep 2026
 
 ### 27. Rename the `reddit-thumbnail` function
 - **What + why:** the deployed edge function called `reddit-thumbnail` now stores pictures for TikTok carousels too (`c7515f1` generalised it to a per-platform host allow-list). The name is now a lie, and the next person reading the function list will draw the wrong conclusion. Rename to something like `store-picture`, deploy under the new name, update the two callers in the app, then delete the old one.
@@ -217,7 +183,7 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Originated from:** Pranav's "how do we fix these no-preview cards?", 12 Sep 2026
 
 ### 29. Decide the AI model — `gpt-5.6-luna` A/B against the 131 existing saves
-- **What + why:** `docs/unit-economics.html` measures sorting at $0.0051 a save, about 99% of it one OpenAI call, so the model choice is essentially the whole variable cost. `docs/llm-options.html` prices 33 alternatives: the cheapest sound option is `gpt-5.6-luna` — 18× cheaper, same vendor, already wired, no new privacy or policy surface. Before switching, run both models over the 131 saves we already have and compare categories; a cheaper model that sorts worse costs more than it saves. Three open decisions in the doc: how much agreement is enough, one vendor or two, and whether a free tier's rate ceiling is worth its terms.
+- **What + why:** `internal/unit-economics.html` measures sorting at $0.0051 a save, about 99% of it one OpenAI call, so the model choice is essentially the whole variable cost. `internal/llm-options.html` prices 33 alternatives: the cheapest sound option is `gpt-5.6-luna` — 18× cheaper, same vendor, already wired, no new privacy or policy surface. Before switching, run both models over the 131 saves we already have and compare categories; a cheaper model that sorts worse costs more than it saves. Three open decisions in the doc: how much agreement is enough, one vendor or two, and whether a free tier's rate ceiling is worth its terms.
 - **Scope:** a throwaway script against the existing saves, then one line in `pipeline.ts`. No migration.
 - **Status:** waiting on Pranav — the A/B is mine to run once he says which of the three he wants.
 - **Date added:** 2026-09-12
@@ -230,19 +196,57 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-12
 - **Originated from:** my TikTok Phase 1 testing, 12 Sep 2026
 
----
+### 31. Category confirmation when a save arrives from the share sheet
+- **What + why:** Pranav (12 Sep): when someone shares a link into Allkept, show a bottom sheet with the category it has been filed under, and let them change it or create their own. The obstacle found while scoping it: **at the moment the share sheet is open the category does not exist yet** — the extension posts the link and the category arrives seconds later, after enrichment and one AI call. Both extensions are built to vanish (iOS hands the upload to a background URL session and dismisses immediately; Android's activity is invisible and never launches the app). So three routes: (A) the sheet asks instead of showing — a picker defaulting to "Let Allkept sort it", native UI in Swift and Kotlin, a build on both platforms, and a decision on every share; (B) an in-app bottom sheet on next open — "Saved — filed under Food. Change?" — pure React, no native work, batches several shares; (C) a second push once sorted — "Filed under Food · tap to change" — push already exists server-side. Recommendation on record: B, then C.
+- **Scope:** B is `apps/mobile` only. A is `targets/share/ShareViewController.swift` + `modules/share-save/.../ShareActivity.kt` + a native category list in the app group + a build.
+- **Status:** deferred by Pranav, 12 Sep 2026 — "save for later". Route not yet chosen.
+- **Date added:** 2026-09-12
+- **Originated from:** Pranav's three changes, 12 Sep 2026
 
-## In progress
+### 32. Security audit — the findings not yet fixed
+- **What + why:** the 13 Sep audit (`private/security-audit-2026-09-13.html`, never committed — `docs/` is public) found 31 issues. Fixed the same day: A1/C1 push token ownership + sign-out (`7af92b5`), B1/A4 SSRF guard (`0dee186`), D1 internal docs off the public site (`072044b`). **Still open, roughly by weight:** D2 CI passes the service-role key to `npm ci` (scope the secret to the one step that needs it); C2/C3 the share token sits in plain SharedPreferences on Android with backup on, and is backup-eligible on iOS (EncryptedSharedPreferences / keychain `ThisDeviceOnly`, `allowBackup=false`); C4 over-the-air updates are not code-signed (EAS code signing); A2 the live database has grants the migrations do not (reconcile with the read-only query in the report); A3 `item_ai` has no column grants so a client can write its own "AI" output; A5 six functions keep PUBLIC execute; B2 no rate limit on `save-link` for session callers; B3 the internal secret is compared with `===` (timing-safe compare); B4 the waitlist confirms whether an email exists; B5 raw server errors returned to clients; C5 a guest refresh token lives forever behind a pre-sign-in button; C6 the WebView allowlist is a substring test; C7 analytics records a category name the person typed; C8 24-hour thumbnail links; C9 the Android ShareActivity is exported to every app; D3 admin has no second factor; A6 `delete_user_category` clears saves for a name that never existed; A7 search_path on three older functions.
+- **Scope:** each is small; D2, C2/C3, C4 and A3 first. None needs a build except C2/C3/C9.
+- **Status:** queued.
+- **Date added:** 2026-09-13
+- **Originated from:** the audit agent Pranav asked for, 13 Sep 2026
 
-### 1. Android preview build with Firebase wired in — DONE 12 Sep (APK built, `ccc811e4`)
-- **What + why:** Commit `bc56813` (10 Sep) added `google-services.json` and the Firebase config so Android push can work. That changed the Android fingerprint (`d2eccbdb → 4d9d10aa`), so the installed APK can never receive it over the air — Android push only works after a fresh build (`npm run build:android` in `apps/mobile`, profile `preview`, APK). The EAS build list (11 Sep 12:40) confirms no build exists at `4d9d10aa`: the newest Android build (`8f43c44a`, fingerprint `d2eccbdb`, commit `5b3060a`, finished 19:25 on 10 Sep) predates Firebase and is the APK that crashed.
-- **Scope:** EAS build only, no code change. Then install the APK on the test device and confirm a push arrives.
-- **Status:** in progress — build `faaded60` finished 11 Sep 13:07 (runtime `4d9d10aa`). APK: https://expo.dev/artifacts/eas/4g9NXIMBwi0c5-eegCrxSsAgEuOXixQsp9i7JPX-V7Q.apk — Pranav to install and verify a push arrives, then archive.
-- **Date added:** 2026-09-11
-- **Originated from:** 10 Sep 2026 Android push session
+### 33. Make the repository private without taking the policy pages down
+- **What + why:** the repo is public and GitHub Pages serves `docs/` from `main`, so everything committed is readable by anyone — including the history of the files moved out in `072044b`. Flipping private is one click, but Pages on a private repo needs a paid plan and the app and the stores link to `pranavadityaneti.github.io/All-Kept/privacy.html` and `terms.html`. Order: serve privacy/terms/delete from allkept.app (items 9–12), repoint the app's links, then make the repo private. Alternative that also stops `docs/` being a publishing hazard for future notes: a `gh-pages` branch holding only the public pages, with Pages pointed at it — then `docs/` on `main` is internal again, which is what the global rules assume.
+- **Scope:** Pages settings (Pranav), items 9–12, one link change in `settings.tsx` and `embed.ts` (the embed `origin` is that domain too).
+- **Status:** queued — Pranav's click.
+- **Date added:** 2026-09-13
+- **Originated from:** audit finding D1
 
----
+### 34. Weave — things built from a person's saves (itinerary, cook-this-week, watchlist …)
+- **What + why:** Pranav (13 Sep): since the sorting already reads every save, build on it — an itinerary from someone's travel reels, and the same idea per category. Every save already carries a summary, tags, typed entities (place/product/recipe/tool/person/brand) and an actionability; a Make turns a pile of them into an artefact, grounded only in the person's saves, cited back to them, with outside facts (place lookups, where-to-watch) where they make it real. Economics in `internal/compile-economics.html`: about 20¢ for an itinerary from 100 saves on Opus 5 (7¢ on Sonnet 5) before place lookups, which can exceed the model uncached; a heavy month per person ≈ $1. This is the reason for the paid tier (item 14). Start with Travel (itinerary), Food (cook this week), Entertainment (watchlist); "Ask your saves" is the general form and the embeddings for it exist.
+- **Scope:** an edge function per Make (or one with templates), a places provider with per-place caching, a saved-artefact type in the library, the policy line (user-initiated, disclosed alongside sorting), free-tier ceilings. Brainstorm the itinerary first — it sets the grounding rules the rest inherit.
+- **Status:** named **Weave** on 13 Sep (threads → woven into one thing; "Make an itinerary" stays the verb on the button). Parked by Pranav until the US payment model is built; economics done; the three choices (which first, model per category, places provider) still open.
+- **Date added:** 2026-09-13
+- **Originated from:** Pranav's question on using the intelligence in saves, 13 Sep 2026
 
-## Done — archived
+### 35. Metro: one asset request for `.%2Fassets` fails with ENOENT
+- **What + why:** After the 13 Sep dev build, Metro logged `ENOENT: scandir '…/apps/mobile/.%2Fassets'` once on an asset request — a URL-encoded `./assets` path. Every image on screen renders, so nothing visible is broken; find which asset reference produces the encoded path (a `require("./assets/…")` outside `apps/mobile`'s root? the share extension? the splash?) and correct it so the log is clean.
+- **Scope:** the one asset reference; no product change.
+- **Status:** queued — cosmetic
+- **Date added:** 2026-09-13
+- **Originated from:** the paid-in-the-US dev build session, 13 Sep 2026
 
-_(none yet)_
+### 36. Publish the admin dashboard at admin.allkept.app — DONE 13 Sep 2026
+- **What + why:** Found 13 Sep: the admin was never actually published. Vercel project `all-kept` (team Ideaye, id `prj_LDiDjcd4oSSX2l9euH4bF2l4yQ10`) deploys from `main` with **no root directory and no framework preset**, so it builds the repository root, serves nothing, and reports "Ready" while `all-kept.vercel.app` answers 404. No domain, no environment variables. (`all-kept-admin.vercel.app` is the *website* project, `all-kept-website`, which kept its old name.) Code side done: `bde743c` adds `apps/admin/vercel.json` so every path serves the app and Google's `/auth/callback` lands.
+- **Steps (Pranav's accounts):** Vercel → all-kept → Settings → Build and Deployment: Root Directory `apps/admin`, Framework Preset Vite, Save both. Environment Variables (all environments): `VITE_SUPABASE_URL=https://yurbmcqoqyehbpoqplcr.supabase.co`, `VITE_SUPABASE_ANON_KEY=<the public anon key from apps/mobile/.env>`, `VITE_ADMIN_DEMO=false`. Domains → Add `admin.allkept.app` → copy the CNAME target Vercel shows → GoDaddy DNS: CNAME `admin` → that target. Supabase → Authentication → URL Configuration → add `https://admin.allkept.app/auth/callback` (and `https://all-kept.vercel.app/auth/callback`) to Redirect URLs. Then the agent: `supabase secrets set ADMIN_ALLOWED_ORIGINS=https://admin.allkept.app,https://all-kept.vercel.app,http://127.0.0.1:5174` (Yes needed) and `git push` (Yes needed) — the push triggers the first real build.
+- **Scope:** Vercel + GoDaddy + Supabase console; one committed file.
+- **Status:** DONE 13 Sep 2026 — https://admin.allkept.app live and signed into by Pranav (session issued 17:46 UTC). Also reachable at all-kept.vercel.app and the git-main Vercel alias; all three are on the function's origin list. Six causes found and fixed on the way: wrong Vercel root/preset, admin address missing from the redirect list, work account not an operator, key from another project, key copied as bullets, branch link not on the origin list. The admin's sign-in screen now names such failures itself (`7dca5ab`). Archived 13 Sep.
+
+### 37. Sweeper pass 4 has no index of its own
+- **What + why:** The sweeper's new fourth pass (settled cards with a due preview retry: `status in (ready, preview_unavailable) and thumbnail_path is null and thumbnail_url_remote is null and next_attempt_at <= now`) runs without an index — `items_sweep_idx` covers only pending/failed. Fine at hundreds of rows; add a partial index when the table is large enough for a five-minute sequential scan to matter.
+- **Scope:** one migration, `supabase/migrations/`.
+- **Status:** queued
+- **Date added:** 2026-09-14
+- **Originated from:** 14 Sep Instagram thumbnail fix (`pipeline: a settled card asks for its preview again`).
+
+### 38. Reddit backfill re-reads a refusing feed every foreground
+- **What + why:** `apps/mobile/lib/reddit-thumbnail.ts` treats a feed that could not be read (`fetchFeed` → null, e.g. Reddit rate-limiting the phone) as "no answer" and never remembers it, so a post whose feed always refuses is fetched again on every foreground, forever. The Instagram backfill beside it counts walls and gives up after five (`MAX_WALLS`); the same bounded rule belongs here. Not touched on 14 Sep: a different feature.
+- **Scope:** `apps/mobile/lib/reddit-thumbnail.ts` + its test.
+- **Status:** queued
+- **Date added:** 2026-09-14
+- **Originated from:** 14 Sep Instagram thumbnail fix audit.
