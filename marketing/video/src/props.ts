@@ -1,10 +1,12 @@
 export type Country = "in" | "us";
 
 export type Category = {
-  /** Label shown on the tile. */
+  /** The name cards file under (src/cards.ts). */
   name: string;
-  /** Base name in apps/mobile/assets/emoji (no extension) — the app's own 3D icons. */
-  icon: string;
+  /** The app's own category name — keys the mark and palette generated from apps/mobile. */
+  app: string;
+  /** What the tile prints — the app's short label for that category. */
+  label: string;
 };
 
 export type WaitlistAdProps = {
@@ -16,11 +18,11 @@ export type WaitlistAdProps = {
 };
 
 const CATEGORIES: Category[] = [
-  { name: "Food", icon: "cooking" },
-  { name: "Travel", icon: "airplane" },
-  { name: "Fitness", icon: "flexed_biceps" },
-  { name: "Design", icon: "artist_palette" },
-  { name: "Tech", icon: "laptop" },
+  { name: "Food", app: "Food & recipes", label: "Food" },
+  { name: "Travel", app: "Travel & places", label: "Travel" },
+  { name: "Fitness", app: "Fitness & health", label: "Wellness" },
+  { name: "Design", app: "Design & inspiration", label: "Design" },
+  { name: "Tech", app: "Tech & tools", label: "Tech" },
 ];
 
 export const IN_PROPS: WaitlistAdProps = {

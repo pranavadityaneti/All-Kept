@@ -1,0 +1,32 @@
+{
+  "Food & recipes": {
+    "key": "fork-knife",
+    "card": "#FFE7C2",
+    "ink": "#B25A00",
+    "wash": "#F5A623"
+  },
+  "Travel & places": {
+    "key": "airplane-enabled",
+    "card": "#DCEFFF",
+    "ink": "#1C5FCC",
+    "wash": "#7FB8F5"
+  },
+  "Fitness & health": {
+    "key": "dumbell",
+    "card": "#DFF5E4",
+    "ink": "#137A3A",
+    "wash": "#5ECB7A"
+  },
+  "Design & inspiration": {
+    "key": "paint-palette",
+    "card": "#F3E3FF",
+    "ink": "#7A2FC0",
+    "wash": "#C48CF2"
+  },
+  "Tech & tools": {
+    "key": "laptop",
+    "card": "#E3E6FF",
+    "ink": "#3C43B8",
+    "wash": "#8F95F0"
+  }
+}

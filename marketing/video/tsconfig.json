@@ -4,7 +4,8 @@
     "jsx": "react-jsx",
     "lib": ["DOM", "ES2022"],
     "noEmit": true,
-    "types": []
+    "types": [],
+    "resolveJsonModule": true
   },
   "include": ["src", "remotion.config.ts"]
 }

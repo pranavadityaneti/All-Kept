@@ -1,5 +1,6 @@
 import { Img, staticFile } from "remotion";
 import type { Ratio, SaveCard } from "./cards";
+import { PlatformBadge } from "./PlatformBadge";
 import { INK } from "./theme";
 
 /** Picture box per shape. Widths differ so a Short reads tall and a YouTube video reads wide. */
@@ -32,13 +33,6 @@ const TextPost: React.FC<{ title: string; icon: string; width: number }> = ({ ti
       {title} <Img src={staticFile(`emoji/${icon}.png`)} style={{ width: 34, height: 34, verticalAlign: "-6px" }} />
     </div>
   </div>
-);
-
-const Globe: React.FC = () => (
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="1.8">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" />
-  </svg>
 );
 
 /** Looks like an All Kept library card: picture, title, platform badge — in the shape the platform is known for. */
@@ -111,25 +105,8 @@ export const SaveCardView: React.FC<{ card: SaveCard; fontFamily: string }> = ({
             </div>
           </>
         ) : null}
-        <div
-          style={{
-            position: "absolute",
-            right: 16,
-            bottom: 16,
-            width: 64,
-            height: 64,
-            borderRadius: 16,
-            background: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {card.platform === "web" ? (
-            <Globe />
-          ) : (
-            <Img src={staticFile(`platforms/${card.platform}.png`)} style={{ width: 40, height: 40 }} />
-          )}
+        <div style={{ position: "absolute", right: 16, bottom: 16 }}>
+          <PlatformBadge platform={card.platform} size={64} />
         </div>
       </div>
       {card.photo ? (

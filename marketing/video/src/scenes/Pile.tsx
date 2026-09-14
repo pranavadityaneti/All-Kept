@@ -4,12 +4,16 @@ import { fontFamily } from "../font";
 import { cardSize, SaveCardView } from "../SaveCardView";
 import { PAPER } from "../theme";
 
-/** Where card i comes to rest in the heap. Deterministic per index; always fully inside the frame. */
+/** The heap keeps below this line, so scene 3's mark, caption and platform row sit on clear ground. */
+export const HEAP_TOP = 600;
+const HEAP_BOTTOM = 1720;
+
+/** Where card i comes to rest in the heap. Deterministic per index; always fully inside the band. */
 export const restingPlace = (i: number, card: SaveCard) => {
   const { w, h } = cardSize(card);
   return {
     x: 90 + random(`x${i}`) * (1080 - w - 180),
-    y: 340 + random(`y${i}`) * (1920 - h - 640),
+    y: HEAP_TOP + random(`y${i}`) * (HEAP_BOTTOM - HEAP_TOP - h),
     rot: (random(`r${i}`) - 0.5) * 44,
   };
 };
