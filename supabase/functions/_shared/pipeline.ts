@@ -5,6 +5,8 @@ import { duplicateDeps, foldDuplicate } from "./duplicate.ts";
 import type { ItemIdentity } from "./contracts.ts";
 import { PROMPT_VERSION, type ClassifyDeps, type ModelUsage } from "./classify.ts";
 import { runClassification, type ClassificationClaim } from "./classification-worker.ts";
+import { encodeBase64 } from "jsr:@std/encoding@1/base64";
+import type { Picture } from "./classify.ts";
 import { compose, notify, type PushDeps, type PushReason } from "./push.ts";
 
 export interface PipelineDeps {
@@ -64,6 +66,28 @@ export async function snapshotTo(db: SupabaseClient, fetchImpl: typeof fetch, us
 }
 
 const reasonOf = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 200);
+
+/** The picture types both sorting models take. A HEIC thumbnail, which the bucket allows, is not sent. */
+const MODEL_PICTURE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+/** Above this the request grows past what the models accept once base64 has added a third. */
+const MAX_MODEL_PICTURE_BYTES = 3_500_000;
+const TYPE_BY_EXT: Record<string, string> = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif" };
+
+/**
+ * The save's stored picture, for the sorting model: read from the private bucket with the service
+ * role and handed over as bytes inside the request, so no link to it is ever minted. Null when it
+ * cannot go — a type the models refuse, too large, or unreadable — and the save is sorted from its
+ * words; the reason is logged, never thrown.
+ */
+export async function pictureForModel(db: SupabaseClient, path: string, log: PipelineDeps["log"]): Promise<Picture | null> {
+  const { data, error } = await db.storage.from("thumbs").download(path);
+  if (error || !data) { log("pipeline: picture unreadable, sorting from words", { path, reason: reasonOf(error ?? "no data") }); return null; }
+  const declared = (data.type || "").split(";")[0]!.trim();
+  const mediaType = MODEL_PICTURE_TYPES.has(declared) ? declared : (TYPE_BY_EXT[path.split(".").pop()?.toLowerCase() ?? ""] ?? "");
+  if (!mediaType) { log("pipeline: picture type not for the model, sorting from words", { path, type: declared }); return null; }
+  if (data.size > MAX_MODEL_PICTURE_BYTES) { log("pipeline: picture too large for the model, sorting from words", { path, bytes: data.size }); return null; }
+  return { mediaType, base64: encodeBase64(await data.arrayBuffer()) };
+}
 
 /**
  * A settled card with no picture at all whose page said "not now" — Instagram's login wall in place
@@ -238,6 +262,7 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
       if (error) throw error;
       return (data?.user_category ?? data?.category ?? null) as string | null;
     },
+    picture: (path) => pictureForModel(db, path, deps.log),
   }, retryClassification);
 
   await announce(db, deps, itemId, category);

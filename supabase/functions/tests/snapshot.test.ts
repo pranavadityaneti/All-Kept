@@ -33,3 +33,25 @@ Deno.test("snapshot: a 2.1 MB Instagram post image is now stored (the old 2 MB c
   assertEquals(await snapshotTo(fakeDb(uploads), respond(200, new Uint8Array(2_113_627), { "content-type": "image/jpeg", "content-length": "2113627" }), "u1", "i1", "https://lookaside.fbsbx.com/x"), "u1/i1.jpg");
   assertEquals(uploads[0]!.bytes, 2_113_627);
 });
+
+Deno.test("the picture for the model: read from the bucket as bytes; refused types, oversize and unreadable ones are skipped with a reason", async () => {
+  const { pictureForModel } = await import("../_shared/pipeline.ts");
+  const logged: string[] = [];
+  const log = (m: string) => { logged.push(m); };
+  const dbWith = (file: { bytes: Uint8Array; type: string } | null, error: { message: string } | null = null) => ({
+    storage: { from: (_bucket: string) => ({ download: async (_path: string) => ({ data: file ? new Blob([file.bytes as BlobPart], { type: file.type }) : null, error }) }) },
+  }) as unknown as SupabaseClient;
+
+  const jpeg = await pictureForModel(dbWith({ bytes: new Uint8Array([255, 216, 255]), type: "image/jpeg" }), "u1/i1.jpg", log);
+  assertEquals(jpeg, { mediaType: "image/jpeg", base64: "/9j/" });
+  // A blob without a declared type takes its type from the name; the models take jpeg, png, webp, gif.
+  assertEquals((await pictureForModel(dbWith({ bytes: new Uint8Array([1]), type: "" }), "u1/i2.webp", log))?.mediaType, "image/webp");
+  assertEquals(await pictureForModel(dbWith({ bytes: new Uint8Array([1]), type: "image/heic" }), "u1/i3.heic", log), null);
+  assertEquals(await pictureForModel(dbWith({ bytes: new Uint8Array(3_500_001), type: "image/jpeg" }), "u1/i4.jpg", log), null);
+  assertEquals(await pictureForModel(dbWith(null, { message: "object not found" }), "u1/gone.jpg", log), null);
+  assertEquals(logged, [
+    "pipeline: picture type not for the model, sorting from words",
+    "pipeline: picture too large for the model, sorting from words",
+    "pipeline: picture unreadable, sorting from words",
+  ]);
+});
