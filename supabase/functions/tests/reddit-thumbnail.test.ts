@@ -78,3 +78,21 @@ Deno.test("each platform may only name its own picture hosts", () => {
   assertEquals(isPictureHost("https://p16-sign-va.tiktokcdn.com/a.jpg", "reddit"), false);
   assertEquals(isPictureHost("https://preview.redd.it/a.jpg", "instagram"), false);
 });
+
+Deno.test("an Instagram picture host is accepted for an Instagram save, and nowhere else is", () => {
+  // The poster a post's page names: scontent.cdninstagram.com, a regional scontent-xxx, or instagram.fxxx.fna.fbcdn.net.
+  for (const ok of [
+    "https://scontent.cdninstagram.com/v/t51.82787-15/784075060_n.jpg?stp=cmp1_dst-jpg_e35_s640x640&_nc_ht=x",
+    "https://scontent-lhr8-1.cdninstagram.com/v/t51.2885-15/a.jpg",
+    "https://instagram.fbom19-1.fna.fbcdn.net/v/t51.2885-15/a.jpg",
+  ]) assertEquals(isPictureHost(ok, "instagram"), true, ok);
+
+  for (const no of [
+    "https://cdninstagram.com.evil.com/a.jpg",         // suffix trick
+    "https://evilfbcdn.net/a.jpg",                     // not a subdomain boundary
+    "http://scontent.cdninstagram.com/a.jpg",          // plain http
+    "https://lookaside.fbsbx.com/ig_messaging_cdn/x",  // the DM door's own CDN is the server's business, never a phone's
+    "https://preview.redd.it/a.jpg",                   // right shape, wrong platform
+  ]) assertEquals(isPictureHost(no, "instagram"), false, no);
+  assertEquals(isPictureHost("https://scontent.cdninstagram.com/a.jpg", "reddit"), false);
+});

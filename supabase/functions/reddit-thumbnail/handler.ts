@@ -1,36 +1,14 @@
 // Reddit will not tell our server where a post's picture is: its feed answers the edge runtime 403
-// and its page answers every non-browser client a bot challenge. A phone is an ordinary browser
-// client, so the app reads the feed and brings the address here. It may name only a Reddit image
-// host — the server fetches whatever address it is given, and a client must never be able to point
-// that at somewhere else. See ERRORS.md, 12 Sep.
+// and its page answers every non-browser client a bot challenge. Instagram serves a datacentre its
+// login page instead of a post now and then. A phone is an ordinary browser client, so the app
+// reads the feed or the page and brings the address here. It may name only a picture host of the
+// save's own platform — the server fetches whatever address it is given, and a client must never
+// be able to point that at somewhere else. See ERRORS.md, 12 Sep.
 import { apiError, json, readJson } from "../_shared/http.ts";
+import { isPictureHost } from "../_shared/picture-hosts.ts";
+export { isPictureHost };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/**
- * Where each platform serves post pictures. A save may only name a host belonging to its own
- * platform: the server fetches whatever address it is handed, so this is the whole defence.
- * Exact hosts where the set is known, and whole-domain suffixes where the subdomain varies —
- * matched on a dot boundary, so "tiktokcdn-us.com.evil.com" and "eviltiktokcdn.com" are refused.
- */
-const PICTURE_HOSTS: Record<string, { exact?: string[]; domains?: string[] }> = {
-  reddit: { exact: ["preview.redd.it", "external-preview.redd.it", "i.redd.it", "a.thumbs.redditmedia.com", "b.thumbs.redditmedia.com"] },
-  // TikTok names a different signing host per region and post — p16-common-sign, p19-…-us, and more.
-  tiktok: { domains: ["tiktokcdn.com", "tiktokcdn-us.com"] },
-};
-
-export function isPictureHost(url: string, platform: string): boolean {
-  try {
-    const u = new URL(url);
-    if (u.protocol !== "https:") return false;
-    const host = u.hostname.toLowerCase();
-    const allowed = PICTURE_HOSTS[platform];
-    if (!allowed) return false;
-    if (allowed.exact?.includes(host)) return true;
-    return (allowed.domains ?? []).some((d) => host === d || host.endsWith("." + d));
-  } catch {
-    return false;
-  }
-}
 
 /** Kept for the Reddit path's own tests; the general rule above is what the handler uses. */
 export function isRedditImageHost(url: string): boolean {
