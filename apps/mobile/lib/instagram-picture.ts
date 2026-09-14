@@ -15,7 +15,10 @@ import { supabase } from "./supabase";
 
 /** This runs every time the app comes forward, and each look is a whole post page. A handful is plenty. */
 export const MAX_PER_RUN = 4;
+/** A phone can be walled too, and a private post is walled for everyone. After this many walls a save is left alone. */
+export const MAX_WALLS = 5;
 const KEY = "allkept.instagram.no-picture";
+const WALLS_KEY = "allkept.instagram.walls";
 /** Long enough for a post page, short enough that saving never feels stuck behind it. */
 const PAGE_TIMEOUT_MS = 4_000;
 
@@ -80,15 +83,30 @@ export async function pictureForSave(text: string, doFetch: typeof fetch = fetch
   return answer.kind === "picture" ? answer.url : null;
 }
 
+/** One more wall against each save, and the saves that have now had their share. Bounded; the oldest are forgotten first. */
+export function countWalls(had: Record<string, number>, ids: string[]): { counts: Record<string, number>; spent: string[] } {
+  const counts: Record<string, number> = { ...had };
+  const spent: string[] = [];
+  for (const id of ids) {
+    delete counts[id]; // put back at the end, so it counts as the newest
+    counts[id] = (had[id] ?? 0) + 1;
+    if (counts[id]! >= MAX_WALLS) spent.push(id);
+  }
+  const keys = Object.keys(counts);
+  for (const key of keys.slice(0, Math.max(0, keys.length - 500))) delete counts[key];
+  return { counts, spent };
+}
+
 export interface PictureDeps {
   /** Instagram saves the server settled without a picture: none stored, and no usable address held. */
   candidates(): Promise<{ id: string; canonicalUrl: string | null; externalId: string | null }[]>;
   /** The post page's text, or null when it could not be read — which says nothing about the post. */
   fetchPage(url: string): Promise<string | null>;
   store(itemId: string, imageUrl: string): Promise<void>;
-  /** Saves already known to have no picture; they are never asked about again. */
+  /** Saves not to ask about again: known to have no picture, or walled once too often. */
   checked(): Promise<string[]>;
-  remember(ids: string[]): Promise<void>;
+  /** "none": the post really has no picture, final. "wall": one more wall against the save; final after MAX_WALLS. */
+  remember(ids: string[], reason: "none" | "wall"): Promise<void>;
 }
 
 export async function backfillInstagramPictures(deps: PictureDeps): Promise<{ stored: number; noPicture: number }> {
@@ -96,6 +114,7 @@ export async function backfillInstagramPictures(deps: PictureDeps): Promise<{ st
   const todo = (await deps.candidates()).filter((c) => !skip.has(c.id)).slice(0, MAX_PER_RUN);
   let stored = 0;
   const none: string[] = [];
+  const walled: string[] = [];
 
   for (const item of todo) {
     try {
@@ -103,7 +122,7 @@ export async function backfillInstagramPictures(deps: PictureDeps): Promise<{ st
       const html = await deps.fetchPage(item.canonicalUrl);
       if (html === null) continue; // could not be read now: not an answer about the post; try again later
       const answer = readPostPage(html, item.externalId);
-      if (answer.kind === "wall") continue; // the phone was walled too, this time
+      if (answer.kind === "wall") { walled.push(item.id); continue; } // the phone was walled too, this time
       if (answer.kind === "none") { none.push(item.id); continue; }
       await deps.store(item.id, answer.url);
       stored++;
@@ -111,7 +130,8 @@ export async function backfillInstagramPictures(deps: PictureDeps): Promise<{ st
       // One save's bad luck is not the next one's.
     }
   }
-  if (none.length > 0) await deps.remember(none);
+  if (none.length > 0) await deps.remember(none, "none");
+  if (walled.length > 0) await deps.remember(walled, "wall");
   return { stored, noPicture: none.length };
 }
 
@@ -139,11 +159,22 @@ export function pictureDeps(): PictureDeps {
         return [];
       }
     },
-    async remember(ids) {
+    async remember(ids, reason) {
       try {
+        let final = ids;
+        if (reason === "wall") {
+          const raw = await AsyncStorage.getItem(WALLS_KEY);
+          const parsed: unknown = raw ? JSON.parse(raw) : {};
+          const had: Record<string, number> = {};
+          if (parsed && typeof parsed === "object") for (const [k, v] of Object.entries(parsed)) if (typeof v === "number") had[k] = v;
+          const { counts, spent } = countWalls(had, ids);
+          await AsyncStorage.setItem(WALLS_KEY, JSON.stringify(counts));
+          final = spent;
+        }
+        if (final.length === 0) return;
         const had = await this.checked();
         // Bounded: a library of pictureless posts must not grow this list without end.
-        const next = [...new Set([...had, ...ids])].slice(-500);
+        const next = [...new Set([...had, ...final])].slice(-500);
         await AsyncStorage.setItem(KEY, JSON.stringify(next));
       } catch { /* a phone that will not remember simply looks again */ }
     },

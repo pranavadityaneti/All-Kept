@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 // test takes its doors as arguments, so the native ones are stood in for here.
 vi.mock("../lib/supabase", () => ({ supabase: { from: () => ({}), functions: { invoke: async () => ({ error: null }) } } }));
 vi.mock("@react-native-async-storage/async-storage", () => ({ default: { getItem: async () => null, setItem: async () => undefined } }));
-import { MAX_PER_RUN, backfillInstagramPictures, fetchPostPage, pictureForSave, readPostPage } from "../lib/instagram-picture";
+import { MAX_PER_RUN, MAX_WALLS, backfillInstagramPictures, countWalls, fetchPostPage, pictureForSave, readPostPage } from "../lib/instagram-picture";
 import type { PictureDeps } from "../lib/instagram-picture";
 
 const POST = "https://www.instagram.com/reel/DcVMQIIMa5-/";
@@ -89,7 +89,7 @@ function fake(over: Partial<PictureDeps> = {}) {
     fetchPage: async () => PAGE,
     store: async (id, url) => { stored.push({ id, url }); },
     checked: async () => [],
-    remember: async (ids) => { remembered.push(ids); },
+    remember: async (ids, reason) => { remembered.push(reason === "none" ? ids : ids.map((id) => `wall:${id}`)); },
     ...over,
   };
   return { deps, stored, remembered };
@@ -111,13 +111,17 @@ describe("finding the pictures the server could not", () => {
     expect(await backfillInstagramPictures(skip.deps)).toEqual({ stored: 0, noPicture: 0 });
     expect(skip.stored).toEqual([]);
   });
-  it("treats a wall or an unreadable page as no answer: nothing stored, nothing remembered, asked again next time", async () => {
-    for (const fetchPage of [async () => WALL, async () => null]) {
-      const f = fake({ fetchPage });
-      expect(await backfillInstagramPictures(f.deps)).toEqual({ stored: 0, noPicture: 0 });
-      expect(f.stored).toEqual([]);
-      expect(f.remembered).toEqual([]);
-    }
+  it("treats an unreadable page as no answer: nothing stored, nothing remembered, asked again next time", async () => {
+    const f = fake({ fetchPage: async () => null });
+    expect(await backfillInstagramPictures(f.deps)).toEqual({ stored: 0, noPicture: 0 });
+    expect(f.stored).toEqual([]);
+    expect(f.remembered).toEqual([]);
+  });
+  it("counts a wall against the save, so a post that is walled for everyone is not read every foreground forever", async () => {
+    const f = fake({ fetchPage: async () => WALL });
+    expect(await backfillInstagramPictures(f.deps)).toEqual({ stored: 0, noPicture: 0 });
+    expect(f.stored).toEqual([]);
+    expect(f.remembered).toEqual([["wall:a"]]);
   });
   it("gives up on a save with no address or no shortcode to check the page against", async () => {
     const f = fake({ candidates: async () => [{ id: "a", canonicalUrl: null, externalId: null }, { id: "b", canonicalUrl: POST, externalId: null }] });
@@ -131,5 +135,21 @@ describe("finding the pictures the server could not", () => {
     const r = await backfillInstagramPictures(f.deps);
     expect(calls).toBe(MAX_PER_RUN);
     expect(r).toEqual({ stored: MAX_PER_RUN - 1, noPicture: 0 });
+  });
+});
+
+describe("how many walls a save is allowed", () => {
+  it("adds one per wall and names the saves that have had their share", () => {
+    const first = countWalls({}, ["a", "b"]);
+    expect(first).toEqual({ counts: { a: 1, b: 1 }, spent: [] });
+    const nearly = Object.fromEntries(["a"].map((id) => [id, MAX_WALLS - 1]));
+    expect(countWalls(nearly, ["a", "c"])).toEqual({ counts: { a: MAX_WALLS, c: 1 }, spent: ["a"] });
+  });
+  it("keeps the count bounded, forgetting the oldest saves first", () => {
+    const many = Object.fromEntries(Array.from({ length: 600 }, (_, i) => [`i${i}`, 1]));
+    const { counts } = countWalls(many, ["new"]);
+    expect(Object.keys(counts).length).toBeLessThanOrEqual(500);
+    expect(counts["new"]).toBe(1);
+    expect(counts["i0"]).toBeUndefined();
   });
 });
