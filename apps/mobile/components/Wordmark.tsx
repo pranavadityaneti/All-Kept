@@ -9,8 +9,10 @@ import { usePalette } from "../lib/theme";
 // height, as it is here, that drew a small plated square where the other screens had a wide mark.
 // These two now match to the pixel. lockup-dark.png stays where it is: it is the splash image, and
 // the splash is a fingerprint input, so replacing it would cut existing builds off from updates.
-const LIGHT = require("../assets/Home_All Kept_Logo.png");
-const DARK = require("../assets/Dark Home_All Kept_Logo.png");
+// Named without spaces on purpose: the dev server fetches assets by URL, iOS re-encodes an address it
+// cannot parse, and a space in the name is what made the header's mark a 404 on every dev build.
+const LIGHT = require("../assets/brand/wordmark-light.png");
+const DARK = require("../assets/brand/wordmark-dark.png");
 
 /** Read the shape from the file, so replacing the artwork needs no code change. */
 const shapeOf = (src: number) => {

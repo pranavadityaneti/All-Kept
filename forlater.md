@@ -224,10 +224,11 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-13
 - **Originated from:** Pranav's question on using the intelligence in saves, 13 Sep 2026
 
-### 35. Metro: one asset request for `.%2Fassets` fails with ENOENT
-- **What + why:** After the 13 Sep dev build, Metro logged `ENOENT: scandir '…/apps/mobile/.%2Fassets'` once on an asset request — a URL-encoded `./assets` path. Every image on screen renders, so nothing visible is broken; find which asset reference produces the encoded path (a `require("./assets/…")` outside `apps/mobile`'s root? the share extension? the splash?) and correct it so the log is clean.
-- **Scope:** the one asset reference; no product change.
-- **Status:** queued — cosmetic
+### 35. Metro: one asset request for `.%2Fassets` fails with ENOENT — DONE 15 Sep 2026
+- **What + why:** After the 13 Sep dev build, Metro logged `ENOENT: scandir '…/apps/mobile/.%2Fassets'` once on an asset request — a URL-encoded `./assets` path.
+- **Cause:** the two wordmark files had spaces in their names (`Home_All Kept_Logo.png`). iOS cannot form a URL from an address with a space, so React Native percent-encoded the whole address a second time, and Metro looked for a folder literally named `.%2Fassets`. Something visible *was* broken: the header's mark on Home and Library never rendered on a dev build (a real build reads assets from disk, so phones were fine).
+- **Fix:** renamed to `assets/brand/wordmark-light.png` / `wordmark-dark.png` and updated the five references (Wordmark, welcome, the admin dashboard, two design pages).
+- **Status:** done — archived 2026-09-15
 - **Date added:** 2026-09-13
 - **Originated from:** the paid-in-the-US dev build session, 13 Sep 2026
 

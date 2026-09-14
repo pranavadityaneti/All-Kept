@@ -1,7 +1,7 @@
 import { PlatformLogo, useColorScheme } from "./PlatformLogo";
 import { platformName } from "../../../packages/platform-assets/catalog";
-import lockupLight from "../../mobile/assets/Home_All Kept_Logo.png";
-import lockupDark from "../../mobile/assets/Dark Home_All Kept_Logo.png";
+import lockupLight from "../../mobile/assets/brand/wordmark-light.png";
+import lockupDark from "../../mobile/assets/brand/wordmark-dark.png";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ApiError,

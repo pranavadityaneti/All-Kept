@@ -34,7 +34,7 @@ export default function Welcome() {
     <StatusBar style="dark" />
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
       <View style={styles.brand}>
-        <Image source={require("../assets/Home_All Kept_Logo.png")} style={styles.logo} contentFit="contain" accessibilityLabel="Allkept" />
+        <Image source={require("../assets/brand/wordmark-light.png")} style={styles.logo} contentFit="contain" accessibilityLabel="Allkept" />
       </View>
       <View style={styles.heroFrame}>
         <Image
