@@ -1348,3 +1348,28 @@ categories.
   read better; he did not ask for it.
 - The iOS Simulator control tool stopped working mid-session ("re-open the simulator panel");
   screens were driven by deep link (`allkept:///settings`, `/library`) and `simctl` screenshots.
+
+---
+
+## 2026-09-15 — The sorter sees the picture; Stasht and Albo research
+
+- A sunflower-field reel was filed under "Design & inspiration" from its caption alone ("Made with
+  @supercool_hq #darkaesthetic"). Spec `internal/superpowers/specs/2026-09-15-classify-with-the-picture-design.md`
+  (`e9f47d3`). Built on Pranav's "Build it": the claim returns `thumbnail_path` and a trigger re-queues
+  a save sorted without a picture when one lands, at most once (migration
+  `20260916090000_classify_with_the_picture.sql`, dry-run rolled back with a throwaway row); the
+  worker reads the thumbnail from the private bucket and both clients carry it before the words
+  (Claude image block; OpenAI `input_image` low detail); prompt rule + version `2026-09-16.1`;
+  what the model saw is recorded in `item_ai.usage.picture` (`19a0488`, `c066569`, `bc4fcbe`,
+  `09229b7`). Pranav ran `db push`; deployed `sweeper` v37, `reprocess-item` v25; pushed.
+- Proof: the reel re-sorted to Travel & places 0.88 (was Design 0.78), 89 KB picture, $0.0073 vs
+  $0.0053. On his Yes, the 26 pictured saves under 0.85 were queued and sorted in one sweep:
+  9 moved category (the wordless "Other" ones at 5–10% went to Tech/Money at 93–98%), $0.176.
+- Research, three Opus agents (product, Featurebase board via its public endpoints, comparison
+  from the repository): `internal/research/stasht-competitor-2026-09-15.html` (`783fcf8`,
+  pushed). Headline: Stasht is the better after-save product (map, calendar, reminders, free,
+  shipped); Allkept the better-built library (one hierarchy, override never erased, semantic
+  search, interests, DM/playlist doors, now picture-aware sorting). Their board's top complaints:
+  wrong automatic extraction with no override, search, thumbnails, a confusing hierarchy. Albo
+  (albo.inc) research requested next; agent running.
+- Metro restarted earlier for the font package (pid 6808, log in the scratchpad).
