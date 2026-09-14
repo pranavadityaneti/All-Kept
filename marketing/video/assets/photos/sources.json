@@ -1,0 +1,152 @@
+{
+  "licence": "Pexels License (https://www.pexels.com/license/) \u2014 free for commercial use incl. advertising, no attribution required. Chosen with no identifiable people and no logos in frame; the licence does not cover model/property releases, so that rule stays.",
+  "fetched": "2026-09-15",
+  "size": "w=800 via images.pexels.com resize params",
+  "photos": {
+    "core-workout": {
+      "id": 13248384,
+      "src": "https://images.pexels.com/photos/13248384/pexels-photo-13248384.jpeg",
+      "alt": "Modern minimalist yoga studio with two mats and dumbbells"
+    },
+    "minimal-desk": {
+      "id": 5366225,
+      "src": "https://images.pexels.com/photos/5366225/pexels-photo-5366225.jpeg",
+      "alt": "Minimalist home office setup with modern tech"
+    },
+    "sourdough": {
+      "id": 36202913,
+      "src": "https://images.pexels.com/photos/36202913/pexels-photo-36202913/free-photo-of-freshly-baked-sourdough-bread-on-cutting-board.jpeg",
+      "alt": "Round loaf of sourdough on a wooden board"
+    },
+    "leg-day": {
+      "id": 5412247,
+      "src": "https://images.pexels.com/photos/5412247/pexels-photo-5412247.jpeg",
+      "alt": "Blue dumbbells and potted plants on a tiled floor"
+    },
+    "kyoto": {
+      "id": 26946364,
+      "src": "https://images.pexels.com/photos/26946364/pexels-photo-26946364/free-photo-of-kiyomizu-temple-in-kyoto.jpeg",
+      "alt": "Pagoda at Kiyomizu Temple, Kyoto"
+    },
+    "omelette": {
+      "id": 25402351,
+      "src": "https://images.pexels.com/photos/25402351/pexels-photo-25402351/free-photo-of-breakfast-on-plate.jpeg",
+      "alt": "Omelette with salad greens on a white plate"
+    },
+    "type-pairing": {
+      "id": 31211171,
+      "src": "https://images.pexels.com/photos/31211171/pexels-photo-31211171/free-photo-of-close-up-of-vintage-type-setting-letters.jpeg",
+      "alt": "Vintage metal type letters"
+    },
+    "balcony-garden": {
+      "id": 19324257,
+      "src": "https://images.pexels.com/photos/19324257/pexels-photo-19324257/free-photo-of-plants-in-pots-on-balcony.jpeg",
+      "alt": "Potted plants on a balcony"
+    },
+    "logo-grid": {
+      "id": 29279367,
+      "src": "https://images.pexels.com/photos/29279367/pexels-photo-29279367/free-photo-of-graph-paper-with-transparent-rulers-and-protractor.jpeg",
+      "alt": "Rulers and protractor on grid paper"
+    },
+    "vlog-kit": {
+      "id": 16322349,
+      "src": "https://images.pexels.com/photos/16322349/pexels-photo-16322349/free-photo-of-tripod-with-smartphone-on-beach.jpeg",
+      "alt": "Smartphone on a tripod at a beach"
+    },
+    "cold-brew": {
+      "id": 31435390,
+      "src": "https://images.pexels.com/photos/31435390/pexels-photo-31435390/free-photo-of-cold-brew-coffee-with-ice-and-coffee-beans.png",
+      "alt": "Cold brew with ice and coffee beans, top view"
+    },
+    "mobility": {
+      "id": 16513603,
+      "src": "https://images.pexels.com/photos/16513603/pexels-photo-16513603/free-photo-of-close-up-of-a-roller-for-muscles.jpeg",
+      "alt": "Muscle roller on a gym bench"
+    },
+    "lisbon": {
+      "id": 16308536,
+      "src": "https://images.pexels.com/photos/16308536/pexels-photo-16308536/free-photo-of-narrow-cobblestone-street-in-lisbon.jpeg",
+      "alt": "Cobblestone street in Lisbon"
+    },
+    "keyboard": {
+      "id": 9020272,
+      "src": "https://images.pexels.com/photos/9020272/pexels-photo-9020272.jpeg",
+      "alt": "Mechanical keyboard with exposed switches"
+    },
+    "interior": {
+      "id": 30386991,
+      "src": "https://images.pexels.com/photos/30386991/pexels-photo-30386991/free-photo-of-modern-living-room-with-cozy-navy-sofa.jpeg",
+      "alt": "Living room with navy sofa and plants"
+    },
+    "bed": {
+      "id": 33312399,
+      "src": "https://images.pexels.com/photos/33312399/pexels-photo-33312399/free-photo-of-cozy-unmade-bed-in-warm-sunlight.jpeg",
+      "alt": "Sunlit unmade bed"
+    },
+    "packing": {
+      "id": 8212229,
+      "src": "https://images.pexels.com/photos/8212229/pexels-photo-8212229.jpeg",
+      "alt": "Open suitcase packed with clothes"
+    },
+    "pasta-in": {
+      "id": 31637793,
+      "src": "https://images.pexels.com/photos/31637793/pexels-photo-31637793/free-photo-of-close-up-of-spaghetti-with-tomato-sauce-on-plate.jpeg",
+      "alt": "Spaghetti with tomato sauce"
+    },
+    "goa": {
+      "id": 37940208,
+      "src": "https://images.pexels.com/photos/37940208/pexels-photo-37940208/free-photo-of-serene-coastal-view-of-anjuna-beach-goa.jpeg",
+      "alt": "Anjuna Beach, Goa"
+    },
+    "hampi": {
+      "id": 14496564,
+      "src": "https://images.pexels.com/photos/14496564/pexels-photo-14496564.jpeg",
+      "alt": "Stone ruins in Hampi"
+    },
+    "dal": {
+      "id": 30203314,
+      "src": "https://images.pexels.com/photos/30203314/pexels-photo-30203314/free-photo-of-delicious-indian-dal-tadka-in-brass-bowl.jpeg",
+      "alt": "Dal tadka in a brass bowl"
+    },
+    "jaipur": {
+      "id": 33290417,
+      "src": "https://images.pexels.com/photos/33290417/pexels-photo-33290417/free-photo-of-hawa-mahal-facade-in-jaipur-india.jpeg",
+      "alt": "Hawa Mahal facade, Jaipur"
+    },
+    "filter-coffee": {
+      "id": 16128085,
+      "src": "https://images.pexels.com/photos/16128085/pexels-photo-16128085/free-photo-of-cups-with-coffee.jpeg",
+      "alt": "Filter coffee in brass cups"
+    },
+    "pasta-us": {
+      "id": 29173118,
+      "src": "https://images.pexels.com/photos/29173118/pexels-photo-29173118/free-photo-of-delicious-creamy-pasta-with-vegetables-and-garlic-bread.jpeg",
+      "alt": "Creamy pasta with vegetables and garlic bread"
+    },
+    "joshua-tree": {
+      "id": 15925740,
+      "src": "https://images.pexels.com/photos/15925740/pexels-photo-15925740/free-photo-of-joshua-tree-national-park-in-california-united-states.jpeg",
+      "alt": "Joshua tree and rock formations"
+    },
+    "tacos": {
+      "id": 9214000,
+      "src": "https://images.pexels.com/photos/9214000/pexels-photo-9214000.jpeg",
+      "alt": "Tacos with lime and salsa on a red plate"
+    },
+    "pch": {
+      "id": 12422182,
+      "src": "https://images.pexels.com/photos/12422182/pexels-photo-12422182.jpeg",
+      "alt": "Winding road along the Pacific, Malibu"
+    },
+    "burger": {
+      "id": 32480062,
+      "src": "https://images.pexels.com/photos/32480062/pexels-photo-32480062/free-photo-of-delicious-cheeseburger-with-pickles-on-a-plate.jpeg",
+      "alt": "Cheeseburger with pickles on a black plate"
+    },
+    "chicago": {
+      "id": 26821665,
+      "src": "https://images.pexels.com/photos/26821665/pexels-photo-26821665/free-photo-of-chicago-skyline.jpeg",
+      "alt": "Chicago skyline from the waterfront"
+    }
+  }
+}

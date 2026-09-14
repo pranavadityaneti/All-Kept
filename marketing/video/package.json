@@ -1,0 +1,25 @@
+{
+  "name": "allkept-marketing-video",
+  "private": true,
+  "description": "Remotion source for the All Kept waitlist ad. Standalone on purpose: not a workspace, so nothing here reaches the app's dependency tree.",
+  "scripts": {
+    "dev": "npm run assets && remotion studio",
+    "typecheck": "tsc --noEmit",
+    "still": "npm run assets && remotion still WaitlistAd-IN out/smoke.png --frame=45",
+    "render:in": "npm run assets && remotion render WaitlistAd-IN out/waitlist-in.mp4",
+    "render:us": "npm run assets && remotion render WaitlistAd-US out/waitlist-us.mp4",
+    "assets": "node scripts/sync-assets.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.524",
+    "@remotion/google-fonts": "4.0.524",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.524"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

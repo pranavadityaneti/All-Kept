@@ -1269,3 +1269,34 @@ categories.
 - Left as is: the icon pass's model usage is logged, not added to per-save cost figures; the two
   model clients still each hold a copy of the classification schema; classification prompt and
   version untouched (nothing re-sorted).
+
+## 12–15 Sep 2026 — Waitlist marketing: plan, creatives, Creatify brief, Remotion ad (in progress)
+- **Plan (brainstormed, decisions on record):** Meta first (India + US, ~₹20k / 14 days, US-weighted);
+  TikTok US only via an agency-partner account — India is not on TikTok's self-serve country list,
+  VPN route rejected; no Google. Waitlist promise stays "one email when it opens". Both lead
+  routes: Meta Instant Form (email only, privacy link = GitHub Pages policy URL) + landing page
+  once live. Success = signup count (est. ~300) + one proven creative/audience per country.
+  Headline locked: **"2,000 saves. Good luck finding one."** Copy bank (headlines, primary texts,
+  descriptions, IN/US) delivered in chat — not yet written to a doc.
+- **Blocker noted:** allkept.app still serves the GoDaddy "Launching Soon" page; the real site
+  (`website` branch) needs the Vercel project + DNS (task 6) — being handled in another chat.
+- **Creative reviews:** the "Save and Collect.mp4" (13 s, 720² square, silent) and the Canva
+  landing-style static — both flagged: no store badges pre-listing, no fake form fields (Meta
+  non-functional-feature rule), no Pinterest promise, no third-party faces, never "automatically".
+- **Creatify brief:** `docs/marketing/creatify-brief.html` — product context with a "Do NOT claim"
+  leash, brand kit, 6 scripts, settings, QA. Screenshot pack `docs/marketing/creative-assets/`
+  (6 real simulator screens from Pranav's account + brand + platform marks). Simulator: iOS 26.5
+  device `98B9B21B…`, Metro was already on :8081 (PID 25852); `.claude/launch.json` gained a
+  `metro` entry (unused).
+- **Remotion ad — `marketing/video/` (standalone, NOT a workspace, on purpose):** root
+  package.json/lock untouched, verified. Remotion 4.0.524 + React 19.2.3. Scenes done and
+  approved: 1 Hook (blurred synthetic reel backdrop, headline + purple-boxed subline), 2 Pile
+  (25 synthetic cards, 5 shapes, 8 platforms, **29 Pexels photos** — no people/logos, provenance in
+  `assets/photos/sources.json`, blanket download approval given by Pranav), 3 Sort (mark, tiles,
+  cards fly home, count chips). Task 3 delivered but **on hold: Pranav is changing the category
+  tile design + icons in another chat; redo scene 3 after his ping.** Also asked to give all three
+  USPs a beat (one place / sorted by AI / found in one search) — proposal sent, awaiting answer.
+- Gotchas logged in chat (add to ERRORS.md if they recur): Remotion composition props must be a
+  `type`, not an `interface`; `npx remotion …` skips the asset sync — use the npm scripts;
+  platform-assets names X/Threads by the *surface* (`x-light` = black glyph).
+- **Nothing under `docs/marketing/` or `marketing/` is committed yet.**
