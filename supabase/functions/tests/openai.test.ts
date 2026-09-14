@@ -125,3 +125,13 @@ Deno.test("ICONS_SCHEMA satisfies strict mode the same way", () => {
   };
   check(ICONS_SCHEMA as unknown as Record<string, unknown>);
 });
+
+Deno.test("openai: a picture travels as a low-detail image part before the words; without one the input is the words alone", async () => {
+  const seen: { url?: string; init?: RequestInit } = {};
+  const deps = openaiDeps("k", "gpt-5.6-sol", fetchWith(200, reply(), seen));
+  await deps.call("sys", "the words", undefined, { mediaType: "image/jpeg", base64: "AAAA" });
+  const body = JSON.parse(String(seen.init?.body)) as Record<string, unknown>;
+  assertEquals(body["input"], [{ role: "user", content: [{ type: "input_image", image_url: "data:image/jpeg;base64,AAAA", detail: "low" }, { type: "input_text", text: "the words" }] }]);
+  await deps.call("sys", "the words");
+  assertEquals((JSON.parse(String(seen.init?.body)) as Record<string, unknown>)["input"], "the words");
+});

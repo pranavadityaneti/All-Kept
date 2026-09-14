@@ -2,7 +2,7 @@
 import { ACTIONABILITY, CATEGORIES, ENTITY_TYPES } from "./contracts.ts";
 import type { Actionability, Category, EntityType, ItemAiOutput } from "./contracts.ts";
 
-export const PROMPT_VERSION = "2026-09-08.1";
+export const PROMPT_VERSION = "2026-09-16.1";
 
 export interface ClassifyInput {
   platform: string;
@@ -14,7 +14,14 @@ export interface ClassifyInput {
   note: string | null;
 }
 
-export interface ModelUsage { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number; reasoning_tokens?: number }
+export interface ModelUsage {
+  input_tokens: number; output_tokens: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number; reasoning_tokens?: number;
+  /** The save's picture, when one went with the words. Recorded so a picture that lands later can have the save sorted once more. */
+  picture?: { bytes: number; type: string };
+}
+
+/** The save's picture, as the model takes it: the stored thumbnail's bytes, base64, with their type. */
+export interface Picture { mediaType: string; base64: string }
 
 export interface ModelResult {
   output: unknown;               // parsed JSON from the model, validated here
@@ -28,7 +35,7 @@ export interface ModelResult {
 export interface OutputShape { name: string; schema: Record<string, unknown> }
 
 export interface ClassifyDeps {
-  call(system: string, user: string, shape?: OutputShape): Promise<ModelResult>;
+  call(system: string, user: string, shape?: OutputShape, picture?: Picture): Promise<ModelResult>;
 }
 
 export interface ClassifyResult {
@@ -47,7 +54,8 @@ Given one saved item (platform, kind, link, title, caption or text, author, the 
 - language: ISO 639-1 code of the main language of the text.
 - actionability: watch (a video to watch), try (a recipe, workout or how-to to attempt), buy (a product), go (a place to visit), read (an article or thread), reference (facts or tools to keep), none.
 - confidence: 0 to 1, your confidence in the category.
-Judge from the content only. Hashtags and emoji are weak signals. If the text is empty, use the link, kind and author.`;
+Judge from the content only. Hashtags and emoji are weak signals. If the text is empty, use the link, kind and author.
+A picture may be attached: the saved post's own poster frame or photo. Captions often describe how a post was made (credits, tools, "edit") or its mood (aesthetic hashtags) rather than what it shows; the picture is the subject, so judge the category from it and treat such a caption as a weak signal. Without a picture, when the caption is only credits, mood or hashtags, prefer the subject if the words let you infer it, else "Other" with low confidence rather than a category for the making.`;
 
 export function buildUserMessage(i: ClassifyInput): string {
   const clip = (s: string | null, n: number) => (s ? (s.length > n ? s.slice(0, n) + "…" : s) : "(none)");
@@ -83,8 +91,8 @@ export function validateOutput(v: unknown): ItemAiOutput | null {
   };
 }
 
-export async function classify(input: ClassifyInput, deps: ClassifyDeps): Promise<ClassifyResult> {
-  const r = await deps.call(SYSTEM_PROMPT, buildUserMessage(input));
+export async function classify(input: ClassifyInput, deps: ClassifyDeps, picture?: Picture): Promise<ClassifyResult> {
+  const r = await deps.call(SYSTEM_PROMPT, buildUserMessage(input), undefined, picture);
   if (r.error) return { output: null, error: r.error, model: r.model, usage: r.usage };
   if (r.refused) return { output: null, error: "refused", model: r.model, usage: r.usage };
   const output = validateOutput(r.output);

@@ -23,7 +23,7 @@ const OUTPUT_SCHEMA = {
 export function anthropicDeps(apiKey: string): ClassifyDeps {
   const client = new Anthropic({ apiKey, timeout: 20_000, maxRetries: 0 });
   return {
-    async call(system, user, shape): Promise<ModelResult> {
+    async call(system, user, shape, picture): Promise<ModelResult> {
       try {
         const response = await client.beta.messages.create({
           model: MODEL,
@@ -32,7 +32,10 @@ export function anthropicDeps(apiKey: string): ClassifyDeps {
           fallbacks: "default",
           output_config: { effort: "low", format: { type: "json_schema", schema: shape?.schema ?? OUTPUT_SCHEMA } },
           system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-          messages: [{ role: "user", content: user }],
+          // The picture first, then the words, as the format prefers.
+          messages: [{ role: "user", content: picture
+            ? [{ type: "image", source: { type: "base64", media_type: picture.mediaType, data: picture.base64 } }, { type: "text", text: user }]
+            : user }],
         } as never) as unknown as { content: { type: string; text?: string }[]; stop_reason: string; model: string; usage: ModelResult["usage"] };
         if (response.stop_reason === "refusal") return { output: null, refused: true, model: response.model, usage: response.usage };
         const text = response.content.filter((b) => b.type === "text").map((b) => b.text ?? "").join("");

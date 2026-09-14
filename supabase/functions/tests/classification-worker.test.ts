@@ -43,3 +43,29 @@ Deno.test("manual retry is passed to the atomic database claim", async () => {
   await runClassification(deps, true);
   assertEquals(retry, true);
 });
+
+Deno.test("the save's picture is read when the claim names one, handed to the model, and recorded in usage", async () => {
+  const got: unknown[] = [];
+  const { deps, finished } = fixture({
+    claim: async () => ({ ...claim, thumbnail_path: "u1/i1.jpg" }),
+    classifier: { call: async (_s, _u, _shape, picture) => { got.push(picture); return { output: { category: "Travel & places" }, refused: false, model: "test", usage: { input_tokens: 700, output_tokens: 100 } }; } },
+    picture: async (path) => ({ mediaType: "image/jpeg", base64: btoa(`bytes of ${path}`) }),
+  });
+  const results: { usage: unknown }[] = [];
+  deps.finish = async (_, r, retryable) => { finished.push({ error: r.error, retryable }); results.push({ usage: r.usage }); return true; };
+  await runClassification(deps);
+  assertEquals(got, [{ mediaType: "image/jpeg", base64: btoa("bytes of u1/i1.jpg") }]);
+  assertEquals(results[0]!.usage, { input_tokens: 700, output_tokens: 100, picture: { bytes: "bytes of u1/i1.jpg".length, type: "image/jpeg" } });
+});
+
+Deno.test("no picture on the claim, or one that cannot be read, still sorts from the words and records no picture", async () => {
+  const got: unknown[] = [];
+  const classifier = { call: async (_s: string, _u: string, _shape?: unknown, picture?: unknown) => { got.push(picture); return { output: { category: "Food & recipes" }, refused: false, model: "test", usage: { input_tokens: 600, output_tokens: 90 } }; } };
+  const results: { usage: unknown }[] = [];
+  const record = (f: ReturnType<typeof fixture>) => { f.deps.finish = async (_, r) => { results.push({ usage: r.usage }); return true; }; return f.deps; };
+  await runClassification(record(fixture({ classifier, picture: async () => { throw new Error("must not be asked without a path"); } })));
+  await runClassification(record(fixture({ claim: async () => ({ ...claim, thumbnail_path: "u1/gone.jpg" }), classifier, picture: async () => null })));
+  await runClassification(record(fixture({ claim: async () => ({ ...claim, thumbnail_path: "u1/broken.jpg" }), classifier, picture: async () => { throw new Error("storage down"); } })));
+  assertEquals(got, [undefined, undefined, undefined]);
+  for (const r of results) assertEquals(r.usage, { input_tokens: 600, output_tokens: 90 });
+});

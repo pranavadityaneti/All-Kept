@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { classify, buildUserMessage, validateOutput, SYSTEM_PROMPT, type ClassifyDeps } from "../_shared/classify.ts";
+import { classify, buildUserMessage, validateOutput, PROMPT_VERSION, SYSTEM_PROMPT, type ClassifyDeps, type Picture } from "../_shared/classify.ts";
 
 const input = { platform: "instagram", kind: "short_video", url: "https://www.instagram.com/reel/DcVMQIIMa5-/", title: null, text: "Travis Kalanick on the little details that made Uber beat Lyft", author: "davidsenra", note: null };
 const fake = (result: unknown, extra: Partial<Awaited<ReturnType<ClassifyDeps["call"]>>> = {}): ClassifyDeps => ({ async call() { return { output: result, refused: false, model: "claude-opus-5", usage: { input_tokens: 400, output_tokens: 90 }, ...extra }; } });
@@ -28,4 +28,16 @@ Deno.test("the user message carries the fields and clips long text; the system p
   assertEquals(msg.includes("x".repeat(1500) + "…"), true);
   assertEquals(SYSTEM_PROMPT.includes("Food & recipes") && SYSTEM_PROMPT.includes("Life & relationships"), true);
   assertEquals(SYSTEM_PROMPT.includes("Beauty & self-care") && SYSTEM_PROMPT.includes("Home & living"), true);
+});
+
+Deno.test("the picture goes to the model with the words, and the prompt says what it is for", async () => {
+  const seen: (Picture | undefined)[] = [];
+  const deps: ClassifyDeps = { async call(_s, _u, _shape, picture) { seen.push(picture); return { output: { category: "Travel & places", tags: [], summary: "", entities: [], language: "en", actionability: "watch", confidence: 0.9 }, refused: false, model: "test", usage: null }; } };
+  const picture: Picture = { mediaType: "image/jpeg", base64: "/9j/4AAQ" };
+  await classify(input, deps, picture);
+  await classify(input, deps);
+  assertEquals(seen, [picture, undefined]);
+  // The rule: a caption about the making or the mood is not the subject; the picture is.
+  assertEquals(/picture/i.test(SYSTEM_PROMPT) && /subject/i.test(SYSTEM_PROMPT), true);
+  assertEquals(PROMPT_VERSION > "2026-09-08.1", true);
 });
