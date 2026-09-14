@@ -1240,3 +1240,32 @@ categories.
   `reel/DdLnijyiVGa` stays preview_unavailable: nothing to show. Read-only check afterwards: only
   those four rows changed in 30 minutes; no settled card carries a preview retry. This log commit
   is unpushed (a push needs its own Yes).
+
+---
+
+## 2026-09-15 — Interest chips: the reference look, then a mark of their own
+
+- Pranav sent the reference (soft-cornered chips, filled glyph + text in one colour on a light
+  wash). Redrew `InterestPills.tsx` to it: radius a quarter of the height, filled glyph per kind
+  instead of the category emoji on a disc, body-size semibold name, minHeight 44 (`dcda790`).
+- He then asked why Google, IMDb and Apple share an icon (all "brand"). Answer: the mark was by
+  kind, seven kinds, so same-kind interests always matched. Agreed A + B, layered by what is known:
+  - A (`5003146`, app only): the icon font's own `logo-*` glyphs for a whole name it carries,
+    keyed as people write it (Node.js, Stack Overflow, Linux → tux), brand/tool kinds only.
+  - B (`9c82257` contracts, `fd8e8f7` sweeper, `11eb6a8` migration, `a2ce887` app): `ENTITY_ICONS`
+    (119 filled glyphs, kinds' marks first) checked against the font at build time; the sweeper's
+    fifth pass asks the model (cheaper tier where set) for a mark per distinct name lacking one,
+    40 names a call, writes it onto `item_ai.entities[].icon`; `item_ai_missing_icons()` (service
+    role) lists the saves still to mark; `user_interests()` re-made with `icon` (mode over non-null);
+    app precedence logo → chosen mark → kind mark, wash stays the kind's.
+  - Favicons rejected (a name is not a domain; sends interests to a third party); monograms
+    rejected (initials collide in a row of twelve, and say nothing).
+- Pranav ran `db push`; deployed `sweeper` v36; pushed `16d098b..a2ce887`. Triggered eight sweeps
+  by hand (net.http_post with the vault secret, as on 12 Sep): 131 saves to mark → 0, one model
+  call each. Verified on the simulator: IMDb → film, Claude/ChatGPT → chatbubbles, Codex →
+  code-slash, Uber → car, Figma → color-palette; Google/Apple wear logos; Julian Goldie the
+  person-circle. Marks in use across the library: person-circle 74, pricetag 31, chatbubbles 21,
+  film 18, videocam 14, code-slash 13, sparkles 12, layers 10, phone-portrait 9, rocket 8 …
+- Left as is: the icon pass's model usage is logged, not added to per-save cost figures; the two
+  model clients still each hold a copy of the classification schema; classification prompt and
+  version untouched (nothing re-sorted).
