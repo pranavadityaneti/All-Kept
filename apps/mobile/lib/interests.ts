@@ -9,6 +9,7 @@
  */
 import { CATEGORIES } from "@allkept/contracts";
 import { categoryDisplayName } from "./category-names";
+import type { Glyph } from "./icon-names";
 import { RESERVED_NAMES } from "./user-categories";
 
 /** What user_interests() returns, one row per name. */
@@ -118,7 +119,20 @@ export const isNewInterest = (interest: Pick<Interest, "crossedAt">, now: Date):
 
 export const showInterests = (interests: readonly Interest[]): boolean => interests.length >= MIN_TO_SHOW;
 
-/** A colour per kind of thing, so a person and a place never look alike in the row. */
-const HUES: Record<string, string> = { person: "#D63B6E", brand: "#2F6FED", product: "#E58A1F", place: "#1FA36B", recipe: "#C64B2A", tool: "#6D46F2" };
+/**
+ * A colour and a mark per kind of thing, so a person and a place never look alike in the row. The
+ * marks are filled glyphs drawn in the pill's own colour — the way a calendar chip carries a
+ * calendar and a location chip an arrow — never an outline, which would read as a button.
+ */
+const LOOKS: Record<string, { hue: string; glyph: Glyph }> = {
+  person: { hue: "#D63B6E", glyph: "person-circle" },
+  brand: { hue: "#2F6FED", glyph: "pricetag" },
+  product: { hue: "#E58A1F", glyph: "cube" },
+  place: { hue: "#1FA36B", glyph: "navigate" },
+  recipe: { hue: "#C64B2A", glyph: "restaurant" },
+  tool: { hue: "#6D46F2", glyph: "construct" },
+  other: { hue: "#5F6675", glyph: "sparkles" },
+};
 
-export const interestStyle = (kind: string): { hue: string } => ({ hue: HUES[kind] ?? "#5F6675" });
+/** A kind the classifier has not been taught yet is drawn like "other", never blank. */
+export const interestStyle = (kind: string): { hue: string; glyph: Glyph } => LOOKS[kind] ?? LOOKS["other"]!;
