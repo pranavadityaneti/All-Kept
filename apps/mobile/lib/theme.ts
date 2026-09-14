@@ -53,13 +53,14 @@ export function font(weight: Weight): { fontFamily?: string; fontWeight?: Weight
  * Anchored on Apple's own scale rather than picked by eye: 17pt is the iOS default for body text,
  * 15pt is secondary, 13pt tertiary. Body sat at 15 — one whole step down, which is why every screen
  * read smaller than the apps beside it. Instagram sets SF Pro at these same system sizes, so putting
- * body back on 17 is what closes the gap. The rest lift with it to keep the hierarchy intact.
+ * body back on 17 closed the gap. Manrope runs wider than SF at the same size, so in it body sits
+ * at 16: the same measure on the screen, a word less cut off on a card. The rest keep their steps.
  */
 export const type = {
   title: { fontSize: 30, ...font("700") },
   section: { fontSize: 22, ...font("700") },
   heading: { fontSize: 19, ...font("600") },
-  body: { fontSize: 17, ...font("400") },
+  body: { fontSize: 16, ...font("400") },
   label: { fontSize: 15, ...font("500") },
   // The one-time code, which is sized to the box it sits in rather than to the text scale.
   mono: { fontSize: 32, ...font("700"), letterSpacing: 6 },
