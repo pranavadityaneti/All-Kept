@@ -43,9 +43,11 @@ export function openaiDeps(apiKey: string, model: string = DEFAULT_MODEL, fetchI
           body: JSON.stringify({
             model,
             instructions: system,
-            // The picture first, at low detail — a poster frame reads fine at that size and costs a fixed few tokens — then the words.
+            // The picture first, at high detail, then the words. Low detail reads a poster frame's subject
+            // fine for a fixed few tokens, but not its words: a storefront sign is illegible at 512px, and
+            // the sorter is asked for the words on the screen and reads a venue's name off the sign.
             input: picture
-              ? [{ role: "user", content: [{ type: "input_image", image_url: `data:${picture.mediaType};base64,${picture.base64}`, detail: "low" }, { type: "input_text", text: user }] }]
+              ? [{ role: "user", content: [{ type: "input_image", image_url: `data:${picture.mediaType};base64,${picture.base64}`, detail: "high" }, { type: "input_text", text: user }] }]
               : user,
             reasoning: { effort: REASONING_EFFORT },
             text: { format: { type: "json_schema", name: shape?.name ?? "item_ai", schema: shape?.schema ?? OUTPUT_SCHEMA, strict: true } },

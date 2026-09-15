@@ -148,6 +148,8 @@ export interface ItemAiOutput {
   venue: { name: string; locality: string } | null;
   /** A date the post names as something that happens — an event, a launch, a deadline — as ISO 8601. Null when there is none. */
   event_at: string | null;
+  /** The words legible in the picture, as written — a sign, a title card, a caption burnt into the frame. Null when there are none. Kept for search and the venue; never shown. */
+  screen_text: string | null;
 }
 
 export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "rate_limited" | "internal" | "payment_required" | "unavailable";

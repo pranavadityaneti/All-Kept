@@ -86,8 +86,20 @@ Deno.test("the picture goes to the model with the words, and the prompt says wha
   assertEquals(PROMPT_VERSION > "2026-09-08.1", true);
 });
 
+Deno.test("the words on the screen are kept as written — trimmed, runs of spaces folded, bounded — and anything else is none", () => {
+  const answer = { category: "Food & recipes", tags: [], summary: "", entities: [], language: "en", actionability: "go", confidence: 0.9 };
+  assertEquals(validateOutput({ ...answer, screen_text: "  LAST HOUSE   COFFEE\nest. 2019  " })!.screen_text, "LAST HOUSE COFFEE\nest. 2019");
+  assertEquals(validateOutput({ ...answer, screen_text: "x".repeat(400) })!.screen_text!.length, 300);
+  for (const none of ["", "   ", null, undefined, 42, ["LAST HOUSE"]]) {
+    assertEquals(validateOutput({ ...answer, screen_text: none })!.screen_text, null, String(none));
+  }
+  // The prompt asks for them, and says a handle-only caption's venue may be read from them.
+  assertEquals(SYSTEM_PROMPT.includes("screen_text"), true);
+  assertEquals(PROMPT_VERSION > "2026-09-18.3", true, "the words on the screen are a new ask: every settled save is sorted again for them");
+});
+
 Deno.test("the strict schema the model answers in names every field the validator reads — a field missing there can never come back", () => {
-  const answer = { category: "Food & recipes", tags: [], summary: "", entities: [], language: "en", actionability: "go", confidence: 0.9, venue: { name: "Haku", locality: "Bandra" }, event_at: "2026-10-12" };
+  const answer = { category: "Food & recipes", tags: [], summary: "", entities: [], language: "en", actionability: "go", confidence: 0.9, venue: { name: "Haku", locality: "Bandra" }, event_at: "2026-10-12", screen_text: "HAKU" };
   const read = Object.keys(validateOutput(answer, new Date("2026-09-15T08:00:00Z"))!).sort();
   assertEquals(Object.keys(OUTPUT_SCHEMA.properties).sort(), read);
   // Strict mode: every property required and nothing extra, so an optional field is a nullable one.
@@ -95,6 +107,7 @@ Deno.test("the strict schema the model answers in names every field the validato
   assertEquals(OUTPUT_SCHEMA.additionalProperties, false);
   assertEquals(OUTPUT_SCHEMA.properties.venue.anyOf.map((v: { type: string }) => v.type), ["object", "null"]);
   assertEquals(OUTPUT_SCHEMA.properties.event_at.type, ["string", "null"]);
+  assertEquals(OUTPUT_SCHEMA.properties.screen_text.type, ["string", "null"]);
   // The adapters answer in this schema and no other.
   assertEquals(OPENAI_SCHEMA, OUTPUT_SCHEMA);
 });

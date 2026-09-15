@@ -166,3 +166,16 @@ functions whose module graph holds the prompt — `sweeper`, `reprocess-item` (t
 the sweeper rather than sorting themselves) and `category-summary` for the shared contracts — with
 `PROMPT_VERSION = 2026-09-17.1`, and watch the library converge over half an hour; report per
 category before and after.
+
+## 7. Addendum, 15 Sep 2026 — the words on the screen
+
+The sorter read the picture at low detail: a poster's subject is plain at 512px, a storefront sign
+is not, so "@lasthouse.in" became a null venue rather than "Last House Coffee". Now the picture goes
+at high detail and the sorter answers one more field, `screen_text` — the words legible in the
+picture as written, a line per line, at most 300 characters, null when there is no picture or no
+words — kept in `item_ai.screen_text`, never shown. Two things read it: search (the words are part
+of the search document, so "Last House" finds the reel) and the venue rule, which may take the name
+from the sign when the caption gives only a handle. `PROMPT_VERSION = 2026-09-18.4`; the library is
+re-sorted for it, bounded per sweep as in D3. Migration `20260918160000_screen_text.sql` first — the
+old finish ignores the field, but a save sorted under the new prompt before the column exists would
+never be asked again — then `sweeper` and `reprocess-item`.

@@ -2,7 +2,7 @@
 import { ACTIONABILITY, CATEGORIES, CATEGORY_GUIDE, ENTITY_TYPES, UNSURE_BELOW } from "./contracts.ts";
 import type { Actionability, Category, EntityType, ItemAiOutput } from "./contracts.ts";
 
-export const PROMPT_VERSION = "2026-09-18.3";
+export const PROMPT_VERSION = "2026-09-18.4";
 
 /**
  * The shape the model answers in, strict: every property required, nothing extra, an optional
@@ -22,8 +22,9 @@ export const OUTPUT_SCHEMA = {
     confidence: { type: "number" },
     venue: { anyOf: [{ type: "object", properties: { name: { type: "string" }, locality: { type: "string" } }, required: ["name", "locality"], additionalProperties: false }, { type: "null" }] },
     event_at: { type: ["string", "null"] },
+    screen_text: { type: ["string", "null"] },
   },
-  required: ["category", "tags", "summary", "entities", "language", "actionability", "confidence", "venue", "event_at"],
+  required: ["category", "tags", "summary", "entities", "language", "actionability", "confidence", "venue", "event_at", "screen_text"],
   additionalProperties: false,
 } as const;
 
@@ -105,6 +106,7 @@ ${TIE_BREAKERS.map((rule, i) => `  ${i + 1}. ${rule}`).join("\n")}
 - confidence: 0 to 1, your confidence in the category. Below ${UNSURE_BELOW} means you are guessing, and the save is filed under "Other".
 - venue: {name, locality} when the post names somewhere a person could go to — a restaurant, a café, a shop, a hotel, a viewpoint, a venue — name as a person would say it, locality the neighbourhood, city or area that places it; null when there is none. Never an @handle or a web address as the name: when the caption gives only "@lasthouse.in", read the name from the sign or logo in the picture ("Last House Coffee"), and give null if the picture does not say. A country or a city alone is not a venue. Only a place the content names, never one guessed from a hashtag or a mood.
 - event_at: an ISO 8601 date, or date-time with offset, when the post names a day something happens — a concert, a launch, a sale ending, a deadline; null when there is none. Resolve relative words ("this Friday") against the day given under "saved on"; when only a day is named, give the date alone. A day already gone by is not an event.
+- screen_text: the words legible in the picture, as written — a shop sign, a title card, a caption burnt into the frame, a product name, a menu — one line per line on the screen, at most 300 characters; null when there is no picture or no words can be read. Only words actually visible, never a guess at what a blurred sign says. The venue's name may come from here when the caption gives only a handle.
 Judge from the content only. Hashtags and emoji are weak signals. If the text is empty, use the link, kind and author.
 A picture may be attached: the saved post's own poster frame or photo. Captions often describe how a post was made (credits, tools, "edit") or its mood (aesthetic hashtags) rather than what it shows; the picture is the subject, so judge the category from it and treat such a caption as a weak signal. Without a picture, when the caption is only credits, mood or hashtags, prefer the subject if the words let you infer it, else "Other" with low confidence rather than a category for the making.`;
 
@@ -133,6 +135,14 @@ function venueFrom(v: unknown): { name: string; locality: string } | null {
   const locality = isStr(o["locality"]) ? o["locality"].trim() : "";
   const fits = (s: string) => s.length >= 2 && s.length <= MAX_PLACE_CHARS;
   return fits(name) && fits(locality) && !HANDLE_OR_ADDRESS.test(name) ? { name, locality } : null;
+}
+
+const MAX_SCREEN_CHARS = 300;
+/** The words on the screen as written: trimmed, runs of spaces folded, the lines kept, bounded; anything else is none. */
+function screenTextFrom(v: unknown): string | null {
+  if (!isStr(v)) return null;
+  const text = v.replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim();
+  return text.length > 0 ? text.slice(0, MAX_SCREEN_CHARS) : null;
 }
 
 /** A date the clock can read, still to come: a day already gone is history, and a bare word ("Friday") is a guess. */
@@ -170,6 +180,7 @@ export function validateOutput(v: unknown, now: Date = new Date()): ItemAiOutput
     confidence,
     venue: venueFrom(o["venue"]),
     event_at: eventFrom(o["event_at"], now),
+    screen_text: screenTextFrom(o["screen_text"]),
   };
 }
 
