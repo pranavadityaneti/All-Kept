@@ -449,6 +449,11 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/resolve-place/index.ts"
 
+[functions.weave]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/weave/index.ts"
+
 [functions.reddit-thumbnail]
 enabled = true
 verify_jwt = true
