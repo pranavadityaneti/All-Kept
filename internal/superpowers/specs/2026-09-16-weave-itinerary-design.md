@@ -17,7 +17,10 @@ plan has to understand the person from the saves, choose, and arrange — realis
 - Suggestions beyond the saves are allowed, labelled "suggested — not from your saves", capped.
 - Customise asks a rough budget band, and who is going.
 - A "book ahead" checklist sits at the top of the plan.
-- Models: Opus 5 to understand, Fable 5.1 to plan.
+- Models: Opus 5 to understand, Fable 5.1 to plan — **changed 16 Sep, later the same day**: the server
+  runs on OpenAI and its Anthropic key was empty, so both stages use the sorter's own
+  `gpt-5.6-sol` ($4 / $20 per million), understand at medium effort, plan at high; the Claude
+  pair stays wired for a server with an Anthropic key and no OpenAI one.
 - Default plans of 7 and 12 days, made on demand; Customise remakes with the brief.
 - Free-tier and subscriber ceilings decided after the strategy is proven. Every Make is
   user-initiated and disclosed beside the sorting, like everything the model does.
@@ -160,9 +163,10 @@ The user message carries the brief, the profile as edited, and the skeleton as J
 
 ## 7. Cost (Anthropic's price page, 16 Sep 2026)
 
-Opus 5 $5 / $25 per million; Fable 5.1 $10 / $50, cache reads $0.25. A hundred saves to a
-12-day plan: understand ≈ 12k in / 0.6k out on Opus ≈ $0.08; plan ≈ 12k in / 6k out on Fable ≈
-$0.42; **≈ $0.50 a plan**, a second length or a remake ≈ $0.42 more, place lookups once per place,
+Opus 5 $5 / $25 per million; Fable 5.1 $10 / $50, cache reads $0.25; gpt-5.6-sol $4 / $20. A
+hundred saves to a 12-day plan: understand ≈ 12k in / 0.6k out; plan ≈ 12k in / 6k out. On the
+Claude pair ≈ $0.50 a plan; on gpt-5.6-sol, which is what runs, **≈ $0.23 a plan** (understand
+≈ $0.06, plan ≈ $0.17), a second length or a remake ≈ $0.17 more, place lookups once per place,
 ever. Ceilings are decided after the strategy is proven.
 
 ## 8. Proving it

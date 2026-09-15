@@ -4,7 +4,7 @@ import { apiError } from "../_shared/http.ts";
 import type { WeaveKind } from "../_shared/contracts.ts";
 import { providersFromEnv } from "../_shared/place-providers.ts";
 import { holidaysBetween, typicalWeather } from "../_shared/weave/context.ts";
-import { PLAN_MODEL, PLAN_OPTIONS, UNDERSTAND_MODEL, UNDERSTAND_OPTIONS, weaveModel } from "../_shared/weave/model.ts";
+import { CLAUDE_PLAN_MODEL, CLAUDE_UNDERSTAND_MODEL, OPENAI_MODEL, PLAN_OPTIONS, UNDERSTAND_OPTIONS, weaveModel, weaveModelOpenAI } from "../_shared/weave/model.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
 import type { OpeningPeriod } from "../_shared/weave/skeleton.ts";
 import { handleWeave, type Suggestion, type WeaveRecord, type WeaveSaveRow } from "./handler.ts";
@@ -17,9 +17,19 @@ const SUGGESTION_QUERY: Record<WeaveKind, string | null> = {
 
 Deno.serve(async (req) => {
   const db = adminClient();
-  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY")?.trim();
-  if (!anthropicKey) return apiError("unavailable", "The itinerary is not configured on this server.");
   const fetchSafe = safeFetch(fetch);
+  // OpenAI, which this server runs on; Claude only where an OpenAI key is absent and an Anthropic one is set.
+  const openaiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY")?.trim();
+  // Which OpenAI model each stage speaks to: the sorter's own unless a secret names another (WEAVE_PLAN_MODEL=gpt-6-astra, say).
+  const understandModel = Deno.env.get("WEAVE_UNDERSTAND_MODEL")?.trim() || OPENAI_MODEL;
+  const planModel = Deno.env.get("WEAVE_PLAN_MODEL")?.trim() || OPENAI_MODEL;
+  const models = openaiKey
+    ? { understand: weaveModelOpenAI(openaiKey, understandModel, UNDERSTAND_OPTIONS, fetchSafe), plan: weaveModelOpenAI(openaiKey, planModel, PLAN_OPTIONS, fetchSafe), names: { understand: understandModel, plan: planModel } }
+    : anthropicKey
+    ? { understand: weaveModel(anthropicKey, CLAUDE_UNDERSTAND_MODEL, UNDERSTAND_OPTIONS), plan: weaveModel(anthropicKey, CLAUDE_PLAN_MODEL, PLAN_OPTIONS), names: { understand: CLAUDE_UNDERSTAND_MODEL, plan: CLAUDE_PLAN_MODEL } }
+    : null;
+  if (!models) return apiError("unavailable", "The itinerary is not configured on this server.");
   const providers = providersFromEnv((n) => Deno.env.get(n), fetchSafe);
   const log = (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {});
   try {
@@ -55,9 +65,9 @@ Deno.serve(async (req) => {
           };
         });
       },
-      understand: weaveModel(anthropicKey, UNDERSTAND_MODEL, UNDERSTAND_OPTIONS),
-      plan: weaveModel(anthropicKey, PLAN_MODEL, PLAN_OPTIONS),
-      models: { understand: UNDERSTAND_MODEL, plan: PLAN_MODEL },
+      understand: models.understand,
+      plan: models.plan,
+      models: models.names,
       async suggest(town, kind): Promise<Suggestion | null> {
         const words = SUGGESTION_QUERY[kind];
         if (!words || !providers.google) return null;

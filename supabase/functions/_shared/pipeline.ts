@@ -29,6 +29,8 @@ export const PRICES_PER_MTOK: Record<string, { input: number; output: number; ca
   // Fable 5.1's cache reads are 0.025× its input price, not the usual tenth (Anthropic's price page, 16 Sep 2026).
   "claude-fable-5-1": { input: 10, output: 50, cacheRead: 0.25, cacheWrite: 12.5 },
   "gpt-5.6-sol": { input: 4, output: 20, cacheRead: 0.4, cacheWrite: 0 },
+  // GPT-6 Astra (3 Sep 2026): $10 / $50, cached input $1, as the price trackers report it on 16 Sep — OpenAI's own page refused the read; check before relying on the cost line.
+  "gpt-6-astra": { input: 10, output: 50, cacheRead: 1, cacheWrite: 0 },
   "gpt-5.6-terra": { input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0 },
   "gpt-5.6-luna": { input: 0.2, output: 1.2, cacheRead: 0.02, cacheWrite: 0 },
 };
