@@ -1,5 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "./Icon";
 import { InterestPill } from "./InterestPills";
@@ -7,13 +6,12 @@ import { factsFor, headerNames, useCategorySummary } from "../lib/category-summa
 import { categoryDisplayName } from "../lib/category-names";
 import { radius, space, type, usePalette } from "../lib/theme";
 
-const COLLAPSED_KEY = "allkept.summary.collapsed";
-
 /**
  * What a category holds, and what it is about, at the top of the Library when one category is
  * open. The facts row and the names come from a count of the category; the themes are written
- * once by the sorting model and kept. Tapping the header folds the card to the facts row, and the
- * phone remembers that, since some people want the pile and not the précis.
+ * once by the sorting model and kept. Tapping the header folds the card to the facts row for
+ * this visit: the card opens open every time a category is opened, and nothing is remembered —
+ * a fold once made used to stay for good, which read as the summary never coming.
  */
 export function CategorySummary({ category, taken, onName }: {
   category: string;
@@ -24,15 +22,11 @@ export function CategorySummary({ category, taken, onName }: {
 }) {
   const p = usePalette();
   const summary = useCategorySummary(category, true);
-  const [collapsed, setCollapsed] = useState(false);
-  useEffect(() => {
-    AsyncStorage.getItem(COLLAPSED_KEY).then((v) => { if (v === "1") setCollapsed(true); }).catch(() => undefined);
-  }, []);
-  const toggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    AsyncStorage.setItem(COLLAPSED_KEY, next ? "1" : "0").catch(() => undefined);
-  };
+  // The fold belongs to this visit: the same card moving to another category opens again.
+  const [fold, setFold] = useState({ category, collapsed: false });
+  if (fold.category !== category) setFold({ category, collapsed: false });
+  const collapsed = fold.category === category && fold.collapsed;
+  const toggle = () => setFold({ category, collapsed: !collapsed });
 
   const data = summary.data;
   if (!data || data.count === 0) return null;
