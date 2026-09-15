@@ -2,7 +2,7 @@
 // and kept against every re-sort; POST { itemId, clear: true } takes it away. See handler.ts.
 import { adminClient, userIdFromRequest } from "../_shared/supabase.ts";
 import { apiError } from "../_shared/http.ts";
-import { resolveVenue } from "../_shared/places.ts";
+import { placeResolvedArgs, resolveVenue } from "../_shared/places.ts";
 import { providersFromEnv } from "../_shared/place-providers.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
 import { handleResolvePlace } from "./handler.ts";
@@ -24,10 +24,7 @@ Deno.serve(async (req) => {
         const { error } = await db.rpc("user_venue_set", { p_item_id: itemId, p_venue: venue, p_miss: miss });
         if (error) throw error;
         if (place) {
-          const { error: e2 } = await db.rpc("place_resolved", {
-            p_item_id: itemId, p_provider: place.provider, p_provider_id: place.providerId, p_name: place.name, p_address: place.address, p_locality: place.locality,
-            p_lat: place.lat, p_lng: place.lng, p_category: place.category, p_hours: place.hours, p_status: place.status, p_url: place.url,
-          });
+          const { error: e2 } = await db.rpc("place_resolved", placeResolvedArgs(itemId, place));
           if (e2) throw e2;
         }
       },

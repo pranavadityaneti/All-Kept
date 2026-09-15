@@ -1,11 +1,12 @@
 // A venue becomes a place.
 //
 // The sorter writes a venue as text — "Haku, Bandra" — exactly as the post named it. This looks
-// it up once, on Apple's Maps Server API first and Google's Places API when Apple has nothing that
-// matches, and keeps what comes back: coordinates, an address, a category, hours where the
-// provider gives them, and a stable id. Pure: the providers are injected, so the rules — which
-// answer is the venue, when to fall back, what a miss records — are tested without a network.
-// See internal/superpowers/specs/2026-09-15-export-out-design.md, stage B.
+// it up once, on Google's Places API first, since Google knows the hours, whether the place is
+// still open at all and its own page, and Apple's Maps Server API when Google has nothing that
+// matches (or no key is configured), and keeps what comes back: coordinates, an address, a
+// category, hours where the provider gives them, and a stable id. Pure: the providers are
+// injected, so the rules — which answer is the venue, when to fall back, what a miss records —
+// are tested without a network. See internal/superpowers/specs/2026-09-15-export-out-design.md, stage B.
 
 export interface Venue { name: string; locality: string }
 
@@ -23,7 +24,14 @@ export interface Candidate {
   /** Google's word for it: OPERATIONAL, CLOSED_TEMPORARILY, CLOSED_PERMANENTLY. */
   status: string | null;
   url: string | null;
+  /** The hours as Google structures them — {open: {day, hour, minute}, close: {…}}, day 0 Sunday — so a phone can say whether the place is open now. Only Google. */
+  periods: OpeningPeriod[] | null;
+  /** The place's offset from UTC in minutes, without which the periods say nothing about now. Only Google. */
+  utcOffsetMinutes: number | null;
 }
+
+export interface OpeningPoint { day: number; hour: number; minute: number }
+export interface OpeningPeriod { open: OpeningPoint; close?: OpeningPoint }
 
 export interface Resolution { place: Candidate | null; reason: string | null }
 
@@ -77,13 +85,14 @@ export function pickCandidate(venue: Venue, candidates: Candidate[]): Candidate 
 export const venueQuery = (venue: Venue): string => `${venue.name}, ${venue.locality}`;
 
 /**
- * Apple first, Google when Apple has nothing that matches. A provider that is down is skipped;
- * both down is its own reason, so the row is tried again rather than marked a miss.
+ * Google first, Apple when Google has nothing that matches or is not configured. A provider that
+ * is down is skipped; both down is its own reason, so the row is tried again rather than marked a
+ * miss.
  */
 export async function resolveVenue(venue: Venue, deps: PlacesDeps): Promise<Resolution> {
   const query = venueQuery(venue);
   let unreachable = 0;
-  const providers: (((q: string) => Promise<Candidate[]>) | null)[] = [deps.apple, deps.google];
+  const providers: (((q: string) => Promise<Candidate[]>) | null)[] = [deps.google, deps.apple];
   for (const provider of providers) {
     if (!provider) continue;
     try {
@@ -117,9 +126,29 @@ export function appleFromSearch(body: unknown): Candidate[] {
       locality: typeof structured?.locality === "string" ? structured.locality : null,
       lat, lng,
       category: typeof o["poiCategory"] === "string" ? o["poiCategory"] : null,
-      hours: null, status: null, url: null,
+      hours: null, status: null, url: null, periods: null, utcOffsetMinutes: null,
     }];
   });
+}
+
+/** A point in the week as Google writes it, or nothing: a period with a malformed point is no period. */
+function openingPoint(v: unknown): OpeningPoint | null {
+  const o = v as Record<string, unknown> | null | undefined;
+  const day = o?.["day"], hour = o?.["hour"], minute = o?.["minute"];
+  if (typeof day !== "number" || day < 0 || day > 6) return null;
+  return { day, hour: typeof hour === "number" ? hour : 0, minute: typeof minute === "number" ? minute : 0 };
+}
+
+/** Google's periods, read defensively: an open without a close is a place open around the clock, which Google writes exactly so. */
+function openingPeriods(v: unknown): OpeningPeriod[] | null {
+  if (!Array.isArray(v)) return null;
+  const periods = v.flatMap((p): OpeningPeriod[] => {
+    const open = openingPoint((p as Record<string, unknown> | null)?.["open"]);
+    if (!open) return [];
+    const close = openingPoint((p as Record<string, unknown>)["close"]);
+    return [close ? { open, close } : { open }];
+  });
+  return periods.length > 0 ? periods : null;
 }
 
 /** Google's places:searchText answer, read the same way. */
@@ -131,7 +160,8 @@ export function googleFromSearch(body: unknown): Candidate[] {
     const name = (o["displayName"] as { text?: unknown } | undefined)?.text;
     const loc = o["location"] as { latitude?: unknown; longitude?: unknown } | undefined;
     if (typeof o["id"] !== "string" || typeof name !== "string" || typeof loc?.latitude !== "number" || typeof loc?.longitude !== "number") return [];
-    const hours = (o["regularOpeningHours"] as { weekdayDescriptions?: unknown } | undefined)?.weekdayDescriptions;
+    const opening = o["regularOpeningHours"] as { weekdayDescriptions?: unknown; periods?: unknown } | undefined;
+    const hours = opening?.weekdayDescriptions;
     return [{
       provider: "google",
       providerId: o["id"],
@@ -143,8 +173,19 @@ export function googleFromSearch(body: unknown): Candidate[] {
       hours: Array.isArray(hours) ? hours.filter((h): h is string => typeof h === "string") : null,
       status: typeof o["businessStatus"] === "string" ? o["businessStatus"] : null,
       url: typeof o["googleMapsUri"] === "string" ? o["googleMapsUri"] : null,
+      periods: openingPeriods(opening?.periods),
+      utcOffsetMinutes: typeof o["utcOffsetMinutes"] === "number" ? o["utcOffsetMinutes"] : null,
     }];
   });
+}
+
+/** The arguments of place_resolved(), built in one place for the sweeper and the resolve door alike. */
+export function placeResolvedArgs(itemId: string, p: Candidate): Record<string, unknown> {
+  return {
+    p_item_id: itemId, p_provider: p.provider, p_provider_id: p.providerId, p_name: p.name, p_address: p.address, p_locality: p.locality,
+    p_lat: p.lat, p_lng: p.lng, p_category: p.category, p_hours: p.hours, p_status: p.status, p_url: p.url,
+    p_periods: p.periods, p_utc_offset_minutes: p.utcOffsetMinutes,
+  };
 }
 
 export interface PlacesPassDeps {

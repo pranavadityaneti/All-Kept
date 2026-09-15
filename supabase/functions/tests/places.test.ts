@@ -1,10 +1,10 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { appleFromSearch, googleFromSearch, pickCandidate, resolveVenue, runPlacesPass, sameName, type Candidate, type PlacesDeps } from "../_shared/places.ts";
+import { appleFromSearch, googleFromSearch, pickCandidate, placeResolvedArgs, resolveVenue, runPlacesPass, sameName, type Candidate, type PlacesDeps } from "../_shared/places.ts";
 
 const haku = { name: "Haku", locality: "Bandra, Mumbai" };
 const candidate = (over: Partial<Candidate> = {}): Candidate => ({
   provider: "apple", providerId: "a1", name: "Haku", address: "Linking Road, Bandra West, Mumbai 400050", locality: "Mumbai",
-  lat: 19.06, lng: 72.83, category: "Restaurant", hours: null, status: null, url: null, ...over,
+  lat: 19.06, lng: 72.83, category: "Restaurant", hours: null, status: null, url: null, periods: null, utcOffsetMinutes: null, ...over,
 });
 
 Deno.test("a candidate is the venue when the names agree, ignoring case, accents and punctuation, or one contains the other", () => {
@@ -39,21 +39,21 @@ Deno.test("a chain resolves to the branch in the venue's locality, not the first
   assertEquals(pickCandidate(venue, [branches[0]!, branches[2]!])?.providerId, "madhapur");
 });
 
-Deno.test("Apple answers first; Google only when Apple has nothing that matches; nothing when neither does, with the reason kept", async () => {
+Deno.test("Google answers first, since it knows the hours; Apple when Google has nothing that matches; nothing when neither does, with the reason kept", async () => {
   const asked: string[] = [];
   const deps: PlacesDeps = {
     apple: async (q) => { asked.push(`apple:${q}`); return [candidate()]; },
     google: async (q) => { asked.push(`google:${q}`); return [candidate({ provider: "google", providerId: "g1" })]; },
   };
   const first = await resolveVenue(haku, deps);
-  assertEquals([first.place?.provider, first.place?.providerId, asked], ["apple", "a1", ["apple:Haku, Bandra, Mumbai"]]);
-  const noApple: PlacesDeps = { apple: async () => [candidate({ name: "Bandra" })], google: deps.google };
-  assertEquals((await resolveVenue(haku, noApple)).place?.provider, "google");
+  assertEquals([first.place?.provider, first.place?.providerId, asked], ["google", "g1", ["google:Haku, Bandra, Mumbai"]]);
+  const noGoogle: PlacesDeps = { apple: deps.apple, google: async () => [candidate({ provider: "google", name: "Bandra" })] };
+  assertEquals((await resolveVenue(haku, noGoogle)).place?.provider, "apple");
   const nobody: PlacesDeps = { apple: async () => [], google: async () => [] };
   assertEquals(await resolveVenue(haku, nobody), { place: null, reason: "no match" });
   // A provider that is down is skipped, not fatal; the other still answers.
-  const appleDown: PlacesDeps = { apple: async () => { throw new Error("503"); }, google: deps.google };
-  assertEquals((await resolveVenue(haku, appleDown)).place?.provider, "google");
+  const googleDown: PlacesDeps = { apple: deps.apple, google: async () => { throw new Error("429"); } };
+  assertEquals((await resolveVenue(haku, googleDown)).place?.provider, "apple");
   const bothDown: PlacesDeps = { apple: async () => { throw new Error("503"); }, google: async () => { throw new Error("429"); } };
   assertEquals(await resolveVenue(haku, bothDown), { place: null, reason: "providers unreachable" });
   // No Google key: Apple alone, and its miss is a miss.
@@ -76,13 +76,23 @@ Deno.test("Apple's and Google's answers are read into one shape", () => {
   const google = googleFromSearch({ places: [{
     id: "ChIJ1", displayName: { text: "Haku" }, formattedAddress: "Linking Rd, Bandra West, Mumbai, Maharashtra 400050, India",
     location: { latitude: 19.0596, longitude: 72.8295 }, primaryType: "japanese_restaurant", businessStatus: "OPERATIONAL",
-    regularOpeningHours: { weekdayDescriptions: ["Monday: 12:00 – 11:00 PM"] }, googleMapsUri: "https://maps.google.com/?cid=1",
-  }] });
-  assertEquals(google.map((c) => [c.provider, c.providerId, c.name, c.category, c.status, c.hours, c.url]), [
-    ["google", "ChIJ1", "Haku", "japanese_restaurant", "OPERATIONAL", ["Monday: 12:00 – 11:00 PM"], "https://maps.google.com/?cid=1"],
+    regularOpeningHours: { weekdayDescriptions: ["Monday: 12:00 – 11:00 PM"], periods: [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }] },
+    utcOffsetMinutes: 330, googleMapsUri: "https://maps.google.com/?cid=1",
+  }, { id: "ChIJ2", displayName: { text: "Nowhere" }, location: { latitude: 1, longitude: 2 } }] });
+  assertEquals(google.map((c) => [c.provider, c.providerId, c.name, c.category, c.status, c.hours, c.url, c.periods, c.utcOffsetMinutes]), [
+    ["google", "ChIJ1", "Haku", "japanese_restaurant", "OPERATIONAL", ["Monday: 12:00 – 11:00 PM"], "https://maps.google.com/?cid=1", [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }], 330],
+    // A place Google knows nothing more about: the hours and the clock are simply absent, never invented.
+    ["google", "ChIJ2", "Nowhere", null, null, null, null, null, null],
   ]);
+  assertEquals(apple[0]!.periods, null);
   assertEquals(appleFromSearch({}), []);
   assertEquals(googleFromSearch({ places: "nope" }), []);
+  // One helper builds the write for both the sweeper and the resolve door, so a new column is never added on one side only.
+  const args = placeResolvedArgs("item-1", google[0]!);
+  assertEquals(args["p_item_id"], "item-1");
+  assertEquals(args["p_periods"], google[0]!.periods);
+  assertEquals(args["p_utc_offset_minutes"], 330);
+  assertEquals(Object.keys(args).sort(), ["p_address", "p_category", "p_hours", "p_item_id", "p_lat", "p_lng", "p_locality", "p_name", "p_periods", "p_provider", "p_provider_id", "p_status", "p_url", "p_utc_offset_minutes"]);
 });
 
 Deno.test("the pass resolves a bounded batch, saves a place or records the miss, and never lets one row fail the rest", async () => {

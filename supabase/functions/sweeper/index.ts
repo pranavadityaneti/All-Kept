@@ -5,7 +5,7 @@ import { PROMPT_VERSION } from "../_shared/classify.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
 import { runIconPass, type IconRow } from "../_shared/entity-icons.ts";
-import { resolveVenue, runPlacesPass, venueQuery, type Venue } from "../_shared/places.ts";
+import { placeResolvedArgs, resolveVenue, runPlacesPass, venueQuery, type Venue } from "../_shared/places.ts";
 import { providersFromEnv } from "../_shared/place-providers.ts";
 import { readSnippet, runSnippetPass } from "../_shared/youtube-snippet.ts";
 import { json, readJson } from "../_shared/http.ts";
@@ -136,11 +136,7 @@ Deno.serve(async (req) => {
           resolve: (venue) => resolveVenue(venue, { apple: providers.apple ?? (async () => []), google: providers.google }),
           async save(itemId, result) {
             if (result.place) {
-              const p = result.place;
-              const { error } = await db.rpc("place_resolved", {
-                p_item_id: itemId, p_provider: p.provider, p_provider_id: p.providerId, p_name: p.name, p_address: p.address, p_locality: p.locality,
-                p_lat: p.lat, p_lng: p.lng, p_category: p.category, p_hours: p.hours, p_status: p.status, p_url: p.url,
-              });
+              const { error } = await db.rpc("place_resolved", placeResolvedArgs(itemId, result.place));
               if (error) throw error;
             } else if (result.reason === "providers unreachable") {
               // Nothing to record: the row is asked again next sweep, when the providers may be back.
