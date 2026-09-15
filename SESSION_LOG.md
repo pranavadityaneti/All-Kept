@@ -1373,3 +1373,30 @@ categories.
   wrong automatic extraction with no override, search, thumbnails, a confusing hierarchy. Albo
   (albo.inc) research requested next; agent running.
 - Metro restarted earlier for the font package (pid 6808, log in the scratchpad).
+
+---
+
+## 2026-09-15 (late) — Category summary built and live; Albo research; the discussion
+
+- Pranav's three asks after the research: a summary when a category is opened; a list of what to
+  take from Stasht/Albo and what to avoid; a discussion on reading text/audio/video and Weave.
+- Research doc gained Part 6 "Take, and avoid" (`1cf8eab`); the scratchpad that built the doc was
+  wiped with the app restart, so the part was spliced into the committed HTML.
+- Category summary, spec `internal/superpowers/specs/2026-09-15-category-summary-design.md`, shape
+  chosen by Pranav (facts row + three bullet themes). Built: `category-summary` function
+  (handler pure + tests: fresh/stored/throttled/too few/sorting off/model failure/auth), SQL
+  `category_summary_source(p_user, p_category)` (count, fingerprint of ids+revisions, shapes,
+  intents, names ≥2, newest 60 derived rows), table `category_summaries` (owner read, service
+  write), themes on the bulk tier, once per changed fingerprint per hour (`c2fdec4`); app card
+  `components/CategorySummary.tsx`, rules in `lib/category-summary.ts` (`factsFor`, `headerNames`
+  via `mergeThreads` + the shared `neverAnInterest`), Library `ListHeaderComponent`, names open
+  search (`c7e603c`). Pranav ran `db push`; deployed `category-summary` v1; pushed.
+- Verified on the simulator (rebooted after the app quit; Metro restarted, pid in the scratchpad
+  log): Tech → "77 saves · 43 to watch · 13 to try", chips Claude/Codex/Apple, three themes from
+  gpt-5.6-terra; the row in `category_summaries` confirms. Note: opening the Library by deep link
+  with `?category=` showed no saves — the tile path (`router.push` params) is what people use and
+  works; the deep-link form is not a product path.
+- Discussion delivered in chat: reel pages hide the video file from a logged-out client (verified
+  with curl on three reels), so transcription is clean only for the DM door, where Meta hands us
+  the media URL; on-screen text from the poster frame is the cheap next step; Weave beats Albo by
+  citation, artefact-not-chat, export out, liveness, honesty about coverage.
