@@ -231,3 +231,14 @@ again — which also explains why my later taps to restore the interests switch 
 - Remember: before deploying a function that calls a new SQL function, run the existence query on
   its own and read the *value* (`"fns": null` is a no), and read his terminal tab when he says a
   push happened — "pushed" can mean "typed the command". Never chain the check and the deploy.
+
+## 2026-09-15 — a field added to the sorter's output never came back
+- What didn't work: adding `venue` and `event_at` to the prompt and the validator (and testing
+  both) while the two model adapters kept their own strict JSON schemas (`additionalProperties:
+  false`) that did not name the fields. The model was never allowed to return them; a whole
+  re-sort of 160 saves ran with the fields impossible, and five real café reels came back with
+  `venue: null`. The tests passed because none tied the schema to the validator.
+- What worked: one `OUTPUT_SCHEMA` in `classify.ts`, imported by both adapters, and a test that
+  the schema's properties equal the keys the validator returns.
+- Remember: the sorter's output shape is defined in the prompt, the validator AND the schema the
+  model is constrained to. Any new field goes in all three — the test now enforces it.
