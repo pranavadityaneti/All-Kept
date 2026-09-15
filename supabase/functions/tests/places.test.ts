@@ -16,11 +16,27 @@ Deno.test("a candidate is the venue when the names agree, ignoring case, accents
   assertEquals(sameName("Blue Tokai", "Third Wave Coffee"), false);
 });
 
-Deno.test("the first candidate that is a place with the venue's name wins; a city or a street with a lookalike name does not", () => {
+Deno.test("the candidate that is a place with the venue's name wins; a city or a street with a lookalike name does not", () => {
   const results = [candidate({ name: "Haku Street", category: null }), candidate({ name: "Haku", providerId: "a2" }), candidate({ name: "Haku", providerId: "a3" })];
   assertEquals(pickCandidate(haku, results)?.providerId, "a2");
   assertEquals(pickCandidate(haku, [candidate({ name: "Bandra" })]), null);
   assertEquals(pickCandidate(haku, []), null);
+  // Apple sometimes knows a venue without saying what kind: an exact name is taken without a category,
+  // but a name that merely contains the venue's is not — "Hakh Unani Wellness Centre" is not Haku.
+  assertEquals(pickCandidate({ name: "Olive Bar & Kitchen", locality: "Bandra, Mumbai" }, [candidate({ name: "Olive Bar & Kitchen", category: null, providerId: "o1" })])?.providerId, "o1");
+  assertEquals(pickCandidate(haku, [candidate({ name: "Hakuna Matata Haku Lounge", category: null })]), null);
+});
+
+Deno.test("a chain resolves to the branch in the venue's locality, not the first branch the service lists", () => {
+  const venue = { name: "Blue Tokai Coffee", locality: "Jubilee Hills, Hyderabad" };
+  const branches = [
+    candidate({ name: "Blue Tokai Coffee Roasters", providerId: "madhapur", address: "41, Jubilee Enclave, Madhapur, Hyderabad, 500081", category: "Cafe" }),
+    candidate({ name: "Blue Tokai Coffee Roasters", providerId: "jubilee", address: "Road No 36, Jubilee Hills, Hyderabad, 500033", category: "Cafe" }),
+    candidate({ name: "Blue Tokai Coffee Roasters", providerId: "banjara", address: "Road No 12, Banjara Hills, Hyderabad", category: "Cafe" }),
+  ];
+  assertEquals(pickCandidate(venue, branches)?.providerId, "jubilee");
+  // With no branch in the locality, the first that matches by name still stands.
+  assertEquals(pickCandidate(venue, [branches[0]!, branches[2]!])?.providerId, "madhapur");
 });
 
 Deno.test("Apple answers first; Google only when Apple has nothing that matches; nothing when neither does, with the reason kept", async () => {
@@ -49,10 +65,13 @@ Deno.test("Apple's and Google's answers are read into one shape", () => {
   const apple = appleFromSearch({ results: [{
     name: "Haku", coordinate: { latitude: 19.0596, longitude: 72.8295 }, formattedAddressLines: ["Linking Road", "Bandra West", "Mumbai 400050", "India"],
     structuredAddress: { locality: "Mumbai", subLocality: "Bandra West" }, poiCategory: "Restaurant", id: "I123",
-  }, { name: "Bandra", coordinate: { latitude: 19.05, longitude: 72.84 }, formattedAddressLines: ["Mumbai"] }] });
+  }, { name: "Bandra", coordinate: { latitude: 19.05, longitude: 72.84 }, formattedAddressLines: ["Mumbai"] },
+  { name: "The Bombay Canteen", coordinate: { latitude: 19.0032, longitude: 72.8275 }, formattedAddressLines: ["Process House\nUnit 1\nS.B. Road", "Lower Parel"], poiCategory: "Restaurant" }] });
   assertEquals(apple.map((c) => [c.provider, c.providerId, c.name, c.address, c.locality, c.lat, c.lng, c.category]), [
     ["apple", "I123", "Haku", "Linking Road, Bandra West, Mumbai 400050, India", "Mumbai", 19.0596, 72.8295, "Restaurant"],
     ["apple", "19.05,72.84", "Bandra", "Mumbai", null, 19.05, 72.84, null],
+    // A line Apple breaks with newlines is one address, read on one line.
+    ["apple", "19.0032,72.8275", "The Bombay Canteen", "Process House, Unit 1, S.B. Road, Lower Parel", null, 19.0032, 72.8275, "Restaurant"],
   ]);
   const google = googleFromSearch({ places: [{
     id: "ChIJ1", displayName: { text: "Haku" }, formattedAddress: "Linking Rd, Bandra West, Mumbai, Maharashtra 400050, India",

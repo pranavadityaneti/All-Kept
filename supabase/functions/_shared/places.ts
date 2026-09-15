@@ -35,22 +35,43 @@ export interface PlacesDeps {
 
 /** Words only: case, accents and punctuation folded away, so "Café Delhi Heights" is "cafe delhi heights". */
 const fold = (s: string): string =>
-  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
 
 /** "The" and "&" make no name; the rest of the words must all be there, in one or the other. */
 const words = (s: string): string[] => fold(s).split(" ").filter((w) => w.length > 0 && w !== "the" && w !== "and");
 
-/** The venue's name and a candidate's agree when one's words are all in the other's, in order. */
-export function sameName(venue: string, candidate: string): boolean {
+/** How a venue's name and a candidate's agree: the same words, one's words all in the other's in order, or not at all. */
+function nameMatch(venue: string, candidate: string): "exact" | "contains" | "none" {
   const a = words(venue), b = words(candidate);
-  if (a.length === 0 || b.length === 0) return false;
+  if (a.length === 0 || b.length === 0) return "none";
+  if (a.join(" ") === b.join(" ")) return "exact";
   const contains = (outer: string[], inner: string[]) => outer.join(" ").includes(inner.join(" ")) && inner.every((w) => outer.includes(w));
-  return contains(b, a) || contains(a, b);
+  return contains(b, a) || contains(a, b) ? "contains" : "none";
 }
 
-/** The first candidate that is a place — something with a category — whose name is the venue's. */
+/** The venue's name and a candidate's agree when one's words are all in the other's, in order. */
+export const sameName = (venue: string, candidate: string): boolean => nameMatch(venue, candidate) !== "none";
+
+/** The first part of "Jubilee Hills, Hyderabad": the neighbourhood, which is what tells two branches of a chain apart. */
+const neighbourhood = (locality: string): string => fold(locality.split(",")[0] ?? "");
+
+/**
+ * The candidate that is the venue: its name the venue's — exactly, or containing it when the
+ * service says what kind of place it is, since a bare lookalike name is a clinic and not a café —
+ * and, among several, the one whose address names the venue's neighbourhood, so a chain resolves
+ * to the branch the post meant and not the first branch the service lists.
+ */
 export function pickCandidate(venue: Venue, candidates: Candidate[]): Candidate | null {
-  return candidates.find((c) => c.category !== null && sameName(venue.name, c.name)) ?? null;
+  const area = neighbourhood(venue.locality);
+  let best: { candidate: Candidate; score: number } | null = null;
+  for (const c of candidates) {
+    const match = nameMatch(venue.name, c.name);
+    if (match === "none" || (match === "contains" && c.category === null)) continue;
+    const here = area.length > 0 && fold(`${c.address ?? ""} ${c.locality ?? ""}`).includes(area) ? 1 : 0;
+    const score = (match === "exact" ? 2 : 1) + here * 2;
+    if (!best || score > best.score) best = { candidate: c, score };
+  }
+  return best?.candidate ?? null;
 }
 
 export const venueQuery = (venue: Venue): string => `${venue.name}, ${venue.locality}`;
@@ -85,7 +106,8 @@ export function appleFromSearch(body: unknown): Candidate[] {
     const coord = o["coordinate"] as { latitude?: unknown; longitude?: unknown } | undefined;
     const lat = coord?.latitude, lng = coord?.longitude;
     if (typeof o["name"] !== "string" || typeof lat !== "number" || typeof lng !== "number") return [];
-    const lines = Array.isArray(o["formattedAddressLines"]) ? (o["formattedAddressLines"] as unknown[]).filter((l): l is string => typeof l === "string") : [];
+    // A line Apple breaks with newlines is one address, read on one line.
+    const lines = Array.isArray(o["formattedAddressLines"]) ? (o["formattedAddressLines"] as unknown[]).filter((l): l is string => typeof l === "string").flatMap((l) => l.split(/\s*\n\s*/)).map((l) => l.trim()).filter((l) => l.length > 0) : [];
     const structured = o["structuredAddress"] as { locality?: unknown } | undefined;
     return [{
       provider: "apple",
