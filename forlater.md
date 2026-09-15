@@ -273,10 +273,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
-### 42. Export out to Maps lists, Calendar, Notes
+### 42. Export out to Maps lists, Calendar, Notes — DONE 15 Sep 2026 (stage A)
 - **What + why:** Send a place to Apple/Google Maps, a dated thing to Calendar, a save's text to Notes/Share — the way out of the app. Albo's users complain of lock-in; we can be the app that lets things out. Small.
 - **Scope:** The item sheet's action row; `Linking` deep links per target (maps URL schemes, calendar, share sheet); nothing server-side.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026, stage A: the sorter names venue and date, Maps at the pin, Calendar via .ics, Copy as text, Add place. Stages B and C continue as items 44 and 45.
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
@@ -286,3 +286,59 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** done — 15 Sep 2026: `items.done_at` + `journal`, `library_query_v6` (migration applied), `lib/done.ts` (the verb follows the intent), a tick in the header opening `DoneSheet`, marks on cards and rows, "Done" filter, Notifications entry. Verified on the simulator.
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
+
+### 44. Stage B — the map of saved places, and what the place knows
+- **What + why:** The rest of stage B (spec `internal/superpowers/specs/2026-09-15-export-out-design.md`): a map view for Food and Travel (`expo-maps` rides tonight's build; Android needs the Maps SDK key from Google Cloud in `app.config.ts`), "open now" from Google's hours, a looser venue comparison so a prompt bump does not look every place up again when only the spelling moved, and a card mark for a save with a place (needs `done_at`-style column in the library query, a v7). Medium.
+- **Scope:** `apps/mobile` map view + `lib/export.ts`; migration for the query; `places.ts` comparison.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 45. Stage C — near me, trips (Weave), liveness
+- **What + why:** "You saved Haku — four minutes away": geofences with While-using first, Always later; trips grouped by city with "open all in Google Maps" and an itinerary to share; "permanently closed" re-checked now and then. Needs `expo-location` (its own build), permission strings, App Review wording. Large; after B has real venues.
+- **Scope:** New: location module, a trips screen, a liveness pass.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 46. YouTube description for the sorter
+- **What + why:** All 59 YouTube saves are sorted from the title alone (audit B4); the Data API call the pipeline already makes for the aspect can carry `snippet.description` for free. Small; the sorter's biggest input gain.
+- **Scope:** `_shared/youtube.ts`, `_shared/enrich.ts`; a prompt-version bump re-sorts.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 47. Narrow the item_ai grants
+- **What + why:** `authenticated` holds insert/update on every column of `item_ai`, category included (audit B8); only `user_category` should be writable by a client. Small; protects the corrections now being collected.
+- **Scope:** One migration: revoke and re-grant column-level.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 48. The nine picture-less frozen saves
+- **What + why:** Nine saves with no picture, no `next_attempt_at`, no scheduled retry (audit B7); the exact enrichment branch needs the function logs. Medium.
+- **Scope:** `_shared/enrich.ts`, `_shared/pipeline.ts`.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 49. On-screen text from the poster frame
+- **What + why:** The sorter reads one frame at low detail: it wrote "@lasthouse.in" as null rather than "Last House Coffee" off the storefront. Ask for the words on the frame as a field, at higher detail when the caption gives only a handle; feeds search, sorting, venues. Medium. (The video's other frames are closed for Instagram reels: the file is not served.)
+- **Scope:** `_shared/classify.ts` output + schema + validator; `item_ai.screen_text`; picture detail.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 50. app_events stopped recording
+- **What + why:** `public.app_events` has no rows since 23:59 UTC on 14 Sep although the app was used all day on the simulator — `track()` inserts are failing silently (RLS, grant, or the anonymous session). The measurements added today (`embed_gated`, `place_named`, `way_out`…) depend on it. Small to diagnose.
+- **Scope:** `apps/mobile/lib/metrics.ts`, the `app_events` policy.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 51. Free saves for Pranav's own account
+- **What + why:** The simulator/test account shows "Subscription ended — renew to keep saving": the 25 free saves are used, so further share-sheet saves queue. Decide: a tester allowance, or subscribe in sandbox. Small.
+- **Scope:** A data change Pranav runs, or the paywall's sandbox path.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
