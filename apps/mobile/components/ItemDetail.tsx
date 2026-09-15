@@ -9,7 +9,7 @@ import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
-import { RemindMe } from "./RemindMe";
+import { RemindSheet } from "./RemindSheet";
 import { captionBody } from "../lib/caption";
 import { embedFit, embedUrl, fitBox, initialAspect, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useClearReminder, useDeleteItem, useItem, useSetCategory, useSetNote, useSetReminder, useRetrySorting } from "../lib/item";
@@ -81,6 +81,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   // The sheet opens to read, from the caption, or to change the category, from the pill: the same
   // sheet, with the picker folded or open to match what was tapped.
   const [sheet, setSheet] = useState<false | "read" | "change">(false);
+  const [reminding, setReminding] = useState(false);
   const [picking, setPicking] = useState(false);
   const [captionOpen, setCaptionOpen] = useState(false);
   const [captionLong, setCaptionLong] = useState(false);
@@ -149,6 +150,12 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         <IconButton name="chevron" label="Back" onPress={onBack} style={styles.back} />
         <View style={styles.headerActions}>
           {embed && <IconButton name="open" label="Full screen" onPress={() => setFullScreen(true)} />}
+          {/* The bell fills once a reminder is set, so the page says so without opening anything. */}
+          <IconButton
+            name={detail.remindAt && Date.parse(detail.remindAt) > Date.now() ? "alarmSet" : "alarm"}
+            label={detail.remindAt && Date.parse(detail.remindAt) > Date.now() ? "Reminder set. Change it" : "Remind me"}
+            onPress={() => setReminding(true)}
+          />
           <IconButton
             name="share"
             label="Share"
@@ -340,16 +347,6 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
               )}
             </Section>
 
-            <Section title="Remind me">
-              <RemindMe
-                remindAt={detail.remindAt}
-                busy={setReminder.isPending}
-                onSet={(at) => setReminder.mutate(at, { onSuccess: () => track(userId, "reminder_set", { hours: Math.round((at - Date.now()) / 3_600_000) }) })}
-                onClear={() => clearReminder.mutate(undefined, { onSuccess: () => track(userId, "reminder_cleared") })}
-              />
-              {(setReminder.error || clearReminder.error) && <Text style={[type.label, { color: p.bad }]}>Could not save the reminder. Please try again.</Text>}
-            </Section>
-
             {/* The person's own words come before the sorter's. */}
             <Section title="Your note">
               <TextInput
@@ -393,6 +390,16 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           </ScrollView>
         </View>
       </Modal>
+
+      <RemindSheet
+        visible={reminding}
+        remindAt={detail.remindAt}
+        busy={setReminder.isPending}
+        error={!!(setReminder.error || clearReminder.error)}
+        onSet={(at) => setReminder.mutate(at, { onSuccess: () => { track(userId, "reminder_set", { hours: Math.round((at - Date.now()) / 3_600_000) }); setReminding(false); } })}
+        onClear={() => clearReminder.mutate(undefined, { onSuccess: () => track(userId, "reminder_cleared") })}
+        onClose={() => setReminding(false)}
+      />
 
       <Modal visible={fullScreen} animationType="slide" onRequestClose={() => setFullScreen(false)} statusBarTranslucent>
         <View style={[styles.full, { backgroundColor: "#000" }]}>

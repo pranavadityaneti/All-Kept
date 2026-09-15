@@ -22,6 +22,8 @@ export const NAMES = {
   settings: "settings-outline",
   settingsActive: "settings",
   bell: "notifications-outline",
+  alarm: "alarm-outline",
+  alarmSet: "alarm",
   moon: "moon-outline",
   search: "search-outline",
   close: "close",
