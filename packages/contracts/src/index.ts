@@ -150,7 +150,7 @@ export interface ItemAiOutput {
   event_at: string | null;
 }
 
-export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "rate_limited" | "internal" | "payment_required";
+export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "rate_limited" | "internal" | "payment_required" | "unavailable";
 
 /**
  * Paid in the US, free in India. The first FREE_SAVES saves are free everywhere — a count, not a
