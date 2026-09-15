@@ -1,27 +1,13 @@
 import { PlatformLogo } from "./PlatformLogo";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { categoryLabel, sortingNote, statusNote } from "../lib/sorting";
-import { hostLabel, platformLabel } from "../lib/platforms";
+import { cardTitle, sourceLabel } from "../lib/card-text";
+import { categoryLabel, statusNote } from "../lib/sorting";
 import type { LibraryItem } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
 
-
-/**
- * Where a save came from. A platform has a name of its own; a link has an address, which is more
- * use than the word "Web" — especially for the sites that will not give us a preview, where it is
- * the only thing distinguishing one card from the next.
- */
-export function sourceLabel(item: LibraryItem): string {
-  if (item.platform !== "web") return platformLabel(item.platform);
-  return hostLabel(item.canonicalUrl ?? item.sourceUrl) ?? platformLabel(item.platform);
-}
-
-/** One line that says what the card is, whatever the item has. */
-export function cardTitle(item: LibraryItem): string {
-  const first = (s: string) => s.split("\n").map((l) => l.trim()).find((l) => l.length > 0) ?? "";
-  return item.title?.trim() || first(item.text ?? "") || item.authorName?.trim() || sourceLabel(item) || "Saved";
-}
+// The words on a card live in lib/card-text.ts, where the row can share them; kept here for the screens that import them from the card.
+export { cardTitle, sourceLabel };
 
 export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thumbnail?: string; onPress: () => void }) {
   const p = usePalette();

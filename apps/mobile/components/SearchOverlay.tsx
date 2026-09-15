@@ -5,12 +5,14 @@ import { Animated, Easing, Modal, Pressable, StyleSheet, Text, TextInput, View }
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { FilterBar } from "./FilterBar";
+import { ItemRow } from "./ItemRow";
 import { FilterSheet } from "./FilterSheet";
 import { IconButton } from "./IconButton";
 import { ItemCard } from "./ItemCard";
 import { setCollection } from "../lib/collection";
 import type { FilterGroup, Matches } from "../lib/filter-options";
 import { useFacets, useSearch, NO_FILTERS, type Filters, type LibraryItem } from "../lib/library";
+import { useLibraryView } from "../lib/library-view";
 import { track } from "../lib/metrics";
 import { useThumbnails } from "../lib/thumbnails";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -70,6 +72,7 @@ export function SearchOverlay({ visible, enabled, userId, initialQuery, onClose,
 
   const facets = useFacets(enabled && mounted);
   const results = useSearch(term, filters, enabled && mounted);
+  const [view] = useLibraryView();
   const items: LibraryItem[] = [...new Map((results.data?.pages.flatMap((page) => page.items) ?? []).map((i) => [i.id, i])).values()];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const searched = term.trim().length > 0;
@@ -127,29 +130,32 @@ export function SearchOverlay({ visible, enabled, userId, initialQuery, onClose,
           )}
 
           <FlashList
+            key={view}
             data={items}
             onEndReached={() => { if (results.hasNextPage && !results.isFetching && !results.isError) void results.fetchNextPage(); }}
             onEndReachedThreshold={0.5}
-            numColumns={2}
+            numColumns={view === "grid" ? 2 : 1}
             keyExtractor={(i) => i.id}
             contentContainerStyle={styles.list}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
+            ItemSeparatorComponent={() => <View style={{ height: view === "grid" ? space.md : space.sm }} />}
             ListFooterComponent={results.isFetchingNextPage
               ? <Text style={[type.label, styles.empty, { color: p.inkMuted }]}>Loading more…</Text>
               : results.isError && items.length > 0
                 ? <Button label="Retry loading results" onPress={() => { void (results.isFetchNextPageError ? results.fetchNextPage() : results.refetch()); }} />
                 : null}
-            renderItem={({ item, index }) => (
-              <View style={[styles.cell, index % 2 === 0 ? styles.cellLeft : styles.cellRight]}>
-                <ItemCard
-                  item={item}
-                  thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined}
-                  onPress={() => { setCollection(items.map((i) => i.id)); onOpenItem(item.id); }}
-                />
-              </View>
-            )}
+            renderItem={({ item, index }) => {
+              const thumbnail = item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined;
+              const open = () => { setCollection(items.map((i) => i.id)); onOpenItem(item.id); };
+              // Search follows the Library's choice of grid or list: one preference, every list of saves.
+              if (view === "list") return <ItemRow item={item} thumbnail={thumbnail} onPress={open} />;
+              return (
+                <View style={[styles.cell, index % 2 === 0 ? styles.cellLeft : styles.cellRight]}>
+                  <ItemCard item={item} thumbnail={thumbnail} onPress={open} />
+                </View>
+              );
+            }}
             ListEmptyComponent={
               <View style={styles.empty}>
                 <Text style={[type.body, { color: p.inkMuted }]}>

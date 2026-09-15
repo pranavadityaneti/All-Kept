@@ -40,6 +40,7 @@ export const NAMES = {
   note: "document-text-outline",
   edit: "create-outline",
   grid: "grid-outline",
+  list: "list-outline",
   apple: "logo-apple",
   sound: "volume-high-outline",
   soundOff: "volume-mute-outline",

@@ -259,10 +259,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
-### 40. Grid and list toggle, compact cards
+### 40. Grid and list toggle, compact cards — DONE 15 Sep 2026
 - **What + why:** A list view with compact cards beside the two-column grid, remembered per device. Stasht's users asked for it; Albo has it. Small.
 - **Scope:** `apps/mobile/app/(tabs)/library.tsx`, a compact row component, the view choice stored with the other Library preferences.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: `lib/library-view.ts` (one remembered choice, `useSyncExternalStore`), `components/ItemRow.tsx`, the toggle in the Library header; search follows. Verified on the simulator.
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
