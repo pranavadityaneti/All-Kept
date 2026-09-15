@@ -85,6 +85,23 @@ pace; a stop on a day it is closed is sent back once with the conflict named, th
 between towns. What fails validation twice is not shown — the person gets "Couldn't make a plan
 that holds together; try fewer days or a wider pace", never a broken plan.
 
+### The season and the occasions (Pranav, 16 Sep)
+
+The dates do more than fix the weekday hours. For the countries of the trip the public holidays
+are fetched from Nager.Date (free, factual: a holiday closes markets and fills trains); for each
+town the typical weather of those weeks comes from Open-Meteo's climate normals (free; "Kyoto,
+mid-October: 14–22 °C, some rain" — never a forecast claimed months out); and the plan names the
+seasonal things and festivals the model knows — autumn colours, a film festival — labelled
+"usually held around …, check this year's dates", never as fact.
+
+### Reviews, for judgement (Pranav, 16 Sep)
+
+Google's text search returns each place's rating, review count and price level for a little more
+per lookup; every place keeps them — saved and suggested alike — and the plan uses them three
+ways: ranking suggestions (a 4.6 from 2,100 reviews beats a 4.7 from 12), fitting the budget band
+from the price level, and warning where a saved place's crowd disagrees with its reel. Full review
+texts are left out for now: heavy in tokens, and the person's own reel is the review that matters.
+
 ## 4. The prompts
 
 ### Understand (system)
