@@ -40,7 +40,8 @@ const config: ExpoConfig = {
     entitlements: { "com.apple.security.application-groups": ["group.app.allkept.mobile"] },
     // The app uses only standard HTTPS, which is exempt. Declaring it here saves answering the
     // encryption question by hand in App Store Connect for every single build.
-    infoPlist: { ITSAppUsesNonExemptEncryption: false },
+    // comgooglemaps: so a venue can be offered to Google Maps when it is installed; canOpenURL says nothing about a scheme not listed here.
+    infoPlist: { ITSAppUsesNonExemptEncryption: false, LSApplicationQueriesSchemes: ["comgooglemaps"] },
   },
   android: {
     package: "app.allkept.mobile",

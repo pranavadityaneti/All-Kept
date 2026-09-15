@@ -38,13 +38,16 @@ export interface ItemDetail {
   siteName: string | null;
   /** When the person asked to be reminded, if they did. */
   remindAt: string | null;
+  /** Somewhere the post names to go to, and a day it names as something that happens; null when it names none. */
+  venue: { name: string; locality: string } | null;
+  eventAt: string | null;
   /** The video's shape as width ÷ height, when enrichment managed to learn it. A Short is 0.563. */
   aspect: number | null;
   /** False when the provider refuses to play this in a frame. Absent means nothing is known. */
   embeddable: boolean | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,item_ai(category,user_category,tags,summary,confidence,language,summary_language)";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,event_at)";
 
 type Row = Record<string, unknown>;
 
@@ -53,6 +56,13 @@ type Row = Record<string, unknown>;
  * for a TikTok save made before enrichment wrote aspects is the video's own frame. Anything else
  * means we never learned the shape.
  */
+/** The venue as the sorter wrote it, or null when the row has none or holds something else. */
+export function readVenue(v: unknown): { name: string; locality: string } | null {
+  if (typeof v !== "object" || v === null) return null;
+  const o = v as Record<string, unknown>;
+  return typeof o["name"] === "string" && typeof o["locality"] === "string" ? { name: o["name"], locality: o["locality"] } : null;
+}
+
 export function readAspect(meta: Record<string, unknown> | null): number | null {
   const a = meta?.["aspect"];
   if (typeof a === "number" && Number.isFinite(a) && a > 0) return a;
@@ -92,6 +102,8 @@ function toDetail(r: Row): ItemDetail {
     summary: (ai?.["summary"] as string | null) ?? null,
     siteName: (meta?.["site_name"] as string | null) ?? null,
     remindAt: (r["remind_at"] as string | null) ?? null,
+    venue: readVenue(ai?.["venue"]),
+    eventAt: (ai?.["event_at"] as string | null) ?? null,
     aspect: readAspect(meta),
     embeddable: typeof meta?.["embeddable"] === "boolean" ? (meta["embeddable"] as boolean) : null,
   };
