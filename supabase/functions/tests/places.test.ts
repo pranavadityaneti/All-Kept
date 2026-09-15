@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { appleFromSearch, googleFromSearch, pickCandidate, placeResolvedArgs, resolveVenue, runPlacesPass, sameName, type Candidate, type PlacesDeps } from "../_shared/places.ts";
+import { appleFromSearch, googleFromSearch, pickCandidate, placeResolvedArgs, refreshQuery, resolveVenue, runPlacesPass, runRefreshPass, sameName, type Candidate, type PlacesDeps } from "../_shared/places.ts";
 
 const haku = { name: "Haku", locality: "Bandra, Mumbai" };
 const candidate = (over: Partial<Candidate> = {}): Candidate => ({
@@ -78,11 +78,15 @@ Deno.test("Apple's and Google's answers are read into one shape", () => {
     location: { latitude: 19.0596, longitude: 72.8295 }, primaryType: "japanese_restaurant", businessStatus: "OPERATIONAL",
     regularOpeningHours: { weekdayDescriptions: ["Monday: 12:00 – 11:00 PM"], periods: [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }] },
     utcOffsetMinutes: 330, googleMapsUri: "https://maps.google.com/?cid=1",
-  }, { id: "ChIJ2", displayName: { text: "Nowhere" }, location: { latitude: 1, longitude: 2 } }] });
-  assertEquals(google.map((c) => [c.provider, c.providerId, c.name, c.category, c.status, c.hours, c.url, c.periods, c.utcOffsetMinutes]), [
-    ["google", "ChIJ1", "Haku", "japanese_restaurant", "OPERATIONAL", ["Monday: 12:00 – 11:00 PM"], "https://maps.google.com/?cid=1", [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }], 330],
-    // A place Google knows nothing more about: the hours and the clock are simply absent, never invented.
-    ["google", "ChIJ2", "Nowhere", null, null, null, null, null, null],
+    addressComponents: [{ longText: "Linking Rd", types: ["route"] }, { longText: "Bandra West", types: ["sublocality_level_1", "sublocality", "political"] }, { longText: "Mumbai", types: ["locality", "political"] }, { longText: "Maharashtra", types: ["administrative_area_level_1", "political"] }],
+  }, { id: "ChIJ2", displayName: { text: "Nowhere" }, location: { latitude: 1, longitude: 2 } },
+  // Weligama: no "locality" component — Google files some towns under the district — so the next level up names the place.
+  { id: "ChIJ3", displayName: { text: "The Cliff" }, location: { latitude: 5.97, longitude: 80.4 }, addressComponents: [{ longText: "Weligama", types: ["administrative_area_level_3", "political"] }, { longText: "Southern Province", types: ["administrative_area_level_1", "political"] }, { longText: "Sri Lanka", types: ["country", "political"] }] }] });
+  assertEquals(google.map((c) => [c.provider, c.providerId, c.name, c.category, c.status, c.hours, c.url, c.periods, c.utcOffsetMinutes, c.locality]), [
+    ["google", "ChIJ1", "Haku", "japanese_restaurant", "OPERATIONAL", ["Monday: 12:00 – 11:00 PM"], "https://maps.google.com/?cid=1", [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }], 330, "Mumbai"],
+    // A place Google knows nothing more about: the hours, the clock and the town are simply absent, never invented.
+    ["google", "ChIJ2", "Nowhere", null, null, null, null, null, null, null],
+    ["google", "ChIJ3", "The Cliff", null, null, null, null, null, null, "Weligama"],
   ]);
   assertEquals(apple[0]!.periods, null);
   assertEquals(appleFromSearch({}), []);
@@ -106,4 +110,35 @@ Deno.test("the pass resolves a bounded batch, saves a place or records the miss,
   assertEquals(saved, [["i1", "a1"], ["i2", "no match"]]);
   // The third row resolved but could not be saved: it counts as failed, not resolved, and is tried again next sweep.
   assertEquals(outcome, { rows: 3, resolved: 1, unresolved: 1, failed: 1 });
+});
+
+Deno.test("the refresh pass looks a place up again by its own name, keeps what came back when it is the same place, and leaves a place it cannot find as it was — dated, so it is not asked every sweep", async () => {
+  const updated: { id: string; patch: Record<string, unknown> }[] = [];
+  const out = await runRefreshPass({
+    rows: async (limit) => [
+      { id: "p1", provider: "google", providerId: "ChIJ1", name: "Haku", locality: "Mumbai", address: "Linking Rd, Bandra West, Mumbai" },
+      { id: "p2", provider: "google", providerId: "ChIJ9", name: "Gone Café", locality: null, address: "Somewhere, Pune" },
+      { id: "p3", provider: "apple", providerId: "I3", name: "Broken", locality: "Delhi", address: null },
+    ].slice(0, limit),
+    resolve: async (venue) => venue.name === "Haku"
+      ? { place: candidate({ provider: "google", providerId: "ChIJ1", name: "Haku", status: "CLOSED_PERMANENTLY", locality: "Mumbai", periods: [{ open: { day: 1, hour: 9, minute: 0 }, close: { day: 1, hour: 17, minute: 0 } }], utcOffsetMinutes: 330 }), reason: null }
+      : venue.name === "Broken" ? Promise.reject(new Error("429")) : { place: null, reason: "no match" },
+    update: async (id, patch) => { updated.push({ id, patch }); },
+    log: () => {},
+  }, 10);
+  assertEquals(out, { rows: 3, refreshed: 1, unchanged: 1, failed: 1 });
+  assertEquals(updated.map((u) => u.id), ["p1", "p2"]);
+  // The same place: its facts replaced, the closure among them.
+  assertEquals(updated[0]!.patch["status"], "CLOSED_PERMANENTLY");
+  assertEquals(updated[0]!.patch["periods"], [{ open: { day: 1, hour: 9, minute: 0 }, close: { day: 1, hour: 17, minute: 0 } }]);
+  assertEquals(updated[0]!.patch["locality"], "Mumbai");
+  // Not found this time: nothing invented, only the date moved on.
+  assertEquals(Object.keys(updated[1]!.patch), ["resolved_at"]);
+  // A place without a town is looked up by its address, which is what Google can search by.
+});
+
+Deno.test("a place is looked up again by its name and its town, or its address when the town is not known", () => {
+  assertEquals(refreshQuery({ name: "Haku", locality: "Mumbai", address: "Linking Rd, Mumbai" }), { name: "Haku", locality: "Mumbai" });
+  assertEquals(refreshQuery({ name: "Gone Café", locality: null, address: "Somewhere, Pune, Maharashtra 411001, India" }), { name: "Gone Café", locality: "Somewhere, Pune, Maharashtra 411001, India" });
+  assertEquals(refreshQuery({ name: "Lost", locality: null, address: null }), null);
 });

@@ -167,7 +167,7 @@ export function googleFromSearch(body: unknown): Candidate[] {
       providerId: o["id"],
       name,
       address: typeof o["formattedAddress"] === "string" ? o["formattedAddress"] : null,
-      locality: null,
+      locality: localityOf(o["addressComponents"]),
       lat: loc.latitude, lng: loc.longitude,
       category: typeof o["primaryType"] === "string" ? o["primaryType"] : null,
       hours: Array.isArray(hours) ? hours.filter((h): h is string => typeof h === "string") : null,
@@ -177,6 +177,20 @@ export function googleFromSearch(body: unknown): Candidate[] {
       utcOffsetMinutes: typeof o["utcOffsetMinutes"] === "number" ? o["utcOffsetMinutes"] : null,
     }];
   });
+}
+
+/**
+ * The town a place is in, from Google's address components: the locality when Google names one,
+ * else the next level up — some towns are filed under their district — and never the country.
+ */
+function localityOf(components: unknown): string | null {
+  if (!Array.isArray(components)) return null;
+  const named = (type: string): string | null => {
+    const hit = components.find((c) => Array.isArray((c as { types?: unknown })?.types) && ((c as { types: unknown[] }).types).includes(type));
+    const text = (hit as { longText?: unknown } | undefined)?.longText;
+    return typeof text === "string" && text.trim() ? text.trim() : null;
+  };
+  return named("locality") ?? named("postal_town") ?? named("administrative_area_level_3") ?? named("administrative_area_level_2") ?? null;
 }
 
 /** The arguments of place_resolved(), built in one place for the sweeper and the resolve door alike. */
@@ -209,6 +223,57 @@ export async function runPlacesPass(deps: PlacesPassDeps, limit: number): Promis
     } catch (e) {
       out.failed++;
       deps.log("places: row failed", { item: row.itemId, error: String(e).slice(0, 200) });
+    }
+  }
+  return out;
+}
+
+/** A place as the refresh pass takes it: enough to look it up again by its own name. */
+export interface PlaceToRefresh { id: string; provider: string; providerId: string; name: string; locality: string | null; address: string | null }
+
+/** The venue to look a known place up by: its name and its town, or its address when the town is not known. Nothing to search by is nothing to refresh. */
+export function refreshQuery(place: { name: string; locality: string | null; address: string | null }): Venue | null {
+  const locality = place.locality?.trim() || place.address?.trim() || "";
+  return place.name.trim() && locality ? { name: place.name.trim(), locality } : null;
+}
+
+export interface RefreshPassDeps {
+  /** Places whose facts are old or missing, oldest first, up to the limit. */
+  rows(limit: number): Promise<PlaceToRefresh[]>;
+  resolve(venue: Venue): Promise<Resolution>;
+  /** Writes the fields given onto the place. */
+  update(id: string, patch: Record<string, unknown>): Promise<void>;
+  log(message: string, meta?: Record<string, unknown>): void;
+}
+
+/**
+ * The liveness pass: a place is looked up again by its own name now and then, so a closure, new
+ * hours or a town it lacked catch up. What comes back replaces the place's facts only when it is
+ * the same place by name; a place not found this time is left as it was, dated so it is not asked
+ * again every sweep — nothing is invented about it. One place's failure never the batch's.
+ */
+export async function runRefreshPass(deps: RefreshPassDeps, limit: number): Promise<{ rows: number; refreshed: number; unchanged: number; failed: number }> {
+  const rows = await deps.rows(limit);
+  const out = { rows: rows.length, refreshed: 0, unchanged: 0, failed: 0 };
+  for (const row of rows) {
+    try {
+      const venue = refreshQuery(row);
+      const found = venue ? (await deps.resolve(venue)).place : null;
+      const same = found && sameName(row.name, found.name) ? found : null;
+      if (same) {
+        await deps.update(row.id, {
+          provider: same.provider, provider_id: same.providerId, name: same.name, address: same.address, locality: same.locality ?? row.locality,
+          lat: same.lat, lng: same.lng, category: same.category, hours: same.hours, status: same.status, url: same.url,
+          periods: same.periods, utc_offset_minutes: same.utcOffsetMinutes, resolved_at: new Date().toISOString(),
+        });
+        out.refreshed++;
+      } else {
+        await deps.update(row.id, { resolved_at: new Date().toISOString() });
+        out.unchanged++;
+      }
+    } catch (e) {
+      out.failed++;
+      deps.log("refresh: place failed", { place: row.id, error: String(e).slice(0, 200) });
     }
   }
   return out;

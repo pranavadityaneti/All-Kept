@@ -5,7 +5,7 @@ import { PROMPT_VERSION } from "../_shared/classify.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
 import { runIconPass, type IconRow } from "../_shared/entity-icons.ts";
-import { placeResolvedArgs, resolveVenue, runPlacesPass, venueQuery, type Venue } from "../_shared/places.ts";
+import { placeResolvedArgs, resolveVenue, runPlacesPass, runRefreshPass, venueQuery, type PlaceToRefresh, type Venue } from "../_shared/places.ts";
 import { providersFromEnv } from "../_shared/place-providers.ts";
 import { readSnippet, runSnippetPass } from "../_shared/youtube-snippet.ts";
 import { json, readJson } from "../_shared/http.ts";
@@ -17,6 +17,8 @@ const BATCH = 50;
 const RESORT_BATCH = 20;
 /** Venues looked up per sweep: a few, since each is a call to Apple or Google and a venue is rare. */
 const PLACES_BATCH = 10;
+/** Places looked up again per sweep for a closure, new hours or a town they lacked: fewer still, since nothing waits on them. */
+const REFRESH_BATCH = 5;
 /** YouTube saves asked for their description and picture per sweep: one Data API unit each; a library of them drains in a few sweeps. */
 const SNIPPETS_BATCH = 20;
 /** How long the snippet pass may take: a save given its picture is sorted again with it before the pass moves on. */
@@ -150,6 +152,26 @@ Deno.serve(async (req) => {
         }, PLACES_BATCH);
         if (places.rows > 0) deps.log("sweeper: places", places);
       } catch (e) { console.error("sweeper: places pass failed", { error: String(e).slice(0, 200) }); }
+      // 7b. Liveness: a place is looked up again by its own name now and then, so a closure, new
+      //     hours or a town it lacked catch up. What comes back replaces its facts only when it is
+      //     the same place by name; one not found is dated and left as it was.
+      try {
+        const refreshed = await runRefreshPass({
+          async rows(limit) {
+            const { data, error } = await db.rpc("places_to_refresh", { lim: limit });
+            if (error) throw error;
+            return ((data ?? []) as { id: string; provider: string; provider_id: string; name: string; locality: string | null; address: string | null }[])
+              .map((r): PlaceToRefresh => ({ id: r.id, provider: r.provider, providerId: r.provider_id, name: r.name, locality: r.locality, address: r.address }));
+          },
+          resolve: (venue) => resolveVenue(venue, { apple: providers.apple ?? (async () => []), google: providers.google }),
+          async update(id, patch) {
+            const { error } = await db.from("places").update({ ...patch, refreshed_at: new Date().toISOString() }).eq("id", id);
+            if (error) throw error;
+          },
+          log: deps.log,
+        }, REFRESH_BATCH);
+        if (refreshed.rows > 0) deps.log("sweeper: places refreshed", refreshed);
+      } catch (e) { console.error("sweeper: refresh pass failed", { error: String(e).slice(0, 200) }); }
     }
     // 8. YouTube saves that settled before enrichment read the video's snippet: asked once each for
     //    the description and the picture they lack. A description written as the save's text
