@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import { runClassification, retryableClassificationError, type ClassificationClaim, type ClassificationWorkerDeps } from "../_shared/classification-worker.ts";
 
-const claim: ClassificationClaim = { lease: "test", revision: 1, attempt: 1, platform: "web", kind: "article", url: null, title: "Cooking", text: null, author: null, note: null, language: "en" };
+const claim: ClassificationClaim = { lease: "test", revision: 1, attempt: 1, platform: "web", kind: "article", url: null, title: "Cooking", text: null, author: null, note: null, language: "en", savedAt: "2026-09-15T08:00:00Z" };
 function fixture(overrides: Partial<ClassificationWorkerDeps> = {}) {
   const finished: { error: string | null; retryable: boolean }[] = [];
   const deps: ClassificationWorkerDeps = {

@@ -2,7 +2,7 @@
 import { ACTIONABILITY, CATEGORIES, CATEGORY_GUIDE, ENTITY_TYPES, UNSURE_BELOW } from "./contracts.ts";
 import type { Actionability, Category, EntityType, ItemAiOutput } from "./contracts.ts";
 
-export const PROMPT_VERSION = "2026-09-17.1";
+export const PROMPT_VERSION = "2026-09-18.1";
 
 export interface ClassifyInput {
   platform: string;
@@ -14,6 +14,8 @@ export interface ClassifyInput {
   note: string | null;
   /** The reader's language, an ISO 639 code: the summary is written in it, whatever the post is in. */
   language: string;
+  /** When the save was made, ISO 8601: the anchor for a relative date in the post ("this Friday"), as near the post's own date as we have. */
+  savedAt: string;
 }
 
 export interface ModelUsage {
@@ -78,6 +80,8 @@ ${TIE_BREAKERS.map((rule, i) => `  ${i + 1}. ${rule}`).join("\n")}
 - language: ISO 639-1 code of the main language of the post's text.
 - actionability: watch (a video to watch), try (a recipe, workout or how-to to attempt), buy (a product), go (a place to visit), read (an article or thread), reference (facts or tools to keep), none.
 - confidence: 0 to 1, your confidence in the category. Below ${UNSURE_BELOW} means you are guessing, and the save is filed under "Other".
+- venue: {name, locality} when the post names somewhere a person could go to — a restaurant, a café, a shop, a hotel, a viewpoint, a venue — name as the post names it, locality the neighbourhood, city or area that places it; null when there is none. A country or a city alone is not a venue. Only a place the content names, never one guessed from a hashtag or a mood.
+- event_at: an ISO 8601 date, or date-time with offset, when the post names a day something happens — a concert, a launch, a sale ending, a deadline; null when there is none. Resolve relative words ("this Friday") against the day given under "saved on"; when only a day is named, give the date alone. A day already gone by is not an event.
 Judge from the content only. Hashtags and emoji are weak signals. If the text is empty, use the link, kind and author.
 A picture may be attached: the saved post's own poster frame or photo. Captions often describe how a post was made (credits, tools, "edit") or its mood (aesthetic hashtags) rather than what it shows; the picture is the subject, so judge the category from it and treat such a caption as a weak signal. Without a picture, when the caption is only credits, mood or hashtags, prefer the subject if the words let you infer it, else "Other" with low confidence rather than a category for the making.`;
 
@@ -86,14 +90,37 @@ export function buildUserMessage(i: ClassifyInput): string {
   return [
     `platform: ${i.platform}`, `kind: ${i.kind}`, `link: ${i.url ?? "(none)"}`, `author: ${i.author ?? "(none)"}`,
     `title: ${clip(i.title, 300)}`, `caption or text: ${clip(i.text, 1500)}`, `person's note: ${clip(i.note, 300)}`,
-    `write in: ${i.language}`,
+    `write in: ${i.language}`, `saved on: ${i.savedAt.slice(0, 10)}`,
   ].join("\n");
 }
 
 const isStr = (v: unknown): v is string => typeof v === "string";
 
+const MAX_PLACE_CHARS = 80;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$/;
+
+/** A venue is two halves, each some words; anything else — a city alone, a string, a list — is no venue. */
+function venueFrom(v: unknown): { name: string; locality: string } | null {
+  if (typeof v !== "object" || v === null) return null;
+  const o = v as Record<string, unknown>;
+  const name = isStr(o["name"]) ? o["name"].trim() : "";
+  const locality = isStr(o["locality"]) ? o["locality"].trim() : "";
+  const fits = (s: string) => s.length >= 2 && s.length <= MAX_PLACE_CHARS;
+  return fits(name) && fits(locality) ? { name, locality } : null;
+}
+
+/** A date the clock can read, still to come: a day already gone is history, and a bare word ("Friday") is a guess. */
+function eventFrom(v: unknown, now: Date): string | null {
+  if (!isStr(v) || !ISO_DATE.test(v.trim())) return null;
+  const at = Date.parse(v.trim());
+  if (!Number.isFinite(at)) return null;
+  // A day named without a time is the whole day; it has gone only once the day after has begun.
+  const dayEnd = v.trim().length === 10 ? at + 86_400_000 : at;
+  return dayEnd > now.getTime() ? v.trim() : null;
+}
+
 /** Validates and normalises the model's JSON; returns null when it cannot be trusted. */
-export function validateOutput(v: unknown): ItemAiOutput | null {
+export function validateOutput(v: unknown, now: Date = new Date()): ItemAiOutput | null {
   if (typeof v !== "object" || v === null) return null;
   const o = v as Record<string, unknown>;
   if (!isStr(o["category"]) || !(CATEGORIES as readonly string[]).includes(o["category"])) return null;
@@ -115,6 +142,8 @@ export function validateOutput(v: unknown): ItemAiOutput | null {
     language: isStr(o["language"]) && /^[a-z]{2}$/i.test(o["language"]) ? o["language"].toLowerCase() : "und",
     actionability,
     confidence,
+    venue: venueFrom(o["venue"]),
+    event_at: eventFrom(o["event_at"], now),
   };
 }
 

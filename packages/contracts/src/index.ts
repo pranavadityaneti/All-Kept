@@ -144,6 +144,10 @@ export interface ItemAiOutput {
   language: string;
   actionability: Actionability;
   confidence: number;
+  /** Somewhere a person could go to, when the post names one: the place as named, and what places it. Null when there is none. */
+  venue: { name: string; locality: string } | null;
+  /** A date the post names as something that happens — an event, a launch, a deadline — as ISO 8601. Null when there is none. */
+  event_at: string | null;
 }
 
 export type ApiErrorCode = "bad_request" | "unauthorized" | "not_found" | "rate_limited" | "internal" | "payment_required";
