@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 
 export type EventName = | "app_open" | "library_view" | "item_open" | "open_original" | "share_out"
-  | "search" | "category_changed" | "sort_again" | "reminder_set" | "reminder_cleared" | "copy_text" | "way_out" | "marked_done" | "unmarked_done" | "note_saved" | "link_started" | "link_completed"
+  | "search" | "category_changed" | "sort_again" | "reminder_set" | "reminder_cleared" | "copy_text" | "way_out" | "marked_done" | "unmarked_done" | "embed_gated" | "note_saved" | "link_started" | "link_completed"
   | "paste_link" | "item_deleted"
   | "import_opened" | "import_started" | "import_finished" | "import_failed"
   | "interest_opened"

@@ -71,15 +71,17 @@ const STAY = `
       if (!link) return;
       e.preventDefault();
       var href = link.href || '';
-      if (/instagram\\.com\\/(reel|reels|p|tv)\\//.test(href) && window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({ kind: 'open', url: href }));
-      }
+      if (!/instagram\\.com\\/(reel|reels|p|tv)\\//.test(href)) return;
+      // "Watch again": the video is here and ended, so it plays again here. "Watch": there is none, so it opens where there is.
+      var v = document.querySelector('video');
+      if (v) { try { v.currentTime = 0; var p = v.play(); if (p && p.catch) { p.catch(function () {}); } } catch (err) {} return; }
+      if (window.ReactNativeWebView) { window.ReactNativeWebView.postMessage(JSON.stringify({ kind: 'open', url: href })); }
     }, true);
     true;
   })();
 `;
 
-export function EmbedPlayer({ url, width, height, onHeight, interactive = false, active = true, onUnplayable, onPicture }: {
+export function EmbedPlayer({ url, width, height, onHeight, interactive = false, active = true, onUnplayable, onPicture, onNoVideo }: {
   url: string;
   width: number;
   height: number;
@@ -93,6 +95,8 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
   onUnplayable?: () => void;
   /** Given only for a save with no picture of its own: the address of the one the page is showing. */
   onPicture?: (url: string) => void;
+  /** The page settled without a video: for a reel, Instagram is not serving it here. Said once. */
+  onNoVideo?: () => void;
 }) {
   const p = usePalette();
   const [loading, setLoading] = useState(true);
@@ -164,7 +168,7 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
           onShouldStartLoadWithRequest={stayOnEmbed}
           onMessage={(event) => {
             const said = readPlayerMessage(event.nativeEvent.data);
-            if (said?.kind === "player") { setHasVideo(said.hasVideo); return; }
+            if (said?.kind === "player") { setHasVideo(said.hasVideo); if (said.settled && !said.hasVideo) onNoVideo?.(); return; }
             if (said?.kind === "tiktok") { if (said.type === "onError") onUnplayable?.(); return; }
             if (said?.kind === "picture") { onPicture?.(said.url); return; }
             // "Watch on Instagram": the embed cannot play this one, so the reel opens where it can.

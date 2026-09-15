@@ -73,7 +73,8 @@ export const PLAYER_SCRIPT = `
       var observer = new MutationObserver(function () { if (look()) { observer.disconnect(); } });
       observer.observe(document.documentElement, { childList: true, subtree: true });
       var poll = setInterval(function () {
-        if (look() || Date.now() - started > ${VIDEO_WAIT_MS}) { clearInterval(poll); observer.disconnect(); if (!video) { report(); } }
+        // Giving up is its own report: "there is no video", not "not yet", so the app can say so.
+        if (look() || Date.now() - started > ${VIDEO_WAIT_MS}) { clearInterval(poll); observer.disconnect(); if (!video) { post({ kind: 'player', hasVideo: false, playing: false, muted: true, settled: true }); } }
       }, 250);
     }
     window.addEventListener('message', function (e) {
@@ -147,7 +148,8 @@ export function stateScript(state: PlayerState): string {
 }
 
 export type PlayerMessage =
-  | { kind: "player"; hasVideo: boolean; playing: boolean; muted: boolean }
+  /** `settled`: the page gave up waiting for a video — the one report that means "there is none" rather than "not yet". */
+  | { kind: "player"; hasVideo: boolean; playing: boolean; muted: boolean; settled: boolean }
   | { kind: "tiktok"; type: string; value: unknown }
   | { kind: "picture"; url: string }
   /** A tap on the post's own link inside the embed — "Watch on Instagram" — which the embed cannot follow itself. */
@@ -168,7 +170,7 @@ export function readPlayerMessage(data: string): PlayerMessage | null {
   try {
     const m = JSON.parse(data) as Record<string, unknown>;
     if (m && m["kind"] === "player") {
-      return { kind: "player", hasVideo: m["hasVideo"] === true, playing: m["playing"] === true, muted: m["muted"] !== false };
+      return { kind: "player", hasVideo: m["hasVideo"] === true, playing: m["playing"] === true, muted: m["muted"] !== false, settled: m["settled"] === true };
     }
     if (m && m["kind"] === "tiktok" && typeof m["type"] === "string") return { kind: "tiktok", type: m["type"], value: m["value"] };
     if (m && m["kind"] === "picture" && typeof m["url"] === "string") return { kind: "picture", url: m["url"] };

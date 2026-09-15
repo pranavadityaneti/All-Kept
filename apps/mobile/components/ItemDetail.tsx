@@ -80,6 +80,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const [fullScreen, setFullScreen] = useState(false);
   // The provider itself said there is nothing here to play (a removed TikTok post): the picture stands in.
   const [unplayable, setUnplayable] = useState(false);
+  // Instagram is not serving this reel outside its app: our own picture stands in, with a way there.
+  const [gated, setGated] = useState(false);
   // Asked at most once per screen, and only while the save still has no picture of its own.
   const askedForPicture = useRef(false);
   const [zoomed, setZoomed] = useState(false);
@@ -175,7 +177,22 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
       </View>
 
       <View style={styles.media}>
-        {embed ? (
+        {gated && thumbnail && url ? (
+          // Instagram serves some reels only in its own app — which ones is its rule, not ours. Its grey
+          // card said so in its words; this says so in ours, over the reel's own picture, and the tap goes there.
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Instagram plays this reel only in its app. Open it there"
+            onPress={() => { track(userId, "open_original", { platform: detail.platform, gated: true }); void openLink(url); }}
+            style={[styles.gated, { width: playerWidth, height: box.height }]}
+          >
+            <Image source={{ uri: thumbnail }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
+            <View style={styles.gatedNote}>
+              <Icon name="instagram" size={18} color="#FFFFFF" />
+              <Text style={[type.label, styles.gatedText]}>Instagram plays this reel only in its app — tap to watch there</Text>
+            </View>
+          </Pressable>
+        ) : embed ? (
           // Touches belong to the embed. A carousel is turned by the arrows Instagram draws inside it,
           // and with the saves paged vertically nothing else wants the sideways swipe any more. It is
           // paused while the full-screen copy is up, so the two are never playing the same reel at once.
@@ -187,6 +204,9 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             interactive
             active={active && !fullScreen}
             onUnplayable={() => setUnplayable(true)}
+            {...(detail.platform === "instagram" && (detail.kind === "short_video" || detail.kind === "video") && thumbnail ? {
+              onNoVideo: () => { if (!gated) { setGated(true); track(userId, "embed_gated", { platform: detail.platform }); } },
+            } : {})}
             {...(detail.thumbnailPath ? {} : {
               onPicture: (picture: string) => {
                 if (askedForPicture.current) return;
@@ -512,6 +532,9 @@ const styles = StyleSheet.create({
   back: { transform: [{ rotate: "180deg" }] },
   media: { flex: 1, alignItems: "center", justifyContent: "center" },
   hero: { borderRadius: radius.lg },
+  gated: { borderRadius: radius.lg, overflow: "hidden", justifyContent: "flex-end" },
+  gatedNote: { flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.md, backgroundColor: "rgba(0,0,0,0.55)" },
+  gatedText: { color: "#FFFFFF", flex: 1 },
   // No fixed ratio any more: it now holds an address of unknown length and a button, and a box that
   // cannot grow either clips them or leaves them floating in the middle of nothing.
   blank: { minHeight: 180, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", gap: space.sm, padding: space.lg },

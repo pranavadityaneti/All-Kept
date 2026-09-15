@@ -54,7 +54,11 @@ describe("the script every player runs", () => {
 describe("what the player says back", () => {
   it("reads a player report and a TikTok error, and ignores anything else", () => {
     expect(readPlayerMessage(JSON.stringify({ kind: "player", hasVideo: true, playing: true, muted: true })))
-      .toEqual({ kind: "player", hasVideo: true, playing: true, muted: true });
+      .toEqual({ kind: "player", hasVideo: true, playing: true, muted: true, settled: false });
+    // The page gave up waiting for a video: the one report that means "there is none", not "not yet".
+    expect(readPlayerMessage(JSON.stringify({ kind: "player", hasVideo: false, playing: false, muted: true, settled: true })))
+      .toEqual({ kind: "player", hasVideo: false, playing: false, muted: true, settled: true });
+    expect(PLAYER_SCRIPT).toContain("settled: true");
     expect(readPlayerMessage(JSON.stringify({ kind: "tiktok", type: "onError", value: { code: 1001 } })))
       .toEqual({ kind: "tiktok", type: "onError", value: { code: 1001 } });
     expect(readPlayerMessage(JSON.stringify({ h: 640, w: 360 }))).toBeNull();
