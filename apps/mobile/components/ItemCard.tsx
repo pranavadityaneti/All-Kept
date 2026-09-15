@@ -18,7 +18,7 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${cardTitle(item)}, ${category}, ${sourceLabel(item)}${item.doneAt ? ", done" : ""}`}
+      accessibilityLabel={`${cardTitle(item)}, ${category}, ${sourceLabel(item)}${item.placeName ? `, at ${item.placeName}` : ""}${item.doneAt ? ", done" : ""}`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, { backgroundColor: p.surface, borderColor: p.border, opacity: pressed ? 0.85 : 1 }]}
     >
@@ -39,6 +39,7 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
         <Text numberOfLines={2} style={[type.body, { color: p.ink }]}>{cardTitle(item)}</Text>
         <View style={styles.footer}>
           <Text numberOfLines={1} style={[type.label, styles.category, { color: item.category ? p.accent : p.inkMuted }]}>{category}</Text>
+          {item.placeName && <Icon name="pin" size={16} color={p.accent} />}
           {item.doneAt && <Icon name="doneSet" size={16} color={p.accent} />}
         </View>
       </View>

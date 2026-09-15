@@ -3,6 +3,7 @@ import type { ClassificationStatus, ReprocessItemResponse } from "@allkept/contr
 import { parseAttachedLink } from "./attach-link";
 import { invalidateLibrary } from "./library";
 import { cancelReminder, scheduleReminder } from "./reminders";
+import type { OpeningPeriod } from "./hours";
 import { supabase } from "./supabase";
 import { forgetThumbnail } from "./thumbnails";
 
@@ -43,7 +44,7 @@ export interface ItemDetail {
   /** The venue in the person's own words, when they named one; it stands over the sorter's. */
   userVenue: { name: string; locality: string } | null;
   /** The venue as the server looked it up — a pin, an address, a status — when it has. */
-  place: { name: string; address: string | null; lat: number; lng: number; status: string | null; url: string | null } | null;
+  place: { name: string; address: string | null; lat: number; lng: number; status: string | null; url: string | null; periods: OpeningPeriod[] | null; utcOffsetMinutes: number | null } | null;
   eventAt: string | null;
   /** What the sorter thought the save was for — the verb "done" takes. */
   intent: string | null;
@@ -56,7 +57,7 @@ export interface ItemDetail {
   embeddable: boolean | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,done_at,journal,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,user_venue,event_at,actionability,place:places(name,address,lat,lng,status,url))";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,done_at,journal,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,user_venue,event_at,actionability,place:places(name,address,lat,lng,status,url,periods,utc_offset_minutes))";
 
 type Row = Record<string, unknown>;
 
@@ -70,7 +71,12 @@ export function readPlace(v: unknown): ItemDetail["place"] {
   if (typeof v !== "object" || v === null) return null;
   const o = v as Record<string, unknown>;
   if (typeof o["name"] !== "string" || typeof o["lat"] !== "number" || typeof o["lng"] !== "number") return null;
-  return { name: o["name"], address: typeof o["address"] === "string" ? o["address"] : null, lat: o["lat"], lng: o["lng"], status: typeof o["status"] === "string" ? o["status"] : null, url: typeof o["url"] === "string" ? o["url"] : null };
+  return {
+    name: o["name"], address: typeof o["address"] === "string" ? o["address"] : null, lat: o["lat"], lng: o["lng"],
+    status: typeof o["status"] === "string" ? o["status"] : null, url: typeof o["url"] === "string" ? o["url"] : null,
+    periods: Array.isArray(o["periods"]) ? (o["periods"] as OpeningPeriod[]) : null,
+    utcOffsetMinutes: typeof o["utc_offset_minutes"] === "number" ? (o["utc_offset_minutes"] as number) : null,
+  };
 }
 
 /** The venue as the sorter wrote it, or null when the row has none or holds something else. */

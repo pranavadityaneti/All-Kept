@@ -105,3 +105,32 @@ One migration (two columns, the finish function). Prompt change and validator; d
 and `reprocess-item` on Pranav's Yes; the library re-sorts itself over the next hour. App change
 in its own commit. `app.config.ts` gains the query scheme — that is picked up by the next EAS
 build (tonight's), not before; until then the long-press to Google Maps is simply absent on iOS.
+
+## 6. Stage B addendum, 15 Sep 2026 — the map of saved places, and what the place knows
+
+Decided with Pranav: the map is the library's third view (grid · list · map), under the same
+filters; "open now" is included; the Android key comes from the build's environment.
+
+- **The map.** `saved_places()` returns every save with a place under the library's own filters,
+  all at once (bounded at 500) — a map is not paged. `PlacesMap` draws them as pins on Apple's map
+  (iOS 17+) or Google's (Android, key from `GOOGLE_MAPS_ANDROID_KEY`), framed by `cameraFor`; a
+  tap on a pin brings up the save's card — picture, title, place and address, and whether it is
+  open now — and a tap on the card opens the save. `expo-maps` is required on first use, not at
+  import, so a build without it (a development client made before the module) shows words rather
+  than going dark. The empty state says what lands here and that a place can be added by hand.
+- **The pin.** `library_query_v7` and `search_library_v4` carry `place_name`, so cards and rows
+  wear a pin for a save with a place — everywhere a save is listed, found or browsed. Search rows
+  now carry the reminder and the tick as well, which they had lacked.
+- **Open now.** Google structures a place's hours as periods and gives its offset from UTC; both
+  are kept on `places` (`periods`, `utc_offset_minutes`) and read on the phone by `openNow` /
+  `hoursLine` — "Open now · until 11 PM", "Closed · opens 9 AM" (the day named only when the next
+  opening is more than a day away), "Open 24 hours" — on the map's card and under the details'
+  place chip. Apple gives no hours, so **Google is asked first** now and Apple when Google has
+  nothing that matches or no key is configured: a venue is rare enough that the call is cheap, and
+  Google alone knows the hours, whether the place still exists and its own page. The places found
+  before this are looked up again once, at the next sweep, for their hours.
+- **A venue by its words.** `venue_key(jsonb)` folds case, punctuation and spacing; the finish
+  compares keys, so a re-sort that moves a comma keeps the place instead of looking it up again.
+- **Rollout.** Migration `20260918180000_places_on_the_map.sql` first (the app calls v7 and
+  `saved_places` as soon as the build carries it), then `sweeper`, `resolve-place` and
+  `search-library`; the app rides tonight's build, which carries `expo-maps`.

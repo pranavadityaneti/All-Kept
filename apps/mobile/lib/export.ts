@@ -3,6 +3,8 @@
  * rules — the strings the phone hands over — kept free of runtime imports so they can be tested.
  */
 
+import type { OpeningPeriod } from "./hours";
+
 export interface Venue { name: string; locality: string }
 
 const place = (v: Venue) => encodeURIComponent(`${v.name}, ${v.locality}`);
@@ -14,7 +16,11 @@ export function mapsUrl(venue: Venue, platform: "ios" | "android", app: "default
 }
 
 /** A venue the server looked up: the pin itself, and what the service said about it. */
-export interface Place { name: string; address: string | null; lat: number; lng: number; status: string | null }
+export interface Place {
+  name: string; address: string | null; lat: number; lng: number; status: string | null;
+  /** Google's opening periods and the place's clock, when it gave them; the details say "Open now" from these. */
+  periods?: OpeningPeriod[] | null; utcOffsetMinutes?: number | null;
+}
 
 /** The maps at the pin, named — no search, no guess — on the phone's own maps or Google's. */
 export function placeMapsUrl(place: Place, platform: "ios" | "android", app: "default" | "google" = "default"): string {

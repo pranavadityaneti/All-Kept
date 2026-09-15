@@ -15,6 +15,11 @@ const revenuecatKey = (name: string): string => {
 };
 
 /** Identifiers are fixed in the Phase 0 spec: display name Allkept, bundle id and package app.allkept.mobile, scheme allkept. */
+// An Android build without the maps key builds clean and draws a blank map; said here, where the build log shows it.
+if (process.env["EAS_BUILD_PLATFORM"] === "android" && !process.env["GOOGLE_MAPS_ANDROID_KEY"]) {
+  console.warn("GOOGLE_MAPS_ANDROID_KEY is not set: the map of saved places will draw blank on Android.");
+}
+
 const config: ExpoConfig = {
   name: "Allkept",
   slug: "all-kept", // matches the EAS project and the GitHub repository; not visible in the app
@@ -55,6 +60,11 @@ const config: ExpoConfig = {
     // White, not the app's dark ground: the mark's lower edge is an alpha fade to cream, drawn
     // for a white background. Over anything dark it composites to a muddy tan.
     adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FFFFFF" },
+    // The map of saved places is Google's on Android, and Google wants a key in the manifest. It is
+    // restricted to this package in Google Cloud and ships inside the APK regardless, but it comes
+    // from the build's environment (an EAS variable, or .env locally), not from this file. Absent,
+    // the app builds and the map view draws blank, so an Android build without it is warned about.
+    ...(process.env["GOOGLE_MAPS_ANDROID_KEY"] ? { config: { googleMaps: { apiKey: process.env["GOOGLE_MAPS_ANDROID_KEY"] } } } : {}),
   },
   // The EAS project Pranav created on 8 Sep 2026. Builds and over-the-air updates resolve through it.
   extra: {

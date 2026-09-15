@@ -10,14 +10,13 @@ import { categoryLabel } from "./sorting";
  * One choice, remembered on the phone, held in one place and read live by every list, so a switch
  * made in the Library is what search shows a moment later rather than a surprise. Grid until told.
  */
-export type LibraryView = "grid" | "list";
+export type LibraryView = "grid" | "list" | "map";
+/** In the order the switch shows them. The map holds only the saves with a place, under the same filters. */
+export const VIEWS: readonly LibraryView[] = ["grid", "list", "map"];
 
 const KEY = "allkept.library.view";
 
-export const parseLibraryView = (raw: unknown): LibraryView => (raw === "list" ? "list" : "grid");
-
-/** The view a tap on the toggle would switch to — which is what the toggle's icon shows. */
-export const otherView = (view: LibraryView): LibraryView => (view === "grid" ? "list" : "grid");
+export const parseLibraryView = (raw: unknown): LibraryView => (raw === "list" || raw === "map" ? raw : "grid");
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

@@ -46,6 +46,8 @@ export const NAMES = {
   edit: "create-outline",
   grid: "grid-outline",
   list: "list-outline",
+  map: "map-outline",
+  pin: "location-outline",
   apple: "logo-apple",
   sound: "volume-high-outline",
   soundOff: "volume-mute-outline",

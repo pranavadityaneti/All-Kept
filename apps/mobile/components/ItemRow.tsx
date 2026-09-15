@@ -21,7 +21,7 @@ export function ItemRow({ item, thumbnail, onPress }: { item: LibraryItem; thumb
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${cardTitle(item)}, ${rowMeta(item)}${item.doneAt ? ", done" : ""}`}
+      accessibilityLabel={`${cardTitle(item)}, ${rowMeta(item)}${item.placeName ? `, at ${item.placeName}` : ""}${item.doneAt ? ", done" : ""}`}
       onPress={onPress}
       style={({ pressed }) => [styles.row, { backgroundColor: p.surface, borderColor: p.border, opacity: pressed ? 0.85 : 1 }]}
     >
@@ -39,6 +39,7 @@ export function ItemRow({ item, thumbnail, onPress }: { item: LibraryItem; thumb
           {note ? ` · ${note}` : ""}
         </Text>
       </View>
+      {item.placeName && <Icon name="pin" size={18} color={p.accent} />}
       {item.doneAt && <Icon name="doneSet" size={18} color={p.accent} />}
     </Pressable>
   );

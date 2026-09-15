@@ -2,11 +2,12 @@ import * as Clipboard from "expo-clipboard";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
-import { Linking, Platform, StyleSheet, View } from "react-native";
+import { Linking, Platform, StyleSheet, Text, View } from "react-native";
 import { Chip } from "./Chip";
 import { Icon } from "./Icon";
 import { describeEvent, icsFor, mapsUrl, placeLine, placeMapsUrl, type Place, type Venue } from "../lib/export";
-import { space, usePalette } from "../lib/theme";
+import { hoursLine } from "../lib/hours";
+import { space, type, usePalette } from "../lib/theme";
 
 /**
  * The ways out of a save, as chips beside its facts: the venue opens Maps, the day hands an
@@ -20,6 +21,7 @@ export function WaysOut({ save, onOpened, onEditPlace }: {
   onEditPlace: () => void;
 }) {
   const p = usePalette();
+  const hours = save.place ? hoursLine(save.place.periods, save.place.utcOffsetMinutes, new Date()) : null;
   const [googleMaps, setGoogleMaps] = useState(false);
   useEffect(() => {
     if (Platform.OS !== "ios" || !save.venue) return;
@@ -60,6 +62,7 @@ export function WaysOut({ save, onOpened, onEditPlace }: {
       {save.venue && googleMaps && (
         <Chip label="Google Maps" accessibilityLabel={`Open ${save.venue.name} in Google Maps`} onPress={() => { void openMaps("google"); }} />
       )}
+      {hours && <Text style={[type.label, styles.hours, { color: hours.startsWith("Open") ? p.good : p.inkMuted }]}>{hours}</Text>}
       <Chip label={save.venue ? "Change place" : "+ Add place"} accessibilityLabel={save.venue ? "Change the place" : "Add the place"} onPress={onEditPlace} />
       {save.eventAt && (
         <Chip
@@ -88,4 +91,6 @@ export const copyToClipboard = (text: string): Promise<boolean> => Clipboard.set
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  // A whole line of its own under the chips: the hours are a fact about the place, not a way out.
+  hours: { width: "100%" },
 });

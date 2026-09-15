@@ -16,7 +16,9 @@ import { ItemCard } from "../../components/ItemCard";
 import { activeFilters, exactMatches, type Matches } from "../../lib/filter-options";
 import { useFilters } from "../../lib/filters";
 import { shouldShowSummary } from "../../lib/category-summary";
-import { otherView, useLibraryView } from "../../lib/library-view";
+import { useLibraryView } from "../../lib/library-view";
+import { PlacesMap } from "../../components/PlacesMap";
+import { ViewSwitch } from "../../components/ViewSwitch";
 import { NO_FILTERS, ownCategories, useFacets, useLibrary, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
@@ -49,6 +51,7 @@ export default function Library() {
   const userId = ready ? session.userId : null;
   useTrackOnce(userId, "app_open");
   useTrackOnce(userId, "library_view");
+  useTrackOnce(view === "map" ? userId : null, "map_view");
 
   const items: LibraryItem[] = library.data?.pages.flatMap((page) => page.items) ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
@@ -69,13 +72,15 @@ export default function Library() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <ScreenHeader>
-        {/* The toggle wears the view a tap would give, the way most apps do it. */}
-        {items.length > 0 && <IconButton name={otherView(view)} label={view === "grid" ? "Show as a list" : "Show as a grid"} onPress={() => setView(otherView(view))} />}
+        {(items.length > 0 || view === "map") && <ViewSwitch view={view} onChange={setView} />}
         {(items.length > 0 || hasFilters) && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
       </ScreenHeader>
 
       <FilterBar facets={facets.data} filters={filters} matches={matches} onOpen={() => setFiltering(true)} onRemove={toggle} onClear={clear} />
 
+      {view === "map" ? (
+        <PlacesMap filters={filters} enabled={ready && loaded} onOpen={(id) => router.push({ pathname: "/item/[id]", params: { id } })} />
+      ) : (
       <FlashList
         key={view}
         data={items}
@@ -140,6 +145,7 @@ export default function Library() {
         }
         ListFooterComponent={library.isFetchingNextPage ? <Text style={[type.label, styles.footer, { color: p.inkMuted }]}>Loading more…</Text> : null}
       />
+      )}
 
       <FilterSheet
         visible={filtering}
