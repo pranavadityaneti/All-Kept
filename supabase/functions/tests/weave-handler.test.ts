@@ -84,8 +84,8 @@ Deno.test("plan: the chosen saves, a suggestion for a gap, the season fetched, t
   const body = await res.json() as { plan: { days: { town: string; stops: { id: string }[] }[]; leftOut: unknown[] }; stops: { id: string; source: string; openByDay: string[] }[]; leftOut: { id: string; reason: string }[]; cost: number };
   assertEquals(res.status, 200, JSON.stringify(body));
   assertEquals(body.plan.days.map((day) => day.town), ["Seoul", "Seoul", "Busan"]);
-  // Busan had room for a cityscape it lacked: one labelled suggestion, about a fifth of the stops at most.
-  assertEquals(d.suggested, ["Busan:cityscape"]);
+  // Seoul had room for more food than was saved, Busan for a cityscape it lacked: one labelled suggestion — about a fifth of the stops at most — for the first gap.
+  assertEquals(d.suggested, ["Seoul:food"]);
   assertEquals(body.stops.filter((s) => s.source === "suggested").length, 1);
   const skeleton = JSON.parse(d.askedPlan[0]!.split("skeleton: ")[1]!.split("\n\n")[0]!) as Skeleton;
   assertEquals(skeleton.holidays[0]!.name, "Hangul Day");
