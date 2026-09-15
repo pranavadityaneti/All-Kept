@@ -48,7 +48,7 @@ export function googlePlaces(apiKey: string, fetchFn: Fetch = fetch) {
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.businessStatus,places.regularOpeningHours.weekdayDescriptions,places.regularOpeningHours.periods,places.utcOffsetMinutes,places.addressComponents,places.googleMapsUri",
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.location,places.primaryType,places.businessStatus,places.regularOpeningHours.weekdayDescriptions,places.regularOpeningHours.periods,places.utcOffsetMinutes,places.addressComponents,places.rating,places.userRatingCount,places.priceLevel,places.googleMapsUri",
       },
       body: JSON.stringify({ textQuery: query, languageCode: "en", maxResultCount: 3 }),
     });

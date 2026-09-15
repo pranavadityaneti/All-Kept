@@ -28,6 +28,10 @@ export interface Candidate {
   periods: OpeningPeriod[] | null;
   /** The place's offset from UTC in minutes, without which the periods say nothing about now. Only Google. */
   utcOffsetMinutes: number | null;
+  /** What the crowd says, from Google: the rating out of five, how many rated it, and the price level in Google's words. */
+  rating: number | null;
+  ratingCount: number | null;
+  priceLevel: string | null;
 }
 
 export interface OpeningPoint { day: number; hour: number; minute: number }
@@ -126,7 +130,7 @@ export function appleFromSearch(body: unknown): Candidate[] {
       locality: typeof structured?.locality === "string" ? structured.locality : null,
       lat, lng,
       category: typeof o["poiCategory"] === "string" ? o["poiCategory"] : null,
-      hours: null, status: null, url: null, periods: null, utcOffsetMinutes: null,
+      hours: null, status: null, url: null, periods: null, utcOffsetMinutes: null, rating: null, ratingCount: null, priceLevel: null,
     }];
   });
 }
@@ -175,6 +179,9 @@ export function googleFromSearch(body: unknown): Candidate[] {
       url: typeof o["googleMapsUri"] === "string" ? o["googleMapsUri"] : null,
       periods: openingPeriods(opening?.periods),
       utcOffsetMinutes: typeof o["utcOffsetMinutes"] === "number" ? o["utcOffsetMinutes"] : null,
+      rating: typeof o["rating"] === "number" && o["rating"] >= 0 && o["rating"] <= 5 ? Math.round(o["rating"] * 10) / 10 : null,
+      ratingCount: typeof o["userRatingCount"] === "number" ? Math.max(0, Math.round(o["userRatingCount"])) : null,
+      priceLevel: typeof o["priceLevel"] === "string" && o["priceLevel"].startsWith("PRICE_LEVEL_") && o["priceLevel"] !== "PRICE_LEVEL_UNSPECIFIED" ? o["priceLevel"] : null,
     }];
   });
 }
@@ -199,6 +206,7 @@ export function placeResolvedArgs(itemId: string, p: Candidate): Record<string, 
     p_item_id: itemId, p_provider: p.provider, p_provider_id: p.providerId, p_name: p.name, p_address: p.address, p_locality: p.locality,
     p_lat: p.lat, p_lng: p.lng, p_category: p.category, p_hours: p.hours, p_status: p.status, p_url: p.url,
     p_periods: p.periods, p_utc_offset_minutes: p.utcOffsetMinutes,
+    p_rating: p.rating, p_rating_count: p.ratingCount, p_price_level: p.priceLevel,
   };
 }
 
@@ -273,7 +281,8 @@ export async function runRefreshPass(deps: RefreshPassDeps, limit: number): Prom
         await deps.update(row.id, {
           provider: same.provider, provider_id: same.providerId, name: same.name, address: same.address, locality: same.locality ?? row.locality,
           lat: same.lat, lng: same.lng, category: same.category, hours: same.hours, status: same.status, url: same.url,
-          periods: same.periods, utc_offset_minutes: same.utcOffsetMinutes, resolved_at: new Date().toISOString(),
+          periods: same.periods, utc_offset_minutes: same.utcOffsetMinutes,
+          rating: same.rating, rating_count: same.ratingCount, price_level: same.priceLevel, resolved_at: new Date().toISOString(),
         });
         out.refreshed++;
       } else {

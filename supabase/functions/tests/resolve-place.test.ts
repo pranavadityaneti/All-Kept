@@ -4,7 +4,7 @@ import type { Candidate } from "../_shared/places.ts";
 
 const ID = "98c71d8f-0000-4000-8000-000000000001";
 const request = (body: unknown, method = "POST") => new Request("https://example.test/resolve-place", { method, body: method === "POST" ? JSON.stringify(body) : null });
-const doppler: Candidate = { provider: "google", providerId: "g1", name: "Doppler Coffee", address: "C-Scheme, Jaipur, Rajasthan 302001, India", locality: null, lat: 26.91, lng: 75.79, category: "cafe", hours: null, status: "OPERATIONAL", url: null, periods: null, utcOffsetMinutes: null };
+const doppler: Candidate = { provider: "google", providerId: "g1", name: "Doppler Coffee", address: "C-Scheme, Jaipur, Rajasthan 302001, India", locality: null, lat: 26.91, lng: 75.79, category: "cafe", hours: null, status: "OPERATIONAL", url: null, periods: null, utcOffsetMinutes: null, rating: null, ratingCount: null, priceLevel: null };
 
 function fake(over: Partial<ResolvePlaceDeps> = {}) {
   const written: unknown[] = []; const cleared: string[] = [];

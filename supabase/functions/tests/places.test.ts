@@ -4,7 +4,7 @@ import { appleFromSearch, googleFromSearch, pickCandidate, placeResolvedArgs, re
 const haku = { name: "Haku", locality: "Bandra, Mumbai" };
 const candidate = (over: Partial<Candidate> = {}): Candidate => ({
   provider: "apple", providerId: "a1", name: "Haku", address: "Linking Road, Bandra West, Mumbai 400050", locality: "Mumbai",
-  lat: 19.06, lng: 72.83, category: "Restaurant", hours: null, status: null, url: null, periods: null, utcOffsetMinutes: null, ...over,
+  lat: 19.06, lng: 72.83, category: "Restaurant", hours: null, status: null, url: null, periods: null, utcOffsetMinutes: null, rating: null, ratingCount: null, priceLevel: null, ...over,
 });
 
 Deno.test("a candidate is the venue when the names agree, ignoring case, accents and punctuation, or one contains the other", () => {
@@ -77,16 +77,16 @@ Deno.test("Apple's and Google's answers are read into one shape", () => {
     id: "ChIJ1", displayName: { text: "Haku" }, formattedAddress: "Linking Rd, Bandra West, Mumbai, Maharashtra 400050, India",
     location: { latitude: 19.0596, longitude: 72.8295 }, primaryType: "japanese_restaurant", businessStatus: "OPERATIONAL",
     regularOpeningHours: { weekdayDescriptions: ["Monday: 12:00 – 11:00 PM"], periods: [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }] },
-    utcOffsetMinutes: 330, googleMapsUri: "https://maps.google.com/?cid=1",
+    utcOffsetMinutes: 330, googleMapsUri: "https://maps.google.com/?cid=1", rating: 4.55, userRatingCount: 2100, priceLevel: "PRICE_LEVEL_MODERATE",
     addressComponents: [{ longText: "Linking Rd", types: ["route"] }, { longText: "Bandra West", types: ["sublocality_level_1", "sublocality", "political"] }, { longText: "Mumbai", types: ["locality", "political"] }, { longText: "Maharashtra", types: ["administrative_area_level_1", "political"] }],
   }, { id: "ChIJ2", displayName: { text: "Nowhere" }, location: { latitude: 1, longitude: 2 } },
   // Weligama: no "locality" component — Google files some towns under the district — so the next level up names the place.
-  { id: "ChIJ3", displayName: { text: "The Cliff" }, location: { latitude: 5.97, longitude: 80.4 }, addressComponents: [{ longText: "Weligama", types: ["administrative_area_level_3", "political"] }, { longText: "Southern Province", types: ["administrative_area_level_1", "political"] }, { longText: "Sri Lanka", types: ["country", "political"] }] }] });
-  assertEquals(google.map((c) => [c.provider, c.providerId, c.name, c.category, c.status, c.hours, c.url, c.periods, c.utcOffsetMinutes, c.locality]), [
-    ["google", "ChIJ1", "Haku", "japanese_restaurant", "OPERATIONAL", ["Monday: 12:00 – 11:00 PM"], "https://maps.google.com/?cid=1", [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }], 330, "Mumbai"],
-    // A place Google knows nothing more about: the hours, the clock and the town are simply absent, never invented.
-    ["google", "ChIJ2", "Nowhere", null, null, null, null, null, null, null],
-    ["google", "ChIJ3", "The Cliff", null, null, null, null, null, null, "Weligama"],
+  { id: "ChIJ3", displayName: { text: "The Cliff" }, location: { latitude: 5.97, longitude: 80.4 }, priceLevel: "PRICE_LEVEL_UNSPECIFIED", addressComponents: [{ longText: "Weligama", types: ["administrative_area_level_3", "political"] }, { longText: "Southern Province", types: ["administrative_area_level_1", "political"] }, { longText: "Sri Lanka", types: ["country", "political"] }] }] });
+  assertEquals(google.map((c) => [c.provider, c.providerId, c.name, c.category, c.status, c.hours, c.url, c.periods, c.utcOffsetMinutes, c.locality, c.rating, c.ratingCount, c.priceLevel]), [
+    ["google", "ChIJ1", "Haku", "japanese_restaurant", "OPERATIONAL", ["Monday: 12:00 – 11:00 PM"], "https://maps.google.com/?cid=1", [{ open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } }], 330, "Mumbai", 4.6, 2100, "PRICE_LEVEL_MODERATE"],
+    // A place Google knows nothing more about: the hours, the clock, the town and the crowd are simply absent, never invented.
+    ["google", "ChIJ2", "Nowhere", null, null, null, null, null, null, null, null, null, null],
+    ["google", "ChIJ3", "The Cliff", null, null, null, null, null, null, "Weligama", null, null, null],
   ]);
   assertEquals(apple[0]!.periods, null);
   assertEquals(appleFromSearch({}), []);
@@ -96,7 +96,8 @@ Deno.test("Apple's and Google's answers are read into one shape", () => {
   assertEquals(args["p_item_id"], "item-1");
   assertEquals(args["p_periods"], google[0]!.periods);
   assertEquals(args["p_utc_offset_minutes"], 330);
-  assertEquals(Object.keys(args).sort(), ["p_address", "p_category", "p_hours", "p_item_id", "p_lat", "p_lng", "p_locality", "p_name", "p_periods", "p_provider", "p_provider_id", "p_status", "p_url", "p_utc_offset_minutes"]);
+  assertEquals(args["p_rating"], 4.6);
+  assertEquals(Object.keys(args).sort(), ["p_address", "p_category", "p_hours", "p_item_id", "p_lat", "p_lng", "p_locality", "p_name", "p_periods", "p_price_level", "p_provider", "p_provider_id", "p_rating", "p_rating_count", "p_status", "p_url", "p_utc_offset_minutes"]);
 });
 
 Deno.test("the pass resolves a bounded batch, saves a place or records the miss, and never lets one row fail the rest", async () => {
@@ -132,6 +133,7 @@ Deno.test("the refresh pass looks a place up again by its own name, keeps what c
   assertEquals(updated[0]!.patch["status"], "CLOSED_PERMANENTLY");
   assertEquals(updated[0]!.patch["periods"], [{ open: { day: 1, hour: 9, minute: 0 }, close: { day: 1, hour: 17, minute: 0 } }]);
   assertEquals(updated[0]!.patch["locality"], "Mumbai");
+  assertEquals("rating" in updated[0]!.patch && "price_level" in updated[0]!.patch, true, "the crowd's word travels with the refresh");
   // Not found this time: nothing invented, only the date moved on.
   assertEquals(Object.keys(updated[1]!.patch), ["resolved_at"]);
   // A place without a town is looked up by its address, which is what Google can search by.
