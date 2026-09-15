@@ -164,6 +164,22 @@ export interface ImportProgress { found: number; added: number; ready: number; w
 export interface SaveLinkRequest { text: string; requestId: string }
 export type SaveLinkResponse = CaptureResult;
 
+/** What a category holds and what it is about — the Library's header when one category is open. */
+export interface CategorySummaryResponse {
+  count: number;
+  /** Saves by shape, as the library's shape facet names them (vertical, wide, post, link, note…). */
+  shapes: Record<string, number>;
+  /** Saves by the intent the sorter gave them: try, buy, go, watch, read. */
+  intents: Record<string, number>;
+  /** The names that keep turning up inside, most first, with the mark the icon pass chose. */
+  names: { name: string; kind: string; icon: string | null; n: number }[];
+  /** Up to three themes the model wrote; empty when there are too few saves, sorting is off, or nothing could be written. */
+  themes: string[];
+  /** fresh: written just now; stored: from an earlier writing; none: no themes. */
+  freshness: "fresh" | "stored" | "none";
+  sortingOff?: boolean;
+}
+
 /** waitlist: where a sign-up came from. The site sends the two pills; the rest are reserved. */
 export type WaitlistSource = "site-hero" | "site-footer" | "site" | "app" | "instagram";
 /** waitlist: 200 both ways — a repeat sign-up is not an error to the person typing it. */
