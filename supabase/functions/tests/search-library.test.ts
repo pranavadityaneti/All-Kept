@@ -28,8 +28,13 @@ Deno.test("search returns 30 plus a cursor and reuses the vector on later pages"
   assertEquals(calls, 1);
   assertEquals(before, { id: rows[29]!.id, savedAt: rows[29]!.last_saved_at, score: 4 });
 });
+Deno.test("every filter group reaches the query, an intent included, so a search never drops a narrowing", async () => {
+  let args: Record<string, unknown> = {};
+  await handleSearch(request({ q: "ramen", intents: ["try"], shapes: ["vertical"], flags: [], categories: ["Food & recipes"] }), { ...defaults, query: async (_, input) => { args = input; return []; } });
+  assertEquals([args.intents, args.shapes, args.flags, args.categories, args.platforms], [["try"], ["vertical"], null, ["Food & recipes"], null]);
+});
 Deno.test("invalid cursors, filters and overlong queries fail before embedding", async () => {
-  for (const body of [{ q: "a".repeat(301) }, { q: "a", platforms: "instagram" }, { q: "a", cursor: { embedding: [] } }, { q: " " }]) {
+  for (const body of [{ q: "a".repeat(301) }, { q: "a", platforms: "instagram" }, { q: "a", intents: "try" }, { q: "a", cursor: { embedding: [] } }, { q: " " }]) {
     assertEquals((await handleSearch(request(body), { ...defaults, embed: () => { throw new Error("must not run"); } })).status, 400);
   }
 });

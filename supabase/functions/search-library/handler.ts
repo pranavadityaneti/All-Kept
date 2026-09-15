@@ -18,7 +18,7 @@ export async function handleSearch(req: Request, deps: SearchDeps): Promise<Resp
   // Every group is validated, not just the two that existed first: an unchecked array here is an
   // unchecked array on its way to the database.
   if (!q || q.length > 300 || !filters(body?.platforms) || !filters(body?.categories)
-      || !filters(body?.shapes) || !filters(body?.flags)) return apiError("bad_request", "invalid search");
+      || !filters(body?.shapes) || !filters(body?.flags) || !filters(body?.intents)) return apiError("bad_request", "invalid search");
   const cursor = body?.cursor as Row | undefined;
   if (cursor != null && (typeof cursor !== "object" || !uuid(cursor.id) || typeof cursor.score !== "number" || !Number.isFinite(cursor.score)
     || typeof cursor.savedAt !== "string" || !Number.isFinite(Date.parse(cursor.savedAt)) || (cursor.embedding !== null && !validEmbedding(cursor.embedding)))) {
@@ -35,6 +35,7 @@ export async function handleSearch(req: Request, deps: SearchDeps): Promise<Resp
     categories: body!.categories?.length ? body!.categories : null,
     shapes: body!.shapes?.length ? body!.shapes : null,
     flags: body!.flags?.length ? body!.flags : null,
+    intents: body!.intents?.length ? body!.intents : null,
     before: cursor ? { score: cursor.score, savedAt: cursor.savedAt, id: cursor.id } : null,
     lim: 31,
   });
