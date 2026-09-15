@@ -229,11 +229,20 @@ export async function runPlacesPass(deps: PlacesPassDeps, limit: number): Promis
 }
 
 /** A place as the refresh pass takes it: enough to look it up again by its own name. */
-export interface PlaceToRefresh { id: string; provider: string; providerId: string; name: string; locality: string | null; address: string | null }
+export interface PlaceToRefresh {
+  id: string; provider: string; providerId: string; name: string; locality: string | null;
+  /** The locality of the venue a save wrote for this place — the words that found it in the first place. */
+  venueLocality: string | null;
+  address: string | null;
+}
 
-/** The venue to look a known place up by: its name and its town, or its address when the town is not known. Nothing to search by is nothing to refresh. */
-export function refreshQuery(place: { name: string; locality: string | null; address: string | null }): Venue | null {
-  const locality = place.locality?.trim() || place.address?.trim() || "";
+/**
+ * The venue to look a known place up by: its name with its town; failing that the words that
+ * found it, since a search by those is known to work; failing that its address, which Google can
+ * choke on when it is long. Nothing to search by is nothing to refresh.
+ */
+export function refreshQuery(place: { name: string; locality: string | null; venueLocality: string | null; address: string | null }): Venue | null {
+  const locality = place.locality?.trim() || place.venueLocality?.trim() || place.address?.trim() || "";
   return place.name.trim() && locality ? { name: place.name.trim(), locality } : null;
 }
 

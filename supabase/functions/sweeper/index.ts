@@ -160,8 +160,8 @@ Deno.serve(async (req) => {
           async rows(limit) {
             const { data, error } = await db.rpc("places_to_refresh", { lim: limit });
             if (error) throw error;
-            return ((data ?? []) as { id: string; provider: string; provider_id: string; name: string; locality: string | null; address: string | null }[])
-              .map((r): PlaceToRefresh => ({ id: r.id, provider: r.provider, providerId: r.provider_id, name: r.name, locality: r.locality, address: r.address }));
+            return ((data ?? []) as { id: string; provider: string; provider_id: string; name: string; locality: string | null; venue_locality: string | null; address: string | null }[])
+              .map((r): PlaceToRefresh => ({ id: r.id, provider: r.provider, providerId: r.provider_id, name: r.name, locality: r.locality, venueLocality: r.venue_locality, address: r.address }));
           },
           resolve: (venue) => resolveVenue(venue, { apple: providers.apple ?? (async () => []), google: providers.google }),
           async update(id, patch) {

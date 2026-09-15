@@ -116,9 +116,9 @@ Deno.test("the refresh pass looks a place up again by its own name, keeps what c
   const updated: { id: string; patch: Record<string, unknown> }[] = [];
   const out = await runRefreshPass({
     rows: async (limit) => [
-      { id: "p1", provider: "google", providerId: "ChIJ1", name: "Haku", locality: "Mumbai", address: "Linking Rd, Bandra West, Mumbai" },
-      { id: "p2", provider: "google", providerId: "ChIJ9", name: "Gone Café", locality: null, address: "Somewhere, Pune" },
-      { id: "p3", provider: "apple", providerId: "I3", name: "Broken", locality: "Delhi", address: null },
+      { id: "p1", provider: "google", providerId: "ChIJ1", name: "Haku", locality: "Mumbai", venueLocality: "Bandra", address: "Linking Rd, Bandra West, Mumbai" },
+      { id: "p2", provider: "google", providerId: "ChIJ9", name: "Gone Café", locality: null, venueLocality: null, address: "Somewhere, Pune" },
+      { id: "p3", provider: "apple", providerId: "I3", name: "Broken", locality: "Delhi", venueLocality: null, address: null },
     ].slice(0, limit),
     resolve: async (venue) => venue.name === "Haku"
       ? { place: candidate({ provider: "google", providerId: "ChIJ1", name: "Haku", status: "CLOSED_PERMANENTLY", locality: "Mumbai", periods: [{ open: { day: 1, hour: 9, minute: 0 }, close: { day: 1, hour: 17, minute: 0 } }], utcOffsetMinutes: 330 }), reason: null }
@@ -137,8 +137,10 @@ Deno.test("the refresh pass looks a place up again by its own name, keeps what c
   // A place without a town is looked up by its address, which is what Google can search by.
 });
 
-Deno.test("a place is looked up again by its name and its town, or its address when the town is not known", () => {
-  assertEquals(refreshQuery({ name: "Haku", locality: "Mumbai", address: "Linking Rd, Mumbai" }), { name: "Haku", locality: "Mumbai" });
-  assertEquals(refreshQuery({ name: "Gone Café", locality: null, address: "Somewhere, Pune, Maharashtra 411001, India" }), { name: "Gone Café", locality: "Somewhere, Pune, Maharashtra 411001, India" });
-  assertEquals(refreshQuery({ name: "Lost", locality: null, address: null }), null);
+Deno.test("a place is looked up again by its name and its town; failing that by the words that found it; failing that by its address", () => {
+  assertEquals(refreshQuery({ name: "Haku", locality: "Mumbai", venueLocality: "Bandra", address: "Linking Rd, Mumbai" }), { name: "Haku", locality: "Mumbai" });
+  // Google found CEMNT by "Hyderabad" and finds nothing by its own long address: the words that found it come first.
+  assertEquals(refreshQuery({ name: "CEMNT", locality: null, venueLocality: "Hyderabad", address: "Plot 59, Road 51, Bnr hills, Hyderabad, 500081, BN Reddy Colony, Hyderabad, Rai Durg, Telangana 500033, India" }), { name: "CEMNT", locality: "Hyderabad" });
+  assertEquals(refreshQuery({ name: "Gone Café", locality: null, venueLocality: null, address: "Somewhere, Pune, Maharashtra 411001, India" }), { name: "Gone Café", locality: "Somewhere, Pune, Maharashtra 411001, India" });
+  assertEquals(refreshQuery({ name: "Lost", locality: null, venueLocality: null, address: null }), null);
 });
