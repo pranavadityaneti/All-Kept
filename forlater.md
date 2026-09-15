@@ -251,3 +251,38 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued
 - **Date added:** 2026-09-14
 - **Originated from:** 14 Sep Instagram thumbnail fix audit.
+
+### 39. Intent filters
+- **What + why:** The sorter already extracts an intent for every save — to try, to buy, to go, to watch, to read (`item_ai.actionability`) — and the app shows it nowhere but the category summary's facts row. Filter the Library by intent ("To try", "To buy"…), with counts, like the shape and platform groups. Free data; small.
+- **Scope:** `apps/mobile/lib/filter-groups.ts` (a fifth group), `FilterSheet.tsx`, `lib/library.ts`; SQL `library_query` + `library_facets` (filter + tally on `actionability`).
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
+
+### 40. Grid and list toggle, compact cards
+- **What + why:** A list view with compact cards beside the two-column grid, remembered per device. Stasht's users asked for it; Albo has it. Small.
+- **Scope:** `apps/mobile/app/(tabs)/library.tsx`, a compact row component, the view choice stored with the other Library preferences.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
+
+### 41. Remind me on a save
+- **What + why:** A reminder on any save — a date and time, a local notification that opens the save. Stasht's and Albo's users both asked; neither does it well. Small.
+- **Scope:** `expo-notifications`, a `remind_at` on the item, the item sheet's action row, an inbox entry when it fires.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
+
+### 42. Export out to Maps lists, Calendar, Notes
+- **What + why:** Send a place to Apple/Google Maps, a dated thing to Calendar, a save's text to Notes/Share — the way out of the app. Albo's users complain of lock-in; we can be the app that lets things out. Small.
+- **Scope:** The item sheet's action row; `Linking` deep links per target (maps URL schemes, calendar, share sheet); nothing server-side.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
+
+### 43. A done or visited state with a journal line
+- **What + why:** Mark a save done / visited / tried, with an optional one-line note ("went in June, the ramen was worth it"), shown on the card and filterable. Albo has it; Stasht's users beg for it. Small.
+- **Scope:** A `done_at` + `journal` on the item, the item sheet, the card's corner, a `flags` filter value ("Done").
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
