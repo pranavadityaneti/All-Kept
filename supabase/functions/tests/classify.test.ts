@@ -49,6 +49,12 @@ Deno.test("a venue and a date are kept when they are what the post names, and re
   for (const venue of [{ name: "Hyderabad", locality: "" }, { name: "", locality: "Hyderabad" }, "Haku, Bandra", null, { name: "x".repeat(81), locality: "Bandra" }]) {
     assertEquals(validateOutput({ ...answer, venue }, now)!.venue, null, JSON.stringify(venue));
   }
+  // A handle or a web address is not a name anyone would say, and no map knows it: it is no venue.
+  for (const name of ["@lasthouse.in", "lasthouse.in", "www.cemnt.co", "instagram.com/cemnt", "https://cemnt.co"]) {
+    assertEquals(validateOutput({ ...answer, venue: { name, locality: "Hyderabad" } }, now)!.venue, null, name);
+  }
+  assertEquals(validateOutput({ ...answer, venue: { name: "Last House Coffee", locality: "Hyderabad" } }, now)!.venue, { name: "Last House Coffee", locality: "Hyderabad" });
+  assertEquals(SYSTEM_PROMPT.includes("handle") && SYSTEM_PROMPT.includes("sign"), true);
   // A date is a date the clock can read, and one still to come — a year gone by is history, not an event.
   for (const event of ["next friday", "12 October", "2019-01-01", "2026-09-01", 20261012, null]) {
     assertEquals(validateOutput({ ...answer, event_at: event }, now)!.event_at, null, String(event));

@@ -2,7 +2,7 @@
 import { ACTIONABILITY, CATEGORIES, CATEGORY_GUIDE, ENTITY_TYPES, UNSURE_BELOW } from "./contracts.ts";
 import type { Actionability, Category, EntityType, ItemAiOutput } from "./contracts.ts";
 
-export const PROMPT_VERSION = "2026-09-18.2";
+export const PROMPT_VERSION = "2026-09-18.3";
 
 /**
  * The shape the model answers in, strict: every property required, nothing extra, an optional
@@ -103,7 +103,7 @@ ${TIE_BREAKERS.map((rule, i) => `  ${i + 1}. ${rule}`).join("\n")}
 - language: ISO 639-1 code of the main language of the post's text.
 - actionability: watch (a video to watch), try (a recipe, workout or how-to to attempt), buy (a product), go (a place to visit), read (an article or thread), reference (facts or tools to keep), none.
 - confidence: 0 to 1, your confidence in the category. Below ${UNSURE_BELOW} means you are guessing, and the save is filed under "Other".
-- venue: {name, locality} when the post names somewhere a person could go to — a restaurant, a café, a shop, a hotel, a viewpoint, a venue — name as the post names it, locality the neighbourhood, city or area that places it; null when there is none. A country or a city alone is not a venue. Only a place the content names, never one guessed from a hashtag or a mood.
+- venue: {name, locality} when the post names somewhere a person could go to — a restaurant, a café, a shop, a hotel, a viewpoint, a venue — name as a person would say it, locality the neighbourhood, city or area that places it; null when there is none. Never an @handle or a web address as the name: when the caption gives only "@lasthouse.in", read the name from the sign or logo in the picture ("Last House Coffee"), and give null if the picture does not say. A country or a city alone is not a venue. Only a place the content names, never one guessed from a hashtag or a mood.
 - event_at: an ISO 8601 date, or date-time with offset, when the post names a day something happens — a concert, a launch, a sale ending, a deadline; null when there is none. Resolve relative words ("this Friday") against the day given under "saved on"; when only a day is named, give the date alone. A day already gone by is not an event.
 Judge from the content only. Hashtags and emoji are weak signals. If the text is empty, use the link, kind and author.
 A picture may be attached: the saved post's own poster frame or photo. Captions often describe how a post was made (credits, tools, "edit") or its mood (aesthetic hashtags) rather than what it shows; the picture is the subject, so judge the category from it and treat such a caption as a weak signal. Without a picture, when the caption is only credits, mood or hashtags, prefer the subject if the words let you infer it, else "Other" with low confidence rather than a category for the making.`;
@@ -122,14 +122,17 @@ const isStr = (v: unknown): v is string => typeof v === "string";
 const MAX_PLACE_CHARS = 80;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:\d{2}))?$/;
 
-/** A venue is two halves, each some words; anything else — a city alone, a string, a list — is no venue. */
+/** A handle or a web address: not a name anyone would say, and no map knows it. */
+const HANDLE_OR_ADDRESS = /^@|^(https?:\/\/|www\.)|\/|\.[a-z]{2,}$/i;
+
+/** A venue is two halves, each some words; anything else — a city alone, a handle, a string, a list — is no venue. */
 function venueFrom(v: unknown): { name: string; locality: string } | null {
   if (typeof v !== "object" || v === null) return null;
   const o = v as Record<string, unknown>;
   const name = isStr(o["name"]) ? o["name"].trim() : "";
   const locality = isStr(o["locality"]) ? o["locality"].trim() : "";
   const fits = (s: string) => s.length >= 2 && s.length <= MAX_PLACE_CHARS;
-  return fits(name) && fits(locality) ? { name, locality } : null;
+  return fits(name) && fits(locality) && !HANDLE_OR_ADDRESS.test(name) ? { name, locality } : null;
 }
 
 /** A date the clock can read, still to come: a day already gone is history, and a bare word ("Friday") is a guess. */
