@@ -13,9 +13,11 @@ import { space, usePalette } from "../lib/theme";
  * event to Calendar through the share sheet, where the person sees exactly what is added. Only the
  * chips the save has; a save with neither shows nothing.
  */
-export function WaysOut({ save, onOpened }: {
+export function WaysOut({ save, onOpened, onEditPlace }: {
   save: { id: string; title: string; summary: string | null; url: string | null; venue: Venue | null; place: Place | null; eventAt: string | null };
   onOpened: (what: "maps" | "google_maps" | "calendar") => void;
+  /** Add the place when the post never said it; change it when the sorter got it wrong. */
+  onEditPlace: () => void;
 }) {
   const p = usePalette();
   const [googleMaps, setGoogleMaps] = useState(false);
@@ -23,7 +25,7 @@ export function WaysOut({ save, onOpened }: {
     if (Platform.OS !== "ios" || !save.venue) return;
     Linking.canOpenURL("comgooglemaps://").then(setGoogleMaps).catch(() => setGoogleMaps(false));
   }, [save.venue]);
-  if (!save.venue && !save.eventAt) return null;
+
 
   // The pin when the server has found it; a search for the words when it has not.
   const openMaps = async (app: "default" | "google") => {
@@ -58,6 +60,7 @@ export function WaysOut({ save, onOpened }: {
       {save.venue && googleMaps && (
         <Chip label="Google Maps" accessibilityLabel={`Open ${save.venue.name} in Google Maps`} onPress={() => { void openMaps("google"); }} />
       )}
+      <Chip label={save.venue ? "Change place" : "+ Add place"} accessibilityLabel={save.venue ? "Change the place" : "Add the place"} onPress={onEditPlace} />
       {save.eventAt && (
         <Chip
           label={describeEvent(save.eventAt, new Date())}

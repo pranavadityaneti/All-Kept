@@ -11,13 +11,14 @@ import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { DoneSheet } from "./DoneSheet";
 import { MoreSheet } from "./MoreSheet";
+import { PlaceSheet } from "./PlaceSheet";
 import { RemindSheet } from "./RemindSheet";
 import { WaysOut, copyToClipboard, useCopied } from "./WaysOut";
 import { captionBody } from "../lib/caption";
 import { doneLine } from "../lib/done";
 import { copyText } from "../lib/export";
 import { embedFit, embedUrl, fitBox, initialAspect, initialHeight } from "../lib/embed";
-import { DuplicateLinkError, openableUrl, useAttachLink, useClearReminder, useDeleteItem, useItem, useSetCategory, useSetDone, useSetNote, useSetReminder, useRetrySorting } from "../lib/item";
+import { DuplicateLinkError, openableUrl, useAttachLink, useClearReminder, useDeleteItem, useItem, useSetCategory, useSetDone, useSetNote, useSetPlace, useSetReminder, useRetrySorting } from "../lib/item";
 import { categoryDisplayName } from "../lib/category-names";
 import { ownCategories, useCreateCategory, useFacets } from "../lib/library";
 import { track, useTrackOnce } from "../lib/metrics";
@@ -91,6 +92,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const [reminding, setReminding] = useState(false);
   const [marking, setMarking] = useState(false);
   const [more, setMore] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const setPlace = useSetPlace(id);
   const setDone = useSetDone(id);
   const [copied, markCopied] = useCopied();
   const [picking, setPicking] = useState(false);
@@ -395,13 +398,13 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
               />
             </Section>
 
-            {(detail.summary || detail.tags.length > 0 || detail.venue || detail.eventAt) && (
+            {(detail.summary || detail.tags.length > 0 || detail.venue || detail.eventAt || detail.classificationStatus === "ready") && (
               <Section
                 title="What it's about"
                 action={<TextAction label={copied ? "Copied" : "Copy as text"} accessibilityLabel="Copy this save as text" disabled={copied} onPress={() => { void copyToClipboard(copyText({ title: heading, summary: detail.summary, note: detail.note, url })).then((ok) => { if (ok) { markCopied(); track(userId, "copy_text"); } }); }} />}
               >
                 {detail.summary && <Text style={[type.body, { color: p.ink }]}>{detail.summary}</Text>}
-                <WaysOut save={{ id: detail.id, title: heading, summary: detail.summary, url, venue: detail.venue, place: detail.place, eventAt: detail.eventAt }} onOpened={(what) => track(userId, "way_out", { what })} />
+                <WaysOut save={{ id: detail.id, title: heading, summary: detail.summary, url, venue: detail.userVenue ?? detail.venue, place: detail.place, eventAt: detail.eventAt }} onOpened={(what) => track(userId, "way_out", { what })} onEditPlace={() => { setPlace.reset(); setPlacing(true); }} />
                 {detail.tags.length > 0 && (
                   <View style={styles.wrap}>{detail.tags.map((tag) => <Chip key={tag} label={tag} />)}</View>
                 )}
@@ -428,6 +431,17 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           </ScrollView>
         </View>
       </Modal>
+
+      <PlaceSheet
+        visible={placing}
+        initial={detail.userVenue ?? detail.venue}
+        busy={setPlace.isPending}
+        error={setPlace.error ? setPlace.error.message : null}
+        canClear={!!detail.userVenue}
+        onFind={(venue) => setPlace.mutate(venue, { onSuccess: () => { track(userId, "place_named", { had: detail.venue ? "venue" : "none" }); setPlacing(false); } })}
+        onClear={() => setPlace.mutate(null, { onSuccess: () => { track(userId, "place_cleared"); setPlacing(false); } })}
+        onClose={() => setPlacing(false)}
+      />
 
       <MoreSheet
         visible={more}

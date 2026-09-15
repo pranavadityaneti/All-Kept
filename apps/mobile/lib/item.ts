@@ -40,6 +40,8 @@ export interface ItemDetail {
   remindAt: string | null;
   /** Somewhere the post names to go to, and a day it names as something that happens; null when it names none. */
   venue: { name: string; locality: string } | null;
+  /** The venue in the person's own words, when they named one; it stands over the sorter's. */
+  userVenue: { name: string; locality: string } | null;
   /** The venue as the server looked it up — a pin, an address, a status — when it has. */
   place: { name: string; address: string | null; lat: number; lng: number; status: string | null; url: string | null } | null;
   eventAt: string | null;
@@ -54,7 +56,7 @@ export interface ItemDetail {
   embeddable: boolean | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,done_at,journal,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,event_at,actionability,place:places(name,address,lat,lng,status,url))";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,done_at,journal,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,user_venue,event_at,actionability,place:places(name,address,lat,lng,status,url))";
 
 type Row = Record<string, unknown>;
 
@@ -118,6 +120,7 @@ function toDetail(r: Row): ItemDetail {
     siteName: (meta?.["site_name"] as string | null) ?? null,
     remindAt: (r["remind_at"] as string | null) ?? null,
     venue: readVenue(ai?.["venue"]),
+    userVenue: readVenue(ai?.["user_venue"]),
     place: readPlace(ai?.["place"]),
     eventAt: (ai?.["event_at"] as string | null) ?? null,
     intent: (ai?.["actionability"] as string | null) ?? null,
@@ -233,6 +236,24 @@ export function useSetDone(id: string) {
     const { error } = await supabase.from("items").update(patch).eq("id", id);
     if (error) throw new Error(error.message);
   });
+}
+
+/** A place the person names for a save, looked up on the spot; or taken away, leaving the sorter's. */
+export function useSetPlace(id: string) {
+  return useItemMutation<{ name: string; locality: string } | null>(id, async (venue) => {
+    const body = venue ? { itemId: id, name: venue.name, locality: venue.locality } : { itemId: id, clear: true };
+    const { data, error } = await supabase.functions.invoke<{ place: unknown; venue?: unknown; cleared?: boolean }>("resolve-place", { body });
+    if (error) {
+      const status = (error as { context?: { status?: number } }).context?.status;
+      throw new Error(status === 503 ? "The maps are not answering. Try again in a moment." : "Could not save that place. Please try again.");
+    }
+    if (venue && data && data.place === null) throw new NotFoundPlaceError();
+  });
+}
+
+/** The words were kept, but no map knows the place: said as its own thing, so the sheet can ask for another spelling. */
+export class NotFoundPlaceError extends Error {
+  constructor() { super("No map knows that place. Try the name as the sign spells it, or a nearby area."); this.name = "NotFoundPlaceError"; }
 }
 
 export function useClearReminder(id: string) {
