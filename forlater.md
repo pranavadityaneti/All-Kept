@@ -220,7 +220,7 @@ Each item records: what + why · scope · status · date added · originated fro
 ### 34. Weave — things built from a person's saves (itinerary, cook-this-week, watchlist …)
 - **What + why:** Pranav (13 Sep): since the sorting already reads every save, build on it — an itinerary from someone's travel reels, and the same idea per category. Every save already carries a summary, tags, typed entities (place/product/recipe/tool/person/brand) and an actionability; a Make turns a pile of them into an artefact, grounded only in the person's saves, cited back to them, with outside facts (place lookups, where-to-watch) where they make it real. Economics in `internal/compile-economics.html`: about 20¢ for an itinerary from 100 saves on Opus 5 (7¢ on Sonnet 5) before place lookups, which can exceed the model uncached; a heavy month per person ≈ $1. This is the reason for the paid tier (item 14). Start with Travel (itinerary), Food (cook this week), Entertainment (watchlist); "Ask your saves" is the general form and the embeddings for it exist.
 - **Scope:** an edge function per Make (or one with templates), a places provider with per-place caching, a saved-artefact type in the library, the policy line (user-initiated, disclosed alongside sorting), free-tier ceilings. Brainstorm the itinerary first — it sets the grounding rules the rest inherit.
-- **Status:** named **Weave** on 13 Sep (threads → woven into one thing; "Make an itinerary" stays the verb on the button). Parked by Pranav until the US payment model is built; economics done; the three choices (which first, model per category, places provider) still open.
+- **Status:** named **Weave** on 13 Sep (threads → woven into one thing; "Make an itinerary" stays the verb on the button). Parked by Pranav until the US payment model is built; economics done; the three choices (which first, model per category, places provider) still open. **In progress, 16 Sep 2026** — the itinerary built end to end (spec `internal/superpowers/specs/2026-09-16-weave-itinerary-design.md`): understand (Opus 5) → select (deterministic) → arrange (Fable 5.1) with a validator and one retry; holidays and typical weather fetched; suggestions labelled and capped; the crowd's word on every place; the `weave` function, the `weaves` table, the app's Plan a trip → profile → Customise → plan (`4eaeed9`…`2fad5bb`). Awaiting: the two migrations, the deploys, the seed pile, and the first real plan judged by Pranav. Ceilings undecided.
 - **Date added:** 2026-09-13
 - **Originated from:** Pranav's question on using the intelligence in saves, 13 Sep 2026
 
@@ -294,10 +294,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
-### 45. Stage C — near me, trips (Weave), liveness
+### 45. Stage C — near me, trips (Weave), liveness — DONE 16 Sep 2026 (geofences deferred)
 - **What + why:** "You saved Haku — four minutes away": geofences with While-using first, Always later; trips grouped by city with "open all in Google Maps" and an itinerary to share; "permanently closed" re-checked now and then. Needs `expo-location` (its own build), permission strings, App Review wording. Large; after B has real venues.
 - **Scope:** New: location module, a trips screen, a liveness pass.
-- **Status:** queued
+- **Status:** done — 16 Sep 2026, spec §7: near you (While-using only; "Near me" on the map, distance on the pin card, "Near you" on Home), trips by town (chips, Open all in Google Maps, Share itinerary), the liveness pass (a town it lacked once, every place every sixty days) — `d18b8c6`, `727fb94`, `d7966cd`, `a21878a`; verified on the rebuilt simulator client. Geofences (the Always permission, the App Review wording) deferred — see item 55.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
@@ -363,3 +363,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — item 48's audit.
+
+### 55. Nearby nudges — a notification when walking past a saved place
+- **What + why:** The half of stage C left out on purpose: geofences on the saved places with the Always permission — a battery cost, iOS's cap of twenty regions, and App Review wanting the reason in the permission text. Real value once there are enough places; its own build and its own review wording.
+- **Scope:** `expo-location` background mode, the Always strings, a geofence sync (nearest twenty), a local notification, the review wording.
+- **Status:** queued
+- **Date added:** 2026-09-16
+- **Originated from:** 16 Sep 2026 — stage C's decisions.

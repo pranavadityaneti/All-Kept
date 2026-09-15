@@ -1623,3 +1623,28 @@ categories.
   open a dead player — 53; the picture door's "sweeper will retry" is untrue past a day — 54.
 - Next: EAS build tonight (Pranav's), which carries all the app work and the native share sheet;
   then stage B map view (44), stage C (45); item 52 on his word.
+
+## 2026-09-16 — stage B and C shipped; Weave built
+
+- Stage B (44): the map as the library's view, one grid/list toggle with the map on and off over
+  it; pins on cards and rows (v7, search v4); "Open now" from Google's periods on the place's own
+  clock; Google asked first; venues compared by their words. Three fixes found verifying:
+  expo-maps' zoom means a region on Apple and tiles on Google; a library over three continents
+  opens on its largest group; the card sat under the tab bar. Android key set on EAS by Pranav.
+- Stage C (45): near you (While-using only; the generated ios/ folder predated the location
+  plugin and red-boxed until its plist got the string — EAS regenerates it), trips by town with
+  Open all in Google Maps and Share itinerary, the liveness pass (`refreshed_at`; the town; then
+  the crowd's word), the refresh searching by the venue's words after Google choked on a long
+  address. All seven places have towns; CEMNT → Hyderabad at 19:25.
+- Weave (34), Pranav's counter taken: understand → select → arrange, not a dump of a hundred
+  saves. Spec written and agreed (one trip across countries, proportional city split, labelled
+  suggestions capped, budget and group asked, book-ahead list, Opus to understand + Fable to
+  plan, dates → holidays (Nager.Date) and typical weather (Open-Meteo), Google's rating/count/
+  price on every place). Built and tested: contracts, select, understand, plan + validator with
+  one retry, skeleton, context, the `weave` function (towns/understand/plan) with fakes, the
+  `weaves` table and `weave_saves()`, the app's three screens and the map's "Plan a trip". Deno
+  327, vitest 324. Fable 5.1 $10/$50 per MTok (price page read 16 Sep); ≈ $0.50 a plan.
+- Seed pile prepared: 93 public Korea + Japan reels and videos as pending rows for Pranav's own
+  library (`private/seed-korea-japan.sql`, gitignored; dry-run rolled back: 93 rows) — his to run.
+- Pending: migrations `20260918210000_places_reviews.sql`, `20260918220000_weaves.sql`; deploy
+  `weave`, `sweeper`, `resolve-place`; push `d7966cd..`; the seed; then the first real plan.
