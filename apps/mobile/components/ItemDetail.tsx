@@ -1,19 +1,21 @@
 import { CATEGORIES } from "@allkept/contracts";
 import { Image } from "expo-image";
-import { useRef, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { useRef, useState, type ReactNode } from "react";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, type NativeSyntheticEvent, type TextLayoutEventData } from "react-native";
 import { Button } from "./Button";
+import { CategoryMark } from "./CategoryMark";
 import { CategorySheet } from "./CategorySheet";
 import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
+import { captionBody } from "../lib/caption";
 import { embedFit, embedUrl, fitBox, initialAspect, initialHeight } from "../lib/embed";
 import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote, useRetrySorting } from "../lib/item";
 import { categoryDisplayName } from "../lib/category-names";
 import { ownCategories, useCreateCategory, useFacets } from "../lib/library";
 import { track, useTrackOnce } from "../lib/metrics";
-import { canRetrySorting, canSortAgain, categoryLabel, isUnsure, summaryNote } from "../lib/sorting";
+import { canRetrySorting, canSortAgain, categoryLabel, isUnsure, sortingNote, summaryNote } from "../lib/sorting";
 import { openLink } from "../lib/open";
 import { hostLabel, platformIcon, platformLabel } from "../lib/platforms";
 import { useSession } from "../lib/session";
@@ -21,6 +23,9 @@ import { shareItem } from "../lib/share";
 import { useThumbnails } from "../lib/thumbnails";
 import { storePicture } from "../lib/reddit-thumbnail";
 import { radius, space, type, usePalette } from "../lib/theme";
+
+/** The caption is folded to this many lines until asked for; a hashtag wall should not push the note off the screen. */
+const CAPTION_LINES = 4;
 
 const savedOn = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
@@ -47,7 +52,9 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   // The categories this person made sit beside the fifteen Allkept sorts into, and a new one can be
   // made from here: this is the moment somebody notices a save has nowhere of their own to go.
   const facets = useFacets(!!userId);
-  const mine = ownCategories(facets.data).map((c) => c.value);
+  const own = ownCategories(facets.data);
+  const mine = own.map((c) => c.value);
+  const chosenMark = (c: string) => own.find((o) => o.value === c)?.icon ?? null;
   const createCategory = useCreateCategory(userId);
   const [naming, setNaming] = useState(false);
   const setNote = useSetNote(id);
@@ -68,7 +75,13 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   // Asked at most once per screen, and only while the save still has no picture of its own.
   const askedForPicture = useRef(false);
   const [zoomed, setZoomed] = useState(false);
-  const [sheet, setSheet] = useState(false);
+  // The sheet opens to read, from the caption, or to change the category, from the pill: the same
+  // sheet, with the picker folded or open to match what was tapped.
+  const [sheet, setSheet] = useState<false | "read" | "change">(false);
+  const [picking, setPicking] = useState(false);
+  const [captionOpen, setCaptionOpen] = useState(false);
+  const [captionLong, setCaptionLong] = useState(false);
+  const openSheet = (why: "read" | "change") => { setPicking(why === "change"); setCaptionOpen(false); setSheet(why); };
   const [footerHeight, setFooterHeight] = useState(150);
   const [note, setNoteText] = useState<string | null>(null);
   const [link, setLink] = useState("");
@@ -87,6 +100,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
     || (detail.platform === "web" ? hostLabel(url) : null)
     || platformLabel(detail.platform);
   const noteValue = note ?? detail.note ?? "";
+  const caption = captionBody(detail.text, heading);
   const needsLink = detail.status === "no_link" || detail.status === "failed";
   // "No link yet" was shown for both, and for a failed save it is simply untrue: the link is there,
   // the button below opens it, we just could not read the page at the end of it. Sites like Amazon
@@ -185,16 +199,24 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
 
       <View style={styles.footer} onLayout={(e) => setFooterHeight(Math.round(e.nativeEvent.layout.height))}>
         {/* The caption is one line here and the rest is a tap away, the way Instagram hides it. */}
-        <Pressable accessibilityRole="button" accessibilityLabel="Details for this save" onPress={() => setSheet(true)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Details for this save" onPress={() => openSheet("read")}>
           <Text numberOfLines={2} style={[type.heading, { color: p.ink }]}>{heading}</Text>
           <Text style={[type.label, styles.meta, { color: p.inkMuted }]} numberOfLines={1}>
             {detail.authorName ?? detail.siteName ?? platformLabel(detail.platform)} · {savedOn(detail.lastSavedAt)} · more
           </Text>
         </Pressable>
 
-        {detail.status === "no_link" && <Button label="Add original link" variant="secondary" onPress={() => setSheet(true)} />}
+        {detail.status === "no_link" && <Button label="Add original link" variant="secondary" onPress={() => openSheet("read")} />}
         <View style={styles.actions}>
-          <Chip label={categoryLabel(detail)} selected={!!detail.category} boxed onPress={() => setSheet(true)} />
+          {/* The chevron says the pill can be tapped, the way the Filters button says it; a question mark says the sorter was guessing. */}
+          <Chip
+            label={categoryLabel(detail)}
+            selected={!!detail.category}
+            boxed
+            trailing={<Icon name={isUnsure(detail) ? "help" : "down"} size={16} color={detail.category ? p.accentInk : p.inkMuted} />}
+            accessibilityLabel={`Category: ${categoryLabel(detail)}. Change`}
+            onPress={() => openSheet("change")}
+          />
           {url && (
             <IconButton
               name={platformIcon(detail.platform)}
@@ -223,15 +245,18 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         }}
       />
 
-      <Modal visible={sheet} animationType="slide" onRequestClose={() => { saveNote(); setSheet(false); }} presentationStyle="pageSheet">
+      <Modal visible={!!sheet} animationType="slide" onRequestClose={() => { saveNote(); setSheet(false); }} presentationStyle="pageSheet">
         <View style={[styles.sheet, { backgroundColor: p.bg }]}>
           <View style={styles.sheetBar}>
-            <Text style={[type.section, { color: p.ink }]}>Details</Text>
+            <View style={styles.sheetTitle}>
+              <Text numberOfLines={2} style={[type.heading, { color: p.ink }]}>{heading}</Text>
+              <Text style={[type.label, styles.meta, { color: p.inkMuted }]} numberOfLines={1}>
+                {detail.authorName ?? detail.siteName ?? platformLabel(detail.platform)} · {savedOn(detail.lastSavedAt)}
+              </Text>
+            </View>
             <IconButton name="close" label="Close" onPress={() => { saveNote(); setSheet(false); }} />
           </View>
           <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
-            <Text style={[type.heading, { color: p.ink }]}>{heading}</Text>
-
             {needsLink && (
               <View style={[styles.block, { backgroundColor: p.surface, borderColor: p.border }]}>
                 <Text style={[type.heading, { color: p.ink }]}>{detail.status === "failed" ? "That link did not work" : "Add the post's link"}</Text>
@@ -262,56 +287,96 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
               </View>
             )}
 
-            {canRetrySorting(detail) && (
-              <View style={[styles.block, { backgroundColor: p.surface, borderColor: p.border }]}>
-                <Text style={[type.body, { color: p.inkMuted }]}>
-                  {detail.classificationStatus === "retry_wait" ? "Sorting hit a temporary problem. We will retry automatically, or you can retry now." : "We could not finish sorting this save. Retry, or choose a category below."}
-                </Text>
-                <Button label="Retry sorting" busy={retrySorting.isPending} onPress={() => retrySorting.mutate()} />
-                {retrySorting.error && <Text style={[type.label, { color: p.bad }]}>{retrySorting.error.message}</Text>}
-              </View>
-            )}
-
-            {isUnsure(detail) && (
-              <Text style={[type.body, { color: p.inkMuted }]}>The sorter wasn't sure about this one — pick a category below.</Text>
-            )}
-            <View style={styles.between}>
-              <Text style={[type.label, { color: p.inkMuted }]}>Put this under</Text>
-              {canSortAgain(detail) && (
-                <Pressable
-                  accessibilityRole="button"
+            {/* Filed under: where the save is, and the means to move it. */}
+            <Section
+              title="Filed under"
+              action={canSortAgain(detail) ? (
+                <TextAction
+                  label={retrySorting.isPending ? "Sorting…" : "Sort again"}
                   accessibilityLabel="Sort this save again"
                   disabled={retrySorting.isPending}
                   onPress={() => { track(userId, "sort_again", { category: detail.modelCategory ?? "none" }); retrySorting.mutate(); }}
-                  hitSlop={8}
-                >
-                  <Text style={[type.label, { color: retrySorting.isPending ? p.inkMuted : p.accent }]}>{retrySorting.isPending ? "Sorting…" : "Sort again"}</Text>
-                </Pressable>
+                />
+              ) : null}
+            >
+              <View style={styles.between}>
+                <View style={styles.filed}>
+                  {detail.category ? <CategoryMark category={detail.category} chosen={chosenMark(detail.category)} size={28} /> : null}
+                  <View style={styles.filedWords}>
+                    <Text style={[type.heading, { color: p.ink }]} numberOfLines={1}>{categoryLabel(detail)}</Text>
+                    {sortingNote(detail) && <Text style={[type.label, { color: p.inkMuted }]}>{sortingNote(detail)}</Text>}
+                  </View>
+                </View>
+                <TextAction label={picking ? "Done" : "Change"} accessibilityLabel={picking ? "Done choosing a category" : "Change the category"} onPress={() => setPicking(!picking)} />
+              </View>
+              {isUnsure(detail) && (
+                <Text style={[type.body, { color: p.inkMuted }]}>The sorter wasn't sure about this one — pick a category below.</Text>
               )}
-            </View>
-            <View style={styles.wrap}>
-              {[...CATEGORIES, ...mine].map((c) => (
-                <Chip key={c} label={categoryDisplayName(c)} selected={detail.category === c} onPress={() => setCategory.mutate(c, { onSuccess: () => track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }) })} />
-              ))}
-              <Chip label="+ New category" onPress={() => setNaming(true)} />
-            </View>
+              {canRetrySorting(detail) && (
+                <>
+                  <Text style={[type.body, { color: p.inkMuted }]}>
+                    {detail.classificationStatus === "retry_wait" ? "Sorting hit a temporary problem. We will retry automatically, or you can retry now." : "We could not finish sorting this save. Retry, or choose a category below."}
+                  </Text>
+                  <Button label="Retry sorting" busy={retrySorting.isPending} onPress={() => retrySorting.mutate()} />
+                </>
+              )}
+              {retrySorting.error && <Text style={[type.label, { color: p.bad }]}>{retrySorting.error.message}</Text>}
+              {picking && (
+                <View style={styles.wrap}>
+                  {[...CATEGORIES, ...mine].map((c) => (
+                    <Chip
+                      key={c}
+                      label={categoryDisplayName(c)}
+                      selected={detail.category === c}
+                      leading={<CategoryMark category={c} chosen={chosenMark(c)} size={18} />}
+                      onPress={() => { setPicking(false); setCategory.mutate(c, { onSuccess: () => track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }) }); }}
+                    />
+                  ))}
+                  <Chip label="+ New category" onPress={() => setNaming(true)} />
+                </View>
+              )}
+            </Section>
 
-            {detail.summary && <Text style={[type.body, { color: p.inkMuted }]}>{detail.summary}</Text>}
-            {detail.summary && summaryNote(detail) && <Text style={[type.label, { color: p.inkMuted }]}>{summaryNote(detail)}</Text>}
-            {detail.tags.length > 0 && <Text style={[type.label, { color: p.inkMuted }]}>{detail.tags.join(" · ")}</Text>}
-            {detail.text && detail.text.trim() !== heading.trim() && <Text style={[type.body, { color: p.ink }]}>{detail.text}</Text>}
+            {/* The person's own words come before the sorter's. */}
+            <Section title="Your note">
+              <TextInput
+                accessibilityLabel="Your note about this save"
+                value={noteValue}
+                onChangeText={setNoteText}
+                onBlur={saveNote}
+                placeholder="Why you saved this, or what to do with it"
+                placeholderTextColor={p.inkMuted}
+                multiline
+                style={[styles.input, styles.noteInput, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
+              />
+            </Section>
 
-            <Text style={[type.label, { color: p.inkMuted }]}>Your note</Text>
-            <TextInput
-              accessibilityLabel="Your note about this save"
-              value={noteValue}
-              onChangeText={setNoteText}
-              onBlur={saveNote}
-              placeholder="Your note…"
-              placeholderTextColor={p.inkMuted}
-              multiline
-              style={[styles.input, styles.noteInput, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
-            />
+            {(detail.summary || detail.tags.length > 0) && (
+              <Section title="What it's about">
+                {detail.summary && <Text style={[type.body, { color: p.ink }]}>{detail.summary}</Text>}
+                {detail.tags.length > 0 && (
+                  <View style={styles.wrap}>{detail.tags.map((tag) => <Chip key={tag} label={tag} />)}</View>
+                )}
+                {detail.summary && summaryNote(detail) && <Text style={[type.label, { color: p.inkMuted }]}>{summaryNote(detail)}</Text>}
+              </Section>
+            )}
+
+            {caption && (
+              <Section title="From the post" action={captionLong ? <TextAction label={captionOpen ? "Show less" : "Show more"} accessibilityLabel={captionOpen ? "Show less of the caption" : "Show the whole caption"} onPress={() => setCaptionOpen(!captionOpen)} /> : null}>
+                <Text
+                  style={[type.body, { color: p.ink }]}
+                  numberOfLines={captionOpen ? undefined : CAPTION_LINES}
+                  // Folded, the layout reports only the lines that fit; the caption is long when they hold less than all of it.
+                  onTextLayout={(e: NativeSyntheticEvent<TextLayoutEventData>) => {
+                    if (captionOpen) return;
+                    const shown = e.nativeEvent.lines.map((l) => l.text).join("").replace(/\s+/g, "");
+                    setCaptionLong(shown.length < caption.replace(/\s+/g, "").length);
+                  }}
+                >
+                  {caption}
+                </Text>
+              </Section>
+            )}
           </ScrollView>
         </View>
       </Modal>
@@ -345,6 +410,30 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   );
 }
 
+/** One thing the sheet holds, named, with room for one action beside the name. */
+function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+  const p = usePalette();
+  return (
+    <View style={[styles.block, { backgroundColor: p.surface, borderColor: p.border }]}>
+      <View style={styles.between}>
+        <Text style={[type.label, { color: p.inkMuted }]}>{title}</Text>
+        {action}
+      </View>
+      {children}
+    </View>
+  );
+}
+
+/** A small action in words, where a button would shout. */
+function TextAction({ label, accessibilityLabel, disabled = false, onPress }: { label: string; accessibilityLabel: string; disabled?: boolean; onPress: () => void }) {
+  const p = usePalette();
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} disabled={disabled} onPress={onPress} hitSlop={8}>
+      <Text style={[type.label, { color: disabled ? p.inkMuted : p.accent }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 function Centered({ width, height, text, onBack }: { width: number; height: number; text: string; onBack?: () => void }) {
   const p = usePalette();
   return (
@@ -370,12 +459,15 @@ const styles = StyleSheet.create({
   meta: { marginTop: 2 },
   actions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: space.sm },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
-  between: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  between: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.sm },
+  filed: { flexDirection: "row", alignItems: "center", gap: space.sm, flex: 1 },
+  filedWords: { flex: 1, gap: 2 },
+  sheetTitle: { flex: 1, gap: 2 },
   block: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, padding: space.lg, gap: space.sm },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.md, minHeight: 48 },
   noteInput: { minHeight: 88, textAlignVertical: "top" },
   sheet: { flex: 1 },
-  sheetBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: space.lg },
+  sheetBar: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: space.md, padding: space.lg },
   sheetBody: { paddingHorizontal: space.lg, paddingBottom: space.xxl * 2, gap: space.md },
   full: { flex: 1 },
   fullBar: { position: "absolute", top: space.xxl + space.lg, right: space.lg, zIndex: 2 },

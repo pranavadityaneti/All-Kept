@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { PlatformLogo } from "./PlatformLogo";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { radius, space, type, usePalette } from "../lib/theme";
@@ -5,17 +6,21 @@ import { radius, space, type, usePalette } from "../lib/theme";
 /** The size the save screen gives its platform button, so a boxed chip stands exactly as tall. */
 const ICON_BUTTON_SIZE = 44;
 
-export function Chip({ label, selected = false, onPress, platform, boxed = false }: { label: string; platform?: string; selected?: boolean; onPress?: () => void;
+export function Chip({ label, selected = false, onPress, platform, boxed = false, leading, trailing, accessibilityLabel }: { label: string; platform?: string; selected?: boolean; onPress?: () => void;
   /** A rounded box the height of an icon button, rather than a pill, so it sits level beside one. */
-  boxed?: boolean }) {
+  boxed?: boolean;
+  /** A mark before the words — a category's own — and a sign after them, such as the chevron that says "tap to change". */
+  leading?: ReactNode; trailing?: ReactNode;
+  /** What a screen reader says, when the label alone would not say what the chip does. */
+  accessibilityLabel?: string }) {
   const p = usePalette();
   const body = (
-    <View style={styles.content}>{platform && <PlatformLogo platform={platform} size={18} appearance={selected ? "dark" : p.blur}/>}<Text style={[styles.text, { color: selected ? p.accentInk : p.inkMuted }]} numberOfLines={1}>{label}</Text></View>
+    <View style={styles.content}>{platform && <PlatformLogo platform={platform} size={18} appearance={selected ? "dark" : p.blur}/>}{leading}<Text style={[styles.text, { color: selected ? p.accentInk : p.inkMuted }]} numberOfLines={1}>{label}</Text>{trailing}</View>
   );
   const style = [styles.chip, boxed && styles.boxed, { backgroundColor: selected ? p.accent : p.surfaceAlt, borderColor: selected ? p.accent : p.border }];
   if (!onPress) return <View style={style}>{body}</View>;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [...style, pressed && styles.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [...style, pressed && styles.pressed]}>
       {body}
     </Pressable>
   );

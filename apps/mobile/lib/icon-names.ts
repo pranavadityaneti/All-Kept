@@ -33,6 +33,7 @@ export const NAMES = {
   camera: "camera-outline",
   add: "add",
   down: "chevron-down",
+  help: "help-circle-outline",
   back: "arrow-back",
   download: "cloud-download-outline",
   web: "globe-outline",
