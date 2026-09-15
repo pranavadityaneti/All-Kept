@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 // The picker and the Supabase client are native; only the pure decisions are checked here.
 vi.mock("expo-file-system", () => ({ File: class {} }));
-vi.mock("../lib/supabase", () => ({ supabase: {} }));
+vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 
 const { looksLikeExport, storageKey } = await import("../lib/import");
 
@@ -49,5 +49,19 @@ describe("the key a file is stored under", () => {
     const key = storageKey(user, `${"a".repeat(300)}.zip`, 1757000000000);
     expect(key.endsWith(".zip")).toBe(true);
     expect(key.length).toBeLessThan(user.length + 80);
+  });
+});
+
+describe("starting the import", () => {
+  it("tells the door being shut — a 402 — apart from every other refusal, so the screen can open the paywall", async () => {
+    const { supabase } = await import("../lib/supabase");
+    const { ImportNeedsSubscription, startImport } = await import("../lib/import");
+    const invoke = vi.mocked(supabase.functions.invoke);
+    invoke.mockResolvedValueOnce({ data: null, error: { context: new Response(JSON.stringify({ error: "The import needs a subscription." }), { status: 402 }) } } as never);
+    await expect(startImport("u1/saved.zip")).rejects.toBeInstanceOf(ImportNeedsSubscription);
+    invoke.mockResolvedValueOnce({ data: null, error: { context: new Response(JSON.stringify({ error: "that file is not yours" }), { status: 400 }) } } as never);
+    const other = startImport("u1/saved.zip");
+    await expect(other).rejects.toThrow("that file is not yours");
+    await expect(other).rejects.not.toBeInstanceOf(ImportNeedsSubscription);
   });
 });

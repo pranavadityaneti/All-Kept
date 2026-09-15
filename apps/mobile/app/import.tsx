@@ -7,7 +7,7 @@ import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { Icon } from "../components/Icon";
 import { IconButton } from "../components/IconButton";
-import { importProgress, looksLikeExport, MAX_IMPORT_BYTES, pickExport, removeUpload, startImport, uploadExport } from "../lib/import";
+import { ImportNeedsSubscription, importProgress, looksLikeExport, MAX_IMPORT_BYTES, pickExport, removeUpload, startImport, uploadExport } from "../lib/import";
 import { track, useTrackOnce } from "../lib/metrics";
 import { openLink } from "../lib/open";
 import { useSession } from "../lib/session";
@@ -80,13 +80,15 @@ export default function ImportSaves() {
       setStage({ name: "done", ...result });
       uploaded = null; // the server removes it once it has been read
     } catch (e: unknown) {
-      track(userId, "import_failed", { step });
+      track(userId, "import_failed", { step: e instanceof ImportNeedsSubscription ? "subscription" : step });
       if (uploaded) await removeUpload(uploaded); // no reason to leave their file sitting there
       setStage({ name: "error", message: e instanceof Error ? e.message : String(e) });
+      // The door is shut: the paywall opens over this screen, and the file is one tap away once it is open again.
+      if (e instanceof ImportNeedsSubscription) router.push("/subscribe");
     } finally {
       running.current = false;
     }
-  }, [userId]);
+  }, [userId, router]);
 
   const filled = progress.data ? progress.data.ready : 0;
   const failed = progress.data?.failed ?? 0;

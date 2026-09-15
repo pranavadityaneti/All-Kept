@@ -40,7 +40,8 @@ them.
 `import-saves` calls `entitled()` once before writing a batch and answers `402 payment_required`
 like every other door. Imported rows are not counted against the 25 — the import is behind the
 subscription in the US, and counting would make the same import a wall twice. The app turns the 402
-into the paywall, the file kept for after.
+into the paywall; the file is picked again afterwards — one tap, and nothing of theirs left lying
+on the server meanwhile.
 
 ### D3 — the ended state on the phone
 

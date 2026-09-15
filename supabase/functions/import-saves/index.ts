@@ -89,6 +89,12 @@ Deno.serve(async (req) => {
     if (req.method !== "POST") return apiError("bad_request", "POST only");
     const userId = await userIdFromRequest(req);
     if (!userId) return apiError("unauthorized", "invalid or missing token");
+    // The same door as every other save: the import is behind the subscription in the US, and the
+    // free saves are for trying the doors. Asked before the file is even read. Imported rows are
+    // not counted against the twenty-five — counting would make the same import a wall twice.
+    const { data: open, error: gate } = await db.rpc("entitled", { p_user_id: userId });
+    if (gate) throw gate;
+    if (open !== true) return apiError("payment_required", "The import needs a subscription. Subscribe in Allkept, then pick the file again.");
 
     const body = await readJson(req);
     const path = typeof body?.["path"] === "string" ? body["path"] : "";

@@ -1,5 +1,6 @@
 import type { ImportProgress, ImportSavesResponse } from "@allkept/contracts";
 import { File } from "expo-file-system";
+import { isPaymentRequired } from "./paywall";
 import { supabase } from "./supabase";
 
 /** Matches the bucket's own limit. A "Saved" export is measured in kilobytes; anything near this is the wrong file. */
@@ -63,10 +64,13 @@ async function reasonFrom(error: unknown): Promise<string> {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** The server would not run the import: the door is shut — the free saves are used and nothing is subscribed. The paywall is the answer, not an error. */
+export class ImportNeedsSubscription extends Error {}
+
 /** Reads the uploaded export. The saves are created empty; the server fills them in afterwards. */
 export async function startImport(path: string): Promise<ImportSavesResponse> {
   const { data, error } = await supabase.functions.invoke<ImportSavesResponse>("import-saves", { method: "POST", body: { path } });
-  if (error) throw new Error(await reasonFrom(error));
+  if (error) throw isPaymentRequired(error) ? new ImportNeedsSubscription(await reasonFrom(error)) : new Error(await reasonFrom(error));
   if (!data) throw new Error("the server did not answer");
   return data;
 }
