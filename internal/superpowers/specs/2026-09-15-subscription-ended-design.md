@@ -53,9 +53,10 @@ on the server meanwhile.
   leads with the end date and the waiting count, then the cards and the store's disclosure, with
   Restore purchases beside them; the four benefit rows are not shown to someone who has seen the
   product. A billing issue keeps its own words.
-- **Inbox.** The Notifications screen gets a `billing` entry: "Subscription ended — renew to keep
-  saving", dated at the period end; "Payment problem — update your card" for a billing issue. Read
-  from the entitlement row; no table.
+- **Inbox.** The Notifications screen gets a `billing` entry: "Subscription ended · Renew to keep
+  saving", dated at the period end, tapping through to the paywall. Read from the entitlement row;
+  no table. A billing issue has no day of its own to sit under, so it stays where it was — the
+  Settings row and the paywall's own words — and the push (D4) is what reaches the person.
 - **Settings, YouTube.** The row reads `paused_reason` and says "Paused — subscription ended";
   the poller resumes it on its own once entitled again.
 - **Share extension.** The app writes its last known standing to the app group; when the last
@@ -66,10 +67,13 @@ on the server meanwhile.
 
 `billing-webhook`, on EXPIRATION (and on a store-support cancellation, which ends now): one push
 under the master notification switch alone — account news is not "sorted" news — "Your Allkept
-subscription has ended. Everything you saved is still here; new links will wait until you renew."
-The waiting count lives on the phone, so the server does not claim one; the app, when a flush finds
-the door shut, posts a local notification once per shut door: "3 shared links are waiting — renew
-to file them." A BILLING_ISSUE sends "Apple couldn't charge your card — update it to keep saving."
+subscription has ended. Everything you saved is still here. New links will wait until you renew."
+— and only once the door has actually shut by the database's own rule, so a product ending while
+another, complimentary access or free saves keep it open says nothing. The waiting count lives on
+the phone, so the server does not claim one; the Home card carries it the moment the app opens,
+which is where a local notification would only have repeated the card. A BILLING_ISSUE sends
+"Apple couldn't charge your card. Update it in your subscriptions to keep saving." A tap on either
+opens the paywall.
 
 ## 4. Testing
 
