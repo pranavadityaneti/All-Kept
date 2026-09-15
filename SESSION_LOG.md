@@ -1400,3 +1400,16 @@ categories.
   with curl on three reels), so transcription is clean only for the DM door, where Meta hands us
   the media URL; on-screen text from the poster frame is the cheap next step; Weave beats Albo by
   citation, artefact-not-chat, export out, liveness, honesty about coverage.
+- Pranav: "The summary is only shown for tech, and the rest of the category doesn't get that, why?"
+  Diagnosis from `category_summaries`: the function worked for every category, but v1 waited on
+  the model before answering, so the first open of a category showed a blank card for the seconds
+  the model took; and the themes followed the saves' language (Japanese for Entertainment).
+  Fix (`e07ab32`): the function answers at once with the facts and whatever themes are stored,
+  marked `freshness: "writing"`, and writes the themes after the response has gone
+  (`EdgeRuntime.waitUntil`, an in-flight set so a second ask meanwhile does not start the model
+  again); the phone's language goes into the prompt and the fingerprint (`md5:en`), so existing
+  rows are rewritten in English on the next open after their hour is up. App (`1925809`): sends
+  `language`, looks again four times over fifty seconds while "writing" (`nextRefetchMs`, never
+  open-ended), shows "Reading these saves…" only while another look is coming. Deno 266 pass,
+  app 262 pass, tsc clean; card verified on the simulator (Career, folded and unfolded). Not yet
+  deployed or pushed — waiting for Pranav's Yes.
