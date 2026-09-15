@@ -70,15 +70,32 @@ Deno.test("a post share without a link becomes a no_link post keyed by the media
   assertEquals(again.deduplicated, true);
 });
 
-Deno.test("a text message with a link becomes that link's item; surrounding words are kept as the note", async () => {
+Deno.test("a text message with a link becomes that link's item; the words around the link are kept as the note, the link itself is the save", async () => {
   const f = new Fake();
   const r = await capture(base({ sharedText: "watch this https://www.youtube.com/watch?v=WfJPBVXPt8k later" }), f);
   assertEquals([r.platform, r.kind], ["youtube", "video"]);
   assertEquals(f.items[0]!.row.canonical_url, "https://www.youtube.com/watch?v=WfJPBVXPt8k");
-  assertEquals(f.items[0]!.row.note, "watch this https://www.youtube.com/watch?v=WfJPBVXPt8k later");
+  assertEquals(f.items[0]!.row.note, "watch this later");
   const bare = await capture(base({ sharedText: "https://www.youtube.com/watch?v=WfJPBVXPt8k" }), f);
   assertEquals(bare.deduplicated, true);
 });
+
+Deno.test("a share whose text is only its own link — with a tracking tail, a redirect wrapper, a slug or a slash the cleaned link lacks — leaves no note; words around it stay", async () => {
+  // The share sheet hands over the cleaned link and, separately, the raw text it came in, which is
+  // usually that same link before cleaning. Words are what is left once every link is taken out.
+  for (const [sharedUrl, sharedText, note] of [
+    ["https://www.instagram.com/reel/DaC4N-0hxdH/", "https://www.instagram.com/reel/DaC4N-0hxdH/?stkn=MWRkOGhueGZpOWx3Zg==", null],
+    ["https://razorpay.com/learn/startup-business-ideas-for-students", "https://www.google.com/url?q=https://razorpay.com/learn/startup-business-ideas-for-students", null],
+    ["https://www.apple.com/in", " https://www.apple.com/in/ ", null],
+    ["https://www.reddit.com/r/SaaS/comments/1wdmycf/", "Check this out: https://www.reddit.com/r/SaaS/comments/1wdmycf/i_analyzed_how_200_100k/", "Check this out:"],
+    ["https://www.youtube.com/watch?v=WfJPBVXPt8k", "watch this https://youtu.be/WfJPBVXPt8k later", "watch this later"],
+  ] as const) {
+    const f = new Fake();
+    await capture(base({ sourceKind: "share", sharedUrl, sharedText }), f);
+    assertEquals(f.items[0]!.row.note, note, sharedText);
+  }
+});
+
 
 Deno.test("plain text becomes a note item with the text", async () => {
   const f = new Fake();

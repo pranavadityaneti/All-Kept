@@ -67,6 +67,18 @@ const result = (item: ExistingItem, deduplicated: boolean): CaptureResult => ({
   itemId: item.id, deduplicated, status: item.status, platform: item.platform, kind: item.kind,
 });
 
+/**
+ * What a person wrote around a link, or null when the text was only links. The share sheet hands
+ * over the cleaned link and, separately, the raw text it arrived in — usually that same link with
+ * a tracking tail, a redirect wrapper or a slug the cleaned one lacks — so comparing the two is not
+ * the test; taking every link out of the text and seeing what is left is.
+ */
+export function wordsAround(text: string | null): string | null {
+  if (!text) return null;
+  const words = text.replace(/https?:\/\/\S+/gi, " ").replace(/\s+/g, " ").trim();
+  return words.length > 0 ? words : null;
+}
+
 export async function capture(input: CaptureInput, deps: CaptureDeps): Promise<CaptureResult> {
   // Exact idempotency per door event: a redelivered message returns the original answer.
   const prior = await deps.findCapture(input.userId, input.sourceKind, input.sourceEventId);
@@ -110,7 +122,7 @@ export async function capture(input: CaptureInput, deps: CaptureDeps): Promise<C
     needs_expansion: link?.needsExpansion ?? false,
     title: input.title ?? null,
     text: input.caption ?? (isNote ? link?.text ?? null : null),
-    note: !isNote && link?.text && link.text !== link.sourceUrl ? link.text : null, // the user's own words around a link
+    note: isNote ? null : wordsAround(link?.text ?? null), // the user's own words around a link, if there were any
     thumbnail_url_remote: input.snapshotUrl ?? null,
     captured_via: input.sourceKind,
     status,
