@@ -9,6 +9,7 @@ type Native = {
   hasCredential(): boolean;
   peekQueue(): string;
   dropQueued(requestId: string): void;
+  setStanding(blocked: boolean, lapsed: boolean): void;
 };
 let handle: Native | null = null;
 // Resolved on first use, not at import: a test, or a build without the native side, can import this safely.
@@ -28,3 +29,5 @@ export function peekQueue(): QueuedShare[] {
   } catch { return []; }
 }
 export function dropQueued(requestId: string): void { native().dropQueued(requestId); }
+/** The door as the app last knew it, for the share sheet's word: "Waiting" rather than "Saved" while it is shut. */
+export function setShareStanding(blocked: boolean, lapsed: boolean): void { native().setStanding(blocked, lapsed); }

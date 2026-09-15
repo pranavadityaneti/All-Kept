@@ -15,5 +15,6 @@ public class ShareSaveModule: Module {
       return String(decoding: data, as: UTF8.self)
     }
     Function("dropQueued") { (requestId: String) in SharedStore.drop(requestId: requestId) }
+    Function("setStanding") { (blocked: Bool, lapsed: Bool) in SharedStore.setStanding(blocked: blocked, lapsed: lapsed) }
   }
 }

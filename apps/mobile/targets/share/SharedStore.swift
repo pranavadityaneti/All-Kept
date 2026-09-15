@@ -65,4 +65,26 @@ enum SharedStore {
     guard let url = queueURL, let data = try? JSONEncoder().encode(items) else { return }
     try? data.write(to: url, options: .atomic)
   }
+
+  /// The door as the app last knew it: shut, and whether a subscription once stood behind it. The
+  /// extension reads this to say "Waiting" rather than "Saved" — it never sees the server's answer
+  /// itself, since iOS finishes its upload after the sheet is gone.
+  struct Standing: Codable { let blocked: Bool; let lapsed: Bool; let at: Double }
+  static let standingFile = "standing.json"
+
+  private static var standingURL: URL? {
+    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)?.appendingPathComponent(standingFile)
+  }
+
+  static func setStanding(blocked: Bool, lapsed: Bool) {
+    guard let url = standingURL else { return }
+    let standing = Standing(blocked: blocked, lapsed: lapsed, at: Date().timeIntervalSince1970 * 1000)
+    guard let data = try? JSONEncoder().encode(standing) else { return }
+    try? data.write(to: url, options: .atomic)
+  }
+
+  static func standing() -> Standing? {
+    guard let url = standingURL, let data = try? Data(contentsOf: url) else { return nil }
+    return try? JSONDecoder().decode(Standing.self, from: data)
+  }
 }

@@ -13,5 +13,6 @@ class ShareSaveModule : Module() {
     Function("hasCredential") { SharedStore.credential(context) != null }
     Function("peekQueue") { SharedStore.queueJson(context) }
     Function("dropQueued") { requestId: String -> SharedStore.drop(context, requestId) }
+    Function("setStanding") { blocked: Boolean, lapsed: Boolean -> SharedStore.setStanding(context, blocked, lapsed) }
   }
 }

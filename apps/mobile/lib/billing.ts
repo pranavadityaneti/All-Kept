@@ -16,6 +16,7 @@ import { useEffect } from "react";
 import { Linking, NativeModules, Platform } from "react-native";
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from "react-native-purchases";
 import { FREE_SAVES } from "@allkept/contracts";
+import { setShareStanding } from "../modules/share-save";
 import { keyAllowed, MANAGE_URL } from "./paywall";
 import { normalizeRegion, regionFromLocale, standing, type EntitlementRow, type Standing } from "./standing";
 import { supabase } from "./supabase";
@@ -76,7 +77,10 @@ export function useEntitlement(userId: string | null) {
       const { data, error } = await supabase.rpc("my_entitlement");
       if (error) throw new Error(error.message);
       const row = (data as EntitlementRow[] | null)?.[0];
-      return standing(row ?? { entitled: true, storefront: null, saves_used: 0, free_saves: FREE_SAVES, status: null, will_renew: null, current_period_end: null, product_id: null, complimentary_until: null }, new Date());
+      const s = standing(row ?? { entitled: true, storefront: null, saves_used: 0, free_saves: FREE_SAVES, status: null, will_renew: null, current_period_end: null, product_id: null, complimentary_until: null }, new Date());
+      // The share sheet runs without the app and never sees the server's answer: it is told the door's state here, every time the app learns it.
+      try { setShareStanding(s.kind === "blocked", s.kind === "blocked" && s.lapsed); } catch { /* a build without the native side has no share sheet to tell */ }
+      return s;
     },
   });
   // The moment RevenueCat knows of a purchase, ask the server again: the webhook lands within
@@ -117,14 +121,14 @@ export function useRestore() {
 }
 
 /**
- * Whether the share sheet's queue is held up by a refused save. Set by whoever last flushed the
- * queue, read by the home screen; kept in the query cache so every screen sees the same answer
- * and the answer survives a relaunch until the next flush corrects it.
+ * How many shares the queue is holding because a save was refused — zero when the door is open.
+ * Set by whoever last flushed the queue, read by Home and the paywall; kept in the query cache so
+ * every screen sees the same number and it survives a relaunch until the next flush corrects it.
  */
-export const shareQueueKey = ["share-queue-blocked"] as const;
-export const setShareQueueBlocked = (queryClient: QueryClient, blocked: boolean): void => { queryClient.setQueryData(shareQueueKey, blocked); };
-export function useShareQueueBlocked(): boolean {
-  return useQuery({ queryKey: shareQueueKey, queryFn: () => false, staleTime: Infinity }).data ?? false;
+export const shareQueueKey = ["share-queue-waiting"] as const;
+export const setShareQueueWaiting = (queryClient: QueryClient, waiting: number): void => { queryClient.setQueryData(shareQueueKey, waiting); };
+export function useShareQueueWaiting(): number {
+  return useQuery({ queryKey: shareQueueKey, queryFn: () => 0, staleTime: Infinity }).data ?? 0;
 }
 
 /**

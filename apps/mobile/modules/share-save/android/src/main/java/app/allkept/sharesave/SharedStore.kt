@@ -13,6 +13,8 @@ object SharedStore {
   private const val PREFS = "app.allkept.share-save"
   private const val KEY = "credential"
   private const val QUEUE = "share-queue.json"
+  private const val BLOCKED = "standing.blocked"
+  private const val LAPSED = "standing.lapsed"
   private val lock = Any()
 
   data class Credential(val token: String, val endpoint: String, val apikey: String)
@@ -27,6 +29,13 @@ object SharedStore {
   fun clearCredential(context: Context) {
     context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY).apply()
   }
+  /** The door as the app last knew it, so the share sheet can name the reason a save is waiting — a subscription that ended, or free saves used. */
+  fun setStanding(context: Context, blocked: Boolean, lapsed: Boolean) {
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(BLOCKED, blocked).putBoolean(LAPSED, lapsed).apply()
+  }
+  fun lapsed(context: Context): Boolean =
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).let { it.getBoolean(BLOCKED, false) && it.getBoolean(LAPSED, false) }
+
   private fun parse(json: String): Credential? = try {
     val o = JSONObject(json)
     Credential(o.getString("token"), o.getString("endpoint"), o.getString("apikey"))

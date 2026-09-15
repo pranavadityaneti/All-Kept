@@ -44,7 +44,13 @@ final class ShareViewController: UIViewController {
     let requestId = UUID().uuidString
     SharedStore.enqueue(text: text, requestId: requestId)
     BackgroundUpload.start(text: text, requestId: requestId, credential: credential)
-    Banner.post(title: "Saved to Allkept", body: "Sorting it now") { [weak self] in self?.complete() }
+    // The door as the app last knew it. Shut, the server will answer 402 and the link waits in the
+    // queue for the app's next flush after a renewal — so the banner says waiting, not saved.
+    if let standing = SharedStore.standing(), standing.blocked {
+      Banner.post(title: "Waiting in Allkept", body: standing.lapsed ? "Renew to file it" : "Subscribe to file it") { [weak self] in self?.complete() }
+    } else {
+      Banner.post(title: "Saved to Allkept", body: "Sorting it now") { [weak self] in self?.complete() }
+    }
   }
 
   /// A small card for the cases that need a person, held for a second.
