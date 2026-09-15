@@ -280,9 +280,9 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
-### 43. A done or visited state with a journal line
+### 43. A done or visited state with a journal line — DONE 15 Sep 2026
 - **What + why:** Mark a save done / visited / tried, with an optional one-line note ("went in June, the ramen was worth it"), shown on the card and filterable. Albo has it; Stasht's users beg for it. Small.
 - **Scope:** A `done_at` + `journal` on the item, the item sheet, the card's corner, a `flags` filter value ("Done").
-- **Status:** in progress — 15 Sep 2026, Pranav: "go ahead with #43"
+- **Status:** done — 15 Sep 2026: `items.done_at` + `journal`, `library_query_v6` (migration applied), `lib/done.ts` (the verb follows the intent), a tick in the header opening `DoneSheet`, marks on cards and rows, "Done" filter, Notifications entry. Verified on the simulator.
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.

@@ -1521,3 +1521,20 @@ categories.
   new `metro.log`). Verified on the simulator: "Copy as text" put title, summary and link on the
   clipboard (`xcrun simctl pbpaste`). Venue/date chips need the migration + deploy + re-sort to
   show. Waiting for Pranav's `db push`, then Yes to deploy sweeper + reprocess-item and push.
+- Stage A deployed (sweeper + reprocess-item) at 14:54 on Pranav's Yes; pushed
+  (`d684596..96b60c8`). The venue/date re-sort runs at twenty a sweep; 60/160 by 15:11 with no
+  venue and no date yet (tech reels). Pranav asked about stages B and C: answered with sizing,
+  needs (Apple MapKit Server API first, Google Places as fallback; `expo-maps` in tonight's build;
+  `expo-location` deferred to C's own build) and the two decisions; he said proceed with B and C
+  later, #43 now, and asked how to get the two APIs — told step by step, keys straight into
+  `supabase secrets set`, never through chat. `expo-maps` installed (`c247f07`).
+- #43 done/visited: `e9d8b8a` migration (`items.done_at`, `items.journal`, `library_query_v6`
+  returning `done_at` with flags done / not_done, facets take done; dry-run clean, applied by
+  Pranav), `3bef6e4` app (`lib/done.ts` — the verb follows the sorter's intent: Watched, Tried,
+  Bought, Been, Read; `DoneSheet` from a tick in the save's header; the line in the details
+  title; ticks on cards and rows; "Done" filter; "You marked this done" in Notifications). App
+  286 pass, tsc clean. Verified on the simulator: tick → "Watched?" sheet → line "Lovely fields"
+  → row written (done_at, journal), tick filled, details "Watched · 15 Sep — Lovely fields", card
+  tick, Status "Done 1". Noted: a re-sort can flip a few borderline saves between runs (Tech
+  66→67, Entertainment 26→27 mid-run) — inherent to the model; corrections pin them. Not pushed:
+  `c247f07`, `e9d8b8a`, `3bef6e4` — waiting for Pranav's Yes. EAS build is his, tonight.
