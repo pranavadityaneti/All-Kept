@@ -36,6 +36,8 @@ const mapAvailable = (): boolean => mapsModule() !== null && (Platform.OS === "a
 
 /** Close enough to walk: the zoom "Near me" comes in at. */
 const NEAR_ZOOM = 13;
+/** What the trip bar and the tab bar cover at the bottom of the map, in points: pins are framed clear of it. */
+const TRIP_BAR_COVER = TAB_BAR_CLEARANCE + 200;
 
 const stopOf = (s: PlacedSave): TripStop => ({ id: s.id, title: s.title?.trim() || s.text?.trim().split("\n")[0] || s.place.name, url: null, lastSavedAt: s.lastSavedAt, place: s.place });
 
@@ -67,10 +69,18 @@ export function PlacesMap({ filters, enabled, onOpen, onWayOut }: {
   const markers = useMemo(() => saves.map((s) => ({ id: s.id, coordinates: { latitude: s.place.lat, longitude: s.place.lng }, title: s.place.name })), [saves]);
   // The map mounts before the pins have arrived, and a camera given as a prop is read once, at
   // mount; when the pins land the map is asked to move, so it frames them rather than the world.
+  // Once per set of pins: the rows are fetched again whenever the app comes back — after the
+  // location prompt, say — and framing them again would undo where the person had just gone.
   const appleRef = useRef<import("expo-maps/build/apple/AppleMaps.types").AppleMapsViewType | null>(null);
   const googleRef = useRef<import("expo-maps/build/google/GoogleMaps.types").GoogleMapsViewType | null>(null);
   const moveTo = (to: { coordinates: { latitude: number; longitude: number }; zoom: number }) => { appleRef.current?.setCameraPosition(to); googleRef.current?.setCameraPosition(to); };
-  useEffect(() => { if (saves.length > 0) moveTo(camera); }, [camera, saves.length]);
+  const pinSet = saves.map((s) => s.id).join(",");
+  const framedFor = useRef("");
+  useEffect(() => {
+    if (saves.length === 0 || framedFor.current === pinSet) return;
+    framedFor.current = pinSet;
+    moveTo(camera);
+  }, [camera, pinSet, saves.length]);
   // "Near me" was tapped: once the phone knows where it is, the map comes in on it.
   const wantsNear = useRef(false);
   useEffect(() => {
@@ -109,7 +119,7 @@ export function PlacesMap({ filters, enabled, onOpen, onWayOut }: {
   const pickTrip = (t: Trip) => {
     setSelectedId(null);
     setTrip(t);
-    moveTo(cameraFor(t.stops.map((s) => s.place), view));
+    moveTo(cameraFor(t.stops.map((s) => s.place), view, TRIP_BAR_COVER));
   };
   const nearMe = async () => {
     onWayOut?.("near_me");

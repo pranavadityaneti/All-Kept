@@ -84,6 +84,8 @@ export interface MapView { width: number; height: number; platform: "ios" | "and
 
 /** Street level: two cafés on one road are told apart, and one place is seen with its neighbourhood. */
 const CLOSE = 15;
+/** A third again around the pins, so none sits on the edge. */
+const MARGIN = 1.35;
 /** The most the map can be asked to show at once, in degrees, before it stops zooming out and pins fall off the edge. */
 const WIDEST = 120;
 /** How far apart, in degrees, places still count as one group when everything cannot be shown. */
@@ -97,7 +99,8 @@ const GROUP = 40;
 function framed<P extends { lat: number; lng: number }>(points: P[], view: MapView): P[] {
   const lngSpan = (Math.max(...points.map((p) => p.lng)) - Math.min(...points.map((p) => p.lng))) * MARGIN;
   const latSpan = (Math.max(...points.map((p) => p.lat)) - Math.min(...points.map((p) => p.lat))) * MARGIN;
-  if (lngSpan * (view.height / view.width) <= WIDEST && latSpan <= WIDEST) return points;
+  // The region the map would need, on Apple's terms: the longitude across the width, the latitude across the tall view.
+  if (Math.max(lngSpan, latSpan / (view.height / view.width)) <= WIDEST) return points;
   let best: P[] = [];
   for (const anchor of points) {
     const group = points.filter((p) => Math.abs(p.lng - anchor.lng) <= GROUP / 2 && Math.abs(p.lat - anchor.lat) <= GROUP / 2);
@@ -105,33 +108,44 @@ function framed<P extends { lat: number; lng: number }>(points: P[], view: MapVi
   }
   return best;
 }
-/** A third again around the pins, so none sits on the edge. */
-const MARGIN = 1.35;
 
 /**
  * Where the map starts: on the one place, close; over all of them, zoomed out just enough to hold
  * the widest span with a margin; over the world when there is nothing yet.
  *
- * The two maps mean different things by "zoom". Apple's, through expo-maps, takes a region whose
- * span is 360 / 2^zoom degrees in both directions and fits it to the view — so on a phone, held
- * tall, the latitude span is what fits and the longitude seen is narrower by the view's own ratio.
- * Google's is the web scale: the world is 256 points wide at zoom 0 and doubles with each level.
- * Neither can show much more than half the world across a phone; a library spread over three
- * continents starts as wide as the map goes, centred, and the person pans.
+ * The two maps mean different things by "zoom". Apple's, through expo-maps, takes a region D
+ * degrees square and fits it to the view: the width shows D degrees of longitude and the tall view
+ * shows D × (height / width) of latitude. Google's is the web scale: the world is 256 points wide
+ * at zoom 0 and doubles with each level, so the width shows 360 × width / (256 × 2^zoom) degrees
+ * and the height the same in proportion. Neither can show much more than half the world across a
+ * phone; a library spread over three continents starts on the largest group, and the person pans.
+ * A card or a bar over the bottom of the map is given as `bottomInset`: the pins are fitted to
+ * the part still in view and the centre moved south by half the cover, so they sit in the clear.
  */
-export function cameraFor(all: { lat: number; lng: number }[], view: MapView = { width: 400, height: 800, platform: "ios" }): Camera {
+export function cameraFor(all: { lat: number; lng: number }[], view: MapView = { width: 400, height: 800, platform: "ios" }, bottomInset = 0): Camera {
   if (all.length === 0) return { coordinates: { latitude: 20, longitude: 0 }, zoom: 1 };
+  const clear = Math.max(0.3, 1 - bottomInset / view.height); // the share of the height still in view
   const points = framed(all, view);
   const lats = points.map((p) => p.lat), lngs = points.map((p) => p.lng);
   const minLat = Math.min(...lats), maxLat = Math.max(...lats), minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
   const coordinates = { latitude: (minLat + maxLat) / 2, longitude: (minLng + maxLng) / 2 };
   const lngSpan = (maxLng - minLng) * MARGIN, latSpan = (maxLat - minLat) * MARGIN;
-  if (lngSpan <= 0 && latSpan <= 0) return { coordinates, zoom: CLOSE };
   const tall = view.height / view.width;
-  const zoom = view.platform === "ios"
-    // The square region must hold the latitude span outright, and the longitude span once the tall view has narrowed it.
-    ? Math.log2(360 / Math.max(latSpan, lngSpan * tall))
-    // Tiles: the longitude span across the view's width, or the latitude span across its height.
-    : Math.log2((360 * view.width) / (256 * Math.max(lngSpan, latSpan / tall)));
-  return { coordinates, zoom: Math.min(CLOSE, Math.max(0, zoom)) };
+  let zoom: number;
+  let shownLat: number; // degrees of latitude the whole view shows at that zoom
+  if (lngSpan <= 0 && latSpan <= 0) {
+    zoom = CLOSE;
+    shownLat = view.platform === "ios" ? (360 / 2 ** CLOSE) * tall : (360 * view.height) / (256 * 2 ** CLOSE);
+  } else if (view.platform === "ios") {
+    // D holds the longitude span across the width, and the latitude span across the part of the height still in view.
+    const d = Math.max(lngSpan, latSpan / (tall * clear));
+    zoom = Math.min(CLOSE, Math.max(0, Math.log2(360 / d)));
+    shownLat = (360 / 2 ** zoom) * tall;
+  } else {
+    const d = Math.max(lngSpan, (latSpan * view.width) / (view.height * clear));
+    zoom = Math.min(CLOSE, Math.max(0, Math.log2((360 * view.width) / (256 * d))));
+    shownLat = (360 * view.height) / (256 * 2 ** zoom);
+  }
+  if (bottomInset > 0) coordinates.latitude -= (shownLat * (1 - clear)) / 2;
+  return { coordinates, zoom };
 }
