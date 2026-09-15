@@ -118,6 +118,9 @@ function Shell() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="item/[id]" />
         <Stack.Screen name="activity" />
+        <Stack.Screen name="weave/index" />
+        <Stack.Screen name="weave/customise" />
+        <Stack.Screen name="weave/plan" />
         <Stack.Screen name="feedback" />
         <Stack.Screen name="setup/instagram" />
         <Stack.Screen name="setup/youtube" />

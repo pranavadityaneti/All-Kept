@@ -49,8 +49,10 @@ const stopOf = (s: PlacedSave): TripStop => ({ id: s.id, title: s.title?.trim() 
  * one route in Google Maps, or an itinerary to send. "Near me" asks for the phone's location, with
  * the reason in hand, and comes in on it.
  */
-export function PlacesMap({ filters, enabled, onOpen, onWayOut }: {
+export function PlacesMap({ filters, enabled, onOpen, onPlan, onWayOut }: {
   filters: Filters; enabled: boolean; onOpen: (id: string) => void;
+  /** "Plan a trip": the Weave, an itinerary woven from the saved places. */
+  onPlan: () => void;
   onWayOut?: (what: "trip_route" | "trip_share" | "near_me") => void;
 }) {
   const p = usePalette();
@@ -133,9 +135,10 @@ export function PlacesMap({ filters, enabled, onOpen, onWayOut }: {
 
   return (
     <View style={styles.fill}>
-      {trips.length > 1 && (
+      {trips.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.trips} contentContainerStyle={styles.tripsInner}>
-          {trips.map((t) => <Chip key={t.town} label={`${t.town} ${t.stops.length}`} selected={trip?.town === t.town} onPress={() => pickTrip(t)} accessibilityLabel={`${t.town}, ${t.stops.length} ${t.stops.length === 1 ? "place" : "places"}`} />)}
+          <Chip label="Plan a trip" leading={<Icon name="route" size={15} color={p.inkMuted} />} onPress={onPlan} accessibilityLabel="Plan a trip from your saved places" />
+          {trips.length > 1 && trips.map((t) => <Chip key={t.town} label={`${t.town} ${t.stops.length}`} selected={trip?.town === t.town} onPress={() => pickTrip(t)} accessibilityLabel={`${t.town}, ${t.stops.length} ${t.stops.length === 1 ? "place" : "places"}`} />)}
         </ScrollView>
       )}
       <View style={styles.fill}>

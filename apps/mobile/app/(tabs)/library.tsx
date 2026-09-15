@@ -79,7 +79,7 @@ export default function Library() {
       <FilterBar facets={facets.data} filters={filters} matches={matches} onOpen={() => setFiltering(true)} onRemove={toggle} onClear={clear} />
 
       {view === "map" ? (
-        <PlacesMap filters={filters} enabled={ready && loaded} onOpen={(id) => router.push({ pathname: "/item/[id]", params: { id } })} onWayOut={(what) => track(userId, what)} />
+        <PlacesMap filters={filters} enabled={ready && loaded} onOpen={(id) => router.push({ pathname: "/item/[id]", params: { id } })} onPlan={() => router.push("/weave")} onWayOut={(what) => track(userId, what)} />
       ) : (
       <FlashList
         key={view}
