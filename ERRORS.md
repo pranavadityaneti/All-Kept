@@ -297,3 +297,7 @@ again — which also explains why my later taps to restore the interests switch 
 - Remember: anything the config reads from the environment must be either identical on every
   machine that computes the fingerprint, or skipped from it. The build log is brotli-compressed
   (`x-goog-stored-content-encoding: br`): `curl -s <logFiles[0]> | brotli -d`.
+- Build 32 then failed the same way over package.json's scripts: EAS's prebuild rewrites
+  "expo start --ios" to "expo run:ios" on the build machine, and the fingerprint counts the
+  scripts. `PackageJsonScriptsAll` is skipped too. Check the fingerprint's *sources* against what
+  the build machine will change, not only what the laptop's environment holds.
