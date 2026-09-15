@@ -287,10 +287,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
-### 44. Stage B — the map of saved places, and what the place knows
+### 44. Stage B — the map of saved places, and what the place knows — DONE 15 Sep 2026
 - **What + why:** The rest of stage B (spec `internal/superpowers/specs/2026-09-15-export-out-design.md`): a map view for Food and Travel (`expo-maps` rides tonight's build; Android needs the Maps SDK key from Google Cloud in `app.config.ts`), "open now" from Google's hours, a looser venue comparison so a prompt bump does not look every place up again when only the spelling moved, and a card mark for a save with a place (needs `done_at`-style column in the library query, a v7). Medium.
 - **Scope:** `apps/mobile` map view + `lib/export.ts`; migration for the query; `places.ts` comparison.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026, spec §6: the map as the library's view (one grid/list toggle, the map on and off over it), pins on cards and rows (v7, search v4), "Open now · until 11 PM" from Google's periods on the place's own clock, Google asked first so every place has hours, a venue compared by its words (`7089aff`, `65b57bf`, `c4d8d45`, `785d7ca`; migration `20260918180000_places_on_the_map.sql` applied; `sweeper`, `resolve-place`, `search-library` deployed). Seven places resolved with hours; verified on the rebuilt simulator client. Android key `GOOGLE_MAPS_ANDROID_KEY` set on EAS by Pranav. Not done: the Korean-named café ("카페 사소한") finds no match — Google needs a locality it recognises.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
