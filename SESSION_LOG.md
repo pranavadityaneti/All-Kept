@@ -1596,3 +1596,30 @@ categories.
 - Next: 49 (screen text from the poster frame), then the 51 proposal (subscription-ended UX and
   the backend gating review). Awaiting: Pranav's `db push` (two migrations), Yes to deploy
   `sweeper` (+ `reprocess-item` and `save-link`, which share `enrich.ts`), Yes to push.
+
+## 2026-09-15 (late evening) — 49 and 51 shipped; everything deployed and pushed
+
+- 48 verified live: the 14:15 sweep gave both pins their 736px pictures and titles, and the
+  snippet pass reached all 15 YouTube rows in one sweep (pictures 54 → 56). The 14:10 sweep had
+  beaten the sweeper deploy by twenty seconds and spent the migration's retry; a one-line update
+  Pranav ran put the pins back (ERRORS.md).
+- 49 (`d7b7d26`): `screen_text` in prompt, strict schema and validator; `item_ai.screen_text`
+  written by the finish and read into the search document (`20260918160000_screen_text.sql`);
+  OpenAI pictures at high detail. Prompt `2026-09-18.4`; the 165-save re-sort took ~45 minutes
+  and ~$0.33 (high detail cost nothing extra per sort, ~$0.006). 127 saves carry words ("9 Coffee
+  Shops to Try in TOKYO", "Hyderabad's 1st Brutalist Coffeeshop / CEMNT"). The Last House reel got
+  none — the frame is the greenery shot, not the storefront; the earlier "too small to read" was an
+  assumption. Categories moved about a dozen saves, mostly Tech → Career/Learning/Other.
+- 51, spec `internal/superpowers/specs/2026-09-15-subscription-ended-design.md`: complimentary
+  access (`87e81e9`, migration applied; Pranav's account set to 31 Dec 2027 — entitled again);
+  import behind the gate (`3566717`); a push when a subscription ends or a card fails, only once the
+  door has actually shut (`bb1c1dd`); the Home card, lapsed paywall ("Renew yearly"), inbox notice,
+  paused-playlist row, billing-push tap → paywall (`229052c`, `736c8a3`); the share sheet saying
+  "Waiting in Allkept" while the door is shut, both platforms, native (`ae784c1`). Verified on the
+  simulator in the blocked state: card, paywall, inbox, Settings. Deployed `import-saves` and
+  `billing-webhook`; probed. Pushed through `0b52650`.
+- Findings noted for later: anon's table-level UPDATE reaches every new profiles column (RLS
+  stops it) and authenticated holds TRUNCATE/TRIGGER on profiles — item 52; refused-embed videos
+  open a dead player — 53; the picture door's "sweeper will retry" is untrue past a day — 54.
+- Next: EAS build tonight (Pranav's), which carries all the app work and the native share sheet;
+  then stage B map view (44), stage C (45); item 52 on his word.
