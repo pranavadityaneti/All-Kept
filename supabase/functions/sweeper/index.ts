@@ -7,7 +7,7 @@ import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
 import { runIconPass, type IconRow } from "../_shared/entity-icons.ts";
 import { resolveVenue, runPlacesPass, venueQuery, type Venue } from "../_shared/places.ts";
 import { providersFromEnv } from "../_shared/place-providers.ts";
-import { describeVideo, runDescriptionPass } from "../_shared/youtube-descriptions.ts";
+import { readSnippet, runSnippetPass } from "../_shared/youtube-snippet.ts";
 import { json, readJson } from "../_shared/http.ts";
 import { lookupRequest, singleItemRequest } from "./single.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
@@ -17,8 +17,10 @@ const BATCH = 50;
 const RESORT_BATCH = 20;
 /** Venues looked up per sweep: a few, since each is a call to Apple or Google and a venue is rare. */
 const PLACES_BATCH = 10;
-/** YouTube saves asked for their description per sweep: one Data API unit each; a library of them drains in a few sweeps. */
-const DESCRIPTIONS_BATCH = 20;
+/** YouTube saves asked for their description and picture per sweep: one Data API unit each; a library of them drains in a few sweeps. */
+const SNIPPETS_BATCH = 20;
+/** How long the snippet pass may take: a save given its picture is sorted again with it before the pass moves on. */
+const SNIPPETS_TIME_MS = 30_000;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
@@ -153,33 +155,42 @@ Deno.serve(async (req) => {
         if (places.rows > 0) deps.log("sweeper: places", places);
       } catch (e) { console.error("sweeper: places pass failed", { error: String(e).slice(0, 200) }); }
     }
-    // 8. YouTube saves that arrived before enrichment asked for the description: asked once each.
-    //    A description written as the save's text re-sorts it through the database's own trigger.
-    let descriptions: { rows: number; described: number; empty: number; failed: number } | null = null;
+    // 8. YouTube saves that settled before enrichment read the video's snippet: asked once each for
+    //    the description and the picture they lack. A description written as the save's text
+    //    re-sorts it through the database's own trigger; a picture is stored on the spot.
+    let snippets: { rows: number; texts: number; pictures: number; empty: number; unanswered: number; failed: number; left: number } | null = null;
     const youtubeKey = Deno.env.get("YOUTUBE_API_KEY")?.trim();
     if (youtubeKey) {
       try {
-        descriptions = await runDescriptionPass({
+        snippets = await runSnippetPass({
           async rows(limit) {
             const { data, error } = await db.from("items").select("id,external_id").eq("platform", "youtube").in("status", ["ready", "preview_unavailable"])
-              .or("text.is.null,text.eq.").not("external_id", "is", null).is("media_meta->description_asked", null).order("created_at", { ascending: false }).limit(limit);
+              .not("external_id", "is", null).is("media_meta->snippet_asked", null)
+              .or("text.is.null,text.eq.,and(thumbnail_url_remote.is.null,thumbnail_path.is.null)")
+              .order("created_at", { ascending: false }).limit(limit);
             if (error) throw error;
             return ((data ?? []) as { id: string; external_id: string }[]).map((r) => ({ itemId: r.id, videoId: r.external_id }));
           },
-          describe: (videoId) => describeVideo(videoId, youtubeKey, safeFetch(fetch)),
-          async save(itemId, description) {
-            const { data: row, error: e1 } = await db.from("items").select("media_meta").eq("id", itemId).single();
+          read: (videoId) => readSnippet(videoId, youtubeKey, safeFetch(fetch)),
+          async save(itemId, snippet) {
+            const { data: row, error: e1 } = await db.from("items").select("text,thumbnail_url_remote,thumbnail_path,media_meta").eq("id", itemId).single();
             if (e1) throw e1;
-            const media_meta = { ...((row?.media_meta as Record<string, unknown> | null) ?? {}), description_asked: new Date().toISOString() };
-            const { error } = await db.from("items").update(description ? { text: description, media_meta } : { media_meta }).eq("id", itemId);
+            const text = snippet.description && !(row.text as string | null)?.trim() ? snippet.description : null;
+            const picture = snippet.picture && !row.thumbnail_url_remote && !row.thumbnail_path ? snippet.picture : null;
+            const media_meta = { ...((row.media_meta as Record<string, unknown> | null) ?? {}), snippet_asked: new Date().toISOString() };
+            // The picture is recorded the way the picture door records one: the snapshot retries start fresh for it.
+            const { error } = await db.from("items").update({ media_meta, ...(text ? { text } : {}), ...(picture ? { thumbnail_url_remote: picture, enrich_attempts: 0, next_attempt_at: null } : {}) }).eq("id", itemId);
             if (error) throw error;
+            // Pass 3 stores pictures for saves a day old at most, and these are older: stored now, here.
+            if (picture) await runPipeline(db, itemId, deps);
+            return { text: !!text, picture: !!picture };
           },
           log: deps.log,
-        }, DESCRIPTIONS_BATCH);
-        if (descriptions.rows > 0) deps.log("sweeper: descriptions", descriptions);
-      } catch (e) { console.error("sweeper: description pass failed", { error: String(e).slice(0, 200) }); }
+        }, SNIPPETS_BATCH, Date.now() + SNIPPETS_TIME_MS);
+        if (snippets.rows > 0) deps.log("sweeper: snippets", snippets);
+      } catch (e) { console.error("sweeper: snippet pass failed", { error: String(e).slice(0, 200) }); }
     }
-    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, icons, resorted, places, descriptions, processed: ok, failed, classifier: choice?.model ?? null });
+    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, icons, resorted, places, snippets, processed: ok, failed, classifier: choice?.model ?? null });
   } catch (e) {
     console.error("sweeper failed", e);
     return new Response("internal error", { status: 500 });

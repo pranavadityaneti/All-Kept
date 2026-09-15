@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { UA, BROWSER_UA, isJustTheSiteName, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseDescription, parseInstagramOpenGraph, parseOpenGraph, pinterestPicture, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { UA, BROWSER_UA, isJustTheSiteName, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseDescription, parseInstagramOpenGraph, parseThumbnail, parseOpenGraph, pinterestPicture, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -264,6 +264,33 @@ Deno.test("youtube: the description comes with the shape, in the same call, and 
   // A save that already has words keeps them: the description is for the ones that arrive with none.
   const kept = await enrich(base({ platform: "youtube", kind: "video", external_id: "x", source_url: "https://www.youtube.com/watch?v=x", canonical_url: "https://www.youtube.com/watch?v=x", text: "the person's own words" }), { ...deps(f), youtubeKey: "k" });
   assertEquals(kept.patch.text, undefined);
+});
+
+Deno.test("youtube: a video whose embed is refused — oEmbed answers 401 — still gets its picture, from the Data API's snippet in the same call as its shape and description", async () => {
+  const snaps: string[] = [];
+  const f = fakeFetch({
+    "https://www.youtube.com/oembed": () => new Response("Unauthorized", { status: 401 }),
+    "https://www.youtube.com/watch": () => new Response("<html><head><title>YouTube</title></head></html>", { headers: { "content-type": "text/html" } }),
+    "https://www.googleapis.com/youtube/v3/videos": () => Response.json({ items: [{ player: { embedWidth: "14564", embedHeight: "8192" }, snippet: { description: "How to set one up", thumbnails: { default: { url: "https://i.ytimg.com/vi/SY8mvbByt30/default.jpg" }, high: { url: "https://i.ytimg.com/vi/SY8mvbByt30/hqdefault.jpg" }, maxres: { url: "https://i.ytimg.com/vi/SY8mvbByt30/maxresdefault.jpg" } } } }] }),
+  });
+  const r = await enrich(base({ platform: "youtube", kind: "video", external_id: "SY8mvbByt30", source_url: "https://www.youtube.com/watch?v=SY8mvbByt30", canonical_url: "https://www.youtube.com/watch?v=SY8mvbByt30", text: null }), { ...deps(f, snaps), youtubeKey: "k" });
+  assertEquals(r.patch.thumbnail_url_remote, "https://i.ytimg.com/vi/SY8mvbByt30/maxresdefault.jpg");
+  assertEquals(snaps, ["https://i.ytimg.com/vi/SY8mvbByt30/maxresdefault.jpg"], "stored in the same run");
+  assertEquals([r.status, r.patch.text], ["preview_unavailable", "How to set one up"]);
+  // A picture already in hand is kept: the oEmbed's poster wins over the snippet's.
+  const held = await enrich(base({ platform: "youtube", kind: "video", external_id: "SY8mvbByt30", source_url: "https://www.youtube.com/watch?v=SY8mvbByt30", canonical_url: "https://www.youtube.com/watch?v=SY8mvbByt30", text: null }), { ...deps(fakeFetch({
+    "https://www.youtube.com/oembed": () => Response.json({ title: "T", author_name: "A", thumbnail_url: "https://i.ytimg.com/vi/SY8mvbByt30/hqdefault.jpg" }),
+    "https://www.googleapis.com/youtube/v3/videos": () => Response.json({ items: [{ snippet: { thumbnails: { maxres: { url: "https://i.ytimg.com/vi/SY8mvbByt30/maxresdefault.jpg" } } } }] }),
+  })), youtubeKey: "k" });
+  assertEquals(held.patch.thumbnail_url_remote, "https://i.ytimg.com/vi/SY8mvbByt30/hqdefault.jpg");
+});
+
+Deno.test("parseThumbnail: the widest picture YouTube lists; nothing when it lists none", () => {
+  assertEquals(parseThumbnail({ items: [{ snippet: { thumbnails: { default: { url: "https://i.ytimg.com/vi/x/default.jpg" }, medium: { url: "https://i.ytimg.com/vi/x/mqdefault.jpg" }, high: { url: "https://i.ytimg.com/vi/x/hqdefault.jpg" } } } }] }), "https://i.ytimg.com/vi/x/hqdefault.jpg");
+  assertEquals(parseThumbnail({ items: [{ snippet: { thumbnails: { high: { url: "https://i.ytimg.com/vi/x/hqdefault.jpg" }, standard: { url: "https://i.ytimg.com/vi/x/sddefault.jpg" }, maxres: { url: "https://i.ytimg.com/vi/x/maxresdefault.jpg" } } } }] }), "https://i.ytimg.com/vi/x/maxresdefault.jpg");
+  assertEquals(parseThumbnail({ items: [{ snippet: { thumbnails: {} } }] }), null);
+  assertEquals(parseThumbnail({ items: [] }), null);
+  assertEquals(parseThumbnail(null), null);
 });
 
 Deno.test("parseDescription: the words, trimmed and bounded; nothing for an empty or absent one", () => {

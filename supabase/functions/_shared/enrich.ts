@@ -100,15 +100,25 @@ export function parsePlaylist(body: unknown): { title: string; channel: string |
   if (!snippet) return null;
   const title = typeof snippet["title"] === "string" ? (snippet["title"] as string).trim() : "";
   if (!title) return null;
-  const thumbs = snippet["thumbnails"] as Record<string, { url?: string }> | undefined;
-  // Widest first: the card wants the best it can get, and not every playlist has every size.
-  const thumbnail = ["maxres", "standard", "high", "medium", "default"]
-    .map((k) => thumbs?.[k]?.url).find((u): u is string => typeof u === "string" && !!u) ?? null;
+  const thumbnail = widestThumbnail(snippet["thumbnails"]);
   const channel = typeof snippet["channelTitle"] === "string" ? (snippet["channelTitle"] as string).trim() || null : null;
   // Only a public playlist plays in an embedded player. An unlisted one answers "This video is
   // unavailable" inside the frame, however the embed address is written — so the app is told not to
   // try, and shows the card and a way out to YouTube instead of a black box.
   return { title, channel, thumbnail, embeddable: privacy === "public" };
+}
+
+/** Widest first: the card wants the best it can get, and not every video or playlist has every size. */
+function widestThumbnail(thumbs: unknown): string | null {
+  const sizes = thumbs as Record<string, { url?: unknown }> | undefined;
+  return ["maxres", "standard", "high", "medium", "default"]
+    .map((k) => sizes?.[k]?.url).find((u): u is string => typeof u === "string" && !!u) ?? null;
+}
+
+/** The video's own picture, when YouTube lists one: the picture of a video whose embed is refused, which the oEmbed withholds. */
+export function parseThumbnail(body: unknown): string | null {
+  const snippet = (body as { items?: { snippet?: { thumbnails?: unknown } }[] } | null)?.items?.[0]?.snippet;
+  return widestThumbnail(snippet?.thumbnails);
 }
 
 export function parseAspect(body: unknown): number | null {
@@ -551,11 +561,13 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     }
   }
 
-  // 3. The shape of a YouTube video, and its description, in one call (never fails the item:
-  //    without the shape the app falls back to 16:9, which is exactly where it stood before this
-  //    existed; without the description the sorter reads the title alone, as it always had).
+  // 3. The shape of a YouTube video, its description and its picture, in one call (never fails the
+  //    item: without the shape the app falls back to 16:9, which is exactly where it stood before
+  //    this existed; without the description the sorter reads the title alone, as it always had).
   //    The description becomes the save's text when the save arrived with none — every YouTube
-  //    save did, and the sorter was judging 37% of a library from titles.
+  //    save did, and the sorter was judging 37% of a library from titles. The picture is for a
+  //    video whose owner refused embedding: its oEmbed answers 401 and names no poster, its watch
+  //    page names none to a datacentre, and the snippet lists the same pictures either way.
   const videoId = patch.external_id ?? item.external_id;
   if (platform === "youtube" && deps.youtubeKey && videoId) {
     try {
@@ -567,6 +579,8 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
       else deps.log("enrich: youtube shape unavailable", { item: item.id, status: res.status });
       const description = parseDescription(body);
       if (description && !item.text && !patch.text) patch.text = description;
+      const picture = parseThumbnail(body);
+      if (picture && !heldPicture() && !item.thumbnail_path) patch.thumbnail_url_remote = picture;
     } catch (e) {
       deps.log("enrich: youtube shape failed", { item: item.id, reason: String(e).slice(0, 120) });
     }
