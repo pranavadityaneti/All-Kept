@@ -301,3 +301,7 @@ again — which also explains why my later taps to restore the interests switch 
   "expo start --ios" to "expo run:ios" on the build machine, and the fingerprint counts the
   scripts. `PackageJsonScriptsAll` is skipped too. Check the fingerprint's *sources* against what
   the build machine will change, not only what the laptop's environment holds.
+- Not done: an `.easignore` to shrink the 222 MB archive. When that file exists, EAS stops using
+  git's view of the project and uploads everything the file does not exclude — including
+  `.env` files and the 7 GB generated `ios/` folder unless each is listed. It belongs at the
+  git root, mirroring .gitignore first; a rushed one would upload more, not less.
