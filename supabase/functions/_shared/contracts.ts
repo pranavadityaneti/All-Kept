@@ -176,8 +176,8 @@ export interface CategorySummaryResponse {
   names: { name: string; kind: string; icon: string | null; n: number }[];
   /** Up to three themes the model wrote; empty when there are too few saves, sorting is off, or nothing could be written. */
   themes: string[];
-  /** fresh: written just now; stored: from an earlier writing; none: no themes. */
-  freshness: "fresh" | "stored" | "none";
+  /** stored: from an earlier writing; writing: being written now, ask again shortly; none: no themes. */
+  freshness: "stored" | "writing" | "none";
   sortingOff?: boolean;
 }
 

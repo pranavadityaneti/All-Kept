@@ -38,6 +38,7 @@ export function CategorySummary({ category, taken, onName }: {
   if (!data || data.count === 0) return null;
   const names = headerNames(data, taken);
   const showThemes = !collapsed && data.themes.length > 0;
+  const reading = !collapsed && data.themes.length === 0 && data.freshness === "writing";
   const foldable = data.themes.length > 0 || names.length > 0;
 
   return (
@@ -57,6 +58,7 @@ export function CategorySummary({ category, taken, onName }: {
           {names.map((n) => <InterestPill key={n.name} interest={n} fresh={false} onPress={() => onName(n.name)} />)}
         </View>
       )}
+      {reading && <Text style={[type.label, { color: p.inkMuted }]}>Reading these saves…</Text>}
       {showThemes && (
         <View style={styles.themes}>
           {data.themes.map((theme) => (

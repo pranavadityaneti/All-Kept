@@ -6,6 +6,10 @@ import { apiError } from "../_shared/http.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { handleCategorySummary, type StoredSummary, type SummarySource } from "./handler.ts";
 
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+/** The categories being written on this instance; a second ask for one meanwhile is answered from the store. */
+const inFlight = new Set<string>();
+
 Deno.serve(async (req) => {
   try {
     const db = adminClient();
@@ -34,6 +38,9 @@ Deno.serve(async (req) => {
         if (error) throw error;
       },
       call: choice ? choice.deps.call : null,
+      // The response has gone by the time the model answers; the runtime keeps the instance alive for the work.
+      defer: (work) => { if (typeof EdgeRuntime !== "undefined" && EdgeRuntime) EdgeRuntime.waitUntil(work); else void work; },
+      inFlight,
       now: () => new Date(),
       log: (m, meta) => console.log(m, meta ?? {}),
     });

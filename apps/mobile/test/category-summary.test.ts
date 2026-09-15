@@ -48,3 +48,26 @@ describe("the names in the header", () => {
     expect(headerNames(withOwn, ["Wedding"]).map((n) => n.name)).toEqual(["Claude", "Codex", "GitHub"]);
   });
 });
+
+describe("asking again while the themes are being written", () => {
+  it("asks twice more, a few seconds apart, then stops; a finished answer is never asked again", async () => {
+    const { nextRefetchMs } = await import("../lib/category-summary");
+    expect(nextRefetchMs("writing", 1)).toBe(4000);
+    expect(nextRefetchMs("writing", 2)).toBe(10000);
+    expect(nextRefetchMs("writing", 3)).toBe(false);
+    for (const f of ["stored", "none"] as const) expect(nextRefetchMs(f, 1)).toBe(false);
+    expect(nextRefetchMs(undefined, 0)).toBe(false);
+  });
+});
+
+describe("the language the themes are written in", () => {
+  it("is the phone's, as a plain code, and English when the phone will not say", async () => {
+    const { languageFromLocale } = await import("../lib/category-summary");
+    expect(languageFromLocale("en-US")).toBe("en");
+    expect(languageFromLocale("ja-JP")).toBe("ja");
+    expect(languageFromLocale("pt-BR")).toBe("pt");
+    expect(languageFromLocale("zh-Hant-TW")).toBe("zh");
+    expect(languageFromLocale("")).toBe("en");
+    expect(languageFromLocale(undefined)).toBe("en");
+  });
+});

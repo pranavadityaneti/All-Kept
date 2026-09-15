@@ -60,14 +60,31 @@ export function headerNames(summary: Pick<CategorySummaryResponse, "names">, tak
 
 export const categorySummaryKey = (category: string) => ["category-summary", category] as const;
 
+/** The phone's language as a plain code — "en", "ja" — for the themes to be written in. English when the phone will not say. */
+export function languageFromLocale(locale: string | undefined): string {
+  const code = (locale ?? "").trim().toLowerCase().split(/[-_]/)[0] ?? "";
+  return /^[a-z]{2,3}$/.test(code) ? code : "en";
+}
+
+/**
+ * While the themes are being written the answer comes back at once without them; the app asks
+ * again after four seconds, then ten, then leaves it — the next open will have them.
+ */
+export function nextRefetchMs(freshness: CategorySummaryResponse["freshness"] | undefined, updates: number): number | false {
+  if (freshness !== "writing") return false;
+  return updates <= 1 ? 4000 : updates === 2 ? 10000 : false;
+}
+
 /** The server's answer for one category. Fresh for a few minutes; the themes behind it are kept for an hour or until the category changes. */
 export function useCategorySummary(category: string | null, enabled: boolean) {
   return useQuery({
     queryKey: categorySummaryKey(category ?? ""),
     enabled: enabled && !!category,
     staleTime: 5 * 60_000,
+    refetchInterval: (query) => nextRefetchMs(query.state.data?.freshness, query.state.dataUpdateCount),
     queryFn: async (): Promise<CategorySummaryResponse> => {
-      const { data, error } = await supabase.functions.invoke<CategorySummaryResponse>("category-summary", { body: { category } });
+      const language = languageFromLocale(Intl.DateTimeFormat().resolvedOptions().locale);
+      const { data, error } = await supabase.functions.invoke<CategorySummaryResponse>("category-summary", { body: { category, language } });
       if (error || !data) throw new Error(error ? String(error.message ?? error) : "no summary");
       return data;
     },

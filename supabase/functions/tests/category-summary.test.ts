@@ -12,7 +12,10 @@ const source = (over: Partial<SummarySource> = {}): SummarySource => ({
 function fake(over: Partial<CategorySummaryDeps> = {}) {
   const written: { fingerprint: string; themes: string[]; model: string }[] = [];
   const asked: string[] = [];
+  const deferred: Promise<unknown>[] = [];
   const deps: CategorySummaryDeps = {
+    defer: (work) => { deferred.push(work); },
+    inFlight: new Set<string>(),
     userId: async () => "u1",
     source: async () => source(),
     sortingEnabled: async () => true,
@@ -23,27 +26,64 @@ function fake(over: Partial<CategorySummaryDeps> = {}) {
     log: () => {},
     ...over,
   };
-  return { deps, written, asked };
+  /** Let the deferred writing finish, the way the runtime does after the response has gone. */
+  const settle = async () => { await Promise.all(deferred); };
+  return { deps, written, asked, settle };
 }
 const body = async (r: Response) => (await r.json()) as Record<string, unknown>;
 
-Deno.test("a category never summarised gets its themes written from the model, with the facts alongside", async () => {
+Deno.test("a category never summarised answers with the facts at once, and the themes are written after the response has gone", async () => {
   const f = fake();
-  const r = await handleCategorySummary(request({ category: "Tech & tools" }), f.deps);
+  const r = await handleCategorySummary(request({ category: "Tech & tools", language: "en-US" }), f.deps);
   assertEquals(r.status, 200);
   const j = await body(r);
-  assertEquals(j["themes"], ["Claude Code workflows and agent setups", "Codex for refactors", "One tape-measure challenge"]);
-  assertEquals([j["count"], j["shapes"], j["intents"], j["freshness"]], [12, { vertical: 9, post: 3 }, { try: 4, buy: 2 }, "fresh"]);
+  // Nothing waits on the model: the facts and no themes yet, marked as being written.
+  assertEquals([j["count"], j["shapes"], j["intents"], j["themes"], j["freshness"]], [12, { vertical: 9, post: 3 }, { try: 4, buy: 2 }, [], "writing"]);
   assertEquals(j["names"], [{ name: "Claude", kind: "tool", icon: "chatbubbles", n: 5 }, { name: "Codex", kind: "tool", icon: "code-slash", n: 3 }]);
-  assertEquals(f.written, [{ fingerprint: "f1", themes: ["Claude Code workflows and agent setups", "Codex for refactors", "One tape-measure challenge"], model: "test-model" }]);
-  // The model sees the derived fields only — summaries, tags, names — never a caption.
-  const sent = JSON.parse(f.asked[0]!) as unknown[];
-  assertEquals(sent.length, 3);
-  assertEquals(Object.keys(sent[0] as object).sort(), ["names", "summary", "tags"]);
+  // (That nothing waits on the model is shown by the gated test below; here the fake answers at once.)
+  await f.settle();
+  // The fingerprint carries the language, so a person whose phone changes language gets the themes again in the new one.
+  assertEquals(f.written, [{ fingerprint: "f1:en", themes: ["Claude Code workflows and agent setups", "Codex for refactors", "One tape-measure challenge"], model: "test-model" }]);
+  // The model sees the derived fields only — summaries, tags, names — never a caption, and the language to write in.
+  const sent = JSON.parse(f.asked[0]!) as { language: string; saves: unknown[] };
+  assertEquals(sent.language, "en");
+  assertEquals(sent.saves.length, 3);
+  assertEquals(Object.keys(sent.saves[0] as object).sort(), ["names", "summary", "tags"]);
+  assertEquals(f.deps.inFlight.size, 0);
+});
+
+Deno.test("while the themes are being written, a second ask does not start the model again; once written, the next ask has them", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  let calls = 0;
+  const f = fake({ call: async () => { calls++; await gate; return { output: { themes: ["Written"] }, refused: false, model: "m", usage: null }; } });
+  await handleCategorySummary(request({ category: "Tech & tools" }), f.deps);
+  const again = await body(await handleCategorySummary(request({ category: "Tech & tools" }), f.deps));
+  assertEquals([again["freshness"], calls, f.deps.inFlight.size], ["writing", 1, 1]);
+  release();
+  await f.settle();
+  assertEquals(f.written.length, 1);
+  const g = fake({ stored: async () => ({ fingerprint: "f1:en", themes: ["Written"], updated_at: "2026-09-16T09:59:00Z" }), call: async () => { throw new Error("must not ask"); } });
+  assertEquals((await body(await handleCategorySummary(request({ category: "Tech & tools" }), g.deps)))["freshness"], "stored");
+});
+
+Deno.test("the language is the phone's, defaulting to English, and a stored answer in another language is written again", async () => {
+  const stored = async () => ({ fingerprint: "f1:ja", themes: ["日本語のテーマ"], updated_at: "2026-09-10T00:00:00Z" });
+  const f = fake({ stored });
+  const j = await body(await handleCategorySummary(request({ category: "Tech & tools", language: "en-GB" }), f.deps));
+  assertEquals([j["themes"], j["freshness"]], [["日本語のテーマ"], "writing"]);
+  await f.settle();
+  assertEquals(f.written[0]!.fingerprint, "f1:en");
+  const g = fake({ stored });
+  assertEquals((await body(await handleCategorySummary(request({ category: "Tech & tools", language: "ja" }), g.deps)))["freshness"], "stored");
+  const h = fake();
+  await handleCategorySummary(request({ category: "Tech & tools", language: "not a language!!" }), h.deps);
+  await h.settle();
+  assertEquals((JSON.parse(h.asked[0]!) as { language: string }).language, "en");
 });
 
 Deno.test("unchanged members mean the stored themes come back and the model is not asked", async () => {
-  const f = fake({ stored: async () => ({ fingerprint: "f1", themes: ["Stored theme"], updated_at: "2026-09-10T00:00:00Z" }), call: async () => { throw new Error("must not ask"); } });
+  const f = fake({ stored: async () => ({ fingerprint: "f1:en", themes: ["Stored theme"], updated_at: "2026-09-10T00:00:00Z" }), call: async () => { throw new Error("must not ask"); } });
   const j = await body(await handleCategorySummary(request({ category: "Tech & tools" }), f.deps));
   assertEquals([j["themes"], j["freshness"]], [["Stored theme"], "stored"]);
   assertEquals(f.written, []);
@@ -56,7 +96,10 @@ Deno.test("members changed within the last hour: the stored themes stand until t
   assertEquals([j["themes"], j["freshness"]], [["Stored theme"], "stored"]);
   const due = new Date(NOW.getTime() - REFRESH_EVERY_MS - 1).toISOString();
   const g = fake({ stored: async () => ({ fingerprint: "old", themes: ["Stored theme"], updated_at: due }) });
-  assertEquals((await body(await handleCategorySummary(request({ category: "Tech & tools" }), g.deps)))["freshness"], "fresh");
+  const later = await body(await handleCategorySummary(request({ category: "Tech & tools" }), g.deps));
+  // The old themes stand while the new ones are written.
+  assertEquals([later["themes"], later["freshness"]], [["Stored theme"], "writing"]);
+  await g.settle();
   assertEquals(g.written.length, 1);
 });
 
@@ -73,7 +116,7 @@ Deno.test("sorting switched off: the facts only, and the model is never asked", 
   assertEquals([j["themes"], j["sortingOff"], j["count"]], [[], true, 12]);
 });
 
-Deno.test("a model that fails, refuses or answers badly leaves the stored themes, or none, and the facts still come back", async () => {
+Deno.test("a model that fails, refuses or answers badly writes nothing; the stored themes, or none, stand and the facts still come back", async () => {
   const stored = async () => ({ fingerprint: "old", themes: ["Stored theme"], updated_at: "2026-09-10T00:00:00Z" });
   for (const call of [
     async () => ({ output: null, refused: false, model: "m", usage: null, error: "openai 503" }),
@@ -83,13 +126,14 @@ Deno.test("a model that fails, refuses or answers badly leaves the stored themes
   ]) {
     const f = fake({ stored, call: call as CategorySummaryDeps["call"] });
     const j = await body(await handleCategorySummary(request({ category: "Tech & tools" }), f.deps));
-    assertEquals([j["themes"], j["freshness"], j["count"]], [["Stored theme"], "stored", 12]);
+    assertEquals([j["themes"], j["freshness"], j["count"]], [["Stored theme"], "writing", 12]);
+    await f.settle();
     assertEquals(f.written, []);
+    assertEquals(f.deps.inFlight.size, 0);
   }
-  const none = fake({ call: async () => ({ output: null, refused: false, model: "m", usage: null, error: "openai 503" }) });
-  assertEquals((await body(await handleCategorySummary(request({ category: "Tech & tools" }), none.deps)))["themes"], []);
   const unconfigured = fake({ call: null });
-  assertEquals((await body(await handleCategorySummary(request({ category: "Tech & tools" }), unconfigured.deps)))["themes"], []);
+  const k = await body(await handleCategorySummary(request({ category: "Tech & tools" }), unconfigured.deps));
+  assertEquals([k["themes"], k["freshness"]], [[], "none"]);
 });
 
 Deno.test("themes are trimmed to three short lines and anything else is refused", () => {
