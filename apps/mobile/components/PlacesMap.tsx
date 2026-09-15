@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { Filters } from "../lib/filter-groups";
 import { placeLine } from "../lib/export";
@@ -8,6 +8,7 @@ import { cameraFor, usePlacedSaves, type PlacedSave } from "../lib/places";
 import { font, radius, space, type, usePalette } from "../lib/theme";
 import { useThumbnails } from "../lib/thumbnails";
 import { Card } from "./Card";
+import { TAB_BAR_CLEARANCE } from "./FloatingTabBar";
 import { Icon } from "./Icon";
 
 /**
@@ -34,15 +35,24 @@ const mapAvailable = (): boolean => mapsModule() !== null && (Platform.OS === "a
  */
 export function PlacesMap({ filters, enabled, onOpen }: { filters: Filters; enabled: boolean; onOpen: (id: string) => void }) {
   const p = usePalette();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const placed = usePlacedSaves(filters, enabled);
   const saves = placed.data ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = saves.find((s) => s.id === selectedId) ?? null;
   const thumbnails = useThumbnails(selected ? [selected.thumbnailPath] : []);
   // Framed once per set of pins, not on every render — a camera that follows the data would fight the person's own panning.
-  const camera = useMemo(() => cameraFor(saves.map((s) => s.place), width), [saves, width]);
+  const camera = useMemo(() => cameraFor(saves.map((s) => s.place), { width, height, platform: Platform.OS === "android" ? "android" : "ios" }), [saves, width, height]);
   const markers = useMemo(() => saves.map((s) => ({ id: s.id, coordinates: { latitude: s.place.lat, longitude: s.place.lng }, title: s.place.name })), [saves]);
+  // The map mounts before the pins have arrived, and a camera given as a prop is read once, at
+  // mount; when the pins land the map is asked to move, so it frames them rather than the world.
+  const appleRef = useRef<import("expo-maps/build/apple/AppleMaps.types").AppleMapsViewType | null>(null);
+  const googleRef = useRef<import("expo-maps/build/google/GoogleMaps.types").GoogleMapsViewType | null>(null);
+  useEffect(() => {
+    if (saves.length === 0) return;
+    appleRef.current?.setCameraPosition(camera);
+    googleRef.current?.setCameraPosition(camera);
+  }, [camera, saves.length]);
 
   const m = mapsModule();
   if (!m || !mapAvailable()) {
@@ -73,9 +83,9 @@ export function PlacesMap({ filters, enabled, onOpen }: { filters: Filters; enab
   return (
     <View style={styles.fill}>
       {Platform.OS === "ios" ? (
-        <m.AppleMaps.View style={styles.fill} cameraPosition={camera} markers={markers} onMarkerClick={onMarkerClick} onMapClick={() => setSelectedId(null)} uiSettings={{ myLocationButtonEnabled: false, compassEnabled: true }} />
+        <m.AppleMaps.View ref={appleRef} style={styles.fill} cameraPosition={camera} markers={markers} onMarkerClick={onMarkerClick} onMapClick={() => setSelectedId(null)} uiSettings={{ myLocationButtonEnabled: false, compassEnabled: true }} />
       ) : (
-        <m.GoogleMaps.View style={styles.fill} cameraPosition={camera} markers={markers} onMarkerClick={onMarkerClick} onMapClick={() => setSelectedId(null)} uiSettings={{ myLocationButtonEnabled: false }} />
+        <m.GoogleMaps.View ref={googleRef} style={styles.fill} cameraPosition={camera} markers={markers} onMarkerClick={onMarkerClick} onMapClick={() => setSelectedId(null)} uiSettings={{ myLocationButtonEnabled: false }} />
       )}
       {selected && <PlaceCard save={selected} thumbnail={selected.thumbnailPath ? thumbnails[selected.thumbnailPath] : undefined} onPress={() => onOpen(selected.id)} />}
     </View>
@@ -105,8 +115,9 @@ function PlaceCard({ save, thumbnail, onPress }: { save: PlacedSave; thumbnail?:
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   empty: { padding: space.lg },
+  // Above the floating tab bar, which would otherwise cover the place and its hours.
   card: {
-    position: "absolute", left: space.lg, right: space.lg, bottom: space.lg,
+    position: "absolute", left: space.lg, right: space.lg, bottom: TAB_BAR_CLEARANCE,
     flexDirection: "row", alignItems: "center", gap: space.md, padding: space.md,
     borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth,
   },
