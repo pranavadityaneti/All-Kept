@@ -7,11 +7,11 @@ import { Button } from "../components/Button";
 import { CategoryMark } from "../components/CategoryMark";
 import { Icon } from "../components/Icon";
 import { IconButton } from "../components/IconButton";
-import { billingAvailable, entitlementKey, openManageSubscription, setShareQueueBlocked, useEntitlement, useOfferings, usePurchase, useRestore, userCancelled } from "../lib/billing";
+import { billingAvailable, entitlementKey, openManageSubscription, setShareQueueWaiting, useEntitlement, useOfferings, usePurchase, useRestore, userCancelled, useShareQueueWaiting } from "../lib/billing";
 import type { MarkKey } from "../lib/category-marks";
 import { track, useTrackOnce } from "../lib/metrics";
 import { openLink } from "../lib/open";
-import { disclosure, plansFrom, PRIVACY_URL, shortDate, subscriptionRow, TERMS_URL, type Plan } from "../lib/paywall";
+import { disclosure, plansFrom, PRIVACY_URL, shortDate, standingCard, subscriptionRow, TERMS_URL, type Plan } from "../lib/paywall";
 import { useSession } from "../lib/session";
 import { flushShareQueue } from "../lib/share-save";
 import { font, radius, space, type, usePalette } from "../lib/theme";
@@ -50,6 +50,7 @@ export default function Subscribe() {
   const available = billingAvailable();
   const entitlement = useEntitlement(userId);
   const standing = entitlement.data;
+  const waiting = useShareQueueWaiting();
   const offerings = useOfferings(available);
   const current = offerings.data?.current ?? null;
   const plans = plansFrom(current);
@@ -76,7 +77,7 @@ export default function Subscribe() {
     setPhase("done");
     track(userId, "subscribed", { via: via.current, product: standing.product ?? "" });
     // Whatever the share sheet queued while the door was shut goes through now.
-    void flushShareQueue(queryClient).then((r) => setShareQueueBlocked(queryClient, r.blocked)).catch(() => undefined);
+    void flushShareQueue(queryClient).then((r) => setShareQueueWaiting(queryClient, r.waiting)).catch(() => undefined);
   }, [phase, standing, userId, queryClient]);
 
   const close = () => { if (router.canGoBack()) router.back(); else router.replace("/"); };
@@ -121,18 +122,20 @@ export default function Subscribe() {
     if (standing?.kind === "billing_issue") return { title: "Payment problem", body: `${Store} couldn't charge your card. Update it in your subscriptions and saving carries on.` };
     if (standing?.kind === "free_region") return { title: "Allkept is free where you are", body: "There is nothing to buy. Keep saving." };
     if (standing?.kind === "complimentary") return { title: "Saving is on the house", body: `Complimentary access until ${shortDate(standing.until, now)}. There is nothing to buy until then.` };
-    if (standing?.kind === "blocked") return {
-      title: "Keep saving",
-      body: standing.lapsed
-        ? "Your subscription has ended. Everything you saved is still here — renew to keep adding to it."
-        : "You've used your 25 free saves. Everything you saved is still here — subscribe to keep adding to it.",
-    };
+    if (standing?.kind === "blocked") {
+      // Someone who has seen the product is told what ended and what is waiting, not pitched to.
+      const card = standingCard(standing, waiting, now);
+      if (standing.lapsed && card) return { title: card.title, body: `${card.body} Renew and saving carries on.` };
+      return { title: "Keep saving", body: `You've used your 25 free saves. Everything you saved is still here${waiting > 0 ? `, and ${waiting} shared ${waiting === 1 ? "link is" : "links are"} waiting to be filed` : ""} — subscribe to keep adding to it.` };
+    }
     if (standing?.kind === "ramp") return { title: "Keep saving", body: `${standing.left} of your ${standing.of} free saves are still yours. After those, saving needs a subscription.` };
     return { title: "Keep saving", body: "After 25 free saves, saving needs a subscription. Everything you have saved stays yours either way." };
   })();
 
   const settled = phase === "done" || phase === "unconfirmed" || standing?.kind === "subscribed" || standing?.kind === "billing_issue" || standing?.kind === "free_region" || standing?.kind === "complimentary";
   const showOffer = phase === "offer" && !settled;
+  // The four rows pitch the product; a lapsed subscriber has used it, so they go straight to the cards.
+  const showKeeps = (showOffer && !(standing?.kind === "blocked" && standing.lapsed)) || phase === "done";
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right", "bottom"]}>
@@ -147,7 +150,7 @@ export default function Subscribe() {
 
         {phase === "confirming" && <ActivityIndicator color={p.accent} />}
 
-        {(showOffer || phase === "done") && (
+        {showKeeps && (
           <View style={[styles.keeps, { backgroundColor: p.surface, borderColor: p.border }]}>
             {KEEPS.map((k, i) => (
               <View key={k.title} style={[styles.keep, i < KEEPS.length - 1 && { borderBottomColor: p.border, borderBottomWidth: StyleSheet.hairlineWidth }]}>

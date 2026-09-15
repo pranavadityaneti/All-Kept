@@ -5,7 +5,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { Manrope_200ExtraLight, Manrope_300Light, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { useFonts } from "expo-font";
 import { Stack, useRouter } from "expo-router";
-import { configureBilling, entitlementKey, reportStorefront, setShareQueueBlocked } from "../lib/billing";
+import { configureBilling, entitlementKey, reportStorefront, setShareQueueWaiting } from "../lib/billing";
 import { ensureShareToken, flushShareQueue } from "../lib/share-save";
 import { backfillInstagramPictures, pictureDeps } from "../lib/instagram-picture";
 import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
@@ -76,7 +76,11 @@ function Shell() {
   // Held steady so the listener is not torn down and rebuilt on every render, which would lose the
   // cold-start response it is attached to catch. Routed only once past the guard: pushing a save
   // onto a screen someone has not signed in to yet would land them nowhere.
-  const openSave = useCallback((itemId: string) => { if (unlocked) router.push(`/item/${itemId}`); }, [router, unlocked]);
+  const openSave = useCallback((target: { itemId: string } | { paywall: true }) => {
+    if (!unlocked) return;
+    if ("itemId" in target) router.push(`/item/${target.itemId}`);
+    else router.push("/subscribe");
+  }, [router, unlocked]);
   useNotificationRoute(openSave);
   // The share extension's credential and its offline queue: minted once, delivered on every foreground.
   const queryClient = useQueryClient();
@@ -93,7 +97,7 @@ function Shell() {
       // A subscription changes off the phone — a renewal, a lapse, a refund, the webhook landing
       // late — so the server's answer is re-read each time the app comes back, not trusted for a day.
       void queryClient.invalidateQueries({ queryKey: entitlementKey });
-      void ensureShareToken().then(() => flushShareQueue(queryClient)).then((r) => setShareQueueBlocked(queryClient, r.blocked)).catch(() => undefined);
+      void ensureShareToken().then(() => flushShareQueue(queryClient)).then((r) => setShareQueueWaiting(queryClient, r.waiting)).catch(() => undefined);
       // Reddit tells only a phone where a post's picture is, so the phone looks while it is awake.
       void backfillRedditThumbnails(backfillDeps()).catch(() => undefined);
       // And Instagram shows a phone the post it walls a datacentre from: the share-sheet saves it left pictureless.

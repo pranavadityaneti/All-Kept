@@ -50,3 +50,27 @@ export function useSetReplies(source: LinkedSource | null | undefined) {
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: KEY }); },
   });
 }
+
+/** The YouTube playlists connected, and why any of them is not being read. */
+export interface PlaylistStanding { connected: number; pausedForPayment: number }
+
+const PLAYLISTS_KEY = ["youtube-playlists"] as const;
+
+/** The poller pauses a playlist when a video would be the twenty-sixth save, and records why; the row in Settings reads it. */
+export function playlistDetail(s: PlaylistStanding | null | undefined): string {
+  if (s && s.pausedForPayment > 0) return s.pausedForPayment === 1 && s.connected === 1 ? "Paused — subscription ended. Resumes when you renew." : `${s.pausedForPayment} of ${s.connected} paused — subscription ended. Resume when you renew.`;
+  return "Save a video to a playlist and it lands here";
+}
+
+export function useYoutubePlaylists(enabled: boolean) {
+  return useQuery({
+    queryKey: PLAYLISTS_KEY,
+    enabled,
+    queryFn: async (): Promise<PlaylistStanding> => {
+      const { data, error } = await supabase.from("connected_sources").select("paused_reason").eq("kind", "youtube_playlist");
+      if (error) throw new Error(error.message);
+      const rows = (data ?? []) as { paused_reason: string | null }[];
+      return { connected: rows.length, pausedForPayment: rows.filter((r) => r.paused_reason === "payment_required").length };
+    },
+  });
+}

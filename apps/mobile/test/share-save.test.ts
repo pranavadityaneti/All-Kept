@@ -38,7 +38,7 @@ describe("offline queue", () => {
   it("delivers each queued share with its own request id, drops it, and refreshes the library", async () => {
     mocks.peek.mockReturnValue([{ text: "https://a.example", requestId: "r1", at: 1 }, { text: "https://b.example", requestId: "r2", at: 2 }]);
     mocks.invoke.mockResolvedValue({ data: { itemId: "item" }, error: null });
-    expect(await flushShareQueue(queryClient)).toEqual({ delivered: 2, blocked: false });
+    expect(await flushShareQueue(queryClient)).toEqual({ delivered: 2, blocked: false, waiting: 0 });
     expect(mocks.invoke).toHaveBeenNthCalledWith(1, "save-link", { body: { text: "https://a.example", requestId: "r1" } });
     expect(mocks.drop.mock.calls.map((c) => c[0])).toEqual(["r1", "r2"]);
     expect(mocks.invalidate).toHaveBeenCalledOnce();
@@ -46,7 +46,7 @@ describe("offline queue", () => {
   it("drops what can never be a link, and stops at the first network failure", async () => {
     mocks.peek.mockReturnValue([{ text: "hello", requestId: "r1", at: 1 }, { text: "https://b.example", requestId: "r2", at: 2 }, { text: "https://c.example", requestId: "r3", at: 3 }]);
     mocks.invoke.mockResolvedValueOnce({ data: null, error: httpError(400) }).mockResolvedValueOnce({ data: null, error: httpError(0) });
-    expect(await flushShareQueue(queryClient)).toEqual({ delivered: 0, blocked: false });
+    expect(await flushShareQueue(queryClient)).toEqual({ delivered: 0, blocked: false, waiting: 0 });
     expect(mocks.drop.mock.calls.map((c) => c[0])).toEqual(["r1"]);
     expect(mocks.invoke).toHaveBeenCalledTimes(2);
     expect(mocks.invalidate).not.toHaveBeenCalled();
@@ -58,7 +58,7 @@ describe("the twenty-sixth share", () => {
     mocks.peek.mockReturnValue([{ text: "https://a.example", requestId: "r1", at: 1 }, { text: "https://b.example", requestId: "r2", at: 2 }]);
     mocks.invoke.mockResolvedValue({ data: null, error: httpError(402) });
     const out = await flushShareQueue(queryClient);
-    expect(out).toEqual({ delivered: 0, blocked: true });
+    expect(out).toEqual({ delivered: 0, blocked: true, waiting: 2 });
     expect(mocks.drop).not.toHaveBeenCalled();
     expect(mocks.invoke).toHaveBeenCalledOnce();
   });

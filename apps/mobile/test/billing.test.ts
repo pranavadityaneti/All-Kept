@@ -30,14 +30,14 @@ describe("where a person stands", () => {
     expect(standing(row({ saves_used: 0 }), now)).toEqual({ kind: "ramp", used: 0, of: 25, left: 25 });
   });
   it("is blocked when the ramp is spent and no subscription runs — including one that has lapsed", () => {
-    expect(standing(row({ entitled: false, saves_used: 25 }), now)).toEqual({ kind: "blocked", lapsed: false });
-    expect(standing(row({ entitled: false, saves_used: 30, status: "expired", current_period_end: earlier, product_id: "allkept_monthly" }), now)).toEqual({ kind: "blocked", lapsed: true });
-    expect(standing(row({ entitled: false, saves_used: 30, status: "active", current_period_end: earlier }), now)).toEqual({ kind: "blocked", lapsed: true });
+    expect(standing(row({ entitled: false, saves_used: 25 }), now)).toEqual({ kind: "blocked", lapsed: false, endedAt: null });
+    expect(standing(row({ entitled: false, saves_used: 30, status: "expired", current_period_end: earlier, product_id: "allkept_monthly" }), now)).toEqual({ kind: "blocked", lapsed: true, endedAt: earlier });
+    expect(standing(row({ entitled: false, saves_used: 30, status: "active", current_period_end: earlier }), now)).toEqual({ kind: "blocked", lapsed: true, endedAt: earlier });
   });
   it("is complimentary while a given day is still to come — a paying subscriber is a subscriber first — and nothing once it has passed", () => {
     expect(standing(row({ saves_used: 30, complimentary_until: later }), now)).toEqual({ kind: "complimentary", until: later });
     expect(standing(row({ saves_used: 30, complimentary_until: later, status: "active", will_renew: true, current_period_end: later, product_id: "allkept_yearly" }), now).kind).toBe("subscribed");
-    expect(standing(row({ entitled: false, saves_used: 30, complimentary_until: earlier }), now)).toEqual({ kind: "blocked", lapsed: false });
+    expect(standing(row({ entitled: false, saves_used: 30, complimentary_until: earlier }), now)).toEqual({ kind: "blocked", lapsed: false, endedAt: null });
   });
   it("trusts the server's yes over its own arithmetic", () => {
     // The server said entitled and the phone cannot see why (a subscription row it is not shown, say): still on.

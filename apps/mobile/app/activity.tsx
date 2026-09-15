@@ -8,7 +8,9 @@ import { IconButton } from "../components/IconButton";
 import { cardTitle } from "../components/ItemCard";
 import { PlatformLogo } from "../components/PlatformLogo";
 import { describe, entriesFor, groupEntries, when } from "../lib/activity";
+import { useEntitlement } from "../lib/billing";
 import { useRecentSaves } from "../lib/home";
+import { billingNotice } from "../lib/paywall";
 import { useDoneSaves, useFiredReminders } from "../lib/library";
 import { useSession } from "../lib/session";
 import { font, radius, space, type, usePalette } from "../lib/theme";
@@ -21,10 +23,13 @@ export default function Activity() {
   const recent = useRecentSaves(session.status === "ready");
   const reminded = useFiredReminders(session.status === "ready");
   const done = useDoneSaves(session.status === "ready");
-  // A reminder that has fired, and a save marked done, are entries beside the saves, at the time each happened.
-  const entries = useMemo(() => entriesFor(recent.data ?? [], reminded.data ?? [], done.data ?? []), [recent.data, reminded.data, done.data]);
+  const userId = session.status === "ready" && !session.anonymous ? session.userId : null;
+  const entitlement = useEntitlement(userId);
+  // A reminder that has fired, a save marked done, and the subscription ending are entries beside the saves, at the time each happened.
+  const notice = entitlement.data ? billingNotice(entitlement.data) : null;
+  const entries = useMemo(() => entriesFor(recent.data ?? [], reminded.data ?? [], done.data ?? [], notice), [recent.data, reminded.data, done.data, notice]);
   const sections = useMemo(() => groupEntries(entries, new Date()), [entries]);
-  const thumbnails = useThumbnails(entries.map((e) => e.item.thumbnailPath));
+  const thumbnails = useThumbnails(entries.map((e) => (e.kind === "billing" ? null : e.item.thumbnailPath)));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
@@ -48,6 +53,18 @@ export default function Activity() {
           </View>
         )}
         renderItem={({ item: entry }) => {
+          if (entry.kind === "billing") {
+            // Account news: no save behind it, and a tap goes to the paywall rather than a card.
+            return (
+              <Pressable accessibilityRole="button" accessibilityLabel={`${entry.title}. ${entry.line}`} onPress={() => router.push("/subscribe")} style={styles.row}>
+                <View style={[styles.thumb, { backgroundColor: p.surfaceAlt }]}><Icon name="card" size={18} color={p.bad} /></View>
+                <View style={styles.rowText}>
+                  <Text numberOfLines={1} style={[type.body, styles.rowTitle, { color: p.ink }]}>{entry.title}</Text>
+                  <Text numberOfLines={1} style={[type.label, { color: p.inkMuted }]}>{entry.line} · {when(entry.at)}</Text>
+                </View>
+              </Pressable>
+            );
+          }
           const item = entry.item;
           const thumbnail = item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined;
           const line = entry.kind === "reminder" ? "You asked to be reminded" : entry.kind === "done" ? "You marked this done" : describe(item.status, item.category, !!item.thumbnailPath);

@@ -81,14 +81,51 @@ export const COUNTDOWN_FROM = 5;
 
 /**
  * The one quiet line under the paste field, or nothing. Silent for the first twenty saves and for
- * anyone the door is open to; counts the last five down; says plainly when the door is shut.
+ * anyone the door is open to; counts the last five down. The door being shut is the card's to say.
  */
 export function standingLine(s: Standing): string | null {
   switch (s.kind) {
     case "ramp": return s.left <= COUNTDOWN_FROM ? `${s.left} free ${s.left === 1 ? "save" : "saves"} left.` : null;
-    case "blocked": return s.lapsed ? "Subscription ended — renew to keep saving." : "Free saves used — subscribe to keep saving.";
     default: return null;
   }
+}
+
+export interface StandingCardText {
+  title: string;
+  body: string;
+  /** The button's word: what opening the paywall is for. */
+  action: "Renew" | "Subscribe";
+  /** What the card is about. "Not now" hides the card for this signature; a new day or a new share waiting brings it back. */
+  signature: string;
+}
+
+/**
+ * The card at the top of Home when the door is shut, and only then: the day the subscription ended
+ * or the free saves used, what is waiting in the share queue, and the one thing to do about it.
+ */
+export function standingCard(s: Standing, waiting: number, now: Date, locale?: string): StandingCardText | null {
+  if (s.kind !== "blocked") return null;
+  const queued = waiting > 0 ? ` ${waiting} shared ${waiting === 1 ? "link is" : "links are"} waiting to be filed.` : "";
+  if (s.lapsed) {
+    return {
+      title: s.endedAt ? `Your subscription ended ${shortDate(s.endedAt, now, locale)}` : "Your subscription ended",
+      body: `Everything you saved is still here.${queued}`,
+      action: "Renew",
+      signature: `${s.endedAt ?? "ended"}|${waiting}`,
+    };
+  }
+  return {
+    title: "Your free saves are used",
+    body: `Saving more needs a subscription. Everything you saved is still here.${queued}`,
+    action: "Subscribe",
+    signature: `free|${waiting}`,
+  };
+}
+
+/** The ending, as a line in the inbox dated the day it happened. Nothing for a door that was never shut by an ending. */
+export function billingNotice(s: Standing): { at: string; title: string; line: string } | null {
+  if (s.kind !== "blocked" || !s.lapsed || !s.endedAt) return null;
+  return { at: s.endedAt, title: "Subscription ended", line: "Renew to keep saving" };
 }
 
 /** "3 Oct", or "3 Oct 2027" when the year is not this one — a renewal date is read at a glance. */
@@ -109,7 +146,10 @@ export function subscriptionRow(s: Standing, now: Date, locale?: string): Subscr
     case "free_region": return null;
     case "complimentary": return { detail: `Complimentary · until ${shortDate(s.until, now, locale)}`, action: "subscribe" };
     case "ramp": return { detail: `Free · ${s.used} of ${s.of} saves used`, action: "subscribe" };
-    case "blocked": return { detail: s.lapsed ? "Ended · renew to keep saving" : "Free saves used · subscribe to keep saving", action: "subscribe" };
+    case "blocked": return {
+      detail: s.lapsed ? `Ended${s.endedAt ? ` ${shortDate(s.endedAt, now, locale)}` : ""} · renew to keep saving` : "Free saves used · subscribe to keep saving",
+      action: "subscribe",
+    };
     case "subscribed": {
       const when = s.until ? shortDate(s.until, now, locale) : null;
       if (!s.renews) return { detail: when ? `Cancelled · until ${when}` : "Cancelled", action: "manage" };

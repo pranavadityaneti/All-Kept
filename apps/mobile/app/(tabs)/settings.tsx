@@ -20,7 +20,7 @@ import { openLink } from "../../lib/open";
 import { STREAMLINE_URL } from "../../lib/category-marks";
 import { PRIVACY_URL, subscriptionRow, TERMS_URL } from "../../lib/paywall";
 import { useSession } from "../../lib/session";
-import { useLinkedSource, useSetReplies } from "../../lib/sources";
+import { playlistDetail, useLinkedSource, useSetReplies, useYoutubePlaylists } from "../../lib/sources";
 import { supabase } from "../../lib/supabase";
 import { radius, space, type, usePalette, useThemeChoice } from "../../lib/theme";
 import { useOtaUpdates } from "../../lib/updates";
@@ -33,6 +33,7 @@ export default function Settings() {
   const session = useSession();
   const ready = session.status === "ready";
   const linked = useLinkedSource(ready);
+  const playlists = useYoutubePlaylists(ready);
   const setReplies = useSetReplies(linked.data);
   const remove = useDeleteAccount();
   const updates = useOtaUpdates();
@@ -190,7 +191,7 @@ export default function Settings() {
           <SettingsRow
             icon="youtube"
             title="YouTube playlist"
-            detail="Save a video to a playlist and it lands here"
+            detail={playlistDetail(playlists.data)}
             onPress={() => router.push("/setup/youtube")}
             right={<Icon name="chevron" size={18} color={p.inkMuted} />}
           />

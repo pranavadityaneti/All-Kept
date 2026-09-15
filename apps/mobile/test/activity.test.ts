@@ -51,10 +51,10 @@ suite("the activity list", () => {
     const sections = groupEntries(entries, now);
     expect(sections.map((s) => [s.title, s.data.map((e) => e.key)])).toEqual([["TODAY", ["saved:a", "reminder:b"]], [expect.stringMatching(/2026/), ["saved:b"]]]);
     // A reminder still to come is not an entry: nothing has happened yet.
-    expect(entriesFor([], [{ ...reminded, remindAt: new Date(2026, 8, 12, 9, 0).toISOString() }], [], now).length).toBe(0);
+    expect(entriesFor([], [{ ...reminded, remindAt: new Date(2026, 8, 12, 9, 0).toISOString() }], [], null, now).length).toBe(0);
     // A save marked done is an entry at the moment it was marked.
     const done = { ...save("c", new Date(2026, 8, 1, 9, 0).toISOString()), doneAt: new Date(2026, 8, 10, 10, 0).toISOString() };
-    expect(entriesFor([a], [], [done], now).map((e) => e.key)).toEqual(["saved:a", "done:c"]);
+    expect(entriesFor([a], [], [done], null, now).map((e) => e.key)).toEqual(["saved:a", "done:c"]);
   });
 
   it("reads a timestamp the way a notification does", () => {
@@ -73,5 +73,16 @@ suite("the activity list", () => {
     expect(describe("pending", "Tech & tools")).toBe("Saved, still sorting");
     expect(describe("no_link", null)).toBe("Saved, no link yet");
     expect(describe("preview_unavailable", "Money & career")).toBe("Saved as Money & career, no preview");
+  });
+});
+
+suite("the notice among the entries", () => {
+  it("sits at its own day like a save, and tells the screen it is not one", () => {
+    const entries = entriesFor([save("a", "2026-09-10T09:00:00Z")], [], [], { at: "2026-09-03T18:51:00Z", title: "Subscription ended", line: "Renew to keep saving" });
+    expect(entries.map((e) => e.kind)).toEqual(["saved", "billing"]);
+    const notice = entries[1]!;
+    expect(notice.kind === "billing" && notice.title).toBe("Subscription ended");
+    expect(notice.key).toBe("billing:2026-09-03T18:51:00Z");
+    expect(entriesFor([save("a", "2026-09-10T09:00:00Z")], [], [], null).map((e) => e.kind)).toEqual(["saved"]);
   });
 });

@@ -38,11 +38,18 @@ export function dayLabel(iso: string, now: Date): string {
  * One line in the Notifications list: a save arriving, or a reminder firing. Keyed so the same save
  * can appear twice — once when it arrived, once when it came back — and never collide.
  */
-export interface Entry { key: string; kind: "saved" | "reminder" | "done"; item: LibraryItem; at: string }
+export type Entry =
+  | { key: string; kind: "saved" | "reminder" | "done"; item: LibraryItem; at: string }
+  /** Account news — the subscription ending — dated the day it happened, with no save behind it. */
+  | { key: string; kind: "billing"; at: string; title: string; line: string };
 
-/** The saves, the reminders that have fired and the saves marked done, as one list, newest first. A reminder still to come has not happened. */
-export function entriesFor(saves: LibraryItem[], reminded: LibraryItem[], done: LibraryItem[], now = new Date()): Entry[] {
+/** The one notice the account can carry: the ending, with its words. */
+export interface BillingNotice { at: string; title: string; line: string }
+
+/** The saves, the reminders that have fired, the saves marked done and the account's notice, as one list, newest first. A reminder still to come has not happened. */
+export function entriesFor(saves: LibraryItem[], reminded: LibraryItem[], done: LibraryItem[], notice: BillingNotice | null = null, now = new Date()): Entry[] {
   const entries: Entry[] = saves.map((item) => ({ key: `saved:${item.id}`, kind: "saved", item, at: item.lastSavedAt }));
+  if (notice) entries.push({ key: `billing:${notice.at}`, kind: "billing", at: notice.at, title: notice.title, line: notice.line });
   for (const item of reminded) {
     if (item.remindAt && Date.parse(item.remindAt) <= now.getTime()) entries.push({ key: `reminder:${item.id}`, kind: "reminder", item, at: item.remindAt });
   }

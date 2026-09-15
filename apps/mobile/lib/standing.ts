@@ -65,7 +65,8 @@ export type Standing =
   /** Given saving without a subscription, until a day; shown for what it is. */
   | { kind: "complimentary"; until: string }
   | { kind: "ramp"; used: number; of: number; left: number }
-  | { kind: "blocked"; lapsed: boolean };
+  /** The door is shut. `lapsed` when a subscription stood behind it once; `endedAt` the day that one ran out, when known. */
+  | { kind: "blocked"; lapsed: boolean; endedAt: string | null };
 
 /** The server's row, as a screen shows it. */
 export function standing(row: EntitlementRow, now: Date): Standing {
@@ -77,6 +78,7 @@ export function standing(row: EntitlementRow, now: Date): Standing {
   if (row.complimentary_until && new Date(row.complimentary_until) > now) return { kind: "complimentary", until: row.complimentary_until };
   if (row.saves_used < row.free_saves) return { kind: "ramp", used: row.saves_used, of: row.free_saves, left: row.free_saves - row.saves_used };
   if (row.entitled) return { kind: "subscribed", renews: row.will_renew !== false, until: row.current_period_end, product: row.product_id };
-  return { kind: "blocked", lapsed: row.status !== null };
+  const lapsed = row.status !== null;
+  return { kind: "blocked", lapsed, endedAt: lapsed ? row.current_period_end : null };
 }
 

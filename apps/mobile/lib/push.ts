@@ -108,12 +108,16 @@ export const openSystemSettings = (): void => { void Linking.openSettings(); };
  * cold. The cold start is the one that is easy to miss — the response has already happened by the
  * time the listener is attached, so it has to be asked for as well as listened for.
  */
-export function useNotificationRoute(go: (itemId: string) => void): void {
+export function useNotificationRoute(go: (target: { itemId: string } | { paywall: true }) => void): void {
   useEffect(() => {
     let cancelled = false;
     const open = (response: Notifications.NotificationResponse | null) => {
-      const id = response?.notification.request.content.data?.["itemId"];
-      if (!cancelled && typeof id === "string" && id) go(id);
+      const data = response?.notification.request.content.data;
+      const id = data?.["itemId"];
+      if (cancelled) return;
+      if (typeof id === "string" && id) go({ itemId: id });
+      // Account news names no save: the subscription ending, a card that failed. The paywall is where both are answered.
+      else if (data?.["reason"] === "billing") go({ paywall: true });
     };
     // The tap that started the app, which has no listener to hear it.
     void Notifications.getLastNotificationResponseAsync().then(open).catch(() => undefined);

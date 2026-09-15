@@ -10,6 +10,7 @@ import { CategoryTile } from "../../components/CategoryTile";
 import { CategorySheet } from "../../components/CategorySheet";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { SavesStanding } from "../../components/SavesStanding";
+import { StandingCard } from "../../components/StandingCard";
 import { InterestPills } from "../../components/InterestPills";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
@@ -111,6 +112,8 @@ export default function Home() {
             <Button label="Try again" onPress={session.retry} />
           </Card>
         )}
+
+        {ready && <StandingCard userId={userId} />}
 
         {ready && !linked.data && (
           <Card>

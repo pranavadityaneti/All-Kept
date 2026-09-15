@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  disclosure, isPaymentRequired, keyAllowed, MANAGE_URL, perMonthOf, plansFrom, savingsPercent, shortDate, standingLine, subscriptionRow,
+  billingNotice, disclosure, isPaymentRequired, keyAllowed, MANAGE_URL, perMonthOf, plansFrom, savingsPercent, shortDate, standingCard, standingLine, subscriptionRow,
   type PriceLike,
 } from "../lib/paywall";
 import type { Standing } from "../lib/standing";
@@ -56,8 +56,9 @@ describe("the quiet line under the paste field", () => {
     expect(standingLine({ kind: "ramp", used: 24, of: 25, left: 1 })).toBe("1 free save left.");
   });
   it("says the door is shut when it is, and nothing when there is nothing to say", () => {
-    expect(standingLine({ kind: "blocked", lapsed: false })).toBe("Free saves used — subscribe to keep saving.");
-    expect(standingLine({ kind: "blocked", lapsed: true })).toBe("Subscription ended — renew to keep saving.");
+    // The door being shut is the card's to say, at the top of Home, with the date and what is waiting.
+    expect(standingLine({ kind: "blocked", lapsed: false, endedAt: null })).toBeNull();
+    expect(standingLine({ kind: "blocked", lapsed: true, endedAt: "2026-09-13T18:51:00Z" })).toBeNull();
     expect(standingLine({ kind: "free_region" })).toBeNull();
     expect(standingLine({ kind: "subscribed", renews: true, until: null, product: null })).toBeNull();
     expect(standingLine({ kind: "billing_issue", until: null, product: null })).toBeNull();
@@ -73,8 +74,9 @@ describe("the Subscription row in Settings", () => {
   });
   it("counts the free saves and offers the paywall", () => {
     expect(row({ kind: "ramp", used: 12, of: 25, left: 13 })).toEqual({ detail: "Free · 12 of 25 saves used", action: "subscribe" });
-    expect(row({ kind: "blocked", lapsed: false })).toEqual({ detail: "Free saves used · subscribe to keep saving", action: "subscribe" });
-    expect(row({ kind: "blocked", lapsed: true })).toEqual({ detail: "Ended · renew to keep saving", action: "subscribe" });
+    expect(row({ kind: "blocked", lapsed: false, endedAt: null })).toEqual({ detail: "Free saves used · subscribe to keep saving", action: "subscribe" });
+    expect(row({ kind: "blocked", lapsed: true, endedAt: oct })).toEqual({ detail: "Ended 3 Oct · renew to keep saving", action: "subscribe" });
+    expect(row({ kind: "blocked", lapsed: true, endedAt: null })).toEqual({ detail: "Ended · renew to keep saving", action: "subscribe" });
   });
   it("tells a subscriber what happens next and offers the store's own page", () => {
     expect(row({ kind: "subscribed", renews: true, until: oct, product: "allkept_monthly" })).toEqual({ detail: "Subscribed · renews 3 Oct", action: "manage" });
@@ -110,5 +112,46 @@ describe("which RevenueCat key a build may carry", () => {
     expect(keyAllowed("appl_abc", true)).toBe(true);
     expect(keyAllowed("", true)).toBe(false);
     expect(keyAllowed(undefined, false)).toBe(false);
+  });
+});
+
+describe("the card at the top of Home when the door is shut", () => {
+  // Midday, so no time zone moves it to another day; October, which every locale shortens the same way.
+  const ended = "2026-10-03T12:00:00Z";
+  it("names the day a subscription ended, what is waiting, and offers to renew", () => {
+    expect(standingCard({ kind: "blocked", lapsed: true, endedAt: ended }, 3, now, "en-GB")).toEqual({
+      title: "Your subscription ended 3 Oct",
+      body: "Everything you saved is still here. 3 shared links are waiting to be filed.",
+      action: "Renew",
+      signature: `${ended}|3`,
+    });
+    expect(standingCard({ kind: "blocked", lapsed: true, endedAt: ended }, 1, now, "en-GB")!.body).toBe("Everything you saved is still here. 1 shared link is waiting to be filed.");
+    expect(standingCard({ kind: "blocked", lapsed: true, endedAt: null }, 0, now, "en-GB")).toEqual({
+      title: "Your subscription ended", body: "Everything you saved is still here.", action: "Renew", signature: "ended|0",
+    });
+  });
+  it("says the free saves are used, and offers to subscribe", () => {
+    expect(standingCard({ kind: "blocked", lapsed: false, endedAt: null }, 0, now, "en-GB")).toEqual({
+      title: "Your free saves are used",
+      body: "Saving more needs a subscription. Everything you saved is still here.",
+      action: "Subscribe",
+      signature: "free|0",
+    });
+  });
+  it("is nothing for everyone the door is open to", () => {
+    expect(standingCard({ kind: "ramp", used: 24, of: 25, left: 1 }, 0, now)).toBeNull();
+    expect(standingCard({ kind: "subscribed", renews: true, until: null, product: null }, 2, now)).toBeNull();
+    expect(standingCard({ kind: "billing_issue", until: null, product: null }, 0, now)).toBeNull();
+    expect(standingCard({ kind: "free_region" }, 0, now)).toBeNull();
+    expect(standingCard({ kind: "complimentary", until: "2027-12-31T00:00:00Z" }, 0, now)).toBeNull();
+  });
+});
+
+describe("the notice in the inbox", () => {
+  it("is the ending, dated the day it happened, and nothing otherwise", () => {
+    expect(billingNotice({ kind: "blocked", lapsed: true, endedAt: "2026-09-03T18:51:00Z" })).toEqual({ at: "2026-09-03T18:51:00Z", title: "Subscription ended", line: "Renew to keep saving" });
+    expect(billingNotice({ kind: "blocked", lapsed: true, endedAt: null })).toBeNull();
+    expect(billingNotice({ kind: "blocked", lapsed: false, endedAt: null })).toBeNull();
+    expect(billingNotice({ kind: "subscribed", renews: true, until: null, product: null })).toBeNull();
   });
 });

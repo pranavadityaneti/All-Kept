@@ -27,9 +27,10 @@ export async function revokeShareToken(): Promise<void> {
  *
  * A 402 — the free saves are used and there is no subscription — keeps the item queued and stops:
  * everything behind it would be refused for the same reason, and the item is delivered by the next
- * flush after the person subscribes. `blocked` is how the app knows to say so.
+ * flush after the person subscribes. `blocked` is how the app knows to say so, and `waiting` how
+ * many it has to say it about.
  */
-export async function flushShareQueue(queryClient: QueryClient): Promise<{ delivered: number; blocked: boolean }> {
+export async function flushShareQueue(queryClient: QueryClient): Promise<{ delivered: number; blocked: boolean; waiting: number }> {
   let delivered = 0;
   let blocked = false;
   for (const item of peekQueue()) {
@@ -43,5 +44,5 @@ export async function flushShareQueue(queryClient: QueryClient): Promise<{ deliv
     if (data?.itemId) { dropQueued(item.requestId); delivered++; }
   }
   if (delivered) invalidateLibrary(queryClient);
-  return { delivered, blocked };
+  return { delivered, blocked, waiting: blocked ? peekQueue().length : 0 };
 }
