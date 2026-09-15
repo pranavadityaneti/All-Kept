@@ -38,7 +38,8 @@ export function CategorySummary({ category, taken, onName }: {
   if (!data || data.count === 0) return null;
   const names = headerNames(data, taken);
   const showThemes = !collapsed && data.themes.length > 0;
-  const reading = !collapsed && data.themes.length === 0 && data.freshness === "writing";
+  // The reading line only while the app will look again; once it has stopped looking, the line would be a lie.
+  const reading = !collapsed && data.themes.length === 0 && summary.looksAgain;
   const foldable = data.themes.length > 0 || names.length > 0;
 
   return (

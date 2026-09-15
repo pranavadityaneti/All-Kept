@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isEntityIcon, type CategorySummaryResponse } from "@allkept/contracts";
 import type { Filters } from "./filter-groups";
 import { mergeThreads, neverAnInterest, type Interest, type InterestRow } from "./interests";
@@ -66,19 +66,28 @@ export function languageFromLocale(locale: string | undefined): string {
   return /^[a-z]{2,3}$/.test(code) ? code : "en";
 }
 
+/** How long after each answer that says "writing" the app asks again: four looks over fifty seconds, then it leaves it. */
+const LOOKS_AGAIN_MS = [3000, 7000, 15000, 25000] as const;
+
 /**
  * While the themes are being written the answer comes back at once without them; the app asks
- * again after four seconds, then ten, then leaves it — the next open will have them.
+ * again a few times, further apart each time, then leaves it — the next open will have them. Never
+ * open-ended: a model that is down must not be asked every few seconds for as long as the card shows.
  */
 export function nextRefetchMs(freshness: CategorySummaryResponse["freshness"] | undefined, updates: number): number | false {
   if (freshness !== "writing") return false;
-  return updates <= 1 ? 4000 : updates === 2 ? 10000 : false;
+  return LOOKS_AGAIN_MS[Math.max(updates, 1) - 1] ?? false;
 }
 
-/** The server's answer for one category. Fresh for a few minutes; the themes behind it are kept for an hour or until the category changes. */
-export function useCategorySummary(category: string | null, enabled: boolean) {
-  return useQuery({
-    queryKey: categorySummaryKey(category ?? ""),
+/**
+ * The server's answer for one category, and whether the app will ask again for the themes being
+ * written. Fresh for a few minutes; the themes behind it are kept for an hour or until the category changes.
+ */
+export function useCategorySummary(category: string | null, enabled: boolean): { data: CategorySummaryResponse | undefined; looksAgain: boolean } {
+  const key = categorySummaryKey(category ?? "");
+  const client = useQueryClient();
+  const query = useQuery({
+    queryKey: key,
     enabled: enabled && !!category,
     staleTime: 5 * 60_000,
     refetchInterval: (query) => nextRefetchMs(query.state.data?.freshness, query.state.dataUpdateCount),
@@ -89,4 +98,6 @@ export function useCategorySummary(category: string | null, enabled: boolean) {
       return data;
     },
   });
+  const updates = client.getQueryState(key)?.dataUpdateCount ?? 0;
+  return { data: query.data, looksAgain: nextRefetchMs(query.data?.freshness, updates) !== false };
 }

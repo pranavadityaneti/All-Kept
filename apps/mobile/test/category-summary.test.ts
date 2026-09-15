@@ -50,11 +50,9 @@ describe("the names in the header", () => {
 });
 
 describe("asking again while the themes are being written", () => {
-  it("asks twice more, a few seconds apart, then stops; a finished answer is never asked again", async () => {
+  it("asks four times more, further apart each time, then stops; a finished answer is never asked again", async () => {
     const { nextRefetchMs } = await import("../lib/category-summary");
-    expect(nextRefetchMs("writing", 1)).toBe(4000);
-    expect(nextRefetchMs("writing", 2)).toBe(10000);
-    expect(nextRefetchMs("writing", 3)).toBe(false);
+    expect([1, 2, 3, 4, 5, 9].map((n) => nextRefetchMs("writing", n))).toEqual([3000, 7000, 15000, 25000, false, false]);
     for (const f of ["stored", "none"] as const) expect(nextRefetchMs(f, 1)).toBe(false);
     expect(nextRefetchMs(undefined, 0)).toBe(false);
   });
