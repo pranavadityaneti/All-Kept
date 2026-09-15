@@ -16,7 +16,8 @@ export type EventName = | "app_open" | "library_view" | "item_open" | "open_orig
 export function track(userId: string | null, name: EventName, props: Record<string, string | number | boolean> = {}): void {
   if (!userId) return;
   void supabase.from("app_events").insert({ user_id: userId, name, props }).then(
-    () => undefined,
+    // Fire-and-forget in the hand, but not blind in the workshop: a refused row is said in development.
+    ({ error }) => { if (error && __DEV__) console.warn(`track: ${name} refused — ${error.message}`); },
     () => undefined,
   );
 }
