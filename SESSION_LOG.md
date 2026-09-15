@@ -1503,3 +1503,21 @@ categories.
   picker (`@react-native-community/datetimepicker` 9.1.0, bundled with SDK 57) is installed and
   guarded (`pickerAvailable`), verifiable only after an EAS build — Pranav: build tonight after
   all the features. Next: #42 export out, #43 done/visited.
+- Pranav asked whether to go deeper on location before building the export. Answered in chat:
+  three depths (words / venue as text / resolved place), uses (near-me, a map of saves, trips
+  with batch export, liveness), positioning ("Save it now, find it when you're there"), the
+  honesty that his own library has zero venues so the sorter change is the instrument; staged
+  A/B/C; he said go. Spec `internal/superpowers/specs/2026-09-15-export-out-design.md`
+  (`2a12249`). Built stage A, TDD: `b7bff37` sorter (`venue {name, locality}` and `event_at` in
+  the output, validated — a city alone is no venue, a day gone by is no event — `saved on:` in
+  the user message as the anchor for relative dates; PROMPT_VERSION 2026-09-18.1 → the library
+  re-sorts itself, ~80¢); `1d33377` migration (`item_ai.venue`, `item_ai.event_at`, claim returns
+  `savedAt`, finish writes both; dry-run clean, rolled back); `ed41905` app (`lib/export.ts`:
+  mapsUrl, icsFor with 75-octet folding and an octet counter since Hermes has no Buffer,
+  copyText, describeEvent; `WaysOut` chips in "What it's about" — venue → Maps / Google Maps when
+  installed, day → .ics through the share sheet; "Copy as text"; `LSApplicationQueriesSchemes`
+  comgooglemaps for tonight's build). Deno 270, app 284, tsc clean. The desktop app restarted
+  between turns: scratchpad wiped, Metro and the simulator gone; rebooted both (Metro pid in the
+  new `metro.log`). Verified on the simulator: "Copy as text" put title, summary and link on the
+  clipboard (`xcrun simctl pbpaste`). Venue/date chips need the migration + deploy + re-sort to
+  show. Waiting for Pranav's `db push`, then Yes to deploy sweeper + reprocess-item and push.
