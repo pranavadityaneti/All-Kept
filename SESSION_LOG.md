@@ -1482,3 +1482,24 @@ categories.
   cost so far: 160 sorts on gpt-5.6-sol at $0.0055 each = $0.89; the re-sort will cost about the
   same. Waiting for Pranav's `db push`, then his Yes to deploy sweeper + reprocess-item +
   category-summary and push.
+- Sorter re-sort finished 13:41: 160/160 on 2026-09-17.1, $0.80. Before → after: Tech 77→66,
+  Entertainment 35→26, Career 18→31, Learning 12→3, Design 4→8, Other 3→11 (the 11 unsure), Life
+  1→4. Named saves: AntiGravity both Tech; designer lists 4/4 Design; routine + attention span
+  both Life; channel automation 3/4 Career (the n8n tool tutorial stayed Tech, by the tie-breaker).
+  All summaries English. Reported to Pranav.
+- Pranav: the pill must say it is tappable; the details sheet "looks like a dump yard"; fix the
+  URL-notes too; "Your note" above "What it's about". Built: `478050f` capture keeps only the words
+  around a link (`wordsAround`), `3f2063b` migration cleared the 32 URL-only notes (side effect:
+  the reset trigger re-queued them — a note is sorter input — ~18¢), `9946f07` the sheet in four
+  cards (Filed under with marks and the picker open from the pill / folded from "more", Your note,
+  What it's about, From the post folded at four lines) and the pill with a chevron / question mark.
+  Deployed save-link, instagram-webhook, youtube-poll, sweeper, reprocess-item on his Yes; pushed.
+- #40 grid/list toggle (`da2355c`, pushed): `lib/library-view.ts` store, `ItemRow`, search follows.
+- #41 reminders (`7ec3aaf` migration: `items.remind_at`, `library_query_v5`, flags reminder /
+  reminded; `b1ec680` app; `1137f69`; then the bell in the header, `RemindSheet`) — verified on
+  the simulator with Pranav tapping Allow: the row written, the pending notification present in the
+  simulator's `PendingNotifications.plist`, "Reminder set 1" in filters, Clear removes both. A
+  reminder for tonight 8pm IST is left set on the sunflower save so it can be seen firing. The
+  picker (`@react-native-community/datetimepicker` 9.1.0, bundled with SDK 57) is installed and
+  guarded (`pickerAvailable`), verifiable only after an EAS build — Pranav: build tonight after
+  all the features. Next: #42 export out, #43 done/visited.

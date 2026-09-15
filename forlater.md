@@ -266,10 +266,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
-### 41. Remind me on a save
+### 41. Remind me on a save — DONE 15 Sep 2026
 - **What + why:** A reminder on any save — a date and time, a local notification that opens the save. Stasht's and Albo's users both asked; neither does it well. Small.
 - **Scope:** `expo-notifications`, a `remind_at` on the item, the item sheet's action row, an inbox entry when it fires.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: `items.remind_at` + `library_query_v5` (migration applied), `lib/reminders.ts` (presets, describe, reconcile on foreground, local notification), a bell in the save's header opening `RemindSheet`, fired reminders in Notifications, "Reminder set" filter; the native picker installed and guarded, verifiable after the next EAS build.
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 
