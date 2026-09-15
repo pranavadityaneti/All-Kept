@@ -242,3 +242,24 @@ again — which also explains why my later taps to restore the interests switch 
   the schema's properties equal the keys the validator returns.
 - Remember: the sorter's output shape is defined in the prompt, the validator AND the schema the
   model is constrained to. Any new field goes in all three — the test now enforces it.
+
+## 2026-09-15 — a new function deployed with another function's code
+- What didn't work: inserting a `[functions.resolve-place]` block into `supabase/config.toml` after
+  the `verify_jwt` line of `[functions.reprocess-item]` — that block also had an `entrypoint`
+  line below, which became resolve-place's. The deploy said "Deployed Functions"; every call to
+  resolve-place ran reprocess-item (the response shape gave it away: `{status, category,
+  classificationStatus}`), and the Jaipur reel was re-sorted three times.
+- What worked: an entrypoint line on every function block; a curl with the anon key after a
+  deploy, reading the *message* — resolve-place says "Sign in first.", reprocess-item says
+  "invalid or missing token".
+- Remember: a config block is a whole thing; read the block after the anchor before appending.
+  After deploying a new function, probe it once and read its own words back.
+
+## 2026-09-15 — the simulator's typing drops characters in a controlled TextInput
+- What didn't work: `simctl`-driven `text` into a React Native controlled input: fourteen
+  characters typed at once landed as "Doppler" (the space and after lost), and once as
+  "Jaipu"; the state and the screen disagreed and the button stayed disabled.
+- What worked: typing in short bursts (a word, then the rest), and a temporary console.log of
+  the component's state read back from the Metro log.
+- Remember: verify a form's *state*, not its pixels, before blaming the code; a nested Modal
+  inside a pageSheet Modal must be rendered inside it or iOS never shows it.

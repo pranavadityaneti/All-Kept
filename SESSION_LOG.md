@@ -1538,3 +1538,25 @@ categories.
   tick, Status "Done 1". Noted: a re-sort can flip a few borderline saves between runs (Tech
   66→67, Entertainment 26→27 mid-run) — inherent to the model; corrections pin them. Not pushed:
   `c247f07`, `e9d8b8a`, `3bef6e4` — waiting for Pranav's Yes. EAS build is his, tonight.
+- Playback: explained Instagram's gate (some reels served only in its app; comments, location tag,
+  and the video itself unavailable logged-out — checked the pages); `daa127e` a post link tap
+  opens the reel; `dd64f94` a reel that ended replays in place, a gated one shows our picture
+  with the line, `embed_gated` counted. Pushed. Pranav asked to play gated reels muted in-app —
+  not possible: the video is not delivered at all. Web search for the café's name tested: a miss
+  and a wrong-answer risk; not built.
+- Stage B: `5775ae4` places table + `venues_to_resolve` + `place_resolved`; `0e25f24` resolver
+  (Apple Maps Server API token via jose, Google Places Text Search, pure rules) + sweeper pass 7
+  + a `{lookup}` mode under the internal secret; live lookups on Pranav's Yes: Apple knows the
+  five real venues, Google too; `3454177` an exact name stands without a category, a chain
+  resolves to the branch in the locality, Apple's newline addresses joined. Deployed; first
+  places resolved: Mazda of Claremont, % Arabica Kyoto Arashiyama, Cemnt.
+- Bug of my own: `venue`/`event_at` were never returnable — the two adapters' strict schemas
+  lacked them (`1ea63eb`: one OUTPUT_SCHEMA in classify.ts, adapters import it, a test ties it
+  to the validator; ERRORS.md). Handle rule `3bf167d` (@lasthouse.in → null, not a name; the
+  sign was not read at low detail). `5b79fbb` the resolved place on the chip and the pin in Maps.
+- "Add place": `0c699ab` user_venue beside venue, standing over it; `061fc7a` resolve-place
+  function; `80fecc6` PlaceSheet + chips; `15e48fd` the sheets nested inside the details modal +
+  the config.toml entrypoint fix (resolve-place had been deployed with reprocess-item's code —
+  ERRORS.md). Verified: Doppler Coffee, Jaipur → Google → "G-21, Kamla Marg, C Scheme" on the
+  chip. The Jaipur reel is filed under Design now (the botched deploy re-sorted it; Pranav can
+  correct). Not pushed: `15e48fd`, the lock, this log.
