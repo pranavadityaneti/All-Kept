@@ -52,6 +52,7 @@ export function RemindMe({ remindAt, onSet, onClear, busy }: {
   const set = async (at: number) => {
     if ((await reminderPermission()) === "denied") { setRefused(true); return; }
     setRefused(false);
+    setNeedsUpdate(false);
     setPicking(false);
     onSet(at);
   };
