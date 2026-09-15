@@ -1,6 +1,7 @@
 // Retries enrichment and classification for items that are due. Called by pg_cron every 5 minutes with a shared secret.
 import { adminClient, env } from "../_shared/supabase.ts";
 import { MAX_SNAPSHOT_ATTEMPTS, runPipeline } from "../_shared/pipeline.ts";
+import { PROMPT_VERSION } from "../_shared/classify.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
 import { runIconPass, type IconRow } from "../_shared/entity-icons.ts";
@@ -9,6 +10,8 @@ import { singleItemRequest } from "./single.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
 
 const BATCH = 50;
+/** Settled saves put back for sorting per sweep when the sorter has moved on: a prompt change drains a library over sweeps, never in one. */
+const RESORT_BATCH = 20;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
@@ -89,7 +92,17 @@ Deno.serve(async (req) => {
         });
       } catch (e) { console.error("sweeper: icon pass failed", { error: String(e).slice(0, 200) }); }
     }
-    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, icons, processed: ok, failed, classifier: choice?.model ?? null });
+    // 6. Settled saves the sorter would now answer differently — the prompt moved on, a picture it
+    //    never tried, a summary not in the reader's language — go back in the queue for the next
+    //    sweep, a bounded batch at a time, only where a sorter is configured to take them.
+    let resorted = 0;
+    if (choice) {
+      const { data, error: e6 } = await db.rpc("requeue_stale_classifications", { p_prompt_version: PROMPT_VERSION, lim: RESORT_BATCH });
+      if (e6) console.error("sweeper: re-sort pass failed", { error: String(e6.message ?? e6).slice(0, 200) });
+      else resorted = (data ?? []).length;
+      if (resorted > 0) deps.log("sweeper: re-sort queued", { count: resorted, prompt: PROMPT_VERSION });
+    }
+    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, icons, resorted, processed: ok, failed, classifier: choice?.model ?? null });
   } catch (e) {
     console.error("sweeper failed", e);
     return new Response("internal error", { status: 500 });
