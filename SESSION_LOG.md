@@ -1560,3 +1560,39 @@ categories.
   ERRORS.md). Verified: Doppler Coffee, Jaipur → Google → "G-21, Kamla Marg, C Scheme" on the
   chip. The Jaipur reel is filed under Design now (the botched deploy re-sorted it; Pranav can
   correct). Not pushed: `15e48fd`, the lock, this log.
+
+## 2026-09-15 (evening) — 47, 48 and the YouTube description re-sort
+
+- Item 47: `item_ai` read-only for clients; the category correction goes through
+  `set_user_category(uuid, text)`, ownership checked inside (`ff0d435`, app `c0f6f0e`). Migration
+  `20260918140000_item_ai_grants.sql` awaits Pranav's `db push` — the app calls the function
+  already, so a correction fails until it is applied. Not pushed.
+- Item 48, fifteen picture-less settled saves, two classes closed. Pinterest: the pin's page is
+  1.1 MB and Pinterest writes its `og:` tags at the end (byte 1,026,738), past the 256 KB the page
+  route reads, so every pin settled as "no preview" with only the site's name. Not a wall — the
+  same page for every user agent. Pinterest's oEmbed answers in 519 bytes with title, pinner and
+  a 236px picture; the same file exists at 736px on the same path (`originals` is 403). `ab73dfe`:
+  pins take the oEmbed route, picture at 736px, a blank oEmbed string counts as absent (Pinterest
+  answers " " for an untitled pin), and migration `20260918150000_pinterest_asked_again.sql` puts
+  the two settled pins back on the preview retry (dry-run in a rolled-back transaction: 2 rows;
+  deploy the sweeper before applying, or the sweep settles them again on the old route).
+  YouTube: `SY8mvbByt30` and `u8lUZySlHXY` answer 401 to oEmbed (embedding refused, not private)
+  while `i.ytimg.com/vi/<id>/maxresdefault.jpg` is 200; `9WMCH01eUGs` and `azPR6V9ICRo` are 404
+  everywhere (item 28). `1708481`: enrichment takes the widest `snippet.thumbnails` when no
+  picture is held; the eighth pass is now `youtube-snippet.ts` — reads the snippet for whatever a
+  save lacks (text or picture) once each under `media_meta.snippet_asked`; a refusal or outage
+  leaves the row unmarked (before, a quota 403 marked twenty rows asked for good); a picture found
+  for an old save is stored on the spot through `runPipeline` (pass 3 takes saves a day old at
+  most) under a 30 s budget per sweep. The rows query's predicate counted 15 rows live (13 no
+  text, 5 no picture, 3 overlap). The rest are honestly picture-less: a note, Reddit text posts,
+  a web article, a TikTok profile, a deleted reel. Deno 295 pass; not deployed, not pushed.
+- YouTube description re-sort finished: 46 of 59 saves given a description, 13 have none. Before
+  → after: Tech 24→25, Entertainment 15→17, Career 7→7, Other 4→3, Learning 3→3, Life 2→2,
+  Memes 2→1, Design 1→0, Home 1→1. All 59 `ready`; 54 sorted with a picture.
+- Queue: 47, 48 done; 28 corrected (401 = refused embed, not private); 52 anon default-privilege
+  writes on 13 tables (ask first), 53 refused-embed video shows a dead player (record
+  `status.embeddable`, show the poster + Watch on YouTube like an unlisted playlist), 54 the
+  picture door's "sweeper will retry" is untrue for saves over a day old (`39ecef3`).
+- Next: 49 (screen text from the poster frame), then the 51 proposal (subscription-ended UX and
+  the backend gating review). Awaiting: Pranav's `db push` (two migrations), Yes to deploy
+  `sweeper` (+ `reprocess-item` and `save-link`, which share `enrich.ts`), Yes to push.
