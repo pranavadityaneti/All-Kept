@@ -263,3 +263,24 @@ again — which also explains why my later taps to restore the interests switch 
   the component's state read back from the Metro log.
 - Remember: verify a form's *state*, not its pixels, before blaming the code; a nested Modal
   inside a pageSheet Modal must be rendered inside it or iOS never shows it.
+
+## 2026-09-15 — a migration's retry was spent by the sweep that ran before the deploy
+- What didn't work: telling Pranav "deploy before the migration" and expecting the order to hold.
+  He ran `db push` first; the migration put the two Pinterest saves back on the preview retry at
+  14:09, the 14:10:00 sweep ran the *old* enrichment (the deploy finished at 14:10:20) and settled
+  them again with nothing, and the migration's one-time effect was gone.
+- What worked: a one-line `update` he ran himself after the deploy, on the new code, then the
+  14:15 sweep did the rest.
+- Remember: the sweep runs at :00 and :05; a migration that re-arms rows and a deploy that changes
+  what the sweep does are a race with a five-minute clock. Deploy first and *confirm* it landed,
+  or write the re-arm so it does not depend on order (a marker the new code checks, not a retry
+  date the old code also honours). Say the clock out loud when the order matters.
+
+## 2026-09-15 — a date-word test that was right in one time zone and one locale
+- What didn't work: expecting "Ended 3 Sep" from `2026-09-03T18:51:00Z` — the machine is in IST,
+  where that instant is 4 Sep, and `en-GB` shortens September to "Sept".
+- What worked: fixtures at midday UTC (no zone moves midday to another day) in a month every
+  locale shortens the same way (`2026-10-03T12:00:00Z` → "3 Oct"), which the older tests in the
+  same file already did.
+- Remember: a formatted-date expectation carries a time zone and a locale whether written or
+  not; pick the instant and the month so neither can move it.
