@@ -1463,3 +1463,22 @@ categories.
   simulator: "claude" → 22 saves, with "To try" inside search → "Show 5 saves" and 5 results, the
   database's own count. Pushed (`aaffb8f..56c17a5`). Next: spec the prompt-definitions + re-sort
   change (Pranav's Yes), which also carries the summary-language fix.
+- Pranav: Yes ×3 (push, spec the sorter change, search intents). Brainstormed the sorter change
+  (four questions, all recommended answers taken): keep the fifteen and define them; every prompt
+  change re-sorts the library, bounded; below 0.4 → Other + "Sorter unsure"; summaries in the
+  phone's language. Spec `internal/superpowers/specs/2026-09-15-sorter-definitions-and-resort-design.md`
+  (`c76e54a`, pushed; rollout line corrected in `5e0c66c`). Built, TDD throughout:
+  `64296e3` sorter (CATEGORY_GUIDE + 8 TIE_BREAKERS in the prompt, UNSURE_BELOW floor in
+  validateOutput, `write in:` language in the user message, `summary_language` beside
+  `prompt_version` in finish, picture-tried recorded as null; PROMPT_VERSION 2026-09-17.1);
+  `b230939` migration `20260917090000_sorter_definitions_and_resort.sql` (profiles.language,
+  item_ai.summary_language, claim returns language and takes a retry on `ready` with the revision
+  bumped, finish writes summary_language, `requeue_stale_classifications`, `unsure` flag in
+  library_query_v4 / facets_v3 / search_library_v3 in place); `f4c87d6` sweeper pass 6
+  (RESORT_BATCH 20); `dc32f5f` app (Sort again, unsure line, summary-language line, "Sorter
+  unsure" flag, `reportLanguage` on foreground). Deno 268 pass, check:functions clean; app 268
+  pass, tsc clean. Migration dry-run inside a rolled-back transaction on the live database:
+  parses and runs; 160 rows would be stale (every sorted row, since the prompt moved on). Real
+  cost so far: 160 sorts on gpt-5.6-sol at $0.0055 each = $0.89; the re-sort will cost about the
+  same. Waiting for Pranav's `db push`, then his Yes to deploy sweeper + reprocess-item +
+  category-summary and push.
