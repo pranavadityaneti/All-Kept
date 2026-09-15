@@ -5,13 +5,17 @@ import { PROMPT_VERSION } from "../_shared/classify.ts";
 import { classifierFromEnv } from "../_shared/classifiers.ts";
 import { embedder, indexSearchBatch } from "../_shared/embeddings.ts";
 import { runIconPass, type IconRow } from "../_shared/entity-icons.ts";
+import { resolveVenue, runPlacesPass, venueQuery, type Venue } from "../_shared/places.ts";
+import { providersFromEnv } from "../_shared/place-providers.ts";
 import { json, readJson } from "../_shared/http.ts";
-import { singleItemRequest } from "./single.ts";
+import { lookupRequest, singleItemRequest } from "./single.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
 
 const BATCH = 50;
 /** Settled saves put back for sorting per sweep when the sorter has moved on: a prompt change drains a library over sweeps, never in one. */
 const RESORT_BATCH = 20;
+/** Venues looked up per sweep: a few, since each is a call to Apple or Google and a venue is rare. */
+const PLACES_BATCH = 10;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
@@ -21,8 +25,18 @@ Deno.serve(async (req) => {
     const db = adminClient();
     const choice = classifierFromEnv();
     const deps = { fetch: safeFetch(fetch), classifier: choice?.deps ?? null, bulkClassifier: classifierFromEnv(undefined, { bulk: true })?.deps ?? null, log: (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {}) };
+    const body = await readJson(req);
+    // What the places services make of one venue: each provider's candidates and the pick, for checking coverage.
+    const lookup = lookupRequest(body);
+    if (lookup) {
+      const providers = providersFromEnv((n) => Deno.env.get(n), safeFetch(fetch));
+      const ask = async (p: ((q: string) => Promise<unknown>) | null) => { if (!p) return "not configured"; try { return await p(venueQuery(lookup)); } catch (e) { return `error: ${String(e).slice(0, 120)}`; } };
+      const [apple, google] = await Promise.all([ask(providers.apple), ask(providers.google)]);
+      const picked = await resolveVenue(lookup, { apple: providers.apple ?? (async () => []), google: providers.google });
+      return json({ query: venueQuery(lookup), apple, google, picked });
+    }
     // One item, right now, for a door that captured it elsewhere. Answered when the item is done.
-    const single = singleItemRequest(await readJson(req));
+    const single = singleItemRequest(body);
     if (single) {
       const region = Deno.env.get("SB_REGION") ?? null;
       try {
@@ -102,7 +116,41 @@ Deno.serve(async (req) => {
       else resorted = (data ?? []).length;
       if (resorted > 0) deps.log("sweeper: re-sort queued", { count: resorted, prompt: PROMPT_VERSION });
     }
-    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, icons, resorted, processed: ok, failed, classifier: choice?.model ?? null });
+    // 7. A venue the sorter wrote becomes a place: looked up once, Apple first, Google when Apple has
+    //    nothing that matches; a miss is remembered for a month. Only where a provider is configured.
+    let places: { rows: number; resolved: number; unresolved: number; failed: number } | null = null;
+    const providers = providersFromEnv((n) => Deno.env.get(n), safeFetch(fetch));
+    if (providers.apple || providers.google) {
+      try {
+        places = await runPlacesPass({
+          async rows(limit) {
+            const { data, error } = await db.rpc("venues_to_resolve", { lim: limit });
+            if (error) throw error;
+            return ((data ?? []) as { item_id: string; venue: Venue }[]).map((r) => ({ itemId: r.item_id, venue: r.venue }));
+          },
+          resolve: (venue) => resolveVenue(venue, { apple: providers.apple ?? (async () => []), google: providers.google }),
+          async save(itemId, result) {
+            if (result.place) {
+              const p = result.place;
+              const { error } = await db.rpc("place_resolved", {
+                p_item_id: itemId, p_provider: p.provider, p_provider_id: p.providerId, p_name: p.name, p_address: p.address, p_locality: p.locality,
+                p_lat: p.lat, p_lng: p.lng, p_category: p.category, p_hours: p.hours, p_status: p.status, p_url: p.url,
+              });
+              if (error) throw error;
+            } else if (result.reason === "providers unreachable") {
+              // Nothing to record: the row is asked again next sweep, when the providers may be back.
+              return;
+            } else {
+              const { error } = await db.from("item_ai").update({ place_tried_at: new Date().toISOString(), place_miss: result.reason }).eq("item_id", itemId);
+              if (error) throw error;
+            }
+          },
+          log: deps.log,
+        }, PLACES_BATCH);
+        if (places.rows > 0) deps.log("sweeper: places", places);
+      } catch (e) { console.error("sweeper: places pass failed", { error: String(e).slice(0, 200) }); }
+    }
+    return json({ indexed, due: (due ?? []).length, unclassified: (unclassified ?? []).length, no_thumbnail: (noThumb ?? []).length, preview_due: (previewDue ?? []).length, icons, resorted, places, processed: ok, failed, classifier: choice?.model ?? null });
   } catch (e) {
     console.error("sweeper failed", e);
     return new Response("internal error", { status: 500 });

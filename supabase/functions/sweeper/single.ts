@@ -9,3 +9,16 @@ export function singleItemRequest(body: unknown): { itemId: string; retry: boole
   if (!UUID.test(itemId)) return null;
   return { itemId, retry: b["retry"] === true };
 }
+
+/**
+ * The sweeper's third job: say what the places services make of one venue, for checking their
+ * coverage before trusting them with a city. `{ lookup: { name, locality } }`, under the same secret.
+ */
+export function lookupRequest(body: unknown): { name: string; locality: string } | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const lookup = (body as Record<string, unknown>)["lookup"];
+  if (!lookup || typeof lookup !== "object") return null;
+  const { name, locality } = lookup as Record<string, unknown>;
+  if (typeof name !== "string" || typeof locality !== "string" || !name.trim() || !locality.trim()) return null;
+  return { name: name.trim().slice(0, 80), locality: locality.trim().slice(0, 80) };
+}

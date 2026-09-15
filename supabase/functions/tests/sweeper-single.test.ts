@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { singleItemRequest } from "../sweeper/single.ts";
+import { lookupRequest, singleItemRequest } from "../sweeper/single.ts";
 
 const ID = "6d03f7aa-1234-4abc-8def-0123456789ab";
 
@@ -16,3 +16,11 @@ Deno.test("singleItemRequest is null for the cron's empty body and for anything 
   assertEquals(singleItemRequest({ itemId: 42 }), null);
   assertEquals(singleItemRequest([ID]), null);
 });
+
+Deno.test("lookupRequest reads a venue to check the places services with, and nothing else", () => {
+  assertEquals(lookupRequest({ lookup: { name: " Haku ", locality: "Bandra, Mumbai" } }), { name: "Haku", locality: "Bandra, Mumbai" });
+  for (const body of [{}, null, { lookup: "Haku" }, { lookup: { name: "Haku" } }, { lookup: { name: "", locality: "x" } }, { itemId: "x" }]) {
+    assertEquals(lookupRequest(body), null, JSON.stringify(body));
+  }
+});
+
