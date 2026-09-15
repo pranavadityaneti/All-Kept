@@ -217,3 +217,85 @@ export interface CategorySummaryResponse {
 export type WaitlistSource = "site-hero" | "site-footer" | "site" | "app" | "instagram";
 /** waitlist: 200 both ways — a repeat sign-up is not an error to the person typing it. */
 export interface WaitlistResponse { joined: boolean; message: string }
+
+// ---------------------------------------------------------------------------------------------
+// Weave — an itinerary woven from a person's saves. Understand → select → arrange.
+// Spec: internal/superpowers/specs/2026-09-16-weave-itinerary-design.md
+// ---------------------------------------------------------------------------------------------
+
+/** What a save is for on a trip, as the understanding stage files it. */
+export const WEAVE_KINDS = ["food", "coffee", "nightlife", "culture", "cityscape", "nature", "adventure", "shopping", "stay", "other"] as const;
+export type WeaveKind = (typeof WEAVE_KINDS)[number];
+export type WeaveGroup = "solo" | "couple" | "family" | "friends";
+export type WeavePace = "relaxed" | "full";
+export type WeaveTransport = "walk_cab" | "car" | "transit";
+export type WeaveBudget = "low" | "mid" | "high";
+
+/** What the saves say, with the saves as evidence — shown to the person and edited before a plan is made. */
+export interface WeaveProfile {
+  /** Kinds with their share of the trip (shares sum to one) and the save ids that show it. */
+  mix: { kind: WeaveKind; share: number; evidence: string[] }[];
+  /** Towns with their saves and the nights each deserves, in proportion, at least one. */
+  towns: { name: string; saves: number; nights: number }[];
+  /** Saves the person clearly means — saved twice, noted, reminded — with the reason. */
+  must: { id: string; reason: string }[];
+  /** A few words the plan honours: "hidden-gem captions, few landmarks". */
+  style: string;
+  group: WeaveGroup | null;
+  budgetWords: string | null;
+  /** Saves that are ads, montages or unclear: they count for nothing. */
+  unsure: string[];
+}
+
+/** The brief: what the person told us, all of it optional, defaults from the profile. */
+export interface WeaveBrief {
+  days: number;
+  /** YYYY-MM-DD, or null when the dates are not known — then no weekday hours, holidays or season. */
+  startDate: string | null;
+  nights: { town: string; nights: number }[];
+  /** "HH:MM" local on the first and last day, when known. */
+  arrival: string | null;
+  departure: string | null;
+  bases: { town: string; name: string | null }[];
+  group: WeaveGroup | null;
+  pace: WeavePace;
+  transport: WeaveTransport;
+  budget: WeaveBudget | null;
+  /** Save ids the person insists on, and ones to leave out. */
+  must: string[];
+  skip: string[];
+  note: string | null;
+}
+
+export type WeaveSlot = "morning" | "late_morning" | "lunch" | "afternoon" | "evening" | "night";
+
+/** A stop in the plan: a save's id, or "s:<placeId>" for a suggestion not from the saves. */
+export interface WeaveStop {
+  id: string;
+  slot: WeaveSlot;
+  /** Why it is here, in the reader's words, citing the saves it rests on. */
+  why: string;
+  cites: string[];
+  /** What the reel said to try, when it did. */
+  tip: string | null;
+  /** Closed that day, far from the rest, hours unknown, book ahead. */
+  warning: string | null;
+}
+
+export interface WeaveDay {
+  day: number;
+  date: string | null;
+  town: string;
+  theme: string;
+  stops: WeaveStop[];
+  notes: string | null;
+}
+
+export interface WeavePlan {
+  overview: string;
+  days: WeaveDay[];
+  bookAhead: { id: string; what: string; why: string }[];
+  /** Saves that were chosen but did not fit, and why — nothing is dropped in silence. */
+  leftOut: { id: string; reason: string }[];
+  assumptions: string[];
+}
