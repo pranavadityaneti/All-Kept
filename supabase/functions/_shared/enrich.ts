@@ -120,6 +120,14 @@ export function parseAspect(body: unknown): number | null {
   return Math.round((w / h) * 1000) / 1000;
 }
 
+/** The video's own description, when YouTube has one: the words the sorter otherwise never sees. Bounded; a caption is a caption. */
+const MAX_DESCRIPTION_CHARS = 5000;
+export function parseDescription(body: unknown): string | null {
+  const snippet = (body as { items?: { snippet?: { description?: unknown } }[] } | null)?.items?.[0]?.snippet;
+  const text = typeof snippet?.description === "string" ? snippet.description.trim() : "";
+  return text.length > 0 ? text.slice(0, MAX_DESCRIPTION_CHARS) : null;
+}
+
 function oembedUrl(platform: Platform, url: string): string | null {
   const u = encodeURIComponent(url);
   switch (platform) {
@@ -528,16 +536,22 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
     }
   }
 
-  // 3. The shape of a YouTube video (never fails the item: without it the app falls back to 16:9,
-  //    which is exactly where it stood before this existed).
+  // 3. The shape of a YouTube video, and its description, in one call (never fails the item:
+  //    without the shape the app falls back to 16:9, which is exactly where it stood before this
+  //    existed; without the description the sorter reads the title alone, as it always had).
+  //    The description becomes the save's text when the save arrived with none — every YouTube
+  //    save did, and the sorter was judging 37% of a library from titles.
   const videoId = patch.external_id ?? item.external_id;
   if (platform === "youtube" && deps.youtubeKey && videoId) {
     try {
-      const q = new URLSearchParams({ part: "player", id: videoId, maxHeight: String(ASPECT_PROBE_PX), key: deps.youtubeKey });
+      const q = new URLSearchParams({ part: "player,snippet", id: videoId, maxHeight: String(ASPECT_PROBE_PX), key: deps.youtubeKey });
       const res = await fetchWithTimeout(deps.fetch, `https://www.googleapis.com/youtube/v3/videos?${q.toString()}`);
-      const aspect = res.ok ? parseAspect(await res.json().catch(() => null)) : null;
+      const body = res.ok ? await res.json().catch(() => null) : null;
+      const aspect = parseAspect(body);
       if (aspect) patch.media_meta = { ...(patch.media_meta ?? {}), aspect };
       else deps.log("enrich: youtube shape unavailable", { item: item.id, status: res.status });
+      const description = parseDescription(body);
+      if (description && !item.text && !patch.text) patch.text = description;
     } catch (e) {
       deps.log("enrich: youtube shape failed", { item: item.id, reason: String(e).slice(0, 120) });
     }

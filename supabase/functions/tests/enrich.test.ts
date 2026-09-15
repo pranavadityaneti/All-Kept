@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { UA, BROWSER_UA, isJustTheSiteName, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { UA, BROWSER_UA, isJustTheSiteName, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseDescription, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -224,6 +224,29 @@ Deno.test("youtube: the video's true shape is read from the Data API and kept be
   assertEquals(meta["aspect"], 0.563); // 9:16, and nothing else in the pipeline knows this
   assert(meta["oembed"], "the oEmbed findings survive alongside it");
   assert(seen.some((u) => u.includes("part=player") && u.includes("maxHeight=8192")), "asks for a tall player, or YouTube answers with a default box");
+});
+
+Deno.test("youtube: the description comes with the shape, in the same call, and is the save's text — which is what the sorter reads", async () => {
+  const seen: string[] = [];
+  const f = fakeFetch({
+    "https://www.youtube.com/oembed": () => Response.json({ title: "9 Coffee Shops in Tokyo", author_name: "bontraveler", provider_name: "YouTube", type: "video" }),
+    "https://www.googleapis.com/youtube/v3/videos": () => Response.json({ items: [{ player: { embedWidth: "14564", embedHeight: "8192" }, snippet: { description: "My favourite local coffee shops in Tokyo:\n1. Glitch Coffee, Jimbocho\n2. Koffee Mameya, Omotesando\n\nMusic by Epidemic", tags: ["tokyo", "coffee"] } }] }),
+  }, seen);
+  const r = await enrich(base({ platform: "youtube", kind: "video", external_id: "x", source_url: "https://www.youtube.com/watch?v=x", canonical_url: "https://www.youtube.com/watch?v=x", text: null }), { ...deps(f), youtubeKey: "k" });
+  assertEquals(r.patch.text, "My favourite local coffee shops in Tokyo:\n1. Glitch Coffee, Jimbocho\n2. Koffee Mameya, Omotesando\n\nMusic by Epidemic");
+  assertEquals((r.patch.media_meta as Record<string, unknown>)["aspect"], 1.778);
+  assert(seen.some((u) => u.includes("part=player%2Csnippet") || u.includes("part=player,snippet")), "one call carries both");
+  // A save that already has words keeps them: the description is for the ones that arrive with none.
+  const kept = await enrich(base({ platform: "youtube", kind: "video", external_id: "x", source_url: "https://www.youtube.com/watch?v=x", canonical_url: "https://www.youtube.com/watch?v=x", text: "the person's own words" }), { ...deps(f), youtubeKey: "k" });
+  assertEquals(kept.patch.text, undefined);
+});
+
+Deno.test("parseDescription: the words, trimmed and bounded; nothing for an empty or absent one", () => {
+  assertEquals(parseDescription({ items: [{ snippet: { description: "  Hello \n" } }] }), "Hello");
+  assertEquals(parseDescription({ items: [{ snippet: { description: "x".repeat(6000) } }] })?.length, 5000);
+  assertEquals(parseDescription({ items: [{ snippet: { description: "" } }] }), null);
+  assertEquals(parseDescription({ items: [{ player: {} }] }), null);
+  assertEquals(parseDescription(null), null);
 });
 
 Deno.test("youtube: a shape we cannot learn never fails the item", async () => {
