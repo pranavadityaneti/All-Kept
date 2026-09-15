@@ -45,6 +45,26 @@ export const FLAG_ICON: Record<string, string> = {
   noted: "create-outline",
 };
 
+/**
+ * What the sorter thought a save was for, as the thing you would do with it. The same words as the
+ * category summary's facts row ("13 to try"), so a number there and a pill here name one thing.
+ */
+export const INTENT_LABEL: Record<string, string> = {
+  watch: "To watch",
+  try: "To try",
+  buy: "To buy",
+  go: "To go",
+  read: "To read",
+};
+
+export const INTENT_ICON: Record<string, string> = {
+  watch: "play-circle-outline",
+  try: "flask-outline",
+  buy: "cart-outline",
+  go: "navigate-outline",
+  read: "book-outline",
+};
+
 export interface FilterOption { value: string; label: string; n: number; selected: boolean
   /** The mark a person chose for a category of their own; absent for a built-in. */
   icon?: string;
@@ -64,6 +84,7 @@ export function filterLabel(group: FilterGroup, value: string): string {
   if (group === "platforms") return FILTER_LABEL[value] ?? value;
   if (group === "shapes") return SHAPE_LABEL[value] ?? value;
   if (group === "flags") return FLAG_LABEL[value] ?? value;
+  if (group === "intents") return INTENT_LABEL[value] ?? value;
   return categoryDisplayName(value);
 }
 

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isEntityIcon, type CategorySummaryResponse } from "@allkept/contracts";
-import type { Filters } from "./filter-groups";
+import { FILTER_GROUPS, type Filters } from "./filter-groups";
 import { mergeThreads, neverAnInterest, type Interest, type InterestRow } from "./interests";
 import { supabase } from "./supabase";
 
@@ -15,7 +15,8 @@ import { supabase } from "./supabase";
 
 /** The one category the summary is for, when the filters name exactly one and nothing else. */
 export function shouldShowSummary(filters: Filters): string | null {
-  const alone = filters.categories.length === 1 && filters.platforms.length === 0 && filters.shapes.length === 0 && filters.flags.length === 0;
+  // Walked, so a group added to the filters counts as "something else" without a second edit here.
+  const alone = FILTER_GROUPS.every((g) => (g === "categories" ? filters[g].length === 1 : filters[g].length === 0));
   return alone ? filters.categories[0]! : null;
 }
 

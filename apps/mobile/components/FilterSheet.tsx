@@ -9,7 +9,7 @@ import { IconButton } from "./IconButton";
 import { CategoryMark } from "./CategoryMark";
 import { tint } from "../lib/categories";
 import { categoryPalette } from "../lib/category-marks";
-import { FLAG_ICON, SHAPE_ICON, filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
+import { FLAG_ICON, INTENT_ICON, SHAPE_ICON, filterOptions, matchesLabel, type FilterGroup, type FilterOption, type Matches } from "../lib/filter-options";
 import { countFilters, type Facets, type Filters } from "../lib/library";
 import { radius, space, type, usePalette } from "../lib/theme";
 
@@ -54,6 +54,7 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
   const categories = filterOptions("categories", facets, filters);
   const shapes = filterOptions("shapes", facets, filters);
   const flags = filterOptions("flags", facets, filters);
+  const intents = filterOptions("intents", facets, filters);
   const active = countFilters(filters);
   const empty = active > 0 && !matches.pending && matches.n === 0;
 
@@ -81,7 +82,7 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
             {/* Platforms are not listed here any more: they are pills on the bar itself, where they
                 are one tap rather than three. Listing them in both places would let the same filter
                 be switched on in two ways and read as two different controls. */}
-            {categories.length === 0 && shapes.length === 0 && flags.length === 0 && (
+            {categories.length === 0 && shapes.length === 0 && flags.length === 0 && intents.length === 0 && (
               <Text style={[type.body, { color: p.inkMuted }]}>Nothing to filter yet. Save something and its category appears here.</Text>
             )}
 
@@ -93,6 +94,19 @@ export function FilterSheet({ visible, facets, filters, matches, onToggle, onCle
                     option={o}
                     onPress={() => onToggle("shapes", o.value)}
                     mark={<Ionicons name={(SHAPE_ICON[o.value] ?? "ellipse-outline") as never} size={15} color={p.inkMuted} />}
+                  />
+                ))}
+              </Group>
+            )}
+
+            {intents.length > 0 && (
+              <Group title="What for">
+                {intents.map((o) => (
+                  <Option
+                    key={o.value}
+                    option={o}
+                    onPress={() => onToggle("intents", o.value)}
+                    mark={<Ionicons name={(INTENT_ICON[o.value] ?? "ellipse-outline") as never} size={15} color={p.inkMuted} />}
                   />
                 ))}
               </Group>

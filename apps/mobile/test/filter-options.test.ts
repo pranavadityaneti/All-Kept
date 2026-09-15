@@ -7,12 +7,13 @@ const facets: Facets = {
   categories: [{ value: "Food & recipes", n: 90 }, { value: "Money & career", n: 38 }],
   shapes: [{ value: "vertical", n: 14 }, { value: "post", n: 8 }],
   flags: [{ value: "needs_attention", n: 4 }],
+  intents: [{ value: "watch", n: 43 }, { value: "try", n: 13 }],
 };
 // Spelled out rather than imported from lib/library: importing a *value* from there drags Supabase
 // and React Native into the test, and React Native's own source uses Flow's `import typeof`, which
 // the test runner's parser will not read. The type still comes from there, so a new group added to
 // Filters fails this file until it is accounted for here too.
-const none: Filters = { platforms: [], categories: [], shapes: [], flags: [] };
+const none: Filters = { platforms: [], categories: [], shapes: [], flags: [], intents: [] };
 
 describe("filter options", () => {
   it("shows the short name for a category, while the long one stays the stored value", () => {
@@ -91,10 +92,16 @@ describe("how many saves the filters match", () => {
   });
 
   it("gathers what is switched on across every group, not just the first two", () => {
-    const all: Filters = { platforms: ["youtube"], categories: ["Money & career"], shapes: ["vertical"], flags: ["needs_attention"] };
+    const all: Filters = { platforms: ["youtube"], categories: ["Money & career"], shapes: ["vertical"], flags: ["needs_attention"], intents: ["try"] };
     expect(activeFilters(all).map((f) => `${f.group}:${f.label}`)).toEqual([
-      "platforms:YouTube", "categories:Career", "shapes:Reels & Shorts", "flags:Needs attention",
+      "platforms:YouTube", "categories:Career", "shapes:Reels & Shorts", "flags:Needs attention", "intents:To try",
     ]);
+  });
+
+  it("names an intent as the thing you would do with the save, in the words the facts row uses", () => {
+    expect(filterOptions("intents", facets, none).map((o) => [o.label, o.n])).toEqual([["To watch", 43], ["To try", 13]]);
+    expect(["buy", "go", "read"].map((v) => filterLabel("intents", v))).toEqual(["To buy", "To go", "To read"]);
+    expect(exactMatches(facets, { ...none, intents: ["watch", "try"] })).toBe(56);
   });
 
   it("counts a shape on its own but refuses to guess where two groups overlap", () => {

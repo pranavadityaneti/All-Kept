@@ -52,11 +52,12 @@ export const toItem = (r: Row): LibraryItem => ({
 interface LibraryCursor { savedAt: string; id: string }
 
 async function fetchPage(filters: Filters, before: LibraryCursor | null): Promise<{ items: LibraryItem[]; nextCursor: LibraryCursor | null }> {
-  const { data, error } = await supabase.rpc("library_query_v3", {
+  const { data, error } = await supabase.rpc("library_query_v4", {
     platforms: filters.platforms.length ? filters.platforms : null,
     categories: filters.categories.length ? filters.categories : null,
     shapes: filters.shapes.length ? filters.shapes : null,
     flags: filters.flags.length ? filters.flags : null,
+    intents: filters.intents.length ? filters.intents : null,
     before,
     lim: PAGE,
   });
@@ -69,7 +70,7 @@ async function fetchPage(filters: Filters, before: LibraryCursor | null): Promis
 
 export function useLibrary(filters: Filters, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: ["library", "v3", filters],
+    queryKey: ["library", "v4", filters],
     enabled,
     initialPageParam: null as LibraryCursor | null,
     queryFn: ({ pageParam }) => fetchPage(filters, pageParam),
@@ -118,7 +119,7 @@ export function useFacets(enabled: boolean) {
     enabled,
     queryFn: async (): Promise<Facets> => {
       const [counted, own] = await Promise.all([
-        supabase.rpc("library_facets_v2"),
+        supabase.rpc("library_facets_v3"),
         supabase.from("user_categories").select("name,icon").order("name"),
       ]);
       if (counted.error) throw new Error(counted.error.message);
@@ -137,6 +138,7 @@ export function useFacets(enabled: boolean) {
         categories: mergeOwnCategories(pick("category"), mine),
         shapes: pick("shape"),
         flags: pick("flag"),
+        intents: pick("intent"),
       };
     },
   });

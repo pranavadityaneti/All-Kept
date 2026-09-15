@@ -22,6 +22,7 @@ describe("when the summary shows", () => {
     expect(shouldShowSummary({ ...NO_FILTERS, categories: ["Tech & tools", "Entertainment"] })).toBeNull();
     expect(shouldShowSummary({ ...NO_FILTERS, categories: ["Tech & tools"], platforms: ["instagram"] })).toBeNull();
     expect(shouldShowSummary({ ...NO_FILTERS, categories: ["Tech & tools"], flags: ["noted"] })).toBeNull();
+    expect(shouldShowSummary({ ...NO_FILTERS, categories: ["Tech & tools"], intents: ["try"] })).toBeNull();
   });
 });
 
