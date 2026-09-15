@@ -141,8 +141,21 @@ function oembedUrl(platform: Platform, url: string): string | null {
     // the page itself yields nothing. Their oEmbed is the sanctioned route and returns the title and
     // the poster, which is all a card needs.
     case "reddit": return `https://www.reddit.com/oembed?url=${u}`;
+    // A pin's page is over a megabyte, and Pinterest writes its preview tags at the end of it —
+    // past what readHead takes — so the page route read only the site's name and gave up on every
+    // pin. The oEmbed answers with the title, the pinner and the picture in half a kilobyte.
+    case "pinterest": return `https://www.pinterest.com/oembed.json?url=${u}`;
     default: return null;
   }
+}
+
+/**
+ * The pin's picture at card size. Pinterest's oEmbed offers the 236px grid thumbnail, and serves
+ * the same file at 736px — the size its own page declares as the pin's picture — on the same path.
+ * An address that is not on its picture host, or not a grid size, is left as it came.
+ */
+export function pinterestPicture(url: string): string {
+  return url.replace(/^(https:\/\/i\.pinimg\.com\/)\d+x\//, "$1736x/");
 }
 
 async function fetchWithTimeout(f: typeof fetch, url: string, init: RequestInit = {}): Promise<Response> {
@@ -462,13 +475,15 @@ export async function enrich(item: EnrichableItem, deps: EnrichDeps): Promise<En
         if (!oe) status = "preview_unavailable";
       } else if (oe) {
         const j = await res.json().catch(() => ({})) as Record<string, unknown>;
-        const s = (k: string) => (typeof j[k] === "string" ? (j[k] as string) : undefined);
+        // Blank counts as absent: Pinterest answers " " for a pin without a title of its own.
+        const s = (k: string) => (typeof j[k] === "string" && (j[k] as string).trim() ? (j[k] as string).trim() : undefined);
         const title = s("title");
         if (title && !item.text && platform === "instagram") patch.text = title; // Instagram's oEmbed title is the caption
         else if (title && !item.title) patch.title = title;
         if (s("author_name") && !item.author_name) patch.author_name = s("author_name");
         if (s("author_url")) patch.author_handle = s("author_url");
-        if (s("thumbnail_url") && !item.thumbnail_url_remote) patch.thumbnail_url_remote = s("thumbnail_url");
+        const picture = s("thumbnail_url");
+        if (picture && !item.thumbnail_url_remote) patch.thumbnail_url_remote = platform === "pinterest" ? pinterestPicture(picture) : picture;
         if (platform === "x" && s("html") && !item.text) patch.text = stripTags(s("html")!);
         patch.media_meta = { oembed: { provider: s("provider_name"), type: s("type"), width: j["thumbnail_width"], height: j["thumbnail_height"] } };
         // TikTok's thumbnail is a frame of the video, so its size is the video's shape — the same

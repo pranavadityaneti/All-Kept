@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { UA, BROWSER_UA, isJustTheSiteName, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseDescription, parseInstagramOpenGraph, parseOpenGraph, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
+import { UA, BROWSER_UA, isJustTheSiteName, isWrongPage, playlistId, looksLikeBlockTitle, decodeEntities, enrich, parseAspect, parseDescription, parseInstagramOpenGraph, parseOpenGraph, pinterestPicture, readHead, RETRY_LADDER_MS, type EnrichableItem, type EnrichDeps } from "../_shared/enrich.ts";
 
 const base = (over: Partial<EnrichableItem> = {}): EnrichableItem => ({
   id: "item-1", user_id: "u1", platform: "instagram", kind: "short_video", status: "pending",
@@ -45,6 +45,31 @@ Deno.test("youtube: oEmbed title and author become the card", async () => {
   const r = await enrich(base({ platform: "youtube", kind: "video", canonical_url: "https://www.youtube.com/watch?v=WfJPBVXPt8k", text: null }),
     deps(fakeFetch({ "https://www.youtube.com/oembed": () => Response.json({ title: "How Uber beat Lyft", author_name: "David Senra", thumbnail_url: "https://i.ytimg.com/x.jpg" }) })));
   assertEquals([r.status, r.patch.title, r.patch.author_name], ["ready", "How Uber beat Lyft", "David Senra"]);
+});
+
+Deno.test("pinterest: the pin's oEmbed gives the title, the author and the picture; the picture is taken at card size, not the 236px one offered", async () => {
+  const seen: string[] = []; const snaps: string[] = [];
+  // Pinterest's real answer for a pin, 15 Sep 2026: a 236px thumbnail, and the same file at 736px on the same path.
+  const f = fakeFetch({ "https://www.pinterest.com/oembed.json": () => Response.json({ version: "1.0", type: "rich", provider_name: "Pinterest", title: "Pаul Prannychuk - ui/ux in London, United Kingdom", author_name: "Mais Tazagulov", author_url: "https://www.pinterest.com/maisjandesign/", thumbnail_url: "https://i.pinimg.com/236x/c0/e4/f3/c0e4f36594db1387c6251518650ca9ce.jpg", thumbnail_width: 236, thumbnail_height: 362 }) }, seen);
+  const r = await enrich(base({ platform: "pinterest", kind: "image", canonical_url: "https://www.pinterest.com/pin/511510470194884730/", source_url: "https://www.pinterest.com/pin/511510470194884730/", external_id: "511510470194884730", text: null }), deps(f, snaps));
+  assertEquals([r.status, r.patch.title, r.patch.author_name, r.patch.author_handle], ["ready", "Pаul Prannychuk - ui/ux in London, United Kingdom", "Mais Tazagulov", "https://www.pinterest.com/maisjandesign/"]);
+  assertEquals(r.patch.thumbnail_url_remote, "https://i.pinimg.com/736x/c0/e4/f3/c0e4f36594db1387c6251518650ca9ce.jpg");
+  assertEquals(snaps, ["https://i.pinimg.com/736x/c0/e4/f3/c0e4f36594db1387c6251518650ca9ce.jpg"]);
+  assert(seen[0]!.startsWith("https://www.pinterest.com/oembed.json?url=https%3A%2F%2Fwww.pinterest.com%2Fpin%2F511510470194884730%2F"), "the pin's oEmbed is asked first, not its page — whose preview tags sit past the first megabyte");
+  assertEquals(seen.length, 1, "with an author and a picture in hand, the page is not read");
+});
+
+Deno.test("pinterest: a pin with no title of its own — Pinterest answers a blank one — is a card without a title, not a card titled ' '", async () => {
+  const f = fakeFetch({ "https://www.pinterest.com/oembed.json": () => Response.json({ type: "rich", provider_name: "Pinterest", title: " ", author_name: "CK", author_url: "https://www.pinterest.com/pughze/", thumbnail_url: "https://i.pinimg.com/236x/e1/70/eb/e170eb41850dc8016a18d71c594d5d61.jpg" }) });
+  const r = await enrich(base({ platform: "pinterest", kind: "image", canonical_url: "https://www.pinterest.com/pin/839147343079238263/", source_url: "https://www.pinterest.com/pin/839147343079238263/", external_id: "839147343079238263", text: null }), deps(f));
+  assertEquals([r.status, r.patch.title, r.patch.author_name], ["ready", undefined, "CK"]);
+});
+
+Deno.test("pinterestPicture: any grid size becomes 736px; an address that is not Pinterest's picture host is left alone", () => {
+  assertEquals(pinterestPicture("https://i.pinimg.com/236x/c0/e4/f3/c0e4.jpg"), "https://i.pinimg.com/736x/c0/e4/f3/c0e4.jpg");
+  assertEquals(pinterestPicture("https://i.pinimg.com/474x/c0/e4/f3/c0e4.jpg"), "https://i.pinimg.com/736x/c0/e4/f3/c0e4.jpg");
+  assertEquals(pinterestPicture("https://i.pinimg.com/originals/c0/e4/f3/c0e4.jpg"), "https://i.pinimg.com/originals/c0/e4/f3/c0e4.jpg");
+  assertEquals(pinterestPicture("https://elsewhere.example/236x/c0e4.jpg"), "https://elsewhere.example/236x/c0e4.jpg");
 });
 
 Deno.test("web page: Open Graph tags are parsed; a page without any is preview_unavailable", async () => {
