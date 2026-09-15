@@ -37,7 +37,7 @@ export function DoneSheet({ visible, doneAt, journal, intent, busy, error, onDon
             <Text style={[type.section, { color: p.ink }]}>{doneAt ? line0 : `${verb}?`}</Text>
             <IconButton name="close" label="Close" onPress={onClose} />
           </View>
-          <Text style={[type.label, { color: p.inkMuted }]}>{doneAt ? "A line for the journal, if you like." : `Mark this ${verb.toLowerCase()}, and leave a line for the journal if you like.`}</Text>
+          <Text style={[type.label, { color: p.inkMuted }]}>{doneAt ? "A line for the journal, if you like. Undo marks it not done." : `Mark this ${verb.toLowerCase()}, and leave a line for the journal if you like.`}</Text>
           <TextInput
             accessibilityLabel="A line for the journal"
             value={line}
@@ -49,8 +49,8 @@ export function DoneSheet({ visible, doneAt, journal, intent, busy, error, onDon
             onSubmitEditing={() => onDone(line)}
           />
           <View style={styles.actions}>
-            <View style={styles.button}><Button label={doneAt ? "Keep" : verb} busy={busy} onPress={() => onDone(line)} /></View>
-            {doneAt && <View style={styles.button}><Button label="Not done after all" variant="secondary" onPress={onUndo} /></View>}
+            <View style={styles.button}><Button label={doneAt ? "Save" : verb} busy={busy} onPress={() => onDone(line)} /></View>
+            {doneAt && <View style={styles.button}><Button label="Undo" variant="secondary" onPress={onUndo} /></View>}
           </View>
           {error && <Text style={[type.label, { color: p.bad }]}>Could not save that. Please try again.</Text>}
         </View>

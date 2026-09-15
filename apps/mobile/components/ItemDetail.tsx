@@ -10,6 +10,7 @@ import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
 import { DoneSheet } from "./DoneSheet";
+import { MoreSheet } from "./MoreSheet";
 import { RemindSheet } from "./RemindSheet";
 import { WaysOut, copyToClipboard, useCopied } from "./WaysOut";
 import { captionBody } from "../lib/caption";
@@ -87,6 +88,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const [sheet, setSheet] = useState<false | "read" | "change">(false);
   const [reminding, setReminding] = useState(false);
   const [marking, setMarking] = useState(false);
+  const [more, setMore] = useState(false);
   const setDone = useSetDone(id);
   const [copied, markCopied] = useCopied();
   const [picking, setPicking] = useState(false);
@@ -156,7 +158,6 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
       <View style={styles.headerRow}>
         <IconButton name="chevron" label="Back" onPress={onBack} style={styles.back} />
         <View style={styles.headerActions}>
-          {embed && <IconButton name="open" label="Full screen" onPress={() => setFullScreen(true)} />}
           {/* The tick fills once the save is done; the bell once a reminder is set: the page says so without opening anything. */}
           <IconButton
             name={detail.doneAt ? "doneSet" : "done"}
@@ -168,13 +169,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             label={detail.remindAt && Date.parse(detail.remindAt) > Date.now() ? "Reminder set. Change it" : "Remind me"}
             onPress={() => setReminding(true)}
           />
-          <IconButton
-            name="share"
-            label="Share"
-            onPress={() => { track(userId, "share_out", { hasLink: !!url }); void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); }}
-          />
-          {/* Beside share rather than down beside the buttons you tap often. Deleting still asks first. */}
-          <IconButton name="trash" label="Delete this save" tone="danger" disabled={remove.isPending} onPress={confirmDelete} />
+          {/* Full screen, share and delete live behind one button: the header holds the two things people do often. */}
+          <IconButton name="more" label="More" onPress={() => setMore(true)} />
         </View>
       </View>
 
@@ -412,6 +408,17 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
           </ScrollView>
         </View>
       </Modal>
+
+      <MoreSheet
+        visible={more}
+        onClose={() => setMore(false)}
+        actions={[
+          ...(embed ? [{ key: "full", label: "Full screen", icon: "open" as const, onPress: () => setFullScreen(true) }] : []),
+          { key: "share", label: "Share", icon: "share" as const, onPress: () => { track(userId, "share_out", { hasLink: !!url }); void shareItem({ url, title: heading, ...(thumbnail ? { thumbnailUrl: thumbnail } : {}) }); } },
+          // Deleting still asks first.
+          { key: "delete", label: "Delete this save", icon: "trash" as const, tone: "danger" as const, onPress: confirmDelete },
+        ]}
+      />
 
       <DoneSheet
         visible={marking}
