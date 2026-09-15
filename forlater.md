@@ -252,10 +252,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-14
 - **Originated from:** 14 Sep Instagram thumbnail fix audit.
 
-### 39. Intent filters
+### 39. Intent filters — DONE 15 Sep 2026
 - **What + why:** The sorter already extracts an intent for every save — to try, to buy, to go, to watch, to read (`item_ai.actionability`) — and the app shows it nowhere but the category summary's facts row. Filter the Library by intent ("To try", "To buy"…), with counts, like the shape and platform groups. Free data; small.
 - **Scope:** `apps/mobile/lib/filter-groups.ts` (a fifth group), `FilterSheet.tsx`, `lib/library.ts`; SQL `library_query` + `library_facets` (filter + tally on `actionability`).
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: migration `7e462a4` (`library_query_v4`, `library_facets_v3`, applied by Pranav), app `01731ce` ("What for" group), verified on the simulator. Search does not yet honour an intent — offered to Pranav as the adjacent piece.
 - **Date added:** 2026-09-15
 - **Originated from:** the take-and-avoid list in `internal/research/competitors-stasht-albo-2026-09-15.html` (Part 6); Pranav chose the small items on 15 Sep 2026 — "finish them, then medium, then bigger", in this order.
 

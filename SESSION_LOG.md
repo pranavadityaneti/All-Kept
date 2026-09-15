@@ -1427,3 +1427,19 @@ categories.
   (`test/category-summary-card.test.tsx`, react-test-renderer). App 263 pass, tsc clean. Custom
   categories get the summary the same way (membership is `coalesce(user_category, category)`, the
   tile path is the same); themes from three saves up. Not pushed — waiting for Pranav's Yes.
+- Pranav: translate the Entertainment themes / un-translate option → explained: the Japanese lines
+  are v1's, held by the hour rule until ~12:05 IST, then rewritten in English by the live fix; the
+  themes are written, not translated, so there is no original to go back to — offered a provenance
+  line ("Written in English — most of these saves are in Japanese") instead; the per-save summary
+  language is with the audit agent. Sorting audit agent (Opus, read-only) launched → report to
+  `internal/research/sorting-audit-2026-09-15.html`. Explained on-screen text from the poster frame.
+- Pranav chose the five small take-items in order (queued as 39–43 in `forlater.md`, `0adc839`)
+  and approved intent filters ("Go ahead"). Built: migration `20260916110000_intent_filters.sql`
+  (`7e462a4`; `library_query_v4` with `intents`, `library_facets_v3` with a per-intent tally for
+  watch/try/buy/go/read only), app `01731ce` (fifth group `intents` in `filter-groups.ts`,
+  `INTENT_LABEL`/`INTENT_ICON`, "What for" in the sheet, `library.ts` on v4/facets v3,
+  `shouldShowSummary` walks the groups). TDD: 3 red → 264 green, tsc clean. Pranav ran `db push`;
+  verified on the simulator after a relaunch: sheet "To watch 106 · To try 17 · To read 9 · To buy
+  4" = the DB counts; "To try" → chip on the bar, "17 saves", no summary card. Left out on purpose
+  (adjacent feature, asked first): search ignores an intent filter (`search-library` handler +
+  `search_library_v3` + test, ~15 lines). Not pushed — waiting for Pranav's Yes.
