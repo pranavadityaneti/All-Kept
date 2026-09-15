@@ -149,7 +149,19 @@ export function stateScript(state: PlayerState): string {
 export type PlayerMessage =
   | { kind: "player"; hasVideo: boolean; playing: boolean; muted: boolean }
   | { kind: "tiktok"; type: string; value: unknown }
-  | { kind: "picture"; url: string };
+  | { kind: "picture"; url: string }
+  /** A tap on the post's own link inside the embed — "Watch on Instagram" — which the embed cannot follow itself. */
+  | { kind: "open"; url: string };
+
+/** The embed's links that are the post itself: the poster, the play button, "Watch on Instagram". A profile or a tag is not. */
+export function isPostLink(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return /(^|\.)instagram\.com$/i.test(u.hostname) && /^\/(reel|reels|p|tv)\/[^/]+\/?$/.test(u.pathname);
+  } catch {
+    return false;
+  }
+}
 
 /** What the bridge carried, when it was the player speaking; null for the height reports and anything else. */
 export function readPlayerMessage(data: string): PlayerMessage | null {
@@ -160,6 +172,7 @@ export function readPlayerMessage(data: string): PlayerMessage | null {
     }
     if (m && m["kind"] === "tiktok" && typeof m["type"] === "string") return { kind: "tiktok", type: m["type"], value: m["value"] };
     if (m && m["kind"] === "picture" && typeof m["url"] === "string") return { kind: "picture", url: m["url"] };
+    if (m && m["kind"] === "open" && typeof m["url"] === "string" && isPostLink(m["url"])) return { kind: "open", url: m["url"] };
     return null;
   } catch {
     return null;

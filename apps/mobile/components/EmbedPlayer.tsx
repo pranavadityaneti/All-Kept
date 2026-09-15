@@ -3,6 +3,7 @@ import { ActivityIndicator, AppState, Pressable, StyleSheet, View } from "react-
 import { WebView } from "react-native-webview";
 import { Icon } from "./Icon";
 import { EMBED_ORIGIN, isPlayerAddress } from "../lib/embed";
+import { openLink } from "../lib/open";
 import { PLAYER_SCRIPT, pictureScript, readPlayerMessage, shouldPlay, stateScript } from "../lib/player-script";
 import { onSoundChange, setSoundOn, soundOn } from "../lib/sound";
 import { radius, usePalette } from "../lib/theme";
@@ -59,13 +60,20 @@ const MEASURE = `
  * Keeps a tap inside the card. Every link Instagram puts in its embed asks for a new window, which
  * this WebView answers by simply going there, so one stray tap on the picture would replace the save
  * with instagram.com and leave nothing to get back with. The carousel arrows and the play button are
- * buttons rather than links, so they still work; only the links are refused.
+ * buttons rather than links, so they still work; only the links are refused — except a link to the
+ * post itself, which is what "Watch on Instagram" is: a reel whose music Instagram will not play in
+ * an embed shows that in place of the video, and the tap is handed to the app to open the reel there.
  */
 const STAY = `
   (function () {
     document.addEventListener('click', function (e) {
       var link = e.target && e.target.closest ? e.target.closest('a') : null;
-      if (link) { e.preventDefault(); }
+      if (!link) return;
+      e.preventDefault();
+      var href = link.href || '';
+      if (/instagram\\.com\\/(reel|reels|p|tv)\\//.test(href) && window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ kind: 'open', url: href }));
+      }
     }, true);
     true;
   })();
@@ -159,6 +167,8 @@ export function EmbedPlayer({ url, width, height, onHeight, interactive = false,
             if (said?.kind === "player") { setHasVideo(said.hasVideo); return; }
             if (said?.kind === "tiktok") { if (said.type === "onError") onUnplayable?.(); return; }
             if (said?.kind === "picture") { onPicture?.(said.url); return; }
+            // "Watch on Instagram": the embed cannot play this one, so the reel opens where it can.
+            if (said?.kind === "open") { void openLink(said.url); return; }
             try {
               const m = JSON.parse(event.nativeEvent.data) as { h: number; w: number };
               const scale = m.w > 0 ? width / m.w : 1;

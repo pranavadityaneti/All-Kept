@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PLAYER_SCRIPT, VIDEO_WAIT_MS, pictureScript, shouldPlay, stateScript, readPlayerMessage } from "../lib/player-script";
+import { PLAYER_SCRIPT, VIDEO_WAIT_MS, isPostLink, pictureScript, shouldPlay, stateScript, readPlayerMessage } from "../lib/player-script";
 
 describe("the script every player runs", () => {
   it("is valid JavaScript", () => {
@@ -59,6 +59,18 @@ describe("what the player says back", () => {
       .toEqual({ kind: "tiktok", type: "onError", value: { code: 1001 } });
     expect(readPlayerMessage(JSON.stringify({ h: 640, w: 360 }))).toBeNull();
     expect(readPlayerMessage("not json")).toBeNull();
+  });
+  it("reads a tap on the post's own link — Watch on Instagram — as an ask to open it there, and nothing else as one", () => {
+    expect(readPlayerMessage(JSON.stringify({ kind: "open", url: "https://www.instagram.com/reel/DaC4N-0hxdH/" })))
+      .toEqual({ kind: "open", url: "https://www.instagram.com/reel/DaC4N-0hxdH/" });
+    expect(readPlayerMessage(JSON.stringify({ kind: "open", url: "https://www.instagram.com/harvon.x/" }))).toBeNull();
+    expect(readPlayerMessage(JSON.stringify({ kind: "open", url: "https://evil.example/reel/x/" }))).toBeNull();
+  });
+  it("knows which links in an embed are the post itself", () => {
+    expect(isPostLink("https://www.instagram.com/reel/DaC4N-0hxdH/?utm_source=ig_embed")).toBe(true);
+    expect(isPostLink("https://www.instagram.com/p/Cxyz/")).toBe(true);
+    expect(isPostLink("https://www.instagram.com/harvon.x/")).toBe(false);
+    expect(isPostLink("https://www.instagram.com/explore/tags/x/")).toBe(false);
   });
 });
 
