@@ -210,3 +210,13 @@ again — which also explains why my later taps to restore the interests switch 
 - **Symptom:** the 13 Sep entry above left toggling a `Switch` from the simulator tool as "verify by hand". Separately, taps aimed at the home screen's platform pills from a downscaled screenshot landed on the wrong control and toggled two filters.
 - **Fix:** the iOS Simulator tool's `swipe` across the switch knob (about 26pt, left→right for on, right→left for off) toggles it once, cleanly; dark mode was switched on and back off that way. For coordinates, convert from the screenshot you actually measured on: a `sips -Z 460` copy of a 1206×2622 shot is 212×460, so points are `x/212*402, y/460*874`; a full-size shot shown at 920 wide is `displayed × 0.437`.
 - **Remember:** drag, don't tap, a Switch. Undo any filter you toggled by accident before moving on — the person's home screen keeps that state.
+
+## 2026-09-15 — simulator ran a stale bundle after edits to a `lib/` file
+- What didn't work: trusting Fast Refresh after editing `apps/mobile/lib/*.ts` (a hook file with
+  no component). The card on screen did not show the new behaviour, and two rounds of screenshots
+  were read as a code bug. `curl -X POST localhost:8081/reload` returned 200 and did nothing.
+- What worked: `xcrun simctl terminate <udid> app.allkept.mobile` then `xcrun simctl launch …`
+  — the app fetches a fresh bundle; `grep -c Bundled <metro.log>` going up by one is the proof.
+- Remember: after editing a non-component module, relaunch the app before judging behaviour on
+  the simulator; and film with a background loop of `simctl io screenshot` every ~1.5 s, then a
+  PIL contact sheet, to see a state that lasts seconds.

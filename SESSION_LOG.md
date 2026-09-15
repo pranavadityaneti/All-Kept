@@ -1413,3 +1413,17 @@ categories.
   open-ended), shows "Reading these saves…" only while another look is coming. Deno 266 pass,
   app 262 pass, tsc clean; card verified on the simulator (Career, folded and unfolded). Not yet
   deployed or pushed — waiting for Pranav's Yes.
+- Pranav: "Yes, deploy and push" → `category-summary` deployed, `main` pushed (`41af29d`…`0b0ac60`).
+  Live check on the simulator after a fresh bundle (`xcrun simctl terminate` + `launch`; the
+  Metro log's second "Bundled" line is the proof): Other (3 saves, never summarised) → tap at
+  11:32:47, "3 saves · mostly posts · Reading these saves…" at :51, the row written at :53, the
+  theme on the card at :54. The rows written by v1 keep their themes until their hour is up
+  (05:27–05:43 UTC), then are rewritten in English on the next open. An earlier look at Memes
+  showed no reading line: the simulator was still on the pre-fix bundle (Fast Refresh had not
+  taken the `lib/` edit), not a code fault.
+- Pranav: summaries come folded → the fold was remembered on the phone, so one tap folded every
+  category from then on. `c5fab68`: nothing is remembered; the card opens open, a tap folds it for
+  that visit, the same card moving to another category opens again. Component test
+  (`test/category-summary-card.test.tsx`, react-test-renderer). App 263 pass, tsc clean. Custom
+  categories get the summary the same way (membership is `coalesce(user_category, category)`, the
+  tile path is the same); themes from three saves up. Not pushed — waiting for Pranav's Yes.
