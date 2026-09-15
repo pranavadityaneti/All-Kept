@@ -220,3 +220,14 @@ again — which also explains why my later taps to restore the interests switch 
 - Remember: after editing a non-component module, relaunch the app before judging behaviour on
   the simulator; and film with a background loop of `simctl io screenshot` every ~1.5 s, then a
   PIL contact sheet, to see a state that lasts seconds.
+
+## 2026-09-15 — deployed a function before its migration had landed
+- What didn't work: after Pranav said "Pushed the migration", one chained command checked the
+  function existed (`grep '"fns"'` matched the key even when the value was `null`) and went on to
+  deploy `search-library`, which calls `search_library_v3`. The `db push` in his terminal was still
+  sitting at the Yes/No prompt; search errored for about a minute until he confirmed.
+- What worked: `read_terminal` on his tab showed the prompt; he pressed Yes; a second query
+  confirmed the function; then verification.
+- Remember: before deploying a function that calls a new SQL function, run the existence query on
+  its own and read the *value* (`"fns": null` is a no), and read his terminal tab when he says a
+  push happened — "pushed" can mean "typed the command". Never chain the check and the deploy.

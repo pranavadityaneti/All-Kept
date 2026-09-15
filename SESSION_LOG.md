@@ -1456,3 +1456,10 @@ categories.
   call already made for aspect could carry `snippet`; (5) a sorted save can never be sorted again.
   Also: the prompt writes each save's one-line summary "in the caption's language if it is not
   English" (`classify.ts:52`) — the root of the Japanese lines Pranav saw.
+- Pranav: Yes ×3 — pushed the five (`0adc839`…`aaffb8f`); search honouring intents built
+  (`5e0faf2` migration `search_library_v3`, `56c17a5` handler validates and passes `intents`,
+  index on v3; Deno 267 pass). Deployed `search-library` before his `db push` had actually been
+  confirmed (see ERRORS.md) — search errored for about a minute; he confirmed; verified on the
+  simulator: "claude" → 22 saves, with "To try" inside search → "Show 5 saves" and 5 results, the
+  database's own count. Pushed (`aaffb8f..56c17a5`). Next: spec the prompt-definitions + re-sort
+  change (Pranav's Yes), which also carries the summary-language fix.
