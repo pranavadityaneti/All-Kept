@@ -178,7 +178,7 @@ Each item records: what + why · scope · status · date added · originated fro
 ### 28. A save whose original was deleted should say so
 - **What + why:** five YouTube saves show "No preview" forever. They are not a bug — YouTube answers 404 (deleted) or 401 (private) for those videos, so there is nothing left to fetch, and the pipeline has already tried its allotted attempts. "No preview" reads like our failure. Distinguish the two at enrichment time and say "No longer on YouTube" / "Private on YouTube", so the card tells the truth and stops inviting a retry. Applies to every platform, not only YouTube.
 - **Scope:** `supabase/functions/_shared/enrich.ts` (record the HTTP status class on a dead original), a new status or a note column, `apps/mobile/lib/sorting.ts` wording, tests. Needs a migration if a new status is chosen. About a day.
-- **Status:** queued.
+- **Status:** queued. Correction, 15 Sep 2026: a 401 from YouTube's oEmbed is not "private" — it is a video whose owner refused embedding; the video exists, and since item 48 its picture and description are read from the Data API. Only the 404s are gone. See item 53 for what the app should show for a refused embed.
 - **Date added:** 2026-09-12
 - **Originated from:** Pranav's "how do we fix these no-preview cards?", 12 Sep 2026
 
@@ -308,17 +308,17 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
-### 47. Narrow the item_ai grants
+### 47. Narrow the item_ai grants — DONE 15 Sep 2026
 - **What + why:** `authenticated` holds insert/update on every column of `item_ai`, category included (audit B8); only `user_category` should be writable by a client. Small; protects the corrections now being collected.
 - **Scope:** One migration: revoke and re-grant column-level.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: clients read `item_ai` only; the category correction goes through `set_user_category(uuid, text)`, a checked function that verifies ownership (`ff0d435`, app `c0f6f0e`). Migration `20260918140000_item_ai_grants.sql` awaits Pranav's `db push`; the app calls the function already, so the correction fails until it is applied.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
-### 48. The nine picture-less frozen saves
+### 48. The nine picture-less frozen saves — DONE 15 Sep 2026
 - **What + why:** Nine saves with no picture, no `next_attempt_at`, no scheduled retry (audit B7); the exact enrichment branch needs the function logs. Medium.
 - **Scope:** `_shared/enrich.ts`, `_shared/pipeline.ts`.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: fifteen settled saves had no picture. Two classes closed: (a) Pinterest — the pin's page is over a megabyte and its preview tags sit at the end, past the 256 KB the page route reads, so every pin settled with nothing; pins now take Pinterest's oEmbed (title, pinner, picture at 736px), and migration `20260918150000_pinterest_asked_again.sql` puts the two settled pins back on the preview retry (`ab73dfe`); (b) YouTube — a video whose owner refused embedding answers 401 to oEmbed with no poster, though the Data API's snippet lists its pictures; enrichment takes the widest, and the eighth pass reads the snippet for the picture as well as the description, once each (`1708481`). The rest have no picture to find: two YouTube videos gone (404 everywhere — item 28), a note, Reddit text posts, a web article, a TikTok profile, a deleted Instagram reel.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
@@ -342,3 +342,24 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
+
+### 52. anon holds write grants on 13 tables through the project's default privileges
+- **What + why:** Found while narrowing `item_ai` (item 47): the `anon` role holds insert/update/delete on thirteen tables, granted by the schema's default privileges rather than by any migration. RLS stands in front of every one of them, so nothing is exposed today — but a table created without a policy, or a policy written wrong, would be writable by anyone holding the anon key. Close the class: revoke the default privileges for `anon` and grant only what the anonymous paths (waitlist, share-extension queue) need. Small; needs a list of what anon legitimately writes first.
+- **Scope:** One migration: `alter default privileges … revoke`, then explicit grants per table.
+- **Status:** queued — ask Pranav before touching grants.
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — item 47's audit.
+
+### 53. A YouTube video whose embed is refused shows a dead player
+- **What + why:** When a video's owner refuses embedding, the app still opens the in-app player, which shows YouTube's "Video unavailable — Watch on YouTube" frame. The save now has its picture and description (item 48); what it lacks is the word. The Data API's `status.embeddable` says it in the same call enrichment already makes; record it as `media_meta.embeddable` the way the playlist route does, and the app shows the poster with a way out to YouTube instead of the player — the unlisted-playlist path already exists in `lib/embed.ts`. Small.
+- **Scope:** `_shared/enrich.ts` (part `status`), `lib/embed.ts` (`embeddable === false` for a video, as for a playlist), tests.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — item 48's audit.
+
+### 54. A picture handed over for an old save is lost if the worker hop fails
+- **What + why:** The picture door (`reddit-thumbnail`) records the address, resets the attempts and calls the worker to store it now, with the comment "the sweeper will retry" if that hop fails. The sweeper's snapshot pass takes saves a day old at most (addresses on a CDN expire), so for an older save — every Instagram backfill after the first day — a failed hop leaves the address recorded and the picture never stored. The snippet pass (item 48) stores its pictures inside the sweeper for this reason. Close the class: record when an address was handed over and key the pass's freshness to that, or store in the door itself and say so honestly when it fails. Small.
+- **Scope:** `reddit-thumbnail/index.ts`, `sweeper/index.ts` pass 3, a column or `media_meta` key for when the address arrived.
+- **Status:** queued
+- **Date added:** 2026-09-15
+- **Originated from:** 15 Sep 2026 — item 48's audit.
