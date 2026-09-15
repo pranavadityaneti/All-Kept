@@ -5,7 +5,7 @@ const now = new Date("2026-09-13T12:00:00Z");
 const later = new Date(now.getTime() + 10 * 86_400_000).toISOString();
 const earlier = new Date(now.getTime() - 86_400_000).toISOString();
 const row = (over: Partial<EntitlementRow> = {}): EntitlementRow => ({
-  entitled: true, storefront: "US", saves_used: 3, free_saves: 25, status: null, will_renew: null, current_period_end: null, product_id: null, ...over,
+  entitled: true, storefront: "US", saves_used: 3, free_saves: 25, status: null, will_renew: null, current_period_end: null, product_id: null, complimentary_until: null, ...over,
 });
 
 describe("where a person stands", () => {
@@ -33,6 +33,11 @@ describe("where a person stands", () => {
     expect(standing(row({ entitled: false, saves_used: 25 }), now)).toEqual({ kind: "blocked", lapsed: false });
     expect(standing(row({ entitled: false, saves_used: 30, status: "expired", current_period_end: earlier, product_id: "allkept_monthly" }), now)).toEqual({ kind: "blocked", lapsed: true });
     expect(standing(row({ entitled: false, saves_used: 30, status: "active", current_period_end: earlier }), now)).toEqual({ kind: "blocked", lapsed: true });
+  });
+  it("is complimentary while a given day is still to come — a paying subscriber is a subscriber first — and nothing once it has passed", () => {
+    expect(standing(row({ saves_used: 30, complimentary_until: later }), now)).toEqual({ kind: "complimentary", until: later });
+    expect(standing(row({ saves_used: 30, complimentary_until: later, status: "active", will_renew: true, current_period_end: later, product_id: "allkept_yearly" }), now).kind).toBe("subscribed");
+    expect(standing(row({ entitled: false, saves_used: 30, complimentary_until: earlier }), now)).toEqual({ kind: "blocked", lapsed: false });
   });
   it("trusts the server's yes over its own arithmetic", () => {
     // The server said entitled and the phone cannot see why (a subscription row it is not shown, say): still on.

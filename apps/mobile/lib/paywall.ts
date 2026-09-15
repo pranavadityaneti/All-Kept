@@ -107,6 +107,7 @@ export interface SubscriptionRowText {
 export function subscriptionRow(s: Standing, now: Date, locale?: string): SubscriptionRowText | null {
   switch (s.kind) {
     case "free_region": return null;
+    case "complimentary": return { detail: `Complimentary · until ${shortDate(s.until, now, locale)}`, action: "subscribe" };
     case "ramp": return { detail: `Free · ${s.used} of ${s.of} saves used`, action: "subscribe" };
     case "blocked": return { detail: s.lapsed ? "Ended · renew to keep saving" : "Free saves used · subscribe to keep saving", action: "subscribe" };
     case "subscribed": {

@@ -11,7 +11,7 @@ import { billingAvailable, entitlementKey, openManageSubscription, setShareQueue
 import type { MarkKey } from "../lib/category-marks";
 import { track, useTrackOnce } from "../lib/metrics";
 import { openLink } from "../lib/open";
-import { disclosure, plansFrom, PRIVACY_URL, subscriptionRow, TERMS_URL, type Plan } from "../lib/paywall";
+import { disclosure, plansFrom, PRIVACY_URL, shortDate, subscriptionRow, TERMS_URL, type Plan } from "../lib/paywall";
 import { useSession } from "../lib/session";
 import { flushShareQueue } from "../lib/share-save";
 import { font, radius, space, type, usePalette } from "../lib/theme";
@@ -120,6 +120,7 @@ export default function Subscribe() {
     if (standing?.kind === "subscribed") return { title: "You're subscribed", body: subscriptionRow(standing, now)?.detail ?? "Subscribed" };
     if (standing?.kind === "billing_issue") return { title: "Payment problem", body: `${Store} couldn't charge your card. Update it in your subscriptions and saving carries on.` };
     if (standing?.kind === "free_region") return { title: "Allkept is free where you are", body: "There is nothing to buy. Keep saving." };
+    if (standing?.kind === "complimentary") return { title: "Saving is on the house", body: `Complimentary access until ${shortDate(standing.until, now)}. There is nothing to buy until then.` };
     if (standing?.kind === "blocked") return {
       title: "Keep saving",
       body: standing.lapsed
@@ -130,7 +131,7 @@ export default function Subscribe() {
     return { title: "Keep saving", body: "After 25 free saves, saving needs a subscription. Everything you have saved stays yours either way." };
   })();
 
-  const settled = phase === "done" || phase === "unconfirmed" || standing?.kind === "subscribed" || standing?.kind === "billing_issue" || standing?.kind === "free_region";
+  const settled = phase === "done" || phase === "unconfirmed" || standing?.kind === "subscribed" || standing?.kind === "billing_issue" || standing?.kind === "free_region" || standing?.kind === "complimentary";
   const showOffer = phase === "offer" && !settled;
 
   return (

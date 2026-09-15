@@ -53,6 +53,8 @@ export interface EntitlementRow {
   will_renew: boolean | null;
   current_period_end: string | null;
   product_id: string | null;
+  /** Saving without a subscription until this day, given by hand: a tester, App Review, goodwill. Null for nearly everyone. */
+  complimentary_until: string | null;
 }
 
 export type Standing =
@@ -60,6 +62,8 @@ export type Standing =
   | { kind: "free_region" }
   | { kind: "subscribed"; renews: boolean; until: string | null; product: string | null }
   | { kind: "billing_issue"; until: string | null; product: string | null }
+  /** Given saving without a subscription, until a day; shown for what it is. */
+  | { kind: "complimentary"; until: string }
   | { kind: "ramp"; used: number; of: number; left: number }
   | { kind: "blocked"; lapsed: boolean };
 
@@ -69,6 +73,8 @@ export function standing(row: EntitlementRow, now: Date): Standing {
   const running = !!row.current_period_end && new Date(row.current_period_end) > now;
   if (row.status === "active" && running) return { kind: "subscribed", renews: row.will_renew !== false, until: row.current_period_end, product: row.product_id };
   if (row.status === "billing_issue" && running) return { kind: "billing_issue", until: row.current_period_end, product: row.product_id };
+  // A paying subscriber is a subscriber first; a gift shows only where it is what keeps the door open.
+  if (row.complimentary_until && new Date(row.complimentary_until) > now) return { kind: "complimentary", until: row.complimentary_until };
   if (row.saves_used < row.free_saves) return { kind: "ramp", used: row.saves_used, of: row.free_saves, left: row.free_saves - row.saves_used };
   if (row.entitled) return { kind: "subscribed", renews: row.will_renew !== false, until: row.current_period_end, product: row.product_id };
   return { kind: "blocked", lapsed: row.status !== null };

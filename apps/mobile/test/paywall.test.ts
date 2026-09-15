@@ -61,6 +61,7 @@ describe("the quiet line under the paste field", () => {
     expect(standingLine({ kind: "free_region" })).toBeNull();
     expect(standingLine({ kind: "subscribed", renews: true, until: null, product: null })).toBeNull();
     expect(standingLine({ kind: "billing_issue", until: null, product: null })).toBeNull();
+    expect(standingLine({ kind: "complimentary", until: "2027-12-31T00:00:00Z" })).toBeNull();
   });
 });
 
@@ -80,6 +81,9 @@ describe("the Subscription row in Settings", () => {
     expect(row({ kind: "subscribed", renews: false, until: oct, product: "allkept_monthly" })).toEqual({ detail: "Cancelled · until 3 Oct", action: "manage" });
     expect(row({ kind: "subscribed", renews: true, until: null, product: null })).toEqual({ detail: "Subscribed", action: "manage" });
     expect(row({ kind: "billing_issue", until: oct, product: "allkept_monthly" })).toEqual({ detail: "Payment problem — update your card in the store", action: "manage" });
+  });
+  it("says complimentary access for what it is, with its last day", () => {
+    expect(row({ kind: "complimentary", until: "2027-12-31T12:00:00Z" })).toEqual({ detail: "Complimentary · until 31 Dec 2027", action: "subscribe" });
   });
   it("adds the year only when it is not this one", () => {
     expect(shortDate(oct, now, "en-GB")).toBe("3 Oct");

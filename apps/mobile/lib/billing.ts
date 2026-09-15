@@ -76,7 +76,7 @@ export function useEntitlement(userId: string | null) {
       const { data, error } = await supabase.rpc("my_entitlement");
       if (error) throw new Error(error.message);
       const row = (data as EntitlementRow[] | null)?.[0];
-      return standing(row ?? { entitled: true, storefront: null, saves_used: 0, free_saves: FREE_SAVES, status: null, will_renew: null, current_period_end: null, product_id: null }, new Date());
+      return standing(row ?? { entitled: true, storefront: null, saves_used: 0, free_saves: FREE_SAVES, status: null, will_renew: null, current_period_end: null, product_id: null, complimentary_until: null }, new Date());
     },
   });
   // The moment RevenueCat knows of a purchase, ask the server again: the webhook lands within
