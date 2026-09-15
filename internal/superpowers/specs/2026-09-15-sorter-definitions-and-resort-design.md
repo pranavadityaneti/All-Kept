@@ -161,7 +161,8 @@ Other or, where a picture exists, their real category.
 
 One migration: `profiles.language`, `item_ai.summary_language`, the claim and finish replacements,
 `requeue_stale_classifications`, and the in-place replacements of `library_query_v4`,
-`library_facets_v3`, `search_library_v3`. Pranav runs `db push`. Then, on his Yes, deploy every
-function that sorts (`sweeper`, `save-link`, `reprocess-item`, `instagram-webhook`, `import-saves`,
-`youtube-poll`) with `PROMPT_VERSION = 2026-09-17.1`, and watch the library converge over half an
-hour; report per category before and after.
+`library_facets_v3`, `search_library_v3`. Pranav runs `db push`. Then, on his Yes, deploy the
+functions whose module graph holds the prompt — `sweeper`, `reprocess-item` (the doors enqueue to
+the sweeper rather than sorting themselves) and `category-summary` for the shared contracts — with
+`PROMPT_VERSION = 2026-09-17.1`, and watch the library converge over half an hour; report per
+category before and after.
