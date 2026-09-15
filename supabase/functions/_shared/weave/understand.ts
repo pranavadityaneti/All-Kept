@@ -32,7 +32,7 @@ export const UNDERSTAND_PROMPT = `You read the posts a person saved before a tri
 Each post carries what it was about, its tags, the places and things it named, the words on its screen, the person's own note, the town it belongs to when known, how many times it was saved, whether it was set as a reminder, and whether it was marked visited.
 Answer in the schema, judging from the posts alone:
 - mix: the kinds of thing the person is after, each with its share of the trip (the shares sum to one) and the ids of the posts that show it. Kinds: food (eating), coffee (cafés), nightlife, culture (temples, museums, neighbourhoods, markets for their own sake), cityscape (views, walks, skylines), nature, adventure (a dive, a hike, a ride), shopping, stay (hotels), other. Thirty cafés mean coffee is a large share; three dive reels mean adventure is there and small.
-- towns: every town the posts belong to, with how many posts and how many nights it deserves, in proportion to the posts, at least one. Never a town the posts do not name.
+- towns: every town the posts belong to, with its country as a two-letter code (KR, JP), how many posts and how many nights it deserves, in proportion to the posts, at least one. Never a town the posts do not name.
 - must: the posts the person clearly means — saved more than once, given a note, set as a reminder — each with the reason in a few words.
 - style: a few words the plan should honour, drawn from how the posts read — "hidden-gem captions, few landmarks", "big names and famous dishes".
 - group: solo, couple, family or friends when the posts say so (children's things, "date night", "with the boys"); null when they do not.
@@ -45,7 +45,7 @@ export const PROFILE_SCHEMA = {
   type: "object",
   properties: {
     mix: { type: "array", items: { type: "object", properties: { kind: { type: "string", enum: [...WEAVE_KINDS] }, share: { type: "number" }, evidence: { type: "array", items: { type: "string" } } }, required: ["kind", "share", "evidence"], additionalProperties: false } },
-    towns: { type: "array", items: { type: "object", properties: { name: { type: "string" }, saves: { type: "integer" }, nights: { type: "integer" } }, required: ["name", "saves", "nights"], additionalProperties: false } },
+    towns: { type: "array", items: { type: "object", properties: { name: { type: "string" }, country: { type: ["string", "null"] }, saves: { type: "integer" }, nights: { type: "integer" } }, required: ["name", "country", "saves", "nights"], additionalProperties: false } },
     must: { type: "array", items: { type: "object", properties: { id: { type: "string" }, reason: { type: "string" } }, required: ["id", "reason"], additionalProperties: false } },
     style: { type: "string" },
     group: { type: ["string", "null"], enum: ["solo", "couple", "family", "friends", null] },
@@ -98,7 +98,8 @@ export function validateProfile(v: unknown, knownIds: Set<string>): WeaveProfile
     seenTowns.add(name.toLowerCase());
     const saves = typeof t["saves"] === "number" ? Math.max(0, Math.round(t["saves"])) : 0;
     const nights = typeof t["nights"] === "number" ? Math.max(1, Math.round(t["nights"])) : 1;
-    return [{ name, saves, nights }];
+    const country = isStr(t["country"]) && /^[A-Za-z]{2}$/.test(t["country"].trim()) ? t["country"].trim().toUpperCase() : null;
+    return [{ name, country, saves, nights }];
   });
   const mustRaw = Array.isArray(o["must"]) ? (o["must"] as Record<string, unknown>[]) : [];
   const seenMust = new Set<string>();

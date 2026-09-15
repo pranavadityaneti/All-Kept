@@ -11,7 +11,7 @@ const brief = (over: Partial<WeaveBrief> = {}): WeaveBrief => ({
 });
 const profile = (over: Partial<WeaveProfile> = {}): WeaveProfile => ({
   mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "coffee", share: 0.25, evidence: [] }, { kind: "cityscape", share: 0.25, evidence: [] }],
-  towns: [{ name: "Seoul", saves: 30, nights: 3 }, { name: "Busan", saves: 4, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [], ...over,
+  towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 4, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [], ...over,
 });
 
 Deno.test("a day holds the pace, less one on the first day, the last day, and the day a town changes", () => {

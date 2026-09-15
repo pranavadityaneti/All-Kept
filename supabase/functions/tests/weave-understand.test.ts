@@ -20,12 +20,12 @@ Deno.test("the profile is made safe: only ids given, shares folded to one with e
   const known = new Set(["a", "b", "c"]);
   const p = validateProfile({
     mix: [{ kind: "food", share: 3, evidence: ["a", "zz", "a"] }, { kind: "coffee", share: 1, evidence: ["b"] }, { kind: "coffee", share: 5, evidence: [] }, { kind: "nightlife", share: 0, evidence: [] }, { kind: "cats", share: 1, evidence: [] }],
-    towns: [{ name: " Seoul ", saves: 30, nights: 0 }, { name: "seoul", saves: 1, nights: 2 }, { name: "Busan", saves: 4.4, nights: 1.6 }],
+    towns: [{ name: " Seoul ", country: "kr", saves: 30, nights: 0 }, { name: "seoul", country: "KR", saves: 1, nights: 2 }, { name: "Busan", country: "Korea", saves: 4.4, nights: 1.6 }],
     must: [{ id: "a", reason: "saved twice" }, { id: "a", reason: "again" }, { id: "nope", reason: "x" }],
     style: "  hidden gems  ", group: "couple", budgetWords: " ", unsure: ["c", "a", "zz"],
   }, known)!;
   assertEquals(p.mix, [{ kind: "food", share: 0.75, evidence: ["a"] }, { kind: "coffee", share: 0.25, evidence: ["b"] }]);
-  assertEquals(p.towns, [{ name: "Seoul", saves: 30, nights: 1 }, { name: "Busan", saves: 4, nights: 2 }]);
+  assertEquals(p.towns, [{ name: "Seoul", country: "KR", saves: 30, nights: 1 }, { name: "Busan", country: null, saves: 4, nights: 2 }]);
   assertEquals(p.must, [{ id: "a", reason: "saved twice" }]);
   assertEquals([p.style, p.group, p.budgetWords], ["hidden gems", "couple", null]);
   // A must is never unsure, whatever the model said.

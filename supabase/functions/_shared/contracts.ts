@@ -235,8 +235,8 @@ export type WeaveBudget = "low" | "mid" | "high";
 export interface WeaveProfile {
   /** Kinds with their share of the trip (shares sum to one) and the save ids that show it. */
   mix: { kind: WeaveKind; share: number; evidence: string[] }[];
-  /** Towns with their saves and the nights each deserves, in proportion, at least one. */
-  towns: { name: string; saves: number; nights: number }[];
+  /** Towns with their saves and the nights each deserves, in proportion, at least one; the country as ISO 3166-1 alpha-2, for its holidays. */
+  towns: { name: string; country: string | null; saves: number; nights: number }[];
   /** Saves the person clearly means — saved twice, noted, reminded — with the reason. */
   must: { id: string; reason: string }[];
   /** A few words the plan honours: "hidden-gem captions, few landmarks". */
