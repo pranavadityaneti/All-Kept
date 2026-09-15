@@ -212,7 +212,7 @@ export default function Subscribe() {
               {selected.id === "yearly" ? `${selected.perMonth} per month, billed ${selected.price} yearly.` : `${selected.price} per month, billed monthly.`}
             </Text>
             <Text style={[styles.fine, styles.centeredText, { color: p.inkMuted }]}>{disclosure(platform)}</Text>
-            <Button label={selected.id === "yearly" ? "Subscribe yearly" : "Subscribe monthly"} busy={purchase.isPending} disabled={restore.isPending} onPress={() => { void buy(); }} />
+            <Button label={`${standing?.kind === "blocked" && standing.lapsed ? "Renew" : "Subscribe"} ${selected.id === "yearly" ? "yearly" : "monthly"}`} busy={purchase.isPending} disabled={restore.isPending} onPress={() => { void buy(); }} />
           </View>
         )}
 
