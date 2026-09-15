@@ -13,6 +13,25 @@ export function mapsUrl(venue: Venue, platform: "ios" | "android", app: "default
   return platform === "ios" ? `maps://?q=${place(venue)}` : `geo:0,0?q=${place(venue)}`;
 }
 
+/** A venue the server looked up: the pin itself, and what the service said about it. */
+export interface Place { name: string; address: string | null; lat: number; lng: number; status: string | null }
+
+/** The maps at the pin, named — no search, no guess — on the phone's own maps or Google's. */
+export function placeMapsUrl(place: Place, platform: "ios" | "android", app: "default" | "google" = "default"): string {
+  const ll = `${place.lat},${place.lng}`;
+  const name = encodeURIComponent(place.name);
+  if (app === "google") return `comgooglemaps://?q=${ll}(${name})&center=${ll}`;
+  return platform === "ios" ? `maps://?ll=${ll}&q=${name}` : `geo:${ll}?q=${ll}(${name})`;
+}
+
+/** "Cemnt · 46, Nandi Hills, Jubilee Hills": the name, the first three parts of the address, and the one status worth a word. */
+export function placeLine(place: Place): string {
+  const parts = [place.name];
+  if (place.address) parts.push(place.address.split(",").map((s) => s.trim()).filter((s) => s.length > 0).slice(0, 3).join(", "));
+  if (place.status === "CLOSED_PERMANENTLY") parts.push("permanently closed");
+  return parts.join(" · ");
+}
+
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

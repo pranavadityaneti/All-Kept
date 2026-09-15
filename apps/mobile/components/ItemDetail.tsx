@@ -401,7 +401,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
                 action={<TextAction label={copied ? "Copied" : "Copy as text"} accessibilityLabel="Copy this save as text" disabled={copied} onPress={() => { void copyToClipboard(copyText({ title: heading, summary: detail.summary, note: detail.note, url })).then((ok) => { if (ok) { markCopied(); track(userId, "copy_text"); } }); }} />}
               >
                 {detail.summary && <Text style={[type.body, { color: p.ink }]}>{detail.summary}</Text>}
-                <WaysOut save={{ id: detail.id, title: heading, summary: detail.summary, url, venue: detail.venue, eventAt: detail.eventAt }} onOpened={(what) => track(userId, "way_out", { what })} />
+                <WaysOut save={{ id: detail.id, title: heading, summary: detail.summary, url, venue: detail.venue, place: detail.place, eventAt: detail.eventAt }} onOpened={(what) => track(userId, "way_out", { what })} />
                 {detail.tags.length > 0 && (
                   <View style={styles.wrap}>{detail.tags.map((tag) => <Chip key={tag} label={tag} />)}</View>
                 )}

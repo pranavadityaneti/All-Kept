@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyText, describeEvent, icsFor, mapsUrl } from "../lib/export";
+import { copyText, describeEvent, icsFor, mapsUrl, placeLine, placeMapsUrl } from "../lib/export";
 
 const venue = { name: "Haku", locality: "Bandra, Mumbai" };
 const now = new Date("2026-09-15T08:00:00Z");
@@ -9,6 +9,21 @@ describe("the way out to Maps", () => {
     expect(mapsUrl(venue, "ios")).toBe("maps://?q=Haku%2C%20Bandra%2C%20Mumbai");
     expect(mapsUrl(venue, "ios", "google")).toBe("comgooglemaps://?q=Haku%2C%20Bandra%2C%20Mumbai");
     expect(mapsUrl(venue, "android")).toBe("geo:0,0?q=Haku%2C%20Bandra%2C%20Mumbai");
+  });
+});
+
+describe("the way out to a resolved place", () => {
+  const place = { name: "Cemnt", address: "46, Nandi Hills, Jubilee Hills, Hyderabad, 500081, Telangana, India", lat: 17.4297, lng: 78.4096, status: null };
+  it("opens the maps at the pin itself, named, on either phone and in Google Maps", () => {
+    expect(placeMapsUrl(place, "ios")).toBe("maps://?ll=17.4297,78.4096&q=Cemnt");
+    expect(placeMapsUrl(place, "android")).toBe("geo:17.4297,78.4096?q=17.4297,78.4096(Cemnt)");
+    expect(placeMapsUrl(place, "ios", "google")).toBe("comgooglemaps://?q=17.4297,78.4096(Cemnt)&center=17.4297,78.4096");
+  });
+  it("says the place in one line: its name and the part of the address that places it, and when it has closed for good", () => {
+    expect(placeLine(place)).toBe("Cemnt · 46, Nandi Hills, Jubilee Hills");
+    expect(placeLine({ ...place, address: null })).toBe("Cemnt");
+    expect(placeLine({ ...place, status: "CLOSED_PERMANENTLY" })).toBe("Cemnt · 46, Nandi Hills, Jubilee Hills · permanently closed");
+    expect(placeLine({ ...place, address: "Linking Road, Bandra West, Mumbai, Maharashtra 400050, India" })).toBe("Cemnt · Linking Road, Bandra West, Mumbai");
   });
 });
 

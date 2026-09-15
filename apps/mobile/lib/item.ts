@@ -40,6 +40,8 @@ export interface ItemDetail {
   remindAt: string | null;
   /** Somewhere the post names to go to, and a day it names as something that happens; null when it names none. */
   venue: { name: string; locality: string } | null;
+  /** The venue as the server looked it up — a pin, an address, a status — when it has. */
+  place: { name: string; address: string | null; lat: number; lng: number; status: string | null; url: string | null } | null;
   eventAt: string | null;
   /** What the sorter thought the save was for — the verb "done" takes. */
   intent: string | null;
@@ -52,7 +54,7 @@ export interface ItemDetail {
   embeddable: boolean | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,done_at,journal,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,event_at,actionability)";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,done_at,journal,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,event_at,actionability,place:places(name,address,lat,lng,status,url))";
 
 type Row = Record<string, unknown>;
 
@@ -61,6 +63,14 @@ type Row = Record<string, unknown>;
  * for a TikTok save made before enrichment wrote aspects is the video's own frame. Anything else
  * means we never learned the shape.
  */
+/** The place the server resolved the venue to, or null when it has not, or could not. */
+export function readPlace(v: unknown): ItemDetail["place"] {
+  if (typeof v !== "object" || v === null) return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o["name"] !== "string" || typeof o["lat"] !== "number" || typeof o["lng"] !== "number") return null;
+  return { name: o["name"], address: typeof o["address"] === "string" ? o["address"] : null, lat: o["lat"], lng: o["lng"], status: typeof o["status"] === "string" ? o["status"] : null, url: typeof o["url"] === "string" ? o["url"] : null };
+}
+
 /** The venue as the sorter wrote it, or null when the row has none or holds something else. */
 export function readVenue(v: unknown): { name: string; locality: string } | null {
   if (typeof v !== "object" || v === null) return null;
@@ -108,6 +118,7 @@ function toDetail(r: Row): ItemDetail {
     siteName: (meta?.["site_name"] as string | null) ?? null,
     remindAt: (r["remind_at"] as string | null) ?? null,
     venue: readVenue(ai?.["venue"]),
+    place: readPlace(ai?.["place"]),
     eventAt: (ai?.["event_at"] as string | null) ?? null,
     intent: (ai?.["actionability"] as string | null) ?? null,
     doneAt: (r["done_at"] as string | null) ?? null,

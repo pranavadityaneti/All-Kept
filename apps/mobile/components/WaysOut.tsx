@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Linking, Platform, StyleSheet, View } from "react-native";
 import { Chip } from "./Chip";
 import { Icon } from "./Icon";
-import { describeEvent, icsFor, mapsUrl, type Venue } from "../lib/export";
+import { describeEvent, icsFor, mapsUrl, placeLine, placeMapsUrl, type Place, type Venue } from "../lib/export";
 import { space, usePalette } from "../lib/theme";
 
 /**
@@ -14,7 +14,7 @@ import { space, usePalette } from "../lib/theme";
  * chips the save has; a save with neither shows nothing.
  */
 export function WaysOut({ save, onOpened }: {
-  save: { id: string; title: string; summary: string | null; url: string | null; venue: Venue | null; eventAt: string | null };
+  save: { id: string; title: string; summary: string | null; url: string | null; venue: Venue | null; place: Place | null; eventAt: string | null };
   onOpened: (what: "maps" | "google_maps" | "calendar") => void;
 }) {
   const p = usePalette();
@@ -25,10 +25,13 @@ export function WaysOut({ save, onOpened }: {
   }, [save.venue]);
   if (!save.venue && !save.eventAt) return null;
 
+  // The pin when the server has found it; a search for the words when it has not.
   const openMaps = async (app: "default" | "google") => {
     if (!save.venue) return;
     onOpened(app === "google" ? "google_maps" : "maps");
-    await Linking.openURL(mapsUrl(save.venue, Platform.OS === "android" ? "android" : "ios", app)).catch(() => undefined);
+    const platform = Platform.OS === "android" ? "android" : "ios";
+    const target = save.place ? placeMapsUrl(save.place, platform, app) : mapsUrl(save.venue, platform, app);
+    await Linking.openURL(target).catch(() => undefined);
   };
   const toCalendar = async () => {
     if (!save.eventAt) return;
@@ -46,9 +49,9 @@ export function WaysOut({ save, onOpened }: {
     <View style={styles.wrap}>
       {save.venue && (
         <Chip
-          label={`${save.venue.name}, ${save.venue.locality}`}
+          label={save.place ? placeLine(save.place) : `${save.venue.name}, ${save.venue.locality}`}
           leading={<Icon name="navigate" size={15} color={p.inkMuted} />}
-          accessibilityLabel={`Open ${save.venue.name} in Maps`}
+          accessibilityLabel={`Open ${save.place?.name ?? save.venue.name} in Maps`}
           onPress={() => { void openMaps("default"); }}
         />
       )}
