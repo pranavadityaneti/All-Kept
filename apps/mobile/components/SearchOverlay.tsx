@@ -72,7 +72,8 @@ export function SearchOverlay({ visible, enabled, userId, initialQuery, onClose,
 
   const facets = useFacets(enabled && mounted);
   const results = useSearch(term, filters, enabled && mounted);
-  const [view] = useLibraryView();
+  // Search lists its results the way the library last listed — grid or list; the map is the library's alone.
+  const [, view] = useLibraryView();
   const items: LibraryItem[] = [...new Map((results.data?.pages.flatMap((page) => page.items) ?? []).map((i) => [i.id, i])).values()];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const searched = term.trim().length > 0;

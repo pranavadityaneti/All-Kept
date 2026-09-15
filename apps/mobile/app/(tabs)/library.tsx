@@ -35,7 +35,7 @@ export default function Library() {
   const ready = session.status === "ready";
   const linked = useLinkedSource(ready);
   const { filters, loaded, set, toggle, clear, hasFilters } = useFilters();
-  const [view, setView] = useLibraryView();
+  const [view, flat, setView] = useLibraryView();
   const params = useLocalSearchParams<{ category?: string }>();
   const applied = useRef<string | null>(null);
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function Library() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <ScreenHeader>
-        {(items.length > 0 || view === "map") && <ViewSwitch view={view} onChange={setView} />}
+        {(items.length > 0 || view === "map") && <ViewSwitch view={view} flat={flat} onChange={setView} />}
         {(items.length > 0 || hasFilters) && <IconButton name="search" label="Search your saves" onPress={() => setSearching(true)} />}
       </ScreenHeader>
 

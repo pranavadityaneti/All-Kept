@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@react-native-async-storage/async-storage", () => ({ default: { getItem: async () => null, setItem: async () => undefined } }));
-import { parseLibraryView, rowMeta, VIEWS } from "../lib/library-view";
+import { otherFlat, parseFlatView, parseLibraryView, rowMeta } from "../lib/library-view";
 import type { LibraryItem } from "../lib/library";
 
 const item: LibraryItem = {
@@ -16,7 +16,12 @@ describe("how the library is shown", () => {
     expect(parseLibraryView("grid")).toBe("grid");
     expect(parseLibraryView(null)).toBe("grid");
     expect(parseLibraryView("mosaic")).toBe("grid");
-    expect(VIEWS).toEqual(["grid", "list", "map"]);
+    expect(parseFlatView("list")).toBe("list");
+    expect(parseFlatView("map")).toBe("grid");
+  });
+  it("names the flat view a tap on the toggle would give — the other of grid and list, whichever was last used, even from the map", () => {
+    expect(otherFlat("grid")).toBe("list");
+    expect(otherFlat("list")).toBe("grid");
   });
   it("puts the category, the source and the day saved under a row's title", () => {
     expect(rowMeta(item)).toBe("Career · TikTok · 12 Sep");
