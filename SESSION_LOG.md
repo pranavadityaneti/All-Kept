@@ -1443,3 +1443,16 @@ categories.
   4" = the DB counts; "To try" → chip on the bar, "17 saves", no summary card. Left out on purpose
   (adjacent feature, asked first): search ignores an intent filter (`search-library` handler +
   `search_library_v3` + test, ~15 lines). Not pushed — waiting for Pranav's Yes.
+- Sorting audit landed: `internal/research/sorting-audit-2026-09-15.html` (Opus agent, read-only;
+  80 tool uses). Headline numbers re-checked against the database and they hold: 161 saves, 145
+  with a thumbnail, 28 sorted with the picture (prompt 2026-09-16.1) vs 132 on the text-only
+  prompt, 0 category overrides, 0 rows with a next attempt, 160 ready + 1 queued, confidence avg
+  0.91 with 7 under 0.5; `claim_item_classification` has no branch for a `ready` row (confirmed in
+  `20260916090000_classify_with_the_picture.sql`). Findings: (1) the picture fix never reached the
+  117 saves sorted before it — the requeue fires only on a null→picture transition; (2) the fifteen
+  categories are listed to the model without definitions or tie-breakers, so like saves scatter
+  (Tech/Learning/Design); (3) wordless saves land in Entertainment at 0.2–0.3 confidence and
+  nothing reads `confidence`; (4) YouTube saves are sorted from the title alone — the Data API
+  call already made for aspect could carry `snippet`; (5) a sorted save can never be sorted again.
+  Also: the prompt writes each save's one-line summary "in the caption's language if it is not
+  English" (`classify.ts:52`) — the root of the Japanese lines Pranav saw.

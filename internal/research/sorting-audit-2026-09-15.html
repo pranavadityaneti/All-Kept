@@ -1,0 +1,1328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allkept — sorting audit, 15 Sep 2026</title>
+<style>
+  :root {
+    --ink: #16181d;
+    --ink-muted: #5c6370;
+    --bg: #fbfbfa;
+    --surface: #ffffff;
+    --border: #e2e2dd;
+    --accent: #2f5d50;
+    --bug: #a8322a;
+    --weak: #9a6b12;
+    --fine: #2f6b3f;
+    --code-bg: #f4f4f1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 120px; }
+  header.doc { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 32px; }
+  header.doc h1 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
+  header.doc .meta { color: var(--ink-muted); font-size: 14px; }
+  h2 {
+    font-size: 22px; margin: 52px 0 8px; padding-top: 14px;
+    border-top: 1px solid var(--border); letter-spacing: -0.01em;
+  }
+  h3 { font-size: 17px; margin: 30px 0 6px; }
+  h4 { font-size: 15px; margin: 20px 0 4px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  a { color: var(--accent); }
+  code { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); padding: 1px 4px; border-radius: 3px; }
+  pre {
+    font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 5px;
+    padding: 12px 14px; overflow-x: auto; margin: 0 0 16px; white-space: pre;
+  }
+  pre.wrapped { white-space: pre-wrap; word-break: break-word; }
+  .plain {
+    background: var(--surface); border-left: 3px solid var(--accent);
+    padding: 12px 16px; margin: 0 0 18px; border-radius: 0 4px 4px 0;
+  }
+  .plain p:last-child { margin-bottom: 0; }
+  .plain .tag { display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 0 0 18px; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.mono, th.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
+  .sev { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; color: #fff; vertical-align: 2px; }
+  .sev.bug { background: var(--bug); }
+  .sev.weak { background: var(--weak); }
+  .sev.fine { background: var(--fine); }
+  .finding { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 16px 18px; margin: 0 0 20px; }
+  .finding h3 { margin-top: 0; }
+  .finding dl { margin: 0; display: grid; grid-template-columns: 130px 1fr; gap: 4px 12px; font-size: 14.5px; }
+  .finding dt { color: var(--ink-muted); font-weight: 600; }
+  .finding dd { margin: 0; }
+  nav.toc { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 16px 22px; margin-bottom: 8px; }
+  nav.toc ol { margin: 0; padding-left: 20px; }
+  nav.toc ol ol { margin-top: 4px; }
+  nav.toc li { margin-bottom: 3px; }
+  .note { color: var(--ink-muted); font-size: 14px; font-style: italic; }
+  .judge-ok { color: var(--fine); font-weight: 600; }
+  .judge-bad { color: var(--bug); font-weight: 600; }
+  .judge-meh { color: var(--weak); font-weight: 600; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    .wrap { max-width: none; padding: 0; }
+    h2 { page-break-after: avoid; break-after: avoid; margin-top: 26px; }
+    h3, h4 { page-break-after: avoid; break-after: avoid; }
+    .finding, table, pre { page-break-inside: avoid; break-inside: avoid; }
+    pre { white-space: pre-wrap; word-break: break-word; font-size: 8.5pt; }
+    nav.toc { page-break-after: always; break-after: page; }
+    a { color: inherit; text-decoration: none; }
+    .plain { border-left: 2px solid #000; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>Allkept — how saves are being sorted, and what is wrong with it</h1>
+  <div class="meta">
+    Audit date: 15 September 2026 &middot; Read-only: no code changed, no writes to the database &middot;
+    Scope: <code>supabase/functions/</code>, <code>supabase/migrations/</code>, <code>apps/mobile/lib</code>, and the live linked database (161 saves, 1 user)
+  </div>
+</header>
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#s1">Summary — the five things that matter</a></li>
+    <li><a href="#s2">How sorting works today</a></li>
+    <li><a href="#s3">What the model actually sees, per platform</a></li>
+    <li><a href="#s4">The taxonomy — fifteen labels, no definitions</a></li>
+    <li><a href="#s5">Evidence from the data</a>
+      <ol>
+        <li><a href="#s5a">Where the library sits</a></li>
+        <li><a href="#s5b">Ground truth from your corrections — there is none</a></li>
+        <li><a href="#s5c">Per-category judgement, item by item</a></li>
+        <li><a href="#s5d">Confidence</a></li>
+        <li><a href="#s5e">Picture or no picture</a></li>
+        <li><a href="#s5f">Language of the summaries</a></li>
+        <li><a href="#s5g">Stuck saves</a></li>
+        <li><a href="#s5h">Every query I ran</a></li>
+      </ol>
+    </li>
+    <li><a href="#s6">Bugs and weaknesses</a></li>
+    <li><a href="#s7">What to fix first</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="s1">1. Summary — the five things that matter</h2>
+
+<div class="plain">
+  <span class="tag">In plain English</span>
+  <p>Your instinct is right, but the cause is not what you probably think. The sorter is not
+  randomly broken. Two specific things are wrong, and one of them is a fix you already built and
+  then never switched on for the saves you already had.</p>
+</div>
+
+<h3>Finding 1 &mdash; The "show the model the picture" fix works, and 117 of your saves never got it. <span class="sev bug">bug</span></h3>
+<p><strong>Plain English:</strong> Last week you fixed the sorter so it looks at the reel's thumbnail,
+not just the caption. It works &mdash; the sunflower-field reel that was filed under "Design" is now
+correctly under "Travel &amp; places". But that fix only applies to saves whose picture arrived
+<em>after</em> the fix shipped. 117 saves already had a picture sitting on disk and have never been
+shown to the new sorter. They are still carrying the answer the old, blind, text-only sorter gave
+them. That is 73% of your library.</p>
+<p><strong>The fix:</strong> make re-sorting depend on the <em>condition</em> ("this save has a picture
+the sorter never saw", "this save was sorted by an old prompt") rather than on the <em>moment</em> the
+picture arrived, so every future sorter change drains the back catalogue by itself. Cost to re-sort
+all 117 now: about <strong>$0.65</strong>.</p>
+
+<h3>Finding 2 &mdash; The fifteen categories have names but no definitions, so identical saves land in different places. <span class="sev bug">bug</span></h3>
+<p><strong>Plain English:</strong> The prompt hands the model a bare list of fifteen labels and no
+explanation of what any of them mean. So "a tutorial on using Google AntiGravity" went to
+<em>Tech &amp; tools</em>, and "a tutorial on using Google AntiGravity in a web design workflow" went to
+<em>Learning &amp; how-to</em>. Four near-identical "automate a YouTube channel with AI" saves split
+1&ndash;3 across Tech and Learning. Four "here are N websites every designer should bookmark" saves
+split 3&ndash;1 across Design and Tech. It is not the model being dumb; nobody ever told it where the
+lines are.</p>
+<p><strong>The fix:</strong> one line of definition per category in the prompt, plus four or five
+explicit tie-breakers for the known collisions (Tech vs Learning vs Design vs Money).</p>
+
+<h3>Finding 3 &mdash; When a save has no words at all, the model guesses "Entertainment" and nothing catches it. <span class="sev bug">bug</span></h3>
+<p><strong>Plain English:</strong> Ten saves arrived with no title, no caption, nothing. Seven of those
+also had no picture. The model wrote summaries like "A saved YouTube video with no title or
+description provided" and filed four of them under <em>Entertainment</em> with a confidence score of
+0.20&ndash;0.30 &mdash; which is the model openly saying "I am guessing". That number is stored in the
+database and <strong>read by absolutely nothing</strong> &mdash; not the app, not the sweeper, not the
+library. A 0.20 guess looks exactly like a 0.99 certainty on your screen.</p>
+<p><strong>The fix:</strong> a confidence floor. Below it, the category becomes "Other" and the save
+joins the "needs attention" list so you can find it.</p>
+
+<h3>Finding 4 &mdash; Every YouTube save is sorted from its title alone. <span class="sev weak">weakness</span></h3>
+<p><strong>Plain English:</strong> All 59 YouTube saves &mdash; 37% of your library &mdash; have a
+completely empty body text. The playlist door stores the title and nothing else, and enrichment uses
+YouTube's oEmbed, which does not return the description. So the sorter judges an hour-long video from
+a headline. That is where your worst guesses cluster. The pipeline already calls the YouTube Data API
+for each video (to learn its shape); adding <code>snippet</code> to that same request would give the
+sorter the description for free.</p>
+
+<h3>Finding 5 &mdash; You have never corrected a single category, so nothing is learning, and there is no way to re-sort a save. <span class="sev bug">bug</span></h3>
+<p><strong>Plain English:</strong> There are <strong>zero</strong> rows where you overrode the model's
+answer. The override UI exists (the "Put this under" chips on a save), so the wrongness you are
+feeling is entirely unrecorded &mdash; which is why I had to judge the rows myself rather than learn
+from your corrections. Separately: once a save has been sorted successfully, <em>there is no way to
+sort it again</em>. The "Retry sorting" button only appears on saves that failed, and the database
+function that claims work has no branch at all for an already-sorted save. Your only recourse for a
+wrong category is to tap a chip, which patches the label but leaves the model's own bad summary and
+tags in place.</p>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="s2">2. How sorting works today</h2>
+
+<div class="plain">
+  <span class="tag">In plain English</span>
+  <p>A save comes in, the server goes and fetches whatever the platform will tell it about the link,
+  stores the thumbnail, then makes one call to an AI model with that text (and, since last week, the
+  thumbnail) and asks for a category, tags, a one-line summary and a confidence score. The answer is
+  written into a separate table so your own correction, if you ever make one, always sits beside it
+  rather than on top of it.</p>
+</div>
+
+<h4>The flow, step by step</h4>
+<ol>
+  <li><strong>Capture.</strong> A door creates the row: the Instagram DM webhook
+    (<code>instagram-webhook/process.ts:192</code>), the YouTube playlist poller
+    (<code>youtube-poll/poll.ts:63</code>), a pasted link (<code>save-link/handler.ts:48</code>), or a
+    bulk import (<code>import-saves/index.ts:130</code>). All of them go through
+    <code>_shared/capture.ts:70</code>. Status starts at <code>pending</code>.</li>
+  <li><strong>Hop to the pipeline region.</strong> Each door then calls the sweeper rather than running
+    the pipeline itself, so the work happens next to the database
+    (<code>_shared/enqueue.ts:22</code>, region <code>ap-southeast-1</code>).</li>
+  <li><strong>Enrich.</strong> <code>_shared/enrich.ts:346</code> expands short links, asks the
+    platform's oEmbed endpoint, falls back to reading the permalink's Open Graph tags, and stores the
+    poster frame into the private <code>thumbs</code> bucket
+    (<code>_shared/pipeline.ts:45</code> <code>snapshotTo</code>). Result: <code>title</code>,
+    <code>text</code>, <code>author_name</code>, <code>thumbnail_path</code>.</li>
+  <li><strong>Consent check.</strong> <code>_shared/pipeline.ts:233</code> reads
+    <code>profiles.ai_sorting_enabled</code>. Off means nothing leaves the system.</li>
+  <li><strong>Claim.</strong> <code>claim_item_classification()</code> takes a two-minute lease and
+    returns the fields the model will see, including the picture's path since last week
+    (<code>20260916090000_classify_with_the_picture.sql:11&ndash;37</code>).</li>
+  <li><strong>Read the picture.</strong> <code>_shared/classification-worker.ts:21</code> asks
+    <code>pictureForModel</code> (<code>_shared/pipeline.ts:82</code>) to download the object with the
+    service role and base64 it. JPEG/PNG/WebP/GIF only, 3.5&nbsp;MB cap; anything else is skipped
+    silently and the save is sorted from words.</li>
+  <li><strong>One model call.</strong> <code>_shared/classify.ts:94</code> &rarr;
+    <code>_shared/openai.ts:46</code> (default <code>gpt-5.6-sol</code>, reasoning effort
+    <code>low</code>, 20&nbsp;s timeout, strict JSON schema) or
+    <code>_shared/anthropic.ts:23</code> (<code>claude-opus-5</code>) when no OpenAI key is set.
+    Imports use the cheaper <code>gpt-5.6-terra</code> (<code>_shared/classifiers.ts:12</code>,
+    selected at <code>_shared/pipeline.ts:241</code>).</li>
+  <li><strong>Validate.</strong> <code>_shared/classify.ts:71</code> re-checks the category against the
+    fifteen, lowercases and de-duplicates tags, clips the summary to 140 characters, clamps confidence
+    to 0&ndash;1. Anything it cannot trust returns <code>null</code> and becomes a retry.</li>
+  <li><strong>Finish.</strong> <code>finish_item_classification()</code> writes
+    <code>item_ai</code> and sets <code>classification_status</code>. On failure it schedules the next
+    attempt on a 60s&nbsp;/&nbsp;5m&nbsp;/&nbsp;30m&nbsp;/&nbsp;2h ladder, five attempts, then
+    <code>failed</code> (<code>20260909113440_classification_retries.sql:66&ndash;98</code>).</li>
+  <li><strong>Display.</strong> Everything you see goes through
+    <code>item_category_label(coalesce(a.user_category, a.category), i.status,
+    i.classification_status)</code> &mdash; your correction wins, then the model's answer, then
+    "Needs attention" / "Uncategorized" / "Sorting"
+    (<code>20260909113440_classification_retries.sql:121</code>, used by
+    <code>library_query_v3</code> at <code>20260910020000_library_query_v3.sql:55</code> and by the
+    mobile app at <code>apps/mobile/lib/item.ts:75</code>).</li>
+  <li><strong>Re-sorting.</strong> A trigger requeues a save when its watched content columns change,
+    or when a picture lands on a save that was sorted without one
+    (<code>20260916090000_classify_with_the_picture.sql:46&ndash;65</code>). The sweeper drains the
+    queue every five minutes in five passes (<code>sweeper/index.ts:39&ndash;54</code>).</li>
+</ol>
+
+<h4>The prompt as it stands today (<code>_shared/classify.ts:48&ndash;58</code>, <code>PROMPT_VERSION = "2026-09-16.1"</code>)</h4>
+<pre class="wrapped">You sort things a person saved from social media into their personal library.
+Given one saved item (platform, kind, link, title, caption or text, author, the person's own note), return JSON with:
+- category: exactly one of ["Food &amp; recipes","Fitness &amp; health","Travel &amp; places","Learning &amp; how-to","Tech &amp; tools","Money &amp; career","Design &amp; inspiration","Style &amp; fashion","Beauty &amp; self-care","Home &amp; living","Entertainment","Humour &amp; memes","News &amp; opinion","Life &amp; relationships","Other"]. Use "Other" only when nothing fits.
+- tags: up to five short lowercase tags (single words or hyphenated), specific to the content, no hashtags, no duplicates of the category.
+- summary: one plain sentence, at most 140 characters, saying what the item is about, in the caption's language if it is not English.
+- entities: places, products, recipes, tools, people or brands named in the content, as {type, name}; empty if none.
+- language: ISO 639-1 code of the main language of the text.
+- actionability: watch (a video to watch), try (a recipe, workout or how-to to attempt), buy (a product), go (a place to visit), read (an article or thread), reference (facts or tools to keep), none.
+- confidence: 0 to 1, your confidence in the category.
+Judge from the content only. Hashtags and emoji are weak signals. If the text is empty, use the link, kind and author.
+A picture may be attached: the saved post's own poster frame or photo. Captions often describe how a post was made (credits, tools, "edit") or its mood (aesthetic hashtags) rather than what it shows; the picture is the subject, so judge the category from it and treat such a caption as a weak signal. Without a picture, when the caption is only credits, mood or hashtags, prefer the subject if the words let you infer it, else "Other" with low confidence rather than a category for the making.</pre>
+
+<h4>The message the model gets (<code>_shared/classify.ts:60&ndash;66</code>)</h4>
+<pre>platform: {platform}
+kind: {kind}
+link: {canonical_url or source_url, or "(none)"}
+author: {author_name or "(none)"}
+title: {title clipped to 300 chars, or "(none)"}
+caption or text: {text clipped to 1500 chars, or "(none)"}
+person's note: {note clipped to 300 chars, or "(none)"}</pre>
+<p class="note">That is the whole input. No tags, no platform-specific hints, no examples, no list of
+the categories already in use in this person's library.</p>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="s3">3. What the model actually sees, per platform</h2>
+
+<div class="plain">
+  <span class="tag">In plain English</span>
+  <p>The sorter is only as good as what it is handed. This table is the honest answer to "what did it
+  actually know when it decided?" &mdash; measured from your real 161 saves, not from what the code
+  intends. The short version: Instagram is well fed, YouTube is starved, and Reddit, TikTok and
+  Pinterest hand over almost nothing.</p>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Platform</th><th class="num">Saves</th><th class="num">No body text</th>
+      <th class="num">No title</th><th class="num">Avg caption chars</th>
+      <th>Where the text comes from</th><th>Picture?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Instagram (reel / post)</td><td class="num">79</td><td class="num">3</td><td class="num">45</td><td class="num">456</td>
+      <td>oEmbed <code>title</code> is mapped into <code>text</code> &mdash; Instagram-only special case
+      (<code>enrich.ts:459</code>). Falls back to reading the permalink's OG tags and
+      <code>parseInstagramOpenGraph</code> (<code>enrich.ts:314</code>).</td>
+      <td>Yes, nearly always</td>
+    </tr>
+    <tr>
+      <td>YouTube (video / short)</td><td class="num">59</td><td class="num"><strong>59</strong></td><td class="num">3</td><td class="num">0</td>
+      <td><strong>Title only.</strong> The poller stores the playlist title
+      (<code>youtube-poll/poll.ts:65</code>); oEmbed returns no description and the code never asks for
+      one. <code>text</code> is empty for every single YouTube save.</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>TikTok</td><td class="num">10</td><td class="num">9</td><td class="num">2</td><td class="num">43</td>
+      <td>oEmbed <code>title</code> &rarr; <code>title</code>, not <code>text</code>. TikTok answers 400
+      for photo posts, so the phone finds the picture instead.</td>
+      <td>Sometimes</td>
+    </tr>
+    <tr>
+      <td>Reddit</td><td class="num">4</td><td class="num"><strong>4</strong></td><td class="num">0</td><td class="num">0</td>
+      <td>oEmbed title only. The post page is deliberately never fetched (Reddit answers our server
+      403 &mdash; <code>enrich.ts:476</code>), so the self-text is never seen.</td>
+      <td>Via the phone (<code>reddit-thumbnail/</code>)</td>
+    </tr>
+    <tr>
+      <td>Pinterest</td><td class="num">2</td><td class="num"><strong>2</strong></td><td class="num">2</td><td class="num">0</td>
+      <td>No oEmbed mapping at all (<code>enrich.ts:123&ndash;138</code>). Nothing learned; both are
+      <code>preview_unavailable</code>.</td>
+      <td>No</td>
+    </tr>
+    <tr>
+      <td>Web / plain link</td><td class="num">6</td><td class="num">3</td><td class="num">2</td><td class="num">&mdash;</td>
+      <td>Open Graph tags, with block-page detection (<code>enrich.ts:237&ndash;253</code>) and a
+      wrong-page check (<code>enrich.ts:276</code>).</td>
+      <td>Usually</td>
+    </tr>
+    <tr>
+      <td>Note</td><td class="num">1</td><td class="num">0</td><td class="num">1</td><td class="num">2</td>
+      <td>The typed text itself.</td><td>No</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>Size caps</h4>
+<ul>
+  <li><strong>Title</strong> 300 chars, <strong>caption/text</strong> 1500 chars,
+    <strong>note</strong> 300 chars (<code>classify.ts:61&ndash;65</code>). Only <strong>one</strong>
+    save in the whole library exceeds the caption clip (max seen: 1581 chars), so the clip is not
+    hurting you today.</li>
+  <li><strong>Picture</strong> is sent at OpenAI <code>detail: "low"</code>
+    (<code>openai.ts:61</code>) &mdash; a fixed ~85&ndash;100 input tokens. Stored thumbnails average
+    39&nbsp;KB, max 219&nbsp;KB, well under the 3.5&nbsp;MB model cap
+    (<code>pipeline.ts:73</code>) and the 4&nbsp;MB storage cap.</li>
+  <li><strong>Output</strong> 2048 tokens on OpenAI (reasoning counted against it,
+    <code>openai.ts:9</code>), 1024 on Anthropic (<code>anthropic.ts:30</code>). Average output in your
+    data is 138 tokens, so neither cap is binding.</li>
+</ul>
+
+<h4>Where the input is thin &mdash; ranked</h4>
+<ol>
+  <li><strong>YouTube, 59 saves (37% of the library).</strong> A headline and a thumbnail. This is the
+    single biggest, cheapest improvement available.</li>
+  <li><strong>Reddit, 4 saves.</strong> Title only; the body of the post is never read.</li>
+  <li><strong>Pinterest, 2 saves.</strong> Literally nothing. Both were sorted into "Other" at 0.10 and
+    0.15 confidence, which is at least honest.</li>
+  <li><strong>TikTok, 9 of 10 with no body text.</strong></li>
+  <li><strong>Instagram is fine on text</strong> &mdash; the problem there is not <em>absence</em> of
+    caption but <em>the kind</em> of caption: hooks and calls to action ("Comment SKILLS and I'll DM
+    you"), credits and mood hashtags. That is exactly what the picture pass was built to fix, and
+    exactly what 117 saves never received.</li>
+</ol>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="s4">4. The taxonomy &mdash; fifteen labels, no definitions</h2>
+
+<div class="plain">
+  <span class="tag">In plain English</span>
+  <p>This is, in my judgement, the largest single cause of what you are seeing. The prompt gives the
+  model a JSON list of fifteen names and one instruction &mdash; "use Other only when nothing fits".
+  It never says what any of the fifteen mean, and it never says which one wins when two fit. So the
+  model breaks ties on wording, and near-identical saves scatter.</p>
+</div>
+
+<h4>The built-in fifteen (<code>_shared/contracts.ts:14&ndash;18</code>)</h4>
+<pre>export const CATEGORIES = [
+  "Food &amp; recipes", "Fitness &amp; health", "Travel &amp; places", "Learning &amp; how-to", "Tech &amp; tools",
+  "Money &amp; career", "Design &amp; inspiration", "Style &amp; fashion", "Beauty &amp; self-care", "Home &amp; living",
+  "Entertainment", "Humour &amp; memes", "News &amp; opinion", "Life &amp; relationships", "Other",
+] as const;</pre>
+
+<h4>Their definitions in the prompt</h4>
+<p>There are none. The entire specification of the taxonomy inside the prompt is this one line
+(<code>classify.ts:50</code>):</p>
+<pre class="wrapped">- category: exactly one of ["Food &amp; recipes", ... "Other"]. Use "Other" only when nothing fits.</pre>
+<p>By contrast, every <em>other</em> field in the same prompt is defined. <code>actionability</code>
+gets a gloss for all seven values ("watch (a video to watch), try (a recipe, workout or how-to to
+attempt)&hellip;"). <code>tags</code> gets four constraints. <code>entities</code> gets a type list.
+The one field the whole product is named after gets nothing. The alphabetical neighbour to compare
+against is the icon pass, where the prompt <em>does</em> define its vocabulary and gives worked
+examples (<code>_shared/entity-icons.ts:26&ndash;32</code>) &mdash; that pass is the better-specified
+of the two.</p>
+
+<h4>The overlaps, with real evidence from your library</h4>
+
+<table>
+  <thead><tr><th>Overlap</th><th>Rule in the prompt</th><th>What actually happened</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Tech &amp; tools</strong> vs <strong>Learning &amp; how-to</strong></td>
+      <td>None</td>
+      <td><code>d84e93af</code> "A tutorial on building projects with Gemini Whisk and AntiGravity"
+        &rarr; <strong>Tech</strong>, while <code>2945d8b2</code> "A tutorial on using Google
+        AntiGravity in a web design workflow" &rarr; <strong>Learning</strong>. Same tool, same shape,
+        two answers.<br>
+        Four "automate a YouTube channel with AI" saves split: <code>cefdd524</code> &rarr;
+        <strong>Tech</strong>; <code>684e63a5</code>, <code>ae6b7924</code>, <code>46a05341</code>
+        &rarr; <strong>Learning</strong>.</td>
+    </tr>
+    <tr>
+      <td><strong>Tech &amp; tools</strong> vs <strong>Design &amp; inspiration</strong></td>
+      <td>None</td>
+      <td>Four "here are N websites every designer should bookmark" saves:
+        <code>9dddbbf3</code>, <code>bfdecc6b</code>, <code>7896fc7f</code> &rarr;
+        <strong>Design</strong> (0.96&ndash;0.99), but <code>4d9f4aa2</code> ("UI inspiration and
+        libraries for building better apps with Claude Code") &rarr; <strong>Tech</strong> at 0.97.
+        And <code>2a764d65</code> ("10 Figma Agent Skills worth saving") &rarr;
+        <strong>Learning</strong> at 0.90 &mdash; a third answer for the same shape.</td>
+    </tr>
+    <tr>
+      <td><strong>Tech &amp; tools</strong> vs <strong>Money &amp; career</strong></td>
+      <td>None</td>
+      <td><code>a0673fd3</code> "a $15,000 agentic AI marketing department" &rarr;
+        <strong>Tech</strong>; <code>d9701f9f</code> "an app generating $25,000 in monthly revenue"
+        &rarr; <strong>Money</strong>. <code>b09d78fa</code> "Seven Claude prompts for &hellip; growing
+        a YouTube channel" &rarr; <strong>Tech</strong>; <code>e6a68a48</code> "six Claude plugins that
+        can handle much of an SEO's workload" &rarr; <strong>Tech</strong>. At least 18 of the 77
+        Tech &amp; tools saves read as career or revenue content.</td>
+    </tr>
+    <tr>
+      <td><strong>Entertainment</strong> vs <strong>Humour &amp; memes</strong> vs
+        <strong>Life &amp; relationships</strong></td>
+      <td>None</td>
+      <td>Less damaging in practice, but real: <code>088d6962</code> "Tape measure challenge at Mazda of
+        Claremont" &rarr; <strong>Humour</strong> at 0.82; <code>cd606a2c</code> "people being
+        surprised and showered with love" &rarr; <strong>Entertainment</strong> at 0.88 (reads as Life
+        &amp; relationships). The bigger issue is that <strong>Entertainment is the default landing
+        spot for saves with no information at all</strong> &mdash; see Finding 3.</td>
+    </tr>
+    <tr>
+      <td>Self-improvement &mdash; <strong>no home at all</strong></td>
+      <td>n/a</td>
+      <td><code>3bbee036</code> "Science-Backed Morning Routine Will REPROGRAM Your Mind" &rarr;
+        <strong>Fitness &amp; health</strong> at 0.88. <code>a648f88c</code> "Daniel Pink explains how
+        to improve your attention span" &rarr; <strong>Learning &amp; how-to</strong> at 0.93. Same
+        genre, two homes, because the taxonomy has no productivity/self-improvement category and no
+        rule saying where it goes.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>Gaps</h4>
+<ul>
+  <li><strong>No shopping / deals category.</strong> <code>c449a4dc</code> "Selling iPhone 17 Pro
+    256GB &hellip; ₹1,20,000" landed in <strong>Tech &amp; tools</strong> at 0.99. "Style &amp;
+    fashion" covers fashion shopping; nothing covers everything else you might want to buy.</li>
+  <li><strong>No productivity / self-improvement category</strong> (see above).</li>
+  <li><strong>"Other" is under-used where it should be used and the prompt half-blocks it.</strong>
+    "Use <em>Other</em> only when nothing fits" reads as discouragement; the only place the prompt
+    actively <em>endorses</em> Other is the credits-and-mood-caption case added last week. It never
+    endorses it for "I know nothing about this save".</li>
+  <li><strong>Custom categories are invisible to the model.</strong> You can create your own
+    (<code>user_categories</code>, <code>20260912210000_user_categories.sql</code>) and the app offers
+    them alongside the fifteen (<code>ItemDetail.tsx:277</code>), but the model is never told they
+    exist and can never sort into one. Working as designed today; worth knowing.</li>
+</ul>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="s5">5. Evidence from the data</h2>
+
+<div class="plain">
+  <span class="tag">In plain English</span>
+  <p>161 saves, one user (you), from 8 to 15 September. Everything below is a read from the live
+  database. Total spend on sorting so far: <strong>$0.89</strong>, averaging $0.0055 a save.</p>
+</div>
+
+<h3 id="s5a">5a. Where the library sits</h3>
+
+<h4>What you see in the app (label = your correction, else the model's answer, else a state)</h4>
+<table>
+  <thead><tr><th>Label</th><th class="num">Saves</th><th class="num">Share</th></tr></thead>
+  <tbody>
+    <tr><td>Tech &amp; tools</td><td class="num">77</td><td class="num">47.8%</td></tr>
+    <tr><td>Entertainment</td><td class="num">35</td><td class="num">21.7%</td></tr>
+    <tr><td>Money &amp; career</td><td class="num">18</td><td class="num">11.2%</td></tr>
+    <tr><td>Learning &amp; how-to</td><td class="num">12</td><td class="num">7.5%</td></tr>
+    <tr><td>Design &amp; inspiration</td><td class="num">4</td><td class="num">2.5%</td></tr>
+    <tr><td>Beauty &amp; self-care</td><td class="num">3</td><td class="num">1.9%</td></tr>
+    <tr><td>Other</td><td class="num">3</td><td class="num">1.9%</td></tr>
+    <tr><td>Humour &amp; memes</td><td class="num">3</td><td class="num">1.9%</td></tr>
+    <tr><td>Fitness &amp; health</td><td class="num">2</td><td class="num">1.2%</td></tr>
+    <tr><td>News &amp; opinion</td><td class="num">1</td><td class="num">0.6%</td></tr>
+    <tr><td>Life &amp; relationships</td><td class="num">1</td><td class="num">0.6%</td></tr>
+    <tr><td>Travel &amp; places</td><td class="num">1</td><td class="num">0.6%</td></tr>
+    <tr><td>Needs attention</td><td class="num">1</td><td class="num">0.6%</td></tr>
+  </tbody>
+</table>
+<p class="note">Three of the fifteen categories are completely empty (Food &amp; recipes, Style &amp;
+fashion, Home &amp; living), and three more hold a single save each. "Sorting" and "Uncategorized" are
+both zero &mdash; nothing is stuck mid-flight.</p>
+<p><strong>Is 48% Tech &amp; tools wrong?</strong> Mostly no. You genuinely save a great deal of AI and
+developer content, and I read 28 of those 77 rows individually. But it <em>is</em> acting as a magnet:
+at least 18 of the 77 read as Money &amp; career or Learning &amp; how-to content that lost a
+coin-flip (evidence in §4). A better-defined prompt would probably move 15&ndash;25 of them, not 60.</p>
+
+<h4>Model category vs your category</h4>
+<pre>overridden ..................... 0
+override_differs ............... 0
+model_sorted ................... 160
+ai_error ....................... 0</pre>
+<p>The model's answer and the visible label are identical for every save in the database. There is no
+override data at all.</p>
+
+<h3 id="s5b">5b. Ground truth from your corrections &mdash; there is none</h3>
+
+<div class="plain">
+  <span class="tag">In plain English</span>
+  <p>I was asked to use your own corrections as the ground truth for what is mis-sorted. There are
+  none &mdash; not one save in 161 has a <code>user_category</code>. So this section cannot exist as
+  asked, and the per-row judgements in §5c are mine, not yours.</p>
+</div>
+
+<p>This is not because the feature is missing. It works:</p>
+<ul>
+  <li><code>apps/mobile/components/ItemDetail.tsx:277&ndash;281</code> renders a chip for all fifteen
+    built-ins plus your own categories, on every save.</li>
+  <li><code>apps/mobile/lib/item.ts:111&ndash;117</code> <code>useSetCategory</code> upserts
+    <code>user_category</code>, and fires a <code>category_changed</code> metric.</li>
+  <li>The worker genuinely never overwrites it &mdash; the conflict list in
+    <code>finish_item_classification</code> excludes <code>user_category</code>
+    (<code>20260909113440_classification_retries.sql:81&ndash;84</code>), and the worker re-reads the
+    row afterwards so a concurrent correction wins
+    (<code>_shared/classification-worker.ts:50</code>). That part is solid.</li>
+</ul>
+<p><strong>Two honest readings, and I cannot distinguish them from data alone:</strong> either the
+sorting is closer to right than it feels and the wrongness is concentrated in a handful of saves you
+have noticed but not corrected; or the correction UI is not discoverable enough to be used (it is
+below the fold on the save's detail sheet, behind the label "Put this under"). Either way, the
+product currently has <em>no</em> feedback loop &mdash; nothing measures how often the model is wrong,
+even though the code comment at <code>item.ts:110</code> says that is the whole point of storing the
+correction beside the answer.</p>
+
+<h3 id="s5c">5c. Per-category judgement, item by item</h3>
+
+<p>I read the newest saves in each populated category and judged each one. Ids are the first eight
+characters of the item's UUID. <code>pic</code> means the sorter was shown the thumbnail.</p>
+
+<h4>Tech &amp; tools (77 saves) &mdash; newest 14</h4>
+<table>
+  <thead><tr><th class="mono">id</th><th>What it is</th><th class="num">conf</th><th>pic</th><th>My judgement</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">a0a189d4</td><td>"A post about Claude using AI to build something related to Warren Buffett or his investing" &mdash; no title, no caption</td><td class="num">0.66</td><td>yes</td><td><span class="judge-meh">unsure</span> &mdash; the summary itself is hedging ("something related to"). Probably Money &amp; career. Low information even with the picture.</td></tr>
+    <tr><td class="mono">e6a68a48</td><td>Six Claude plugins for an SEO's workload</td><td class="num">0.97</td><td>yes</td><td><span class="judge-meh">arguable</span> &mdash; the tools are tech, the job is SEO. Money &amp; career is defensible. No rule exists either way.</td></tr>
+    <tr><td class="mono">7806f0bf</td><td>10 open-source repos for AI coding, design, video</td><td class="num">0.99</td><td>no</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">754866e2</td><td>"Grow your mobile app with stratos"</td><td class="num">0.88</td><td>no</td><td><span class="judge-meh">arguable</span> &mdash; app growth/marketing reads as Money &amp; career.</td></tr>
+    <tr><td class="mono">13c9aac6</td><td>Is a popular AI skill assessment useful or hype?</td><td class="num">0.72</td><td>yes</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">5a2fb586</td><td>MiroFish simulates AI customer reactions to launches</td><td class="num">0.98</td><td>no</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">4d9f4aa2</td><td>UI inspiration and libraries for building apps with Claude Code</td><td class="num">0.97</td><td>no</td><td><span class="judge-bad">inconsistent</span> &mdash; three near-identical designer-resource lists went to Design &amp; inspiration. This one did not.</td></tr>
+    <tr><td class="mono">29bc713b</td><td>GitHub toolkit for Claude for LinkedIn engagement</td><td class="num">0.96</td><td>no</td><td><span class="judge-meh">arguable</span> &mdash; LinkedIn/networking is Money &amp; career territory.</td></tr>
+    <tr><td class="mono">b09d78fa</td><td>Seven Claude prompts for growing a YouTube channel</td><td class="num">0.97</td><td>no</td><td><span class="judge-bad">should be Money &amp; career</span> &mdash; "$10K/month YouTube channel" is the caption's own framing. Three sibling saves went to Learning &amp; how-to.</td></tr>
+    <tr><td class="mono">7d2858ea</td><td>"Sam Altman uses a smartphone beneath the OpenAI logo" &mdash; no words at all</td><td class="num">0.93</td><td>yes</td><td><span class="judge-meh">arguable</span> &mdash; News &amp; opinion is at least as good. <em>But note:</em> with nothing but a picture, the model produced an accurate, confident description. This is the picture pass earning its keep.</td></tr>
+    <tr><td class="mono">b8658e9e</td><td>YouTube: "God's Eye View Blew Up. Here's What You Can Do With It."</td><td class="num">0.96</td><td>yes</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">c449a4dc</td><td>Reddit: selling a sealed iPhone 17 Pro for ₹1,20,000</td><td class="num">0.99</td><td>no</td><td><span class="judge-meh">best available</span> &mdash; it is a classified ad, not tech content. There is no shopping/deals category, so this is the taxonomy's gap, not the model's error.</td></tr>
+    <tr><td class="mono">a371f686</td><td>Reddit: 1,000+ hours building an interactive 3D reconstruction of Ancient Egypt</td><td class="num">0.90</td><td>no</td><td><span class="judge-meh">arguable</span> &mdash; Learning &amp; how-to or Entertainment both fit as well.</td></tr>
+    <tr><td class="mono">a0673fd3</td><td>How a $15,000 agentic AI marketing department works</td><td class="num">0.96</td><td>no</td><td><span class="judge-bad">should be Money &amp; career</span> &mdash; its sibling <code>d9701f9f</code> ("$25,000/month app") went there.</td></tr>
+  </tbody>
+</table>
+<p><strong>Verdict for Tech &amp; tools:</strong> 4 clearly fine, 7 arguable, 3 I would call wrong
+(<code>4d9f4aa2</code>, <code>b09d78fa</code>, <code>a0673fd3</code>). Every one of the wrong ones is a
+boundary collision, not a hallucination.</p>
+
+<h4>Entertainment (35 saves) &mdash; newest 11</h4>
+<table>
+  <thead><tr><th class="mono">id</th><th>What it is</th><th class="num">conf</th><th>pic</th><th>My judgement</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">(film recs)</td><td>Four film/drama recommendation reels: <em>Jackie &amp; Ryan</em>, <em>Only You</em> (1994), <em>Fireworks of My Heart</em>, <em>Vishwanath and Sons</em></td><td class="num">0.98&ndash;0.99</td><td>no</td><td><span class="judge-ok">all fit</span> &mdash; long, descriptive captions, accurate tags. This is the sorter at its best.</td></tr>
+    <tr><td class="mono">61e757a0</td><td>"An Instagram Reel saved for later viewing." &mdash; no title, no caption, no picture</td><td class="num">0.25</td><td>no</td><td><span class="judge-bad">wrong</span> &mdash; should be <strong>Other</strong>. The model knew nothing and said so with 0.25, then filed it anyway.</td></tr>
+    <tr><td class="mono">98a2ed11</td><td>"What If You Had a Smartphone in the Stone Age?"</td><td class="num">0.96</td><td>yes</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">a8dd250c</td><td>"A saved YouTube video with no title, caption, or author information provided."</td><td class="num">0.20</td><td>no</td><td><span class="judge-bad">wrong</span> &mdash; should be <strong>Other</strong>.</td></tr>
+    <tr><td class="mono">f1ec3f3c</td><td>"A saved YouTube video with no title or description provided."</td><td class="num">0.30</td><td>no</td><td><span class="judge-bad">wrong</span> &mdash; should be <strong>Other</strong>.</td></tr>
+    <tr><td class="mono">6dd04c44</td><td>"A saved YouTube video with no title or description provided."</td><td class="num">0.20</td><td>no</td><td><span class="judge-bad">wrong</span> &mdash; should be <strong>Other</strong>.</td></tr>
+    <tr><td class="mono">d82549e3</td><td>"The official TikTok creator profile."</td><td class="num">0.62</td><td>no</td><td><span class="judge-bad">wrong</span> &mdash; a profile link is not entertainment; <strong>Other</strong>.</td></tr>
+    <tr><td class="mono">cd606a2c</td><td>"people being surprised and showered with love"</td><td class="num">0.88</td><td>no</td><td><span class="judge-meh">arguable</span> &mdash; Life &amp; relationships fits better.</td></tr>
+    <tr><td class="mono">f6a3c1c6</td><td>"POV: His headphones are his superpower" short film</td><td class="num">0.96</td><td>no</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">bc30059e</td><td>"A link to watch the financial drama Margin Call on Prime Video" &mdash; recovered from the URL alone</td><td class="num">0.99</td><td>no</td><td><span class="judge-ok">fits</span> &mdash; impressive recovery from nothing but a link.</td></tr>
+  </tbody>
+</table>
+<p><strong>Verdict for Entertainment:</strong> the film content is excellent. But <strong>five of the
+35 are not entertainment at all</strong> &mdash; they are empty saves the model had to guess about
+(<code>61e757a0</code>, <code>a8dd250c</code>, <code>f1ec3f3c</code>, <code>6dd04c44</code>,
+<code>d82549e3</code>). Entertainment is functioning as the model's default shrug. That is
+14% of the category.</p>
+
+<h4>Learning &amp; how-to (12) and Design &amp; inspiration (4)</h4>
+<table>
+  <thead><tr><th class="mono">id</th><th>Category</th><th>What it is</th><th class="num">conf</th><th>My judgement</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">9dddbbf3</td><td>Design</td><td>Three free sites: SVG shapes, accessible colour palettes</td><td class="num">0.98</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">bfdecc6b</td><td>Design</td><td>Websites every UI/UX designer should know</td><td class="num">0.96</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">5918e6e4</td><td>Design</td><td>Free animation templates for motion designers</td><td class="num">0.98</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">7896fc7f</td><td>Design</td><td>Mobile app inspiration sites for product designers</td><td class="num">0.99</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">2a764d65</td><td>Learning</td><td>"10 Figma Agent Skills worth saving"</td><td class="num">0.90</td><td><span class="judge-bad">inconsistent</span> &mdash; identical shape to the four above; should be Design.</td></tr>
+    <tr><td class="mono">2945d8b2</td><td>Learning</td><td>Using Google AntiGravity in a web design workflow</td><td class="num">0.92</td><td><span class="judge-bad">inconsistent</span> &mdash; <code>d84e93af</code> (same tool) went to Tech.</td></tr>
+    <tr><td class="mono">684e63a5</td><td>Learning</td><td>Creating a sleepy-themed AI YouTube channel</td><td class="num">0.98</td><td><span class="judge-meh">arguable</span> &mdash; sibling <code>cefdd524</code> went to Tech.</td></tr>
+    <tr><td class="mono">ae6b7924</td><td>Learning</td><td>Using AI to replicate a YouTube channel's revenue strategy</td><td class="num">0.93</td><td><span class="judge-bad">should be Money &amp; career</span></td></tr>
+    <tr><td class="mono">46a05341</td><td>Learning</td><td>Building an automated faceless YouTube channel</td><td class="num">0.94</td><td><span class="judge-meh">arguable</span> &mdash; Money &amp; career.</td></tr>
+    <tr><td class="mono">416f03bc</td><td>Learning</td><td>Five AI engineering project ideas for 2026</td><td class="num">0.96</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">8e373d0f</td><td>Learning</td><td>Four-hour NotebookLM course</td><td class="num">0.97</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">c75106b5</td><td>Learning</td><td>Woodworking: cornhole board from 300-year-old wood</td><td class="num">0.89</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">eb846c43</td><td>Learning</td><td>What could happen after a nuclear war</td><td class="num">0.91</td><td><span class="judge-meh">arguable</span> &mdash; News &amp; opinion / Entertainment.</td></tr>
+    <tr><td class="mono">26876308</td><td>Learning</td><td>Telugu: why China scrapped trains</td><td class="num">0.88</td><td><span class="judge-ok">fits</span> &mdash; summary written in Telugu (see §5f).</td></tr>
+    <tr><td class="mono">a648f88c</td><td>Learning</td><td>Daniel Pink on improving attention span</td><td class="num">0.93</td><td><span class="judge-meh">arguable</span> &mdash; self-improvement has no home.</td></tr>
+    <tr><td class="mono">aa2f7a8e</td><td>Learning</td><td>What to learn before using AI effectively</td><td class="num">0.91</td><td><span class="judge-ok">fits</span></td></tr>
+  </tbody>
+</table>
+
+<h4>The small categories (Money, Beauty, Fitness, Humour, News, Life, Travel, Other)</h4>
+<table>
+  <thead><tr><th class="mono">id</th><th>Category</th><th>What it is</th><th class="num">conf</th><th>My judgement</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">83cba633</td><td>Money &amp; career</td><td>Founder on getting into Y Combinator solo</td><td class="num">0.96</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">b1549feb</td><td>Money &amp; career</td><td>Carousel: 10 startup opportunities for 2026 &mdash; <strong>no words at all, sorted from the picture</strong></td><td class="num">0.98</td><td><span class="judge-ok">fits</span> &mdash; textbook proof the picture pass works.</td></tr>
+    <tr><td class="mono">d9701f9f</td><td>Money &amp; career</td><td>App generating $25,000/month</td><td class="num">0.91</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">bf7787cf</td><td>Money &amp; career</td><td>Cloning three apps to $35K/month</td><td class="num">0.92</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">ded7aa54</td><td>Beauty</td><td>SKIN1004 pink-salt pore routine</td><td class="num">0.99</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">00b36671</td><td>Beauty</td><td>Choosing between Anua serums</td><td class="num">0.99</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">d96e3b1a</td><td>Beauty</td><td>Etude Nymph Aura Volumizer demo</td><td class="num">0.99</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">008cc24f</td><td>Fitness</td><td>Spinal decompression illustration</td><td class="num">0.98</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">3bbee036</td><td>Fitness</td><td>"Science-Backed Morning Routine Will REPROGRAM Your Mind"</td><td class="num">0.88</td><td><span class="judge-meh">arguable</span> &mdash; self-improvement, no home.</td></tr>
+    <tr><td class="mono">9b913118</td><td>Humour</td><td>Selena Gomez struggling to stay warm at a soccer field</td><td class="num">0.83</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">1d78fd1c</td><td>Humour</td><td>"When you've finally had enough" comedy short</td><td class="num">0.94</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">088d6962</td><td>Humour</td><td>Tape measure challenge at a car dealership</td><td class="num">0.82</td><td><span class="judge-meh">arguable</span> &mdash; Entertainment.</td></tr>
+    <tr><td class="mono">8e8da051</td><td>Life</td><td>Matthew McConaughey on what happens after you get everything</td><td class="num">0.96</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">3cfe5820</td><td>News</td><td>Rapido driver harassing a Noida woman</td><td class="num">0.99</td><td><span class="judge-ok">fits</span></td></tr>
+    <tr><td class="mono">261445cf</td><td>Travel</td><td>Sunflower fields and a cottage &mdash; <strong>the reel from the design spec</strong></td><td class="num">0.88</td><td><span class="judge-ok">fixed</span> &mdash; was Design &amp; inspiration under the old text-only prompt; now correct.</td></tr>
+    <tr><td class="mono">70aa2e3b</td><td>Other</td><td>Pinterest image, nothing known</td><td class="num">0.10</td><td><span class="judge-ok">honest</span></td></tr>
+    <tr><td class="mono">c0792116</td><td>Other</td><td>Pinterest image, nothing known</td><td class="num">0.15</td><td><span class="judge-ok">honest</span></td></tr>
+    <tr><td class="mono">6d595edb</td><td>Other</td><td>A note containing only "sc"</td><td class="num">0.18</td><td><span class="judge-ok">honest</span></td></tr>
+  </tbody>
+</table>
+
+<div class="plain">
+  <span class="tag">The most important row in this whole report</span>
+  <p><code>261445cf</code> is the sunflower reel named in your own design spec as the reason to build
+  the picture pass. Under the old text-only prompt it was filed under <strong>Design &amp;
+  inspiration</strong>, because the caption said "Made with @supercool_hq #darkaesthetic". Today,
+  re-sorted with the picture on prompt <code>2026-09-16.1</code>, it sits under <strong>Travel &amp;
+  places</strong> at 0.88, summarised as "A peaceful countryside scene featuring a small cottage
+  surrounded by vast sunflower fields."</p>
+  <p><strong>The fix works. It has just only reached 28 of your 161 saves.</strong></p>
+</div>
+
+<h3 id="s5d">5d. Confidence &mdash; stored, never read</h3>
+
+<table>
+  <thead><tr><th>Confidence band</th><th class="num">Saves</th><th>What is in there</th></tr></thead>
+  <tbody>
+    <tr><td>0.10 &ndash; 0.18</td><td class="num">3</td><td>Two Pinterest images and a two-character note &rarr; all "Other". Honest.</td></tr>
+    <tr><td>0.20 &ndash; 0.25</td><td class="num">3</td><td>Three empty YouTube/Instagram saves &rarr; all "Entertainment". Guesses presented as answers.</td></tr>
+    <tr><td>0.30</td><td class="num">1</td><td>Empty YouTube save &rarr; "Entertainment".</td></tr>
+    <tr><td>0.62 &ndash; 0.72</td><td class="num">6</td><td>Thin saves; a TikTok profile, a picture-only post.</td></tr>
+    <tr><td>0.82 &ndash; 0.89</td><td class="num">17</td><td>Genuine boundary calls.</td></tr>
+    <tr><td>0.90 &ndash; 0.99</td><td class="num">130</td><td>The bulk. Mean 0.92.</td></tr>
+  </tbody>
+</table>
+
+<p><strong>How "low confidence" is handled in code: it isn't.</strong> I grepped every
+<code>supabase/functions/</code>, <code>apps/mobile/</code> and <code>packages/</code> source file. The
+only appearances of <code>confidence</code> are:</p>
+<ul>
+  <li><code>_shared/classify.ts:56</code> &mdash; asking for it in the prompt</li>
+  <li><code>_shared/classify.ts:82,90</code> &mdash; defaulting to 0.5 and clamping to 0&ndash;1</li>
+  <li><code>_shared/openai.ts:21</code>, <code>_shared/anthropic.ts:17</code> &mdash; the JSON schema</li>
+  <li><code>_shared/contracts.ts:121</code>, <code>packages/contracts/src/index.ts:120</code> &mdash; the type</li>
+</ul>
+<p>No branch, no threshold, no query, no UI element anywhere consumes the number. It is written to the
+database and never read again. A 0.20 guess is displayed exactly like a 0.99 certainty.</p>
+
+<h3 id="s5e">5e. Picture or no picture</h3>
+
+<pre>saves with a stored thumbnail ...................... 145
+saves sorted WITH the picture ......................  28
+saves that HAVE a thumbnail but were sorted blind .. 117   &lt;-- the problem
+saves with no thumbnail at all .....................  16
+
+prompt_version 2026-09-08.1 (old, text-only) ....... 132
+prompt_version 2026-09-16.1 (new, sees pictures) ...  28</pre>
+
+<p>The two splits are the same 132/28 split. Every save sorted without a picture is also still
+carrying the answer from the <em>old prompt</em>, which had no picture paragraph at all. Here is the
+old prompt's final line, from <code>git show 19a0488^:supabase/functions/_shared/classify.ts</code>:</p>
+<pre class="wrapped">Judge from the content only. Hashtags and emoji are weak signals. If the text is empty, use the link, kind and author.</pre>
+<p>That is where it ended. No picture, no fallback rule, nothing about credits or mood captions.</p>
+
+<h4>What is sitting in the blind 117, by category</h4>
+<table>
+  <thead><tr><th>Category</th><th class="num">Blind, but has a picture</th><th class="num">Mean confidence</th></tr></thead>
+  <tbody>
+    <tr><td>Tech &amp; tools</td><td class="num">60</td><td class="num">0.97</td></tr>
+    <tr><td>Entertainment</td><td class="num">23</td><td class="num">0.96</td></tr>
+    <tr><td>Money &amp; career</td><td class="num">12</td><td class="num">0.94</td></tr>
+    <tr><td>Learning &amp; how-to</td><td class="num">10</td><td class="num">0.92</td></tr>
+    <tr><td>Design &amp; inspiration</td><td class="num">4</td><td class="num">0.98</td></tr>
+    <tr><td>Beauty &amp; self-care</td><td class="num">3</td><td class="num">0.99</td></tr>
+    <tr><td>Others (5 categories)</td><td class="num">5</td><td class="num">&mdash;</td></tr>
+  </tbody>
+</table>
+<p class="note">Note the high confidence. These are not saves the model flagged as uncertain; they are
+saves it was confident about <em>on the evidence it had</em>, which did not include the picture. The
+sunflower reel was 0.78 under the old prompt &mdash; also "confident".</p>
+
+<h4>Do Instagram reels have empty captions? No &mdash; the opposite.</h4>
+<pre>platform   saves  no caption  avg caption chars  captions 1-40 chars
+instagram     79           3                456                    8
+tiktok         9           8                 43                    0
+reddit         4           4                  0                    0
+pinterest      2           2                  0                    0</pre>
+<p>Instagram reels in your library are <em>verbose</em> &mdash; 456 characters on average, only 3 of 79
+empty. The problem with Instagram is not that the caption is missing; it is that the caption is
+<em>about the wrong thing</em>: hooks ("STOP WASTING HOURS ON WEBSITE PROMPTS"), calls to action
+("Comment SKILLS and I'll DM you"), credits ("Made with @supercool_hq") and mood hashtags
+("#darkaesthetic"). That is exactly the failure mode the picture pass was designed for.</p>
+
+<h3 id="s5f">5f. Language of the summaries</h3>
+
+<p>The prompt says (<code>classify.ts:52</code>):</p>
+<pre class="wrapped">- summary: one plain sentence, at most 140 characters, saying what the item is about, in the caption's language if it is not English.</pre>
+<p>It is doing exactly that. 158 of 160 saves are <code>en</code>; there are two non-English saves and
+both were summarised in their own language:</p>
+<table>
+  <thead><tr><th class="mono">id</th><th>lang</th><th>Source caption (start)</th><th>Summary written</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="mono">d8a57216</td><td>ja</td>
+      <td class="mono">あらゆる追いかけっこを繰り広げる！「トムとジェリー」公式Instagramです!</td>
+      <td class="mono">トムとジェリーがさまざまな追いかけっこを繰り広げる公式アニメ動画。</td>
+    </tr>
+    <tr>
+      <td class="mono">26876308</td><td>te</td>
+      <td class="mono">చైనాలో కబాడ్‌లా పడేసిన రైళ్లు 🚆😱 అసలు కారణం ఏంటి?</td>
+      <td class="mono">చైనాలో రైళ్లను కబాడీలా ఎందుకు పడేశారనే కారణాన్ని వివరించే వీడియో.</td>
+    </tr>
+  </tbody>
+</table>
+<p class="note">A third example was asked for; there are only two non-English saves in the entire
+library, so two is all the evidence that exists.</p>
+<p><strong>This is working as specified, not a bug.</strong> But it is worth a decision: if you read
+English, two of your saves are described to you in scripts you may not read, and search over those
+summaries will not match English queries. <span class="sev fine">fine</span> as code; a product call
+for you.</p>
+
+<h3 id="s5g">5g. Stuck saves</h3>
+
+<table>
+  <thead><tr><th>status</th><th>classification_status</th><th class="num">n</th><th>Reading</th></tr></thead>
+  <tbody>
+    <tr><td>ready</td><td>ready</td><td class="num">144</td><td>Healthy.</td></tr>
+    <tr><td>preview_unavailable</td><td>ready</td><td class="num">12</td><td>Sorted, but the platform never described the post. 9 of these have no picture at all.</td></tr>
+    <tr><td>no_link</td><td>ready</td><td class="num">4</td><td>Instagram post shares with no permalink. All 4 do have a picture.</td></tr>
+    <tr><td>failed</td><td>queued</td><td class="num">1</td><td><code>856e11b0</code> &mdash; permanently dead. See below.</td></tr>
+  </tbody>
+</table>
+
+<ul>
+  <li><strong>"Sorting": 0. "Uncategorized": 0. "Needs attention": 1.</strong> Nothing is stuck
+    mid-flight, no lease is expired, no row is waiting on a retry.</li>
+  <li><strong>Every single item in the database has <code>next_attempt_at = NULL</code>.</strong>
+    Not one save has a scheduled retry of any kind. That means sweeper pass 4 (the preview-retry pass,
+    <code>sweeper/index.ts:52</code>) can never pick anything up, and the 9 picture-less
+    <code>preview_unavailable</code> saves can never gain a picture.</li>
+  <li><strong><code>856e11b0</code></strong>: <code>status = failed</code>,
+    <code>enrich_attempts = 6</code>, <code>next_attempt_at = NULL</code>,
+    <code>classification_status = queued</code> for ever. Enrichment exhausted its five-rung ladder
+    (<code>enrich.ts:58</code>), and <code>claim_item_classification</code> only accepts
+    <code>status in ('ready','no_link','preview_unavailable')</code>, so it will never be sorted. It is
+    the one "Needs attention" tile. Honest behaviour, but there is no path out of it except deleting
+    the save.</li>
+  <li><strong>The seven blind, wordless saves</strong> (<code>61e757a0</code>, <code>6dd04c44</code>,
+    <code>70aa2e3b</code>, <code>a8dd250c</code>, <code>bc30059e</code>, <code>c0792116</code>,
+    <code>f1ec3f3c</code>) all have <code>enrich_attempts = 1</code>, no thumbnail, no remote picture
+    URL, and no scheduled retry. They are frozen with the guesses in §5c for ever.</li>
+</ul>
+
+<h3 id="s5h">5h. Every query I ran</h3>
+
+<pre class="wrapped">-- scale
+select count(*) items, count(distinct user_id) users, min(created_at)::date first, max(created_at)::date last
+from public.items;
+
+-- 1. category distribution, as the app labels it
+select public.item_category_label(coalesce(a.user_category,a.category), i.status, i.classification_status) label,
+       count(*) n
+from public.items i left join public.item_ai a on a.item_id=i.id
+group by 1 order by n desc;
+
+-- 1b. model category, confidence, picture
+select a.category, count(*) n, round(avg(a.confidence),2) avgconf,
+       count(*) filter (where (a.usage-&gt;'picture') is not null) w_pic
+from public.item_ai a group by 1 order by n desc;
+
+-- 2. overrides (ground truth) -- returned zero
+select count(*) filter (where a.user_category is not null) overridden,
+       count(*) filter (where a.user_category is not null and a.user_category is distinct from a.category) override_differs,
+       count(*) filter (where a.category is not null) model_sorted,
+       count(*) filter (where a.ai_error is not null) ai_error,
+       count(*) filter (where (a.usage-&gt;'picture') is not null) with_picture,
+       count(*) filter (where a.category is not null and (a.usage-&gt;'picture') is null) sorted_no_picture
+from public.item_ai a;
+
+-- 3. per-category sample, judged one by one (repeated per category)
+select left(i.id::text,8) id, i.platform p, i.kind k, left(coalesce(i.title,''),70) title,
+       left(coalesce(i.text,''),90) txt, left(a.summary,90) summ, a.confidence c,
+       (a.usage-&gt;'picture') is not null pic, a.tags
+from public.items i join public.item_ai a on a.item_id=i.id
+where a.category='Tech &amp; tools' order by i.created_at desc limit 14;
+
+-- 3b. Tech &amp; tools rows that read as money/career/learning
+select left(i.id::text,8) id, a.confidence c, left(a.summary,95) summ
+from public.items i join public.item_ai a on a.item_id=i.id
+where a.category='Tech &amp; tools'
+  and a.summary ~* '(revenue|\$[0-9]|month|income|client|freelanc|job|hire|career|business|sell|SEO|LinkedIn|channel|course|tutorial|how to|step-by-step|learn)'
+order by i.created_at desc limit 22;
+
+-- 4. confidence histogram
+select width_bucket(a.confidence,0,1,10) b, count(*) n, min(a.confidence) lo, max(a.confidence) hi
+from public.item_ai a group by 1 order by 1;
+
+-- 4b. thin input
+select coalesce(nullif(btrim(i.title),''),'')='' no_title,
+       coalesce(nullif(btrim(i.text),''),'')='' no_text,
+       count(*) n, count(*) filter (where (a.usage-&gt;'picture') is not null) w_pic,
+       round(avg(a.confidence),2) avgconf
+from public.items i join public.item_ai a on a.item_id=i.id group by 1,2 order by n desc;
+
+-- 5. picture coverage
+select count(*) filter (where i.thumbnail_path is not null) has_thumb,
+       count(*) filter (where i.thumbnail_path is not null and (a.usage-&gt;'picture') is null) thumb_but_sorted_blind,
+       count(*) filter (where i.thumbnail_path is null) no_thumb,
+       count(*) filter (where i.thumbnail_path is null and i.thumbnail_url_remote is not null) remote_only
+from public.items i left join public.item_ai a on a.item_id=i.id;
+
+-- 5b. prompt version and model
+select a.prompt_version, a.model, count(*) n, min(a.confidence) mn, round(avg(a.confidence),3) avg, max(a.confidence) mx
+from public.item_ai a group by 1,2 order by n desc;
+
+-- 5c. captions per platform
+select i.platform, count(*) n,
+       count(*) filter (where coalesce(btrim(i.text),'')='') no_text,
+       count(*) filter (where coalesce(btrim(i.title),'')='') no_title,
+       max(length(coalesce(i.text,''))) max_text,
+       count(*) filter (where length(coalesce(i.text,''))&gt;1500) over_clip
+from public.items i group by 1 order by n desc;
+
+-- 6. language
+select a.language, count(*) n from public.item_ai a group by 1 order by n desc;
+select left(i.id::text,8) id, a.language lang, left(coalesce(i.text,i.title,''),90) src,
+       left(a.summary,120) summ, a.category cat
+from public.items i join public.item_ai a on a.item_id=i.id
+where a.language not in ('en','und') order by i.created_at desc limit 8;
+
+-- 7. stuck
+select i.status, i.classification_status cs, count(*) n from public.items i group by 1,2 order by n desc;
+select i.status, count(*) n,
+       count(*) filter (where i.next_attempt_at is not null) has_next,
+       count(*) filter (where i.next_attempt_at &lt;= now()) overdue,
+       count(*) filter (where i.thumbnail_path is null and i.thumbnail_url_remote is null) no_pic_at_all
+from public.items i group by 1 order by n desc;
+
+-- cost
+select count(*) n, round(sum((a.usage-&gt;&gt;'cost_usd')::numeric),4) total_usd,
+       round(avg((a.usage-&gt;&gt;'cost_usd')::numeric),6) avg_usd,
+       round(avg((a.usage-&gt;&gt;'input_tokens')::numeric),0) avg_in,
+       round(avg((a.usage-&gt;&gt;'output_tokens')::numeric),0) avg_out
+from public.item_ai a where a.usage-&gt;&gt;'cost_usd' is not null;</pre>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="s6">6. Bugs and weaknesses</h2>
+
+<div class="finding">
+<h3>B1 &mdash; The picture pass never reached the back catalogue <span class="sev bug">bug</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>117 saves that have a picture stored on disk have never been shown to the picture-aware sorter,
+    and are still carrying the answer the old text-only prompt gave them. Only 28 of 161 saves have
+    ever been sorted with a picture.</dd>
+  <dt>Where</dt>
+  <dd><code>supabase/migrations/20260916090000_classify_with_the_picture.sql:46&ndash;65</code> &mdash;
+    the requeue trigger fires only on the transition
+    <code>old.thumbnail_path is null and new.thumbnail_path is not null</code>. The migration contains
+    no backfill statement.<br>
+    <code>internal/superpowers/specs/2026-09-15-classify-with-the-picture-design.md</code> §D5
+    explicitly deferred the back catalogue: "One-off, on a separate Yes: re-queue the 27 pictured
+    saves below 0.85 confidence". That Yes was never given.</dd>
+  <dt>Evidence</dt>
+  <dd>145 saves have a thumbnail; 117 of them have <code>item_ai.usage-&gt;'picture'</code> null.
+    The prompt-version split is the same 132 / 28. Proof the fix works when applied:
+    <code>261445cf</code> moved from Design &amp; inspiration to Travel &amp; places on re-sort.</dd>
+  <dt>Root cause</dt>
+  <dd>The requeue is keyed on a <em>state transition</em> rather than on the <em>condition being
+    wrong</em>. A save whose picture was already there before the migration can never make that
+    transition again.</dd>
+  <dt>Class of failure</dt>
+  <dd>Any improvement to the sorter &mdash; a new prompt, a new model, a new input field &mdash;
+    applies only to saves created afterwards. Nothing in the system re-sorts on a version change, so
+    every future fix will leave the existing library behind in exactly this way.</dd>
+  <dt>Solid fix</dt>
+  <dd>Make re-sorting condition-driven. Extend <code>items_without_ai()</code> (or add a companion
+    <code>items_needing_resort(lim)</code>) so the sweeper also picks up settled saves where
+    <em>either</em> <code>item_ai.prompt_version &lt;&gt; $current</code> <em>or</em>
+    (<code>items.thumbnail_path is not null and item_ai.usage-&gt;'picture' is null</code>), ordered
+    oldest first and rate-limited per sweep (say 50). The sweeper passes the current
+    <code>PROMPT_VERSION</code> in. Keep the existing trigger &mdash; it gives immediate re-sorts;
+    this is the safety net beneath it. One consequence to accept deliberately: every prompt bump then
+    re-sorts the library at ~$0.0055 a save. Do <em>not</em> patch this by running a one-off UPDATE to
+    requeue 117 rows &mdash; that fixes today and leaves the class open.</dd>
+  <dt>Size</dt>
+  <dd>Medium (one migration + a few lines in <code>sweeper/index.ts</code>).</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B2 &mdash; The taxonomy has no definitions and no tie-breakers <span class="sev bug">bug</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>Near-identical saves land in different categories depending on wording.</dd>
+  <dt>Where</dt>
+  <dd><code>_shared/classify.ts:50</code> &mdash; the category line is a bare JSON array with one
+    sentence after it. Contrast <code>classify.ts:55</code>, where every one of the seven
+    <code>actionability</code> values is glossed.</dd>
+  <dt>Evidence</dt>
+  <dd><code>d84e93af</code> vs <code>2945d8b2</code> (same tool, Tech vs Learning);
+    <code>cefdd524</code> vs <code>684e63a5</code>/<code>ae6b7924</code>/<code>46a05341</code>
+    (automate a YouTube channel, Tech vs Learning &times;3);
+    <code>4d9f4aa2</code> vs <code>9dddbbf3</code>/<code>bfdecc6b</code>/<code>7896fc7f</code>
+    (designer resource lists, Tech vs Design &times;3);
+    <code>a0673fd3</code> vs <code>d9701f9f</code> (AI money videos, Tech vs Money);
+    <code>3bbee036</code> vs <code>a648f88c</code> (self-improvement, Fitness vs Learning).</dd>
+  <dt>Root cause</dt>
+  <dd>The model is given fifteen labels and zero semantics, so every tie is broken by surface wording.
+    The same model, given a defined vocabulary and worked examples in the icon pass
+    (<code>_shared/entity-icons.ts:26&ndash;32</code>), behaves consistently.</dd>
+  <dt>Class of failure</dt>
+  <dd>Unstable categorisation across the whole library, for ever, and non-reproducible: the same save
+    can move between two sorts. It also makes <em>any</em> future evaluation meaningless, because
+    there is no written definition to evaluate against.</dd>
+  <dt>Solid fix</dt>
+  <dd>Write the taxonomy down, in the prompt and in one place only. (a) One line of definition per
+    category, generated from a single constant next to <code>CATEGORIES</code> in
+    <code>packages/contracts/src/index.ts</code> so app, prompt and docs cannot drift. (b) Four to six
+    explicit tie-break rules for the collisions found above &mdash; e.g. "a list or roundup of tools
+    &rarr; Tech &amp; tools, even when the tools are for designers; a step-by-step lesson or course
+    &rarr; Learning &amp; how-to; making money from a channel, app or business &rarr; Money &amp;
+    career, even when the method is an AI tool; visual work to look at for inspiration &rarr; Design
+    &amp; inspiration". (c) Bump <code>PROMPT_VERSION</code>, which &mdash; once B1 is in &mdash;
+    drains the whole library onto the new rules by itself. Fixing the prompt <em>without</em> B1 would
+    leave 132 saves on the old rules, so these two ship together.</dd>
+  <dt>Size</dt>
+  <dd>Medium.</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B3 &mdash; Confidence is written and never read; low-information saves get a confident-looking home <span class="sev bug">bug</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>Seven saves scored below 0.5. Four of them were filed under Entertainment with summaries that
+    literally say the model knew nothing. Nothing anywhere catches this.</dd>
+  <dt>Where</dt>
+  <dd><code>_shared/classify.ts:82,90</code> stores it; a grep across
+    <code>supabase/functions/</code>, <code>apps/mobile/</code> and <code>packages/</code> finds no
+    reader. Not in <code>item_category_label</code>, not in <code>library_query_v3</code>, not in
+    <code>sorting.ts</code>, not in any UI.</dd>
+  <dt>Evidence</dt>
+  <dd><code>61e757a0</code> 0.25, <code>a8dd250c</code> 0.20, <code>6dd04c44</code> 0.20,
+    <code>f1ec3f3c</code> 0.30, <code>d82549e3</code> 0.62 &mdash; all "Entertainment".
+    Meanwhile <code>70aa2e3b</code> 0.10 and <code>c0792116</code> 0.15 correctly chose "Other", so the
+    model <em>can</em> do the right thing; the prompt just does not require it.</dd>
+  <dt>Root cause</dt>
+  <dd>Two halves. The prompt's "Other" escape hatch is written only for the credits-and-mood caption
+    case (<code>classify.ts:58</code>) and never for "I was given nothing at all". And the number the
+    model produces to flag its own uncertainty is discarded by the system that asked for it.</dd>
+  <dt>Class of failure</dt>
+  <dd>Every low-information save silently acquires a plausible home, and neither you nor the code can
+    tell a guess from an answer. Worse than an empty category, because nothing invites a second
+    look.</dd>
+  <dt>Solid fix</dt>
+  <dd>Close both halves. (a) Prompt: an explicit rule &mdash; "When the title, caption and note are all
+    empty and no picture is attached, you have nothing to judge from: answer <code>Other</code> with
+    confidence at most 0.3. Never choose a category from the platform or the kind alone."
+    (b) Enforce it in <code>validateOutput</code> (<code>classify.ts:71</code>): below a named floor
+    (<code>CONFIDENCE_FLOOR = 0.4</code>), rewrite the category to <code>"Other"</code>, so a model
+    that ignores the rule cannot get past the validator. (c) Make it visible: add
+    <code>'low_confidence'</code> to the <code>flags</code> group in <code>library_query_v3</code> and
+    <code>library_facets_v2</code> so these saves are findable and correctable, rather than hidden
+    inside Entertainment. All three together; (a) alone is a patch.</dd>
+  <dt>Size</dt>
+  <dd>Small (a) + (b); small-medium with (c).</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B4 &mdash; YouTube saves are sorted from a title alone <span class="sev weak">weakness</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>All 59 YouTube saves &mdash; 37% of the library &mdash; have an empty <code>text</code> column.
+    The sorter sees a headline, an author and a thumbnail.</dd>
+  <dt>Where</dt>
+  <dd><code>youtube-poll/poll.ts:63&ndash;65</code> stores the title only, by design.
+    <code>_shared/enrich.ts:456&ndash;465</code> reads YouTube's oEmbed, which returns no description;
+    only Instagram maps the oEmbed title into <code>text</code> (<code>enrich.ts:459</code>). Nothing
+    ever asks for the description.</dd>
+  <dt>Evidence</dt>
+  <dd>59 of 59 with <code>no_text</code>. Three of the seven sub-0.5 confidence scores in the library
+    are YouTube saves (<code>a8dd250c</code> 0.20, <code>6dd04c44</code> 0.20, <code>f1ec3f3c</code>
+    0.30). YouTube saves are also the ones scattered between Entertainment and Learning &amp;
+    how-to.</dd>
+  <dt>Root cause</dt>
+  <dd>oEmbed was chosen as the metadata source for every platform uniformly, and it happens not to
+    carry a description for YouTube.</dd>
+  <dt>Class of failure</dt>
+  <dd>Whole platforms silently under-feed the sorter, and nothing measures or reports it. Reddit
+    (4/4 no text) and Pinterest (2/2 nothing) have the same shape of problem.</dd>
+  <dt>Solid fix</dt>
+  <dd>The pipeline already calls the YouTube Data API for every video, to learn its aspect ratio
+    (<code>enrich.ts:534&ndash;544</code>, <code>part=player</code>). Change that one request to
+    <code>part=player,snippet</code> and store <code>snippet.description</code> (first ~1500 chars) as
+    the item's text and <code>snippet.tags</code> into <code>media_meta</code>. No new request, no new
+    key, no new cost. Then close the class: add a cheap assertion to the pipeline log when a settled
+    save has neither title nor text nor picture, so a platform that stops describing itself shows up
+    instead of quietly degrading. Reddit and Pinterest get their own follow-ups, sized separately.</dd>
+  <dt>Size</dt>
+  <dd>Small for YouTube; small-medium including the log assertion.</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B5 &mdash; A successfully sorted save can never be sorted again <span class="sev bug">bug</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>Once <code>classification_status = 'ready'</code>, there is no way to ask for a re-sort.
+    "Retry sorting" is hidden, and the database claim would refuse it anyway.</dd>
+  <dt>Where</dt>
+  <dd><code>20260916090000_classify_with_the_picture.sql:26&ndash;29</code> &mdash; the claim's status
+    predicate has branches for <code>queued</code>, <code>retry_wait</code>, expired
+    <code>processing</code> and (with <code>p_retry</code>) <code>failed</code>. There is no branch for
+    <code>ready</code>, with or without <code>p_retry</code>.<br>
+    <code>apps/mobile/lib/sorting.ts:6&ndash;8</code> hides the button accordingly, so the UI is at
+    least honest &mdash; there is no false promise, just no capability.</dd>
+  <dt>Evidence</dt>
+  <dd>160 of 161 saves are <code>classification_status = 'ready'</code>. For every one of them, the
+    only recourse for a wrong answer is a chip that sets <code>user_category</code> &mdash; leaving the
+    model's own bad summary, tags and entities untouched and still shown on the card.</dd>
+  <dt>Root cause</dt>
+  <dd>"Retry" was designed as a failure-recovery mechanism, not as a correction mechanism, so success
+    was treated as terminal.</dd>
+  <dt>Class of failure</dt>
+  <dd>The product has no manual escape hatch from a bad answer, which is also why B1 was invisible for
+    a week: there was no way to spot-check the fix on an existing save.</dd>
+  <dt>Solid fix</dt>
+  <dd>Add <code>or (p_retry and i.classification_status = 'ready')</code> to the claim, with
+    <code>classification_attempts</code> reset to 1 on that branch (same treatment as
+    <code>failed</code>), and widen <code>canRetrySorting</code> to any settled save, labelled "Sort
+    this again". Because <code>p_retry</code> only ever arrives from <code>reprocess-item</code>,
+    which checks ownership first (<code>reprocess-item/index.ts:24&ndash;26</code>), this opens no new
+    surface. Pair it with a rate limit if you are worried about cost; at $0.0055 a save the risk is
+    small.</dd>
+  <dt>Size</dt>
+  <dd>Small.</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B6 &mdash; The picture requeue is one-shot and can be spent on a failed read <span class="sev bug">bug</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>If the re-sort triggered by a newly-arrived picture happens to run at a moment when the picture
+    cannot be read, the save is re-sorted from words, its <code>usage</code> is rewritten without a
+    <code>picture</code> key &mdash; and because <code>thumbnail_path</code> is already non-null, the
+    trigger can never fire again. The save is permanently stuck sorted-blind despite having a
+    picture.</dd>
+  <dt>Where</dt>
+  <dd><code>_shared/pipeline.ts:82&ndash;90</code> <code>pictureForModel</code> returns null (and only
+    logs) for a HEIC thumbnail, a file over 3.5&nbsp;MB, or any storage error.
+    <code>_shared/classification-worker.ts:21&ndash;28</code> swallows the failure by design.
+    <code>20260909113440_classification_retries.sql:83</code> and <code>:88</code> then
+    <em>replace</em> <code>usage</code> wholesale on both the success and the failure branch, so the
+    record that a picture was ever used is collateral damage of any later re-sort.</dd>
+  <dt>Evidence</dt>
+  <dd>No confirmed instance in your 161 saves &mdash; I am reporting this from the code, not from a
+    row. The conditions are real (<code>thumbs</code> allows HEIC uploads;
+    <code>MODEL_PICTURE_TYPES</code> excludes it) but rare at this library size.</dd>
+  <dt>Root cause</dt>
+  <dd>The same root cause as B1: a transition-keyed requeue rather than a condition-keyed one. B6 is
+    the second way that root cause manifests.</dd>
+  <dt>Class of failure</dt>
+  <dd>Any best-effort step that is allowed to silently no-op, while the thing that would retry it has
+    already been consumed.</dd>
+  <dt>Solid fix</dt>
+  <dd>B1's condition-driven re-sort closes this as a side effect &mdash; the save still satisfies
+    "has a thumbnail, was sorted without a picture", so the sweeper picks it up again. Additionally,
+    make <code>finish_item_classification</code> <em>merge</em> <code>usage</code> rather than replace
+    it (<code>usage = coalesce(item_ai.usage,'{}') || excluded.usage</code>), so a failed re-sort can
+    never erase what an earlier successful one recorded. Both changes, not one.</dd>
+  <dt>Size</dt>
+  <dd>Small, on top of B1.</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B7 &mdash; Nine saves are frozen with no picture and no scheduled retry <span class="sev bug">bug</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>Every row in the database has <code>next_attempt_at = NULL</code>. Nine
+    <code>preview_unavailable</code> saves have neither a stored picture nor a remote picture URL, and
+    no retry will ever run for them. Seven of those were sorted from literally nothing.</dd>
+  <dt>Where</dt>
+  <dd><code>_shared/enrich.ts:386&ndash;388</code> &mdash; <code>retryPreviewAfterMs</code> is set only
+    when <code>pageRead?.denied</code> is true, which requires that the fallback page read ran
+    <em>and</em> the page was withheld. A page that answers with parseable-but-useless tags yields
+    <code>denied = false</code> and therefore no retry at all.
+    <code>_shared/pipeline.ts:104&ndash;107</code> then writes NULL, and sweeper pass 4
+    (<code>sweeper/index.ts:52</code>) has nothing to select.<br>
+    Separately, <code>856e11b0</code> is stuck because enrichment exhausted the five-rung ladder while
+    <code>claim_item_classification</code> refuses <code>status = 'failed'</code>.</dd>
+  <dt>Evidence</dt>
+  <dd><code>has_next = 0</code> for all four status groups. The seven wordless saves all have
+    <code>enrich_attempts = 1</code>, so enrichment ran exactly once and never scheduled a second
+    look.</dd>
+  <dt>Honest uncertainty</dt>
+  <dd>I cannot tell from the data alone <em>which</em> branch produced <code>denied = false</code> for
+    these nine; the enrichment logs would settle it. What is certain is that none of them has a retry
+    scheduled and none can gain a picture by any existing path.</dd>
+  <dt>Class of failure</dt>
+  <dd>A save can end in a terminal state that nothing monitors and nothing can leave &mdash; silently,
+    while looking normal in the library.</dd>
+  <dt>Solid fix</dt>
+  <dd>Decouple the preview retry from <code>denied</code>: any settled save with no picture at all and
+    <code>enrich_attempts &lt; RETRY_LADDER_MS.length</code> gets the next rung, regardless of why the
+    page taught us nothing. Then give the ladder an honest terminus: when it is exhausted, record the
+    reason in <code>media_meta</code> and let the save appear in the <code>needs_attention</code>
+    facet, so a dead save is visible rather than frozen. Same for <code>856e11b0</code>: an item whose
+    enrichment is exhausted should be sortable from whatever it does have, or marked as
+    unsortable &mdash; not left <code>queued</code> for ever.</dd>
+  <dt>Size</dt>
+  <dd>Medium.</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B8 &mdash; Signed-in clients can write every column of <code>item_ai</code> <span class="sev weak">weakness</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd><code>authenticated</code> (and <code>anon</code>) hold INSERT and UPDATE on <em>all</em> columns
+    of <code>item_ai</code>, including <code>category</code>, <code>confidence</code>,
+    <code>model</code>, <code>prompt_version</code>, <code>usage</code> and <code>ai_error</code>.</dd>
+  <dt>Where</dt>
+  <dd>Verified against the live database via <code>information_schema.column_privileges</code>.
+    Compare <code>20260909113440_classification_retries.sql:117&ndash;118</code>, where the same
+    concern on <code>items</code> was deliberately closed with a narrow column grant. That care was
+    never applied to <code>item_ai</code>.<br>
+    <code>apps/mobile/lib/item.ts:111&ndash;117</code> upserts through this grant; today the payload
+    carries only <code>user_category</code>, so nothing is being clobbered.</dd>
+  <dt>Root cause</dt>
+  <dd>Row-level security correctly confines a client to its own rows, but nothing confines it to its
+    own <em>columns</em>. The invariant the design depends on &mdash; "a correction is stored beside
+    the model's answer, never over it" (<code>item.ts:110</code>) &mdash; is enforced only by the
+    current client's choice of payload.</dd>
+  <dt>Class of failure</dt>
+  <dd>Any invariant held only by client code is one careless payload from breaking, and this one would
+    destroy exactly the data you need to measure how often sorting is wrong.</dd>
+  <dt>Solid fix</dt>
+  <dd><code>revoke insert, update on public.item_ai from authenticated, anon;</code> then
+    <code>grant insert (item_id, user_id, user_category), update (user_category) on public.item_ai to
+    authenticated;</code> &mdash; mirroring the <code>items</code> grant exactly. Check the RLS
+    policies still permit the upsert path afterwards, and add a row to
+    <code>supabase/functions/tests/rls.test.ts</code> asserting that a client cannot write
+    <code>category</code>.</dd>
+  <dt>Size</dt>
+  <dd>Small.</dd>
+</dl>
+</div>
+
+<div class="finding">
+<h3>B9 &mdash; The icon pass overwrites <code>entities</code> with no concurrency guard <span class="sev weak">weakness</span></h3>
+<dl>
+  <dt>What happens</dt>
+  <dd>The sweeper's icon pass reads a batch of rows, makes a model call, then writes
+    <code>entities</code> straight back. A re-sort landing in between silently loses the fresh
+    entities.</dd>
+  <dt>Where</dt>
+  <dd><code>sweeper/index.ts:84&ndash;87</code> &mdash;
+    <code>db.from("item_ai").update({ entities }).eq("item_id", itemId)</code>, with no revision or
+    timestamp check. Every other write in the classification path goes through a leased RPC; this one
+    does not.</dd>
+  <dt>Evidence</dt>
+  <dd>No observed corruption &mdash; the window is a few seconds and your library is small. Reported
+    from the code.</dd>
+  <dt>Class of failure</dt>
+  <dd>Read-modify-write on a row another worker owns.</dd>
+  <dt>Solid fix</dt>
+  <dd>Guard the write on the row not having moved &mdash; carry <code>updated_at</code> through
+    <code>item_ai_missing_icons()</code> and add <code>.eq("updated_at", seen)</code>, or fold the icon
+    write into a small RPC that checks it. Not urgent; it becomes urgent the moment B1 makes re-sorts
+    routine.</dd>
+  <dt>Size</dt>
+  <dd>Small.</dd>
+</dl>
+</div>
+
+<h3>Things I checked that are fine</h3>
+<ul>
+  <li><span class="sev fine">fine</span> <strong>JSON strictness.</strong> Both clients send the full
+    category enum in a strict schema (<code>openai.ts:12&ndash;25,64</code>;
+    <code>anthropic.ts:8&ndash;21,33</code>), and <code>validateOutput</code> re-checks it server-side
+    (<code>classify.ts:74</code>) so a non-conforming answer becomes a retry rather than a bad row.
+    Zero <code>ai_error</code> rows in 161 saves. Note that <code>classify()</code> passes
+    <code>undefined</code> for the shape (<code>classify.ts:95</code>), which is correct &mdash; both
+    clients then fall back to their own <code>OUTPUT_SCHEMA</code>.</li>
+  <li><span class="sev fine">fine</span> <strong>Leases and idempotency.</strong>
+    <code>claim_item_classification</code> / <code>finish_item_classification</code> are a proper
+    two-minute lease with a revision guard and a <code>for update</code> lock
+    (<code>20260909113440:38&ndash;98</code>). Nothing is stuck in <code>processing</code>, no lease is
+    expired.</li>
+  <li><span class="sev fine">fine</span> <strong>Retry ladder arithmetic.</strong>
+    <code>(array[60,300,1800,7200])[attempts]</code> is only reached for attempts 1&ndash;4, because
+    the <code>attempts &lt; 5</code> guard is evaluated first. No out-of-range index is possible.</li>
+  <li><span class="sev fine">fine</span> <strong>Your correction genuinely survives a re-sort.</strong>
+    The conflict list in the finish RPC excludes <code>user_category</code>
+    (<code>20260909113440:81&ndash;84</code>), the worker re-reads the row afterwards so a concurrent
+    correction wins (<code>classification-worker.ts:49&ndash;50</code>), and deleting a custom category
+    returns its saves to the model's original answer rather than orphaning them
+    (<code>20260912210000_user_categories.sql:55&ndash;63</code>). This is well built.</li>
+  <li><span class="sev fine">fine</span> <strong>Model tier choice.</strong> Everyday saves use
+    <code>gpt-5.6-sol</code>; an imported back catalogue uses the half-price
+    <code>gpt-5.6-terra</code> (<code>classifiers.ts:12</code>, selected at
+    <code>pipeline.ts:241</code>); the icon pass uses the cheap tier
+    (<code>sweeper/index.ts:83</code>). Sensible. Reasoning effort <code>low</code> is a defensible
+    default for a one-shot classification; if B2's definitions do not fix the boundary cases, raising
+    it is the next lever to try, not a bigger model.</li>
+  <li><span class="sev fine">fine</span> <strong>Cost.</strong> $0.89 total for 161 saves,
+    $0.0055 each, 698 input / 138 output tokens average. Pictures average 39&nbsp;KB. Re-sorting the
+    whole library costs under a dollar.</li>
+  <li><span class="sev fine">fine</span> <strong>Privacy of the picture.</strong>
+    <code>pictureForModel</code> downloads with the service role and sends bytes inline
+    (<code>pipeline.ts:82&ndash;90</code>); no signed URL is minted and the bucket stays private, as
+    the spec promised.</li>
+  <li><span class="sev weak">weakness</span> <strong>What the tests promise.</strong>
+    <code>tests/classify.test.ts</code> and <code>tests/classification-worker.test.ts</code> are good
+    unit tests &mdash; they pin validation, retry classification, the picture reaching the model, and
+    the <code>usage.picture</code> record. But nothing tests the <code>reset_item_classification</code>
+    trigger, nothing tests that saves which <em>have</em> a picture actually get one, and there is no
+    golden set or eval measuring category quality at all. That absence is why B1 and B2 could both be
+    true for a week without a red test.</li>
+  <li><span class="sev fine">fine</span> <strong>Summaries in the caption's language.</strong> Working
+    as written (<code>classify.ts:52</code>). Two saves affected. A product decision, not a
+    defect.</li>
+  <li><span class="sev weak">weakness</span> <strong><code>captured_via: "import"</code> is not in the
+    type.</strong> <code>import-saves/index.ts:138</code> writes it and
+    <code>pipeline.ts:241</code> reads it, but <code>CapturedVia</code>
+    (<code>contracts.ts:8</code>) is <code>SourceKind | "share"</code> and does not include it. It
+    works because the comparison is a plain string. Cosmetic today; it will bite the next person who
+    trusts the type. One-line fix, no behaviour change.</li>
+</ul>
+
+<hr>
+
+<!-- ============================================================ -->
+<h2 id="s7">7. What to fix first</h2>
+
+<div class="plain">
+  <span class="tag">In plain English</span>
+  <p>Do the first two as one change, not two. Writing better category definitions without also fixing
+  the re-sort machinery would improve only saves made after the change &mdash; your existing 132 would
+  keep their old answers, and you would conclude the fix did nothing.</p>
+</div>
+
+<ol>
+  <li><strong>B1 + B2 together: condition-driven re-sorting, and a prompt that defines its own
+    categories.</strong> Add the definitions and tie-breakers, bump <code>PROMPT_VERSION</code>, and
+    extend the sweeper to pick up any settled save whose <code>prompt_version</code> is stale or whose
+    picture the sorter never saw. The whole library converges in a few sweeps for well under a dollar,
+    and every future prompt change does the same by itself. <em>Medium.</em> This is the change that
+    answers your original complaint.</li>
+  <li><strong>B3: a confidence floor, enforced in the validator and surfaced in the library.</strong>
+    Removes five fake Entertainment saves immediately and stops the class recurring. <em>Small.</em></li>
+  <li><strong>B4: give YouTube its description.</strong> One extra field on a request the pipeline
+    already makes, and it improves the input for 37% of your library. <em>Small.</em></li>
+  <li><strong>B5: let a settled save be sorted again.</strong> Cheap, and it gives you a way to
+    spot-check every future sorting change on a real save instead of waiting a week.
+    <em>Small.</em></li>
+  <li><strong>B8: narrow the <code>item_ai</code> grants.</strong> Protects the correction data you are
+    about to start collecting. <em>Small.</em></li>
+  <li><strong>B7: unfreeze the nine picture-less saves and the one dead one.</strong>
+    <em>Medium.</em></li>
+  <li><strong>B6 and B9.</strong> B6 is largely closed by B1; the <code>usage</code> merge is the
+    remaining piece. B9 becomes worth doing once re-sorts are routine. <em>Small each.</em></li>
+</ol>
+
+<h4>One thing that is not a code fix</h4>
+<p>Start correcting categories in the app when you see a wrong one. Right now there are zero
+corrections in 161 saves, which means neither you nor I have any measured ground truth &mdash; every
+judgement in §5c is mine. Twenty corrections would turn the next audit from "here is what I think"
+into "here is what you told us", and it is the only signal that can tell you whether the prompt fix
+actually worked.</p>
+
+<hr>
+<p class="note">Audit performed read-only on 15 September 2026. No repository file was modified except
+this report. No database write was issued; all queries were <code>SELECT</code>. No deploys, no
+migrations. Where I was uncertain &mdash; B6 and B9 are reported from code with no confirmed instance
+in the data, and the exact enrichment branch behind B7 cannot be determined without the logs &mdash;
+that is stated inline rather than smoothed over.</p>
+
+</div>
+</body>
+</html>
