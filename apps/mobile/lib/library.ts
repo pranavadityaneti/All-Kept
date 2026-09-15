@@ -22,6 +22,8 @@ export interface LibraryItem {
   summary: string | null;
   /** When the person asked to be reminded of this save, if they did; past or future. */
   remindAt?: string | null;
+  /** When the person marked the save done, if they did. */
+  doneAt?: string | null;
 }
 
 // The groups themselves live in filter-groups.ts, which stays free of runtime imports.
@@ -50,12 +52,13 @@ export const toItem = (r: Row): LibraryItem => ({
   tags: Array.isArray(r["tags"]) ? (r["tags"] as string[]) : [],
   summary: (r["summary"] as string | null) ?? null,
   remindAt: (r["remind_at"] as string | null) ?? null,
+  doneAt: (r["done_at"] as string | null) ?? null,
 });
 
 interface LibraryCursor { savedAt: string; id: string }
 
 async function fetchPage(filters: Filters, before: LibraryCursor | null): Promise<{ items: LibraryItem[]; nextCursor: LibraryCursor | null }> {
-  const { data, error } = await supabase.rpc("library_query_v5", {
+  const { data, error } = await supabase.rpc("library_query_v6", {
     platforms: filters.platforms.length ? filters.platforms : null,
     categories: filters.categories.length ? filters.categories : null,
     shapes: filters.shapes.length ? filters.shapes : null,
@@ -73,7 +76,7 @@ async function fetchPage(filters: Filters, before: LibraryCursor | null): Promis
 
 export function useLibrary(filters: Filters, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: ["library", "v5", filters],
+    queryKey: ["library", "v6", filters],
     enabled,
     initialPageParam: null as LibraryCursor | null,
     queryFn: ({ pageParam }) => fetchPage(filters, pageParam),
@@ -107,7 +110,20 @@ export function useFiredReminders(enabled: boolean) {
     queryKey: ["library", "reminded"],
     enabled,
     queryFn: async (): Promise<LibraryItem[]> => {
-      const { data, error } = await supabase.rpc("library_query_v5", { flags: ["reminded"], lim: 50 });
+      const { data, error } = await supabase.rpc("library_query_v6", { flags: ["reminded"], lim: 50 });
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as Row[]).map(toItem);
+    },
+  });
+}
+
+/** The saves marked done, newest first, for the Notifications screen. */
+export function useDoneSaves(enabled: boolean) {
+  return useQuery({
+    queryKey: ["library", "done"],
+    enabled,
+    queryFn: async (): Promise<LibraryItem[]> => {
+      const { data, error } = await supabase.rpc("library_query_v6", { flags: ["done"], lim: 50 });
       if (error) throw new Error(error.message);
       return ((data ?? []) as Row[]).map(toItem);
     },

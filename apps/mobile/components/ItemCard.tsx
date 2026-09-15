@@ -1,3 +1,4 @@
+import { Icon } from "./Icon";
 import { PlatformLogo } from "./PlatformLogo";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -17,7 +18,7 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${cardTitle(item)}, ${category}, ${sourceLabel(item)}`}
+      accessibilityLabel={`${cardTitle(item)}, ${category}, ${sourceLabel(item)}${item.doneAt ? ", done" : ""}`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, { backgroundColor: p.surface, borderColor: p.border, opacity: pressed ? 0.85 : 1 }]}
     >
@@ -36,7 +37,10 @@ export function ItemCard({ item, thumbnail, onPress }: { item: LibraryItem; thum
       </View>
       <View style={styles.body}>
         <Text numberOfLines={2} style={[type.body, { color: p.ink }]}>{cardTitle(item)}</Text>
-        <Text numberOfLines={1} style={[type.label, { color: item.category ? p.accent : p.inkMuted }]}>{category}</Text>
+        <View style={styles.footer}>
+          <Text numberOfLines={1} style={[type.label, styles.category, { color: item.category ? p.accent : p.inkMuted }]}>{category}</Text>
+          {item.doneAt && <Icon name="doneSet" size={16} color={p.accent} />}
+        </View>
       </View>
     </Pressable>
   );
@@ -51,4 +55,6 @@ const styles = StyleSheet.create({
   platformBadge: { position: "absolute", right: space.sm, bottom: space.sm, padding: 7, borderRadius: radius.sm },
   badge: { position: "absolute", left: space.sm, top: space.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.pill, paddingHorizontal: space.sm, paddingVertical: 2 },
   body: { padding: space.md, gap: space.xs },
+  footer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.xs },
+  category: { flexShrink: 1 },
 });

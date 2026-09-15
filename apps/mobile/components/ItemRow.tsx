@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Icon } from "./Icon";
 import { PlatformLogo } from "./PlatformLogo";
 import { cardTitle } from "../lib/card-text";
 import type { LibraryItem } from "../lib/library";
@@ -20,7 +21,7 @@ export function ItemRow({ item, thumbnail, onPress }: { item: LibraryItem; thumb
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${cardTitle(item)}, ${rowMeta(item)}`}
+      accessibilityLabel={`${cardTitle(item)}, ${rowMeta(item)}${item.doneAt ? ", done" : ""}`}
       onPress={onPress}
       style={({ pressed }) => [styles.row, { backgroundColor: p.surface, borderColor: p.border, opacity: pressed ? 0.85 : 1 }]}
     >
@@ -38,6 +39,7 @@ export function ItemRow({ item, thumbnail, onPress }: { item: LibraryItem; thumb
           {note ? ` · ${note}` : ""}
         </Text>
       </View>
+      {item.doneAt && <Icon name="doneSet" size={18} color={p.accent} />}
     </Pressable>
   );
 }

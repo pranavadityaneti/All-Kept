@@ -9,12 +9,14 @@ import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
+import { DoneSheet } from "./DoneSheet";
 import { RemindSheet } from "./RemindSheet";
 import { WaysOut, copyToClipboard, useCopied } from "./WaysOut";
 import { captionBody } from "../lib/caption";
+import { doneLine } from "../lib/done";
 import { copyText } from "../lib/export";
 import { embedFit, embedUrl, fitBox, initialAspect, initialHeight } from "../lib/embed";
-import { DuplicateLinkError, openableUrl, useAttachLink, useClearReminder, useDeleteItem, useItem, useSetCategory, useSetNote, useSetReminder, useRetrySorting } from "../lib/item";
+import { DuplicateLinkError, openableUrl, useAttachLink, useClearReminder, useDeleteItem, useItem, useSetCategory, useSetDone, useSetNote, useSetReminder, useRetrySorting } from "../lib/item";
 import { categoryDisplayName } from "../lib/category-names";
 import { ownCategories, useCreateCategory, useFacets } from "../lib/library";
 import { track, useTrackOnce } from "../lib/metrics";
@@ -84,6 +86,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   // sheet, with the picker folded or open to match what was tapped.
   const [sheet, setSheet] = useState<false | "read" | "change">(false);
   const [reminding, setReminding] = useState(false);
+  const [marking, setMarking] = useState(false);
+  const setDone = useSetDone(id);
   const [copied, markCopied] = useCopied();
   const [picking, setPicking] = useState(false);
   const [captionOpen, setCaptionOpen] = useState(false);
@@ -153,7 +157,12 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         <IconButton name="chevron" label="Back" onPress={onBack} style={styles.back} />
         <View style={styles.headerActions}>
           {embed && <IconButton name="open" label="Full screen" onPress={() => setFullScreen(true)} />}
-          {/* The bell fills once a reminder is set, so the page says so without opening anything. */}
+          {/* The tick fills once the save is done; the bell once a reminder is set: the page says so without opening anything. */}
+          <IconButton
+            name={detail.doneAt ? "doneSet" : "done"}
+            label={detail.doneAt ? "Done. Change that" : "Mark done"}
+            onPress={() => setMarking(true)}
+          />
           <IconButton
             name={detail.remindAt && Date.parse(detail.remindAt) > Date.now() ? "alarmSet" : "alarm"}
             label={detail.remindAt && Date.parse(detail.remindAt) > Date.now() ? "Reminder set. Change it" : "Remind me"}
@@ -266,6 +275,12 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
               <Text style={[type.label, styles.meta, { color: p.inkMuted }]} numberOfLines={1}>
                 {detail.authorName ?? detail.siteName ?? platformLabel(detail.platform)} · {savedOn(detail.lastSavedAt)}
               </Text>
+              {doneLine(detail) && (
+                <View style={styles.doneRow}>
+                  <Icon name="doneSet" size={14} color={p.accent} />
+                  <Text style={[type.label, { color: p.accent, flex: 1 }]} numberOfLines={2}>{doneLine(detail)}</Text>
+                </View>
+              )}
             </View>
             <IconButton name="close" label="Close" onPress={() => { saveNote(); setSheet(false); }} />
           </View>
@@ -398,6 +413,18 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         </View>
       </Modal>
 
+      <DoneSheet
+        visible={marking}
+        doneAt={detail.doneAt}
+        journal={detail.journal}
+        intent={detail.intent}
+        busy={setDone.isPending}
+        error={!!setDone.error}
+        onDone={(journal) => setDone.mutate({ done: true, journal }, { onSuccess: () => { if (!detail.doneAt) track(userId, "marked_done", { intent: detail.intent ?? "none", journal: !!journal?.trim() }); setMarking(false); } })}
+        onUndo={() => setDone.mutate({ done: false }, { onSuccess: () => { track(userId, "unmarked_done"); setMarking(false); } })}
+        onClose={() => setMarking(false)}
+      />
+
       <RemindSheet
         visible={reminding}
         remindAt={detail.remindAt}
@@ -490,6 +517,7 @@ const styles = StyleSheet.create({
   filed: { flexDirection: "row", alignItems: "center", gap: space.sm, flex: 1 },
   filedWords: { flex: 1, gap: 2 },
   sheetTitle: { flex: 1, gap: 2 },
+  doneRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   block: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, padding: space.lg, gap: space.sm },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.md, minHeight: 48 },
   noteInput: { minHeight: 88, textAlignVertical: "top" },

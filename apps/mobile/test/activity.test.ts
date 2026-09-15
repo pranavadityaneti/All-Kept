@@ -46,12 +46,15 @@ suite("the activity list", () => {
     const a = save("a", new Date(2026, 8, 10, 11, 0).toISOString());
     const b = save("b", new Date(2026, 8, 8, 9, 0).toISOString());
     const reminded = { ...save("b", b.lastSavedAt), remindAt: new Date(2026, 8, 10, 9, 30).toISOString() };
-    const entries = entriesFor([a, b], [reminded]);
+    const entries = entriesFor([a, b], [reminded], []);
     expect(entries.map((e) => [e.key, e.kind])).toEqual([["saved:a", "saved"], ["reminder:b", "reminder"], ["saved:b", "saved"]]);
     const sections = groupEntries(entries, now);
     expect(sections.map((s) => [s.title, s.data.map((e) => e.key)])).toEqual([["TODAY", ["saved:a", "reminder:b"]], [expect.stringMatching(/2026/), ["saved:b"]]]);
     // A reminder still to come is not an entry: nothing has happened yet.
-    expect(entriesFor([], [{ ...reminded, remindAt: new Date(2026, 8, 12, 9, 0).toISOString() }], now).length).toBe(0);
+    expect(entriesFor([], [{ ...reminded, remindAt: new Date(2026, 8, 12, 9, 0).toISOString() }], [], now).length).toBe(0);
+    // A save marked done is an entry at the moment it was marked.
+    const done = { ...save("c", new Date(2026, 8, 1, 9, 0).toISOString()), doneAt: new Date(2026, 8, 10, 10, 0).toISOString() };
+    expect(entriesFor([a], [], [done], now).map((e) => e.key)).toEqual(["saved:a", "done:c"]);
   });
 
   it("reads a timestamp the way a notification does", () => {

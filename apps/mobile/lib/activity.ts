@@ -38,13 +38,16 @@ export function dayLabel(iso: string, now: Date): string {
  * One line in the Notifications list: a save arriving, or a reminder firing. Keyed so the same save
  * can appear twice — once when it arrived, once when it came back — and never collide.
  */
-export interface Entry { key: string; kind: "saved" | "reminder"; item: LibraryItem; at: string }
+export interface Entry { key: string; kind: "saved" | "reminder" | "done"; item: LibraryItem; at: string }
 
-/** The saves and the reminders that have fired, as one list, newest first. A reminder still to come has not happened. */
-export function entriesFor(saves: LibraryItem[], reminded: LibraryItem[], now = new Date()): Entry[] {
+/** The saves, the reminders that have fired and the saves marked done, as one list, newest first. A reminder still to come has not happened. */
+export function entriesFor(saves: LibraryItem[], reminded: LibraryItem[], done: LibraryItem[], now = new Date()): Entry[] {
   const entries: Entry[] = saves.map((item) => ({ key: `saved:${item.id}`, kind: "saved", item, at: item.lastSavedAt }));
   for (const item of reminded) {
     if (item.remindAt && Date.parse(item.remindAt) <= now.getTime()) entries.push({ key: `reminder:${item.id}`, kind: "reminder", item, at: item.remindAt });
+  }
+  for (const item of done) {
+    if (item.doneAt) entries.push({ key: `done:${item.id}`, kind: "done", item, at: item.doneAt });
   }
   return entries.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
 }

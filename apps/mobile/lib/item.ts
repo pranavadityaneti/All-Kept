@@ -41,13 +41,18 @@ export interface ItemDetail {
   /** Somewhere the post names to go to, and a day it names as something that happens; null when it names none. */
   venue: { name: string; locality: string } | null;
   eventAt: string | null;
+  /** What the sorter thought the save was for — the verb "done" takes. */
+  intent: string | null;
+  /** When the person marked the save done, and the line they wrote about it. */
+  doneAt: string | null;
+  journal: string | null;
   /** The video's shape as width ÷ height, when enrichment managed to learn it. A Short is 0.563. */
   aspect: number | null;
   /** False when the provider refuses to play this in a frame. Absent means nothing is known. */
   embeddable: boolean | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,event_at)";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,done_at,journal,item_ai(category,user_category,tags,summary,confidence,language,summary_language,venue,event_at,actionability)";
 
 type Row = Record<string, unknown>;
 
@@ -104,6 +109,9 @@ function toDetail(r: Row): ItemDetail {
     remindAt: (r["remind_at"] as string | null) ?? null,
     venue: readVenue(ai?.["venue"]),
     eventAt: (ai?.["event_at"] as string | null) ?? null,
+    intent: (ai?.["actionability"] as string | null) ?? null,
+    doneAt: (r["done_at"] as string | null) ?? null,
+    journal: (r["journal"] as string | null) ?? null,
     aspect: readAspect(meta),
     embeddable: typeof meta?.["embeddable"] === "boolean" ? (meta["embeddable"] as boolean) : null,
   };
@@ -204,6 +212,15 @@ export function useSetReminder(id: string, title: string) {
     const { error } = await supabase.from("items").update({ remind_at: new Date(at).toISOString() }).eq("id", id);
     if (error) throw new Error(error.message);
     await scheduleReminder(id, at, title).catch(() => undefined);
+  });
+}
+
+/** Done, with the line about it; or not done after all — the line stays, in case it was worth keeping. */
+export function useSetDone(id: string) {
+  return useItemMutation<{ done: boolean; journal?: string | null }>(id, async ({ done, journal }) => {
+    const patch = done ? { done_at: new Date().toISOString(), ...(journal !== undefined ? { journal: journal?.trim() || null } : {}) } : { done_at: null };
+    const { error } = await supabase.from("items").update(patch).eq("id", id);
+    if (error) throw new Error(error.message);
   });
 }
 

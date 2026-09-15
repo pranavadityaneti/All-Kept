@@ -32,6 +32,8 @@ export const NAMES = {
   trash: "trash-outline",
   open: "open-outline",
   check: "checkmark",
+  done: "checkmark-circle-outline",
+  doneSet: "checkmark-circle",
   camera: "camera-outline",
   add: "add",
   down: "chevron-down",

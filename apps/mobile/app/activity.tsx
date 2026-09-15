@@ -9,7 +9,7 @@ import { cardTitle } from "../components/ItemCard";
 import { PlatformLogo } from "../components/PlatformLogo";
 import { describe, entriesFor, groupEntries, when } from "../lib/activity";
 import { useRecentSaves } from "../lib/home";
-import { useFiredReminders } from "../lib/library";
+import { useDoneSaves, useFiredReminders } from "../lib/library";
 import { useSession } from "../lib/session";
 import { font, radius, space, type, usePalette } from "../lib/theme";
 import { useThumbnails } from "../lib/thumbnails";
@@ -20,8 +20,9 @@ export default function Activity() {
   const session = useSession();
   const recent = useRecentSaves(session.status === "ready");
   const reminded = useFiredReminders(session.status === "ready");
-  // A reminder that has fired is an entry beside the saves, at the time it fired.
-  const entries = useMemo(() => entriesFor(recent.data ?? [], reminded.data ?? []), [recent.data, reminded.data]);
+  const done = useDoneSaves(session.status === "ready");
+  // A reminder that has fired, and a save marked done, are entries beside the saves, at the time each happened.
+  const entries = useMemo(() => entriesFor(recent.data ?? [], reminded.data ?? [], done.data ?? []), [recent.data, reminded.data, done.data]);
   const sections = useMemo(() => groupEntries(entries, new Date()), [entries]);
   const thumbnails = useThumbnails(entries.map((e) => e.item.thumbnailPath));
 
@@ -49,7 +50,7 @@ export default function Activity() {
         renderItem={({ item: entry }) => {
           const item = entry.item;
           const thumbnail = item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined;
-          const line = entry.kind === "reminder" ? "You asked to be reminded" : describe(item.status, item.category, !!item.thumbnailPath);
+          const line = entry.kind === "reminder" ? "You asked to be reminded" : entry.kind === "done" ? "You marked this done" : describe(item.status, item.category, !!item.thumbnailPath);
           return (
             <Pressable
               accessibilityRole="button"
@@ -73,7 +74,7 @@ export default function Activity() {
               </View>
 
               {/* Where the reference puts the face that acted, ours puts the place the save came from — or the bell, for a reminder. */}
-              {entry.kind === "reminder" ? <Icon name="bell" size={22} color={p.accent} /> : <PlatformLogo platform={item.platform} size={24} />}
+              {entry.kind === "reminder" ? <Icon name="bell" size={22} color={p.accent} /> : entry.kind === "done" ? <Icon name="doneSet" size={22} color={p.accent} /> : <PlatformLogo platform={item.platform} size={24} />}
             </Pressable>
           );
         }}

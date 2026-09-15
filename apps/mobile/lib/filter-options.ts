@@ -39,6 +39,7 @@ export const FLAG_LABEL: Record<string, string> = {
   noted: "Has a note",
   unsure: "Sorter unsure",
   reminder: "Reminder set",
+  done: "Done",
 };
 
 export const FLAG_ICON: Record<string, string> = {
@@ -47,6 +48,7 @@ export const FLAG_ICON: Record<string, string> = {
   noted: "create-outline",
   unsure: "help-circle-outline",
   reminder: "alarm-outline",
+  done: "checkmark-circle-outline",
 };
 
 /**
