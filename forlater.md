@@ -322,10 +322,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
-### 49. On-screen text from the poster frame
+### 49. On-screen text from the poster frame — DONE 15 Sep 2026
 - **What + why:** The sorter reads one frame at low detail: it wrote "@lasthouse.in" as null rather than "Last House Coffee" off the storefront. Ask for the words on the frame as a field, at higher detail when the caption gives only a handle; feeds search, sorting, venues. Medium. (The video's other frames are closed for Instagram reels: the file is not served.)
 - **Scope:** `_shared/classify.ts` output + schema + validator; `item_ai.screen_text`; picture detail.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: `screen_text` in the prompt, the strict schema and the validator; `item_ai.screen_text` written by the finish and read into the search document; the picture at high detail always (cost per sort unchanged in practice, ~$0.006); prompt `2026-09-18.4`, library re-sorting (`d7b7d26`, migration `20260918160000_screen_text.sql` applied). Kept internal, per Pranav.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
@@ -336,17 +336,17 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
-### 51. Free saves for Pranav's own account
+### 51. Free saves for Pranav's own account — DONE 15 Sep 2026 (grew into the subscription-ended work)
 - **What + why:** The simulator/test account shows "Subscription ended — renew to keep saving": the 25 free saves are used, so further share-sheet saves queue. Decide: a tester allowance, or subscribe in sandbox. Small.
 - **Scope:** A data change Pranav runs, or the paywall's sandbox path.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026, spec `internal/superpowers/specs/2026-09-15-subscription-ended-design.md`: complimentary access (`profiles.complimentary_until`, set by hand, shown for what it is — `87e81e9`; Pranav sets his own date); the import behind the gate (`3566717`); a push when a subscription ends or a card fails (`bb1c1dd`); the Home card, the lapsed paywall, the inbox notice, the paused-playlist row (`229052c`, `736c8a3`); the share sheet saying "Waiting" not "Saved" while the door is shut, both platforms (`ae784c1` — native, rides tonight's build). Pending: the migration `20260918170000_complimentary_access.sql`, the deploys of `import-saves` and `billing-webhook`, the push.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
 ### 52. anon holds write grants on 13 tables through the project's default privileges
 - **What + why:** Found while narrowing `item_ai` (item 47): the `anon` role holds insert/update/delete on thirteen tables, granted by the schema's default privileges rather than by any migration. RLS stands in front of every one of them, so nothing is exposed today — but a table created without a policy, or a policy written wrong, would be writable by anyone holding the anon key. Close the class: revoke the default privileges for `anon` and grant only what the anonymous paths (waitlist, share-extension queue) need. Small; needs a list of what anon legitimately writes first.
 - **Scope:** One migration: `alter default privileges … revoke`, then explicit grants per table.
-- **Status:** queued — ask Pranav before touching grants.
+- **Status:** queued — ask Pranav before touching grants. Seen again 15 Sep while adding `profiles.complimentary_until`: anon's table-level UPDATE reaches every new column (RLS is what stops it), and `authenticated` holds TRUNCATE and TRIGGER on `profiles` — unreachable through PostgREST, wrong all the same.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — item 47's audit.
 
