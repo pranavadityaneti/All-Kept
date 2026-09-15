@@ -156,11 +156,11 @@ function useItemMutation<T>(id: string, run: (input: T) => Promise<void>) {
   });
 }
 
-/** A correction is stored beside the model's answer, never over it, so we can measure how often it is wrong. */
+/** A correction is stored beside the model's answer, never over it, so we can measure how often it is wrong. Through the one door the client has into the sorter's table. */
 export function useSetCategory(id: string, userId: string | null) {
   return useItemMutation<string>(id, async (category) => {
     if (!userId) throw new Error("not signed in");
-    const { error } = await supabase.from("item_ai").upsert({ item_id: id, user_id: userId, user_category: category }, { onConflict: "item_id" });
+    const { error } = await supabase.rpc("set_user_category", { p_item_id: id, p_category: category });
     if (error) throw new Error(error.message);
   });
 }
