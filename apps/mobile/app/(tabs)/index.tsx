@@ -10,7 +10,9 @@ import { CategoryTile } from "../../components/CategoryTile";
 import { CategorySheet } from "../../components/CategorySheet";
 import { SaveLinkField } from "../../components/SaveLinkField";
 import { SavesStanding } from "../../components/SavesStanding";
+import { NearYou } from "../../components/NearYou";
 import { StandingCard } from "../../components/StandingCard";
+import { useLibraryView } from "../../lib/library-view";
 import { InterestPills } from "../../components/InterestPills";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { SectionHeader } from "../../components/SectionHeader";
@@ -38,6 +40,7 @@ const { width } = Dimensions.get("window");
 export default function Home() {
   const p = usePalette();
   const router = useRouter();
+  const [, , setView] = useLibraryView();
   const session = useSession();
   const ready = session.status === "ready";
   const linked = useLinkedSource(ready);
@@ -155,6 +158,8 @@ export default function Home() {
           <SaveLinkField />
           <SavesStanding userId={userId} />
         </View>
+
+        {ready && <NearYou enabled={ready} onSeeMap={() => { setView("map"); router.push("/library"); }} />}
 
         {ready && showInterests(interests) && wantsInterests === null && (
           <Card>

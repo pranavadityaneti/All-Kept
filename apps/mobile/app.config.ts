@@ -86,6 +86,13 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-secure-store",
     ["expo-image-picker", { photosPermission: "Choose a photo for your Allkept profile.", cameraPermission: false, microphonePermission: false }],
+    // Where you are, only while the app is open, only when you ask: how far the places you saved
+    // are, and which of them are near. No Always permission — the strings for it are removed, so the
+    // build carries no claim it does not use — and no motion.
+    ["expo-location", {
+      locationWhenInUsePermission: "Allkept uses your location, only while you use the app, to show how far away the places you saved are.",
+      locationAlwaysAndWhenInUsePermission: false, locationAlwaysPermission: false, motionUsagePermission: false,
+    }],
     // The share sheet is served by our own extension (targets/share) and Android share activity
     // (modules/share-save); expo-sharing stays only for sharing *out*.
     "@bacons/apple-targets",

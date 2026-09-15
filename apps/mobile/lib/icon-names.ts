@@ -48,6 +48,7 @@ export const NAMES = {
   list: "list-outline",
   map: "map-outline",
   pin: "location-outline",
+  locate: "navigate-circle-outline",
   apple: "logo-apple",
   sound: "volume-high-outline",
   soundOff: "volume-mute-outline",

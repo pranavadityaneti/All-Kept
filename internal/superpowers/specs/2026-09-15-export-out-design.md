@@ -134,3 +134,34 @@ filters; "open now" is included; the Android key comes from the build's environm
 - **Rollout.** Migration `20260918180000_places_on_the_map.sql` first (the app calls v7 and
   `saved_places` as soon as the build carries it), then `sweeper`, `resolve-place` and
   `search-library`; the app rides tonight's build, which carries `expo-maps`.
+
+## 7. Stage C addendum, 15 Sep 2026 — near you, trips, liveness
+
+Decided with Pranav: near you and trips now, on the "While using" permission alone; the liveness
+pass; geofences (a nudge when walking past a saved place, the Always permission) deferred to
+their own item with the App Review wording.
+
+- **Near you.** `expo-location`, required on first use like the maps module, with only the
+  When-in-use string in the plist — the Always and motion strings are removed, so the build claims
+  nothing it does not use. Nothing prompts on its own: "Near me" on the map asks, with the reason
+  in hand, and comes in on the phone at walking scale; a permission already given is read quietly
+  afterwards and again each time the app comes back. The pin's card says how far ("1.2 km away")
+  beside whether the place is open; Home shows "Near you" — the saved places within five
+  kilometres, nearest first, up to three, each with its hours and the save it came from — only
+  once the permission was given elsewhere, never asking for it. Distance, not minutes: minutes
+  would be a guess.
+- **Trips.** The map's rows carry the place's town — Google's locality, or the next level up where
+  a town is filed under its district, never the country. Chips above the map gather the places by
+  town, most places first, the newer save breaking a tie, places without a town at the end as
+  "Elsewhere". A chip frames its places and opens the trip bar: **Open all in Google Maps** — every
+  stop as one route, first to last, up to ten, as a universal link (Apple Maps takes one stop at
+  a time, so it is not offered here) — and **Share itinerary**, the town and each place with its
+  address, its hours and the save it came from, as text for the share sheet. Grounded in the saves
+  alone; no model.
+- **Liveness.** A ninth sweep, five places at a time: a place that lacks its town, once; every
+  place, every sixty days. Looked up again by its own name, or its address when the town is not
+  known; the facts replaced only when it is the same place by name — a closure and new hours
+  among them — and a place not found this time dated and left as it was. `refreshed_at` is kept
+  apart from `resolved_at` so nothing pretends to be fresher than it is.
+- **Rollout.** Migration `20260918190000_places_refresh.sql`, then `sweeper`; the app rides
+  tonight's build, which now carries `expo-location`.

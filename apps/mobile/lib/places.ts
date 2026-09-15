@@ -20,6 +20,8 @@ export interface PlacedSave {
   place: {
     name: string;
     address: string | null;
+    /** The town, when the place's provider named one; trips gather by it. */
+    locality: string | null;
     lat: number;
     lng: number;
     status: string | null;
@@ -46,6 +48,7 @@ const toPlaced = (r: Row): PlacedSave => ({
   place: {
     name: String(r["place_name"]),
     address: (r["place_address"] as string | null) ?? null,
+    locality: (r["place_locality"] as string | null) ?? null,
     lat: Number(r["lat"]),
     lng: Number(r["lng"]),
     status: (r["place_status"] as string | null) ?? null,

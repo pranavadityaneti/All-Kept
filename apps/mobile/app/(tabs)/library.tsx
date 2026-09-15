@@ -20,7 +20,7 @@ import { useLibraryView } from "../../lib/library-view";
 import { PlacesMap } from "../../components/PlacesMap";
 import { ViewSwitch } from "../../components/ViewSwitch";
 import { NO_FILTERS, ownCategories, useFacets, useLibrary, type LibraryItem } from "../../lib/library";
-import { useTrackOnce } from "../../lib/metrics";
+import { track, useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
 import { setCollection } from "../../lib/collection";
@@ -79,7 +79,7 @@ export default function Library() {
       <FilterBar facets={facets.data} filters={filters} matches={matches} onOpen={() => setFiltering(true)} onRemove={toggle} onClear={clear} />
 
       {view === "map" ? (
-        <PlacesMap filters={filters} enabled={ready && loaded} onOpen={(id) => router.push({ pathname: "/item/[id]", params: { id } })} />
+        <PlacesMap filters={filters} enabled={ready && loaded} onOpen={(id) => router.push({ pathname: "/item/[id]", params: { id } })} onWayOut={(what) => track(userId, what)} />
       ) : (
       <FlashList
         key={view}
