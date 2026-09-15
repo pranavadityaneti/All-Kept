@@ -1,6 +1,5 @@
 // OpenAI client for classification: GPT-5.6 Sol by default, strict JSON schema output through the Responses API, refusal fallback. Plain fetch, no SDK.
 import type { ClassifyDeps, ModelResult, ModelUsage } from "./classify.ts";
-import { ACTIONABILITY, CATEGORIES, ENTITY_TYPES } from "./contracts.ts";
 
 export const DEFAULT_MODEL = "gpt-5.6-sol";
 export const REASONING_EFFORT = "low";
@@ -8,21 +7,9 @@ const ENDPOINT = "https://api.openai.com/v1/responses";
 const TIMEOUT_MS = 20_000;
 const MAX_OUTPUT_TOKENS = 2048; // reasoning tokens count against this too
 
-/** Strict mode: every property required, no extras, no numeric bounds (validateOutput applies the bounds). */
-export const OUTPUT_SCHEMA = {
-  type: "object",
-  properties: {
-    category: { type: "string", enum: [...CATEGORIES] },
-    tags: { type: "array", items: { type: "string" } },
-    summary: { type: "string" },
-    entities: { type: "array", items: { type: "object", properties: { type: { type: "string", enum: [...ENTITY_TYPES] }, name: { type: "string" } }, required: ["type", "name"], additionalProperties: false } },
-    language: { type: "string" },
-    actionability: { type: "string", enum: [...ACTIONABILITY] },
-    confidence: { type: "number" },
-  },
-  required: ["category", "tags", "summary", "entities", "language", "actionability", "confidence"],
-  additionalProperties: false,
-} as const;
+// The shape the model answers in lives beside the prompt and the validator, so the three cannot drift.
+import { OUTPUT_SCHEMA } from "./classify.ts";
+export { OUTPUT_SCHEMA };
 
 interface ResponsesReply {
   status?: string;

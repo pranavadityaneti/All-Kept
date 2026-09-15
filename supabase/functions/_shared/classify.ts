@@ -2,7 +2,30 @@
 import { ACTIONABILITY, CATEGORIES, CATEGORY_GUIDE, ENTITY_TYPES, UNSURE_BELOW } from "./contracts.ts";
 import type { Actionability, Category, EntityType, ItemAiOutput } from "./contracts.ts";
 
-export const PROMPT_VERSION = "2026-09-18.1";
+export const PROMPT_VERSION = "2026-09-18.2";
+
+/**
+ * The shape the model answers in, strict: every property required, nothing extra, an optional
+ * field a nullable one. Kept here, beside the prompt that asks and the validator that reads, and
+ * imported by every adapter — a field named in one place and not the others can never come back,
+ * which is how the venue and the date were asked for and never returned for a whole re-sort.
+ */
+export const OUTPUT_SCHEMA = {
+  type: "object",
+  properties: {
+    category: { type: "string", enum: [...CATEGORIES] },
+    tags: { type: "array", items: { type: "string" } },
+    summary: { type: "string" },
+    entities: { type: "array", items: { type: "object", properties: { type: { type: "string", enum: [...ENTITY_TYPES] }, name: { type: "string" } }, required: ["type", "name"], additionalProperties: false } },
+    language: { type: "string" },
+    actionability: { type: "string", enum: [...ACTIONABILITY] },
+    confidence: { type: "number" },
+    venue: { anyOf: [{ type: "object", properties: { name: { type: "string" }, locality: { type: "string" } }, required: ["name", "locality"], additionalProperties: false }, { type: "null" }] },
+    event_at: { type: ["string", "null"] },
+  },
+  required: ["category", "tags", "summary", "entities", "language", "actionability", "confidence", "venue", "event_at"],
+  additionalProperties: false,
+} as const;
 
 export interface ClassifyInput {
   platform: string;

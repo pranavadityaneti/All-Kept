@@ -1,24 +1,11 @@
 // Claude client for classification: claude-opus-5, structured JSON output, cached system prompt, low effort, refusal fallback.
 import Anthropic from "npm:@anthropic-ai/sdk";
 import type { ClassifyDeps, ModelResult } from "./classify.ts";
-import { ACTIONABILITY, CATEGORIES, ENTITY_TYPES } from "./contracts.ts";
 
 export const MODEL = "claude-opus-5";
 
-const OUTPUT_SCHEMA = {
-  type: "object",
-  properties: {
-    category: { type: "string", enum: [...CATEGORIES] },
-    tags: { type: "array", items: { type: "string" } },
-    summary: { type: "string" },
-    entities: { type: "array", items: { type: "object", properties: { type: { type: "string", enum: [...ENTITY_TYPES] }, name: { type: "string" } }, required: ["type", "name"], additionalProperties: false } },
-    language: { type: "string" },
-    actionability: { type: "string", enum: [...ACTIONABILITY] },
-    confidence: { type: "number" },
-  },
-  required: ["category", "tags", "summary", "entities", "language", "actionability", "confidence"],
-  additionalProperties: false,
-} as const;
+// The shape the model answers in lives beside the prompt and the validator, so the three cannot drift.
+import { OUTPUT_SCHEMA } from "./classify.ts";
 
 export function anthropicDeps(apiKey: string): ClassifyDeps {
   const client = new Anthropic({ apiKey, timeout: 20_000, maxRetries: 0 });

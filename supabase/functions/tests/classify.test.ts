@@ -1,5 +1,6 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { classify, buildUserMessage, validateOutput, PROMPT_VERSION, SYSTEM_PROMPT, TIE_BREAKERS, type ClassifyDeps, type Picture } from "../_shared/classify.ts";
+import { classify, buildUserMessage, validateOutput, OUTPUT_SCHEMA, PROMPT_VERSION, SYSTEM_PROMPT, TIE_BREAKERS, type ClassifyDeps, type Picture } from "../_shared/classify.ts";
+import { OUTPUT_SCHEMA as OPENAI_SCHEMA } from "../_shared/openai.ts";
 import { CATEGORIES, CATEGORY_GUIDE, UNSURE_BELOW } from "../_shared/contracts.ts";
 
 const input = { platform: "instagram", kind: "short_video", url: "https://www.instagram.com/reel/DcVMQIIMa5-/", title: null, text: "Travis Kalanick on the little details that made Uber beat Lyft", author: "davidsenra", note: null, language: "en", savedAt: "2026-09-15T08:00:00Z" };
@@ -77,4 +78,17 @@ Deno.test("the picture goes to the model with the words, and the prompt says wha
   // The rule: a caption about the making or the mood is not the subject; the picture is.
   assertEquals(/picture/i.test(SYSTEM_PROMPT) && /subject/i.test(SYSTEM_PROMPT), true);
   assertEquals(PROMPT_VERSION > "2026-09-08.1", true);
+});
+
+Deno.test("the strict schema the model answers in names every field the validator reads — a field missing there can never come back", () => {
+  const answer = { category: "Food & recipes", tags: [], summary: "", entities: [], language: "en", actionability: "go", confidence: 0.9, venue: { name: "Haku", locality: "Bandra" }, event_at: "2026-10-12" };
+  const read = Object.keys(validateOutput(answer, new Date("2026-09-15T08:00:00Z"))!).sort();
+  assertEquals(Object.keys(OUTPUT_SCHEMA.properties).sort(), read);
+  // Strict mode: every property required and nothing extra, so an optional field is a nullable one.
+  assertEquals([...OUTPUT_SCHEMA.required].sort(), read);
+  assertEquals(OUTPUT_SCHEMA.additionalProperties, false);
+  assertEquals(OUTPUT_SCHEMA.properties.venue.anyOf.map((v: { type: string }) => v.type), ["object", "null"]);
+  assertEquals(OUTPUT_SCHEMA.properties.event_at.type, ["string", "null"]);
+  // The adapters answer in this schema and no other.
+  assertEquals(OPENAI_SCHEMA, OUTPUT_SCHEMA);
 });
