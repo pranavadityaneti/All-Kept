@@ -8,12 +8,14 @@ import { IconButton } from "../../components/IconButton";
 import { SearchOverlay } from "../../components/SearchOverlay";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { Card } from "../../components/Card";
+import { CategorySummary } from "../../components/CategorySummary";
 import { FilterBar } from "../../components/FilterBar";
 import { FilterSheet } from "../../components/FilterSheet";
 import { ItemCard } from "../../components/ItemCard";
 import { activeFilters, exactMatches, type Matches } from "../../lib/filter-options";
 import { useFilters } from "../../lib/filters";
-import { NO_FILTERS, useFacets, useLibrary, type LibraryItem } from "../../lib/library";
+import { shouldShowSummary } from "../../lib/category-summary";
+import { NO_FILTERS, ownCategories, useFacets, useLibrary, type LibraryItem } from "../../lib/library";
 import { useTrackOnce } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { useLinkedSource } from "../../lib/sources";
@@ -48,7 +50,10 @@ export default function Library() {
   const items: LibraryItem[] = library.data?.pages.flatMap((page) => page.items) ?? [];
   const thumbnails = useThumbnails(items.map((i) => i.thumbnailPath));
   const [searching, setSearching] = useState(false);
+  // A name in the category summary pulls its thread through search; the magnifier starts empty.
+  const [searchFor, setSearchFor] = useState<string | undefined>(undefined);
   const [filtering, setFiltering] = useState(false);
+  const summaryFor = loaded ? shouldShowSummary(filters) : null;
   const busy = library.isPending || linked.isPending || (!loaded && ready);
 
   // The counts answer a selection within one group on their own. Across two groups they cannot, and
@@ -74,6 +79,7 @@ export default function Library() {
         refreshControl={<RefreshControl refreshing={library.isRefetching && !library.isFetchingNextPage} onRefresh={() => { void library.refetch(); void facets.refetch(); }} tintColor={p.inkMuted} />}
         onEndReachedThreshold={0.6}
         onEndReached={() => { if (library.hasNextPage && !library.isFetchingNextPage) void library.fetchNextPage(); }}
+        ListHeaderComponent={summaryFor && ready ? <CategorySummary category={summaryFor} taken={ownCategories(facets.data).map((c) => c.value)} onName={(name) => { setSearchFor(name); setSearching(true); }} /> : null}
         ItemSeparatorComponent={() => <View style={{ height: space.md }} />}
         renderItem={({ item, index }) => (
           <View style={[styles.cell, index % 2 === 0 ? styles.cellLeft : styles.cellRight]}>
@@ -138,8 +144,9 @@ export default function Library() {
         visible={searching}
         enabled={ready}
         userId={ready ? session.userId : null}
-        onClose={() => setSearching(false)}
-        onOpenItem={(id) => { setSearching(false); router.push({ pathname: "/item/[id]", params: { id } }); }}
+        onClose={() => { setSearching(false); setSearchFor(undefined); }}
+        initialQuery={searchFor}
+        onOpenItem={(id) => { setSearching(false); setSearchFor(undefined); router.push({ pathname: "/item/[id]", params: { id } }); }}
       />
     </SafeAreaView>
   );

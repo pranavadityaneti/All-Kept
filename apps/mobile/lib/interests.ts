@@ -67,6 +67,9 @@ function blocked(taken: readonly string[]): Set<string> {
   ]);
 }
 
+/** The rule that keeps a platform, a category or a state label out of the interests row, for anywhere else that shows names. */
+export const neverAnInterest = (name: string, taken: readonly string[]): boolean => blocked(taken).has(fold(name));
+
 const daysSince = (iso: string, now: Date): number => Math.max(0, (now.getTime() - new Date(iso).getTime()) / 86_400_000);
 
 const escape = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
