@@ -134,3 +134,28 @@ export function rowsFor(e: BillingEvent, now: Date): SubscriptionRow[] {
   const s = statusFor(e);
   return s && e.product_id ? [base(e.product_id, s)] : [];
 }
+
+/** What an event is worth telling the person: their subscription ended, or their card failed. Everything else is bookkeeping. */
+export type BillingNews = "ended" | "billing_issue";
+
+/**
+ * An expiration, or a refund — which ends now — is an ending; a billing issue is a card that failed
+ * while the door stays open. A person's own cancellation is not news: they did it, and the period
+ * runs on; the ending comes as an EXPIRATION when it does.
+ */
+export function newsFor(e: BillingEvent): BillingNews | null {
+  if (e.type === "EXPIRATION") return "ended";
+  if (e.type === "CANCELLATION" && e.cancel_reason === "CUSTOMER_SUPPORT") return "ended";
+  if (e.type === "BILLING_ISSUE") return "billing_issue";
+  return null;
+}
+
+/** The store as a person names it, from RevenueCat's word for it. */
+const storeName = (store: string | null | undefined): string => store === "APP_STORE" ? "Apple" : store === "PLAY_STORE" ? "Google Play" : "The store";
+
+/** The notification's words. The waiting count lives on the phone, so the server does not claim one. */
+export function billingMessage(news: BillingNews, store: string | null | undefined): { title: string; body: string } {
+  return news === "ended"
+    ? { title: "Your subscription has ended", body: "Everything you saved is still here. New links will wait until you renew." }
+    : { title: "Payment problem", body: `${storeName(store)} couldn't charge your card. Update it in your subscriptions to keep saving.` };
+}

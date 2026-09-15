@@ -106,8 +106,8 @@ export function nextAttemptAfter(r: EnrichResult, now: Date): string | null {
   return ms && ms > 0 ? new Date(now.getTime() + ms).toISOString() : null;
 }
 
-/** The database side of sending a push, kept next to the only place that builds it. */
-function pushDeps(db: SupabaseClient, deps: PipelineDeps): PushDeps {
+/** The database side of sending a push: the person's switches, their devices, and a dead token recorded. The billing webhook sends account news through the same doors. */
+export function pushDeps(db: SupabaseClient, deps: Pick<PipelineDeps, "fetch" | "log">): PushDeps {
   return {
     fetch: deps.fetch,
     async preferences(userId) {

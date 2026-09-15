@@ -79,3 +79,14 @@ Deno.test("what it says fits a lock screen and never claims a category it does n
   assertEquals(compose("sorted", { title: "   ", category: "Notes" }), { title: "Saved", body: "Your save is in Notes." });
   assertEquals(compose("attention", { title: null, category: null }).title, "A save needs you");
 });
+
+Deno.test("account news answers to the master switch alone: someone who muted sorted and attention still hears their subscription has ended", async () => {
+  assertEquals(wants(prefs({ sorted: false, attention: false }), "billing").ok, true);
+  assertEquals(wants(prefs({ enabled: false }), "billing").skipped, "disabled");
+  let body: Record<string, unknown>[] = [];
+  const f = (async (_u: string | URL | Request, init?: RequestInit) => { body = JSON.parse(String(init?.body)) as Record<string, unknown>[]; return Response.json({ data: [{ status: "ok" }] }); }) as typeof fetch;
+  const r = await notify("u1", "billing", { title: "Your subscription has ended", body: "b" }, deps({ fetch: f }));
+  assertEquals(r.sent, 1);
+  // Nothing to open but the paywall: no save is named, and the reason says what the tap is for.
+  assertEquals(body[0]!["data"], { itemId: null, reason: "billing" });
+});

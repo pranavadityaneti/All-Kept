@@ -1,5 +1,5 @@
 // RevenueCat's news, verified and written down. All I/O injected; the rules are in _shared/billing.ts.
-import { isOurUserId, rowsFor, verifySignature, type BillingEvent, type SubscriptionRow } from "../_shared/billing.ts";
+import { billingMessage, isOurUserId, newsFor, rowsFor, verifySignature, type BillingEvent, type BillingNews, type SubscriptionRow } from "../_shared/billing.ts";
 
 export interface WebhookDeps {
   secret: string;
@@ -10,6 +10,10 @@ export interface WebhookDeps {
   upsertSubscription(row: SubscriptionRow): Promise<void>;
   /** A transfer moves every row of the old ids to the new owner. */
   transfer(from: string[], to: string): Promise<void>;
+  /** Whether the door is still open to this person once the rows are written — the database's own rule. */
+  entitled(userId: string): Promise<boolean>;
+  /** One push to every device the person has. */
+  notify(userId: string, news: BillingNews, message: { title: string; body: string }): Promise<void>;
   log(message: string, meta?: Record<string, unknown>): void;
 }
 
@@ -59,5 +63,18 @@ export async function handleBillingWebhook(req: Request, deps: WebhookDeps): Pro
   }
 
   for (const row of rows) await deps.upsertSubscription(row);
+
+  // The person is told when the door has actually shut — not when one product ended while another,
+  // complimentary access or free saves still keep it open — and whenever their card failed. Never
+  // the webhook's failure: RevenueCat would only retry an event already recorded, so a push that
+  // did not go is logged and gone.
+  const news = newsFor(event);
+  if (news && (news === "billing_issue" || !(await deps.entitled(event.app_user_id)))) {
+    try {
+      await deps.notify(event.app_user_id, news, billingMessage(news, event.store));
+    } catch (e) {
+      deps.log("billing: push failed", { id: event.id, news, error: String(e).slice(0, 200) });
+    }
+  }
   return text("ok", 200);
 }

@@ -1,4 +1,7 @@
 import { adminClient, env } from "../_shared/supabase.ts";
+import { pushDeps } from "../_shared/pipeline.ts";
+import { notify } from "../_shared/push.ts";
+import { safeFetch } from "../_shared/safe-address.ts";
 import { handleBillingWebhook } from "./handler.ts";
 
 // The only writer of public.subscriptions. RevenueCat calls this on every change to a purchase.
@@ -26,6 +29,16 @@ Deno.serve(async (req) => {
       async transfer(from, to) {
         const { error } = await db.from("subscriptions").update({ user_id: to, updated_at: new Date().toISOString() }).in("user_id", from);
         if (error) throw error;
+      },
+      async entitled(userId) {
+        const { data, error } = await db.rpc("entitled", { p_user_id: userId });
+        if (error) throw error;
+        return data === true;
+      },
+      async notify(userId, news, message) {
+        const log = (m: string, meta?: Record<string, unknown>) => console.log(m, meta ?? {});
+        const outcome = await notify(userId, "billing", message, pushDeps(db, { fetch: safeFetch(fetch), log }));
+        log("billing: push", { user: userId, news, ...outcome });
       },
       log: (m, meta) => console.log(m, meta ?? {}),
     });

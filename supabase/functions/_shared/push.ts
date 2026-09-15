@@ -9,7 +9,8 @@ const EXPO_PUSH = "https://exp.host/--/api/v2/push/send";
 const BATCH = 100;
 const TIMEOUT_MS = 8_000;
 
-export type PushReason = "sorted" | "attention";
+/** sorted and attention are news about a save, each with its own switch; billing is news about the account, under the master switch alone. */
+export type PushReason = "sorted" | "attention" | "billing";
 
 export interface PushDeps {
   fetch: typeof fetch;
@@ -37,6 +38,7 @@ export function wants(
   if (!prefs.enabled) return { ok: false, skipped: "disabled" };
   if (reason === "sorted" && !prefs.sorted) return { ok: false, skipped: "muted" };
   if (reason === "attention" && !prefs.attention) return { ok: false, skipped: "muted" };
+  // billing: the master switch was asked above, and that is the only switch account news has.
   return { ok: true };
 }
 
@@ -76,7 +78,8 @@ async function post(f: typeof fetch, body: unknown): Promise<Record<string, unkn
 export async function notify(
   userId: string,
   reason: PushReason,
-  message: { title: string; body: string; itemId: string },
+  /** The save the news is about; none for account news, whose tap opens the paywall. */
+  message: { title: string; body: string; itemId?: string },
   deps: PushDeps,
 ): Promise<PushOutcome> {
   try {
@@ -95,7 +98,7 @@ export async function notify(
         body: message.body,
         // What the app opens when the notification is tapped. Without it a tap lands on the home
         // screen and the person has to go and find the thing they were just told about.
-        data: { itemId: message.itemId, reason },
+        data: { itemId: message.itemId ?? null, reason },
         channelId: "saves",
       })));
 

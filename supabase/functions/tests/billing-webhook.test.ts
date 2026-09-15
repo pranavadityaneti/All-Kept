@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "jsr:@std/assert@1";
-import { hmacHex, parseSignature, rowsFor, sameBytes, statusFor, verifySignature, type BillingEvent, type SubscriptionRow } from "../_shared/billing.ts";
+import { billingMessage, hmacHex, newsFor, parseSignature, rowsFor, sameBytes, statusFor, verifySignature, type BillingEvent, type SubscriptionRow } from "../_shared/billing.ts";
 import { handleBillingWebhook, type WebhookDeps } from "../billing-webhook/handler.ts";
 
 const SECRET = "whsec_test_0123456789";
@@ -27,7 +27,11 @@ class Fake implements WebhookDeps {
   known = new Set([USER, OTHER]);
   logs: string[] = [];
   lookups = 0;
+  open = true;
+  pushes: { user: string; kind: string; title: string }[] = [];
   now() { return NOW; }
+  async entitled(_id: string) { return this.open; }
+  async notify(user: string, kind: "ended" | "billing_issue", message: { title: string; body: string }) { this.pushes.push({ user, kind, title: message.title }); }
   async recordEvent(id: string, _t: string, _u: string | null, payload: unknown) { if (this.events.has(id)) return false; this.events.set(id, payload); return true; }
   async userExists(id: string) { this.lookups++; return this.known.has(id); }
   async upsertSubscription(row: SubscriptionRow) { this.rows.push(row); }
@@ -157,4 +161,44 @@ Deno.test("a body that is not an event is a 400, and a wrong method a 405", asyn
   assertEquals((await handleBillingWebhook(await signed("{}"), f)).status, 400);
   assertEquals((await handleBillingWebhook(await signed("not json"), f)).status, 400);
   assertEquals((await handleBillingWebhook(new Request("https://x/billing-webhook", { method: "GET" }), f)).status, 405);
+});
+
+Deno.test("the news an event carries: an ending, a card that failed, or nothing worth waking anyone for", () => {
+  assertEquals(newsFor(event({ type: "EXPIRATION" })), "ended");
+  assertEquals(newsFor(event({ type: "CANCELLATION", cancel_reason: "CUSTOMER_SUPPORT" })), "ended");
+  assertEquals(newsFor(event({ type: "BILLING_ISSUE" })), "billing_issue");
+  for (const type of ["INITIAL_PURCHASE", "RENEWAL", "CANCELLATION", "UNCANCELLATION", "PRODUCT_CHANGE", "SUBSCRIPTION_PAUSED", "TEST", "TRANSFER"]) {
+    assertEquals(newsFor(event({ type })), null, type);
+  }
+  assertEquals(billingMessage("ended", "APP_STORE"), { title: "Your subscription has ended", body: "Everything you saved is still here. New links will wait until you renew." });
+  assertEquals(billingMessage("billing_issue", "APP_STORE").body, "Apple couldn't charge your card. Update it in your subscriptions to keep saving.");
+  assertEquals(billingMessage("billing_issue", "PLAY_STORE").body.startsWith("Google Play couldn't"), true);
+  assertEquals(billingMessage("billing_issue", null).body.startsWith("The store couldn't"), true);
+});
+
+Deno.test("an ending is pushed once the door is shut, and not while something else keeps it open; a failed card is always worth a word", async () => {
+  const shut = new Fake();
+  shut.open = false;
+  assertEquals((await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-x", type: "EXPIRATION" }) })), shut)).status, 200);
+  assertEquals(shut.pushes, [{ user: USER, kind: "ended", title: "Your subscription has ended" }]);
+  // The same event again: recorded already, nothing sent twice.
+  assertEquals((await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-x", type: "EXPIRATION" }) })), shut)).status, 200);
+  assertEquals(shut.pushes.length, 1);
+
+  const open = new Fake(); // complimentary access, a second product, free saves left: the door is still open
+  await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-y", type: "EXPIRATION" }) })), open);
+  assertEquals(open.pushes, []);
+  await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-z", type: "BILLING_ISSUE" }) })), open);
+  assertEquals(open.pushes.map((p) => p.kind), ["billing_issue"]);
+  assertEquals(open.rows.length, 2, "the rows are written whatever is pushed");
+});
+
+Deno.test("a push that fails never fails the webhook — RevenueCat would only retry an event already recorded", async () => {
+  const f = new Fake();
+  f.open = false;
+  f.notify = async () => { throw new Error("expo down"); };
+  const res = await handleBillingWebhook(await signed(JSON.stringify({ event: event({ id: "evt-p", type: "EXPIRATION" }) })), f);
+  assertEquals(res.status, 200);
+  assertEquals(f.rows.length, 1);
+  assert(f.logs.some((l) => l.includes("push")));
 });
