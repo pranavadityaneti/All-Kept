@@ -301,10 +301,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
-### 46. YouTube description for the sorter
+### 46. YouTube description for the sorter — DONE 15 Sep 2026
 - **What + why:** All 59 YouTube saves are sorted from the title alone (audit B4); the Data API call the pipeline already makes for the aspect can carry `snippet.description` for free. Small; the sorter's biggest input gain.
 - **Scope:** `_shared/youtube.ts`, `_shared/enrich.ts`; a prompt-version bump re-sorts.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: enrichment asks for the snippet with the shape; sweeper pass 8 reaches the 59 older saves, twenty a sweep; each re-sorts by the text trigger.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
@@ -329,10 +329,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
-### 50. app_events stopped recording
+### 50. app_events stopped recording — DONE 15 Sep 2026
 - **What + why:** `public.app_events` has no rows since 23:59 UTC on 14 Sep although the app was used all day on the simulator — `track()` inserts are failing silently (RLS, grant, or the anonymous session). The measurements added today (`embed_gated`, `place_named`, `way_out`…) depend on it. Small to diagnose.
 - **Scope:** `apps/mobile/lib/metrics.ts`, the `app_events` policy.
-- **Status:** queued
+- **Status:** done — 15 Sep 2026: premise half wrong — events recorded, but the table's CHECK listed 16 names and the app sends 29; every event added since 9 Sep was refused silently. The check is now a shape; a refused event is warned in development.
 - **Date added:** 2026-09-15
 - **Originated from:** 15 Sep 2026 — the sorting audit, stage A of export out, and the day's verification.
 
