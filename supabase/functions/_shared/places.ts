@@ -52,17 +52,39 @@ const fold = (s: string): string =>
 /** "The" and "&" make no name; the rest of the words must all be there, in one or the other. */
 const words = (s: string): string[] => fold(s).split(" ").filter((w) => w.length > 0 && w !== "the" && w !== "and");
 
-/** How a venue's name and a candidate's agree: the same words, one's words all in the other's in order, or not at all. */
-function nameMatch(venue: string, candidate: string): "exact" | "contains" | "none" {
+/**
+ * Words that say what a place is, not which one: the sorter writes "Blue House Cafe" and "Chibo
+ * Okonomiyaki Restaurant" where the map says "Blue House on the Stairs" and "Chibo". Set aside
+ * when the names are compared, and never enough on their own to make a name.
+ */
+const GENERIC = new Set(["cafe", "coffee", "coffeeshop", "restaurant", "bar", "pub", "shop", "store", "hotel", "resort", "hostel", "bakery", "kitchen", "house", "market", "food", "okonomiyaki", "ramen", "sushi", "bbq", "grill", "diner", "bistro", "eatery", "branch", "co", "ltd", "inc"]);
+const distinct = (list: string[]): string[] => list.filter((w) => !GENERIC.has(w));
+
+/**
+ * How a venue's name and a candidate's agree: the same words, one's words all in the other's in
+ * order, or — once the words that only say what a place is, and the words of the locality the
+ * map appends ("ZEN SAI Seongsu"), are set aside — the same distinctive words; or not at all.
+ */
+function nameMatch(venue: string, candidate: string, locality = ""): "exact" | "contains" | "none" {
   const a = words(venue), b = words(candidate);
   if (a.length === 0 || b.length === 0) return "none";
   if (a.join(" ") === b.join(" ")) return "exact";
   const contains = (outer: string[], inner: string[]) => outer.join(" ").includes(inner.join(" ")) && inner.every((w) => outer.includes(w));
-  return contains(b, a) || contains(a, b) ? "contains" : "none";
+  if (contains(b, a) || contains(a, b)) {
+    // The map's name is the venue's plus the locality's own words: that is the same name, not a longer one.
+    const place = new Set(words(locality));
+    const extra = (outer: string[], inner: string[]) => outer.filter((w) => !inner.includes(w));
+    if (contains(b, a) && extra(b, a).every((w) => place.has(w))) return "exact";
+    return "contains";
+  }
+  // "Blue House Cafe" and "Blue House on the Stairs": the distinctive words agree, the generic ones are set aside.
+  const da = distinct(a), db = distinct(b);
+  if (da.length > 0 && db.length > 0 && (da.every((w) => db.includes(w)) || db.every((w) => da.includes(w)))) return "contains";
+  return "none";
 }
 
-/** The venue's name and a candidate's agree when one's words are all in the other's, in order. */
-export const sameName = (venue: string, candidate: string): boolean => nameMatch(venue, candidate) !== "none";
+/** The venue's name and a candidate's agree when one's words are all in the other's, or their distinctive words agree. */
+export const sameName = (venue: string, candidate: string, locality = ""): boolean => nameMatch(venue, candidate, locality) !== "none";
 
 /** The first part of "Jubilee Hills, Hyderabad": the neighbourhood, which is what tells two branches of a chain apart. */
 const neighbourhood = (locality: string): string => fold(locality.split(",")[0] ?? "");
@@ -77,7 +99,7 @@ export function pickCandidate(venue: Venue, candidates: Candidate[]): Candidate 
   const area = neighbourhood(venue.locality);
   let best: { candidate: Candidate; score: number } | null = null;
   for (const c of candidates) {
-    const match = nameMatch(venue.name, c.name);
+    const match = nameMatch(venue.name, c.name, venue.locality);
     if (match === "none" || (match === "contains" && c.category === null)) continue;
     const here = area.length > 0 && fold(`${c.address ?? ""} ${c.locality ?? ""}`).includes(area) ? 1 : 0;
     const score = (match === "exact" ? 2 : 1) + here * 2;

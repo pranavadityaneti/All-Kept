@@ -16,6 +16,22 @@ Deno.test("a candidate is the venue when the names agree, ignoring case, accents
   assertEquals(sameName("Blue Tokai", "Third Wave Coffee"), false);
 });
 
+Deno.test("the words that only say what a place is are set aside, and the locality's own words on the map's name make it the same name", () => {
+  // Real misses from the Korea + Japan pile, 16 Sep 2026.
+  assertEquals(sameName("Blue House Cafe", "Blue House on The Stairs"), true);
+  assertEquals(sameName("Chibo Okonomiyaki Restaurant", "Chibo"), true);
+  assertEquals(sameName("ZEN SAI", "ZEN SAI Seongsu", "Seongsu, Seoul"), true);
+  // Generic words alone never make a name: "Cafe" is not "Blue House on the Stairs", and a different distinctive word is a different place.
+  assertEquals(sameName("Cafe", "Blue House on The Stairs"), false);
+  assertEquals(sameName("Red House Cafe", "Blue House on The Stairs"), false);
+  const seongsu = { name: "ZEN SAI", locality: "Seongsu, Seoul" };
+  // The map's name with the locality appended is exact, so a candidate without a category is still taken.
+  assertEquals(pickCandidate(seongsu, [candidate({ provider: "google", providerId: "g", name: "ZEN SAI Seongsu", category: null })])?.providerId, "g");
+  // A generic-word match still needs the map to say what kind of place it is.
+  assertEquals(pickCandidate({ name: "Blue House Cafe", locality: "Gamcheon Village, Busan" }, [candidate({ name: "Blue House on The Stairs", category: null })]), null);
+  assertEquals(pickCandidate({ name: "Blue House Cafe", locality: "Gamcheon Village, Busan" }, [candidate({ name: "Blue House on The Stairs", category: "coffee_shop" })])?.name, "Blue House on The Stairs");
+});
+
 Deno.test("the candidate that is a place with the venue's name wins; a city or a street with a lookalike name does not", () => {
   const results = [candidate({ name: "Haku Street", category: null }), candidate({ name: "Haku", providerId: "a2" }), candidate({ name: "Haku", providerId: "a3" })];
   assertEquals(pickCandidate(haku, results)?.providerId, "a2");
