@@ -284,3 +284,16 @@ again — which also explains why my later taps to restore the interests switch 
   same file already did.
 - Remember: a formatted-date expectation carries a time zone and a locale whether written or
   not; pick the instant and the month so neither can move it.
+
+## 2026-09-15 — an EAS build refused because the laptop's .env and EAS disagreed on a key
+- What didn't work: `eas build` (iOS, testflight) failed in "Configure expo-updates" with "Runtime
+  version calculated on local machine not equal to runtime version calculated during build". The
+  runtime version is a fingerprint of the native project *and the app config*, `extra` included;
+  the laptop's .env put a RevenueCat Test Store key into `extra.revenuecat`, EAS had no key, and
+  the two fingerprints disagreed over a value that changes nothing native.
+- What worked: `apps/mobile/fingerprint.config.js` with `sourceSkips: ["ExpoConfigExtraSection"]`
+  — `extra` left out of the fingerprint. Proved with `npx @expo/fingerprint fingerprint:generate
+  --platform ios` under both environments: same hash with the config, different without.
+- Remember: anything the config reads from the environment must be either identical on every
+  machine that computes the fingerprint, or skipped from it. The build log is brotli-compressed
+  (`x-goog-stored-content-encoding: br`): `curl -s <logFiles[0]> | brotli -d`.
