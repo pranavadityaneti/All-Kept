@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1";
 import { runClassification, retryableClassificationError, type ClassificationClaim, type ClassificationWorkerDeps } from "../_shared/classification-worker.ts";
 
-const claim: ClassificationClaim = { lease: "test", revision: 1, attempt: 1, platform: "web", kind: "article", url: null, title: "Cooking", text: null, author: null, note: null };
+const claim: ClassificationClaim = { lease: "test", revision: 1, attempt: 1, platform: "web", kind: "article", url: null, title: "Cooking", text: null, author: null, note: null, language: "en" };
 function fixture(overrides: Partial<ClassificationWorkerDeps> = {}) {
   const finished: { error: string | null; retryable: boolean }[] = [];
   const deps: ClassificationWorkerDeps = {
@@ -58,7 +58,7 @@ Deno.test("the save's picture is read when the claim names one, handed to the mo
   assertEquals(results[0]!.usage, { input_tokens: 700, output_tokens: 100, picture: { bytes: "bytes of u1/i1.jpg".length, type: "image/jpeg" } });
 });
 
-Deno.test("no picture on the claim, or one that cannot be read, still sorts from the words and records no picture", async () => {
+Deno.test("no picture on the claim, or one that cannot be read, still sorts from the words; a failed read is recorded as tried, no path leaves no record", async () => {
   const got: unknown[] = [];
   const classifier = { call: async (_s: string, _u: string, _shape?: unknown, picture?: unknown) => { got.push(picture); return { output: { category: "Food & recipes" }, refused: false, model: "test", usage: { input_tokens: 600, output_tokens: 90 } }; } };
   const results: { usage: unknown }[] = [];
@@ -67,5 +67,11 @@ Deno.test("no picture on the claim, or one that cannot be read, still sorts from
   await runClassification(record(fixture({ claim: async () => ({ ...claim, thumbnail_path: "u1/gone.jpg" }), classifier, picture: async () => null })));
   await runClassification(record(fixture({ claim: async () => ({ ...claim, thumbnail_path: "u1/broken.jpg" }), classifier, picture: async () => { throw new Error("storage down"); } })));
   assertEquals(got, [undefined, undefined, undefined]);
-  for (const r of results) assertEquals(r.usage, { input_tokens: 600, output_tokens: 90 });
+  // No key without a path; an explicit null when a path was there and the read failed — so the
+  // re-sort pass, which looks for a picture never tried, tries a broken one once and not forever.
+  assertEquals(results.map((r) => r.usage), [
+    { input_tokens: 600, output_tokens: 90 },
+    { input_tokens: 600, output_tokens: 90, picture: null },
+    { input_tokens: 600, output_tokens: 90, picture: null },
+  ]);
 });

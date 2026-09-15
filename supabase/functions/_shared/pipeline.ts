@@ -249,7 +249,8 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
     async finish(claim, result, retryable) {
       const { data, error } = await db.rpc("finish_item_classification", {
         p_item_id: itemId, p_lease: claim.lease, p_revision: claim.revision,
-        p_output: result.output ? { ...result.output, prompt_version: PROMPT_VERSION } : null,
+        // What the row was written with, beside what was written: the prompt, and the reader's language.
+        p_output: result.output ? { ...result.output, prompt_version: PROMPT_VERSION, summary_language: claim.language } : null,
         p_error: result.error, p_model: result.model,
         p_usage: { ...(result.usage ?? {}), cost_usd: costUsd(result.model, result.usage) }, p_retryable: retryable,
       });

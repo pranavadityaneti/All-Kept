@@ -17,6 +17,32 @@ export const CATEGORIES = [
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
+/**
+ * What each category means, as the sorting model is told it. A bare list of names left the model
+ * to break ties on wording, and like saves scattered; a category without a definition is a type
+ * error here, and the prompt test checks every one reaches the model.
+ */
+export const CATEGORY_GUIDE: Record<Category, string> = {
+  "Food & recipes": "cooking, recipes, dishes, restaurants, food reviews.",
+  "Fitness & health": "workouts, training, nutrition, sleep, medical and mental-health advice; the body is the subject.",
+  "Travel & places": "destinations, trips, hotels, sights; a place is the subject.",
+  "Learning & how-to": "teaching whose subject has no category of its own: study skills, languages, science and history explainers, courses.",
+  "Tech & tools": "software, apps, AI models and tools, gadgets, coding, workflows built with tools; the tool or technique is the subject.",
+  "Money & career": "earning, investing, business and startup stories, jobs, interviews, growing a company or a channel as a business.",
+  "Design & inspiration": "visual design, UI/UX, architecture, art, typography, reference and mood boards; the look is the subject.",
+  "Style & fashion": "clothes, outfits, accessories, personal style.",
+  "Beauty & self-care": "skincare, hair, makeup, grooming.",
+  "Home & living": "interiors, furniture, decor, gardening, cleaning, organising, DIY for the home.",
+  "Entertainment": "films, series, music, games, sport as spectacle, celebrities, trailers, performances; clips enjoyed for their own sake.",
+  "Humour & memes": "the point is the laugh: jokes, skits, memes, pranks.",
+  "News & opinion": "current events, politics, commentary.",
+  "Life & relationships": "dating, family, friendship, parenting, and personal growth: mindset, motivation, routines, productivity.",
+  "Other": "nothing fits, or there is too little to go on.",
+};
+
+/** Below this confidence the sorter is guessing: the save is filed under Other and flagged, whatever the guess. */
+export const UNSURE_BELOW = 0.4;
+
 export const ENTITY_TYPES = ["place", "product", "recipe", "tool", "person", "brand", "other"] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 

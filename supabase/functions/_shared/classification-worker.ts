@@ -15,15 +15,15 @@ export interface ClassificationWorkerDeps {
 }
 
 /**
- * The save's picture, for the model. Best effort: a picture that cannot be read is no reason not
- * to sort the save from its words, so nothing here throws.
+ * The save's picture, for the model, and whether one was there to try. Best effort: a picture that
+ * cannot be read is no reason not to sort the save from its words, so nothing here throws.
  */
-async function pictureFor(claim: ClassificationClaim, deps: ClassificationWorkerDeps): Promise<Picture | undefined> {
-  if (!claim.thumbnail_path || !deps.picture) return undefined;
+async function pictureFor(claim: ClassificationClaim, deps: ClassificationWorkerDeps): Promise<{ tried: boolean; picture?: Picture }> {
+  if (!claim.thumbnail_path || !deps.picture) return { tried: false };
   try {
-    return (await deps.picture(claim.thumbnail_path)) ?? undefined;
+    return { tried: true, picture: (await deps.picture(claim.thumbnail_path)) ?? undefined };
   } catch {
-    return undefined;
+    return { tried: true };
   }
 }
 
@@ -37,11 +37,12 @@ export async function runClassification(deps: ClassificationWorkerDeps, retry = 
   if (!claim) return deps.category();
   let result: ClassifyResult;
   try {
-    const picture = deps.classifier ? await pictureFor(claim, deps) : undefined;
+    const { tried, picture } = deps.classifier ? await pictureFor(claim, deps) : { tried: false };
     result = deps.classifier ? await classify(claim, deps.classifier, picture)
       : { output: null, error: "classifier unavailable", model: "unconfigured", usage: null };
-    // What the model saw is kept with what it cost, so a picture that lands later is known to be new.
-    if (picture && result.usage) result.usage = { ...result.usage, picture: { bytes: Math.floor(picture.base64.length * 3 / 4), type: picture.mediaType } };
+    // What became of the picture is kept with what the call cost, so a picture that lands later is
+    // known to be new, and one that could not be read is known to have been tried.
+    if (tried && result.usage) result.usage = { ...result.usage, picture: picture ? { bytes: Math.floor(picture.base64.length * 3 / 4), type: picture.mediaType } : null };
   } catch {
     result = { output: null, error: "classification request failed", model: "unknown", usage: null };
   }

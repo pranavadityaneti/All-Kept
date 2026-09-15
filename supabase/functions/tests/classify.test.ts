@@ -1,7 +1,8 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { classify, buildUserMessage, validateOutput, PROMPT_VERSION, SYSTEM_PROMPT, type ClassifyDeps, type Picture } from "../_shared/classify.ts";
+import { classify, buildUserMessage, validateOutput, PROMPT_VERSION, SYSTEM_PROMPT, TIE_BREAKERS, type ClassifyDeps, type Picture } from "../_shared/classify.ts";
+import { CATEGORIES, CATEGORY_GUIDE, UNSURE_BELOW } from "../_shared/contracts.ts";
 
-const input = { platform: "instagram", kind: "short_video", url: "https://www.instagram.com/reel/DcVMQIIMa5-/", title: null, text: "Travis Kalanick on the little details that made Uber beat Lyft", author: "davidsenra", note: null };
+const input = { platform: "instagram", kind: "short_video", url: "https://www.instagram.com/reel/DcVMQIIMa5-/", title: null, text: "Travis Kalanick on the little details that made Uber beat Lyft", author: "davidsenra", note: null, language: "en" };
 const fake = (result: unknown, extra: Partial<Awaited<ReturnType<ClassifyDeps["call"]>>> = {}): ClassifyDeps => ({ async call() { return { output: result, refused: false, model: "claude-opus-5", usage: { input_tokens: 400, output_tokens: 90 }, ...extra }; } });
 
 Deno.test("a valid model answer is normalised into the AI output", async () => {
@@ -22,12 +23,29 @@ Deno.test("an unknown category, a refusal and a transport error all yield no out
   assertEquals(validateOutput("nope"), null);
 });
 
-Deno.test("the user message carries the fields and clips long text; the system prompt lists every category", () => {
-  const msg = buildUserMessage({ ...input, text: "x".repeat(2000) });
+Deno.test("the user message carries the fields and clips long text; the system prompt defines every category and breaks the ties", () => {
+  const msg = buildUserMessage({ ...input, text: "x".repeat(2000), language: "ja" });
   assertEquals(msg.includes("platform: instagram"), true);
   assertEquals(msg.includes("x".repeat(1500) + "…"), true);
-  assertEquals(SYSTEM_PROMPT.includes("Food & recipes") && SYSTEM_PROMPT.includes("Life & relationships"), true);
-  assertEquals(SYSTEM_PROMPT.includes("Beauty & self-care") && SYSTEM_PROMPT.includes("Home & living"), true);
+  assertEquals(msg.includes("write in: ja"), true);
+  // Every category is named with its definition, not as a bare label in a list.
+  for (const c of CATEGORIES) assertEquals(SYSTEM_PROMPT.includes(`- ${c} — ${CATEGORY_GUIDE[c]}`), true, c);
+  // Every tie-breaker names at least one real category, so a rename cannot leave a rule pointing at nothing.
+  assertEquals(TIE_BREAKERS.length >= 8, true);
+  for (const rule of TIE_BREAKERS) assertEquals(CATEGORIES.some((c) => rule.includes(c)), true, rule);
+  assertEquals(SYSTEM_PROMPT.includes("never the fallback") && SYSTEM_PROMPT.includes(String(UNSURE_BELOW)), true);
+  // The summary follows the reader, not the post.
+  assertEquals(SYSTEM_PROMPT.includes("write in"), true);
+});
+
+Deno.test("below the confidence floor the guess is not shown: the save is filed under Other; at the floor it stands", () => {
+  const answer = { tags: [], summary: "", entities: [], language: "en", actionability: "none" };
+  const low = validateOutput({ ...answer, category: "Entertainment", confidence: 0.3 })!;
+  assertEquals([low.category, low.confidence], ["Other", 0.3]);
+  const atFloor = validateOutput({ ...answer, category: "Entertainment", confidence: UNSURE_BELOW })!;
+  assertEquals(atFloor.category, "Entertainment");
+  // A missing confidence is not a low one: it reads as 0.5, as before.
+  assertEquals(validateOutput({ ...answer, category: "Entertainment" })!.category, "Entertainment");
 });
 
 Deno.test("the picture goes to the model with the words, and the prompt says what it is for", async () => {
