@@ -24,6 +24,13 @@ export interface ItemDetail {
   saveCount: number;
   category: string | null;
   modelCategory: string | null;
+  /** The person chose the category themselves; the sorter's doubt, if any, is answered. */
+  corrected: boolean;
+  /** The sorter's confidence in its category, 0 to 1; null until it has answered. */
+  confidence: number | null;
+  /** The post's own language and the language its summary was written in, as ISO codes; null until sorted. */
+  language: string | null;
+  summaryLanguage: string | null;
   tags: string[];
   summary: string | null;
   /** The publisher, for a link from a site we have no platform name for. */
@@ -34,7 +41,7 @@ export interface ItemDetail {
   embeddable: boolean | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,item_ai(category,user_category,tags,summary)";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,item_ai(category,user_category,tags,summary,confidence,language,summary_language)";
 
 type Row = Record<string, unknown>;
 
@@ -74,6 +81,10 @@ function toDetail(r: Row): ItemDetail {
     saveCount: Number(r["save_count"] ?? 1),
     category: ((ai?.["user_category"] as string | null) ?? (ai?.["category"] as string | null)) ?? null,
     modelCategory: (ai?.["category"] as string | null) ?? null,
+    corrected: ai?.["user_category"] != null,
+    confidence: typeof ai?.["confidence"] === "number" ? (ai["confidence"] as number) : typeof ai?.["confidence"] === "string" ? Number(ai["confidence"]) : null,
+    language: (ai?.["language"] as string | null) ?? null,
+    summaryLanguage: (ai?.["summary_language"] as string | null) ?? null,
     tags: Array.isArray(ai?.["tags"]) ? (ai!["tags"] as string[]) : [],
     summary: (ai?.["summary"] as string | null) ?? null,
     siteName: (meta?.["site_name"] as string | null) ?? null,

@@ -89,6 +89,7 @@ describe("how many saves the filters match", () => {
   it("names a shape and a flag in the words someone would use, not the keys they are stored as", () => {
     expect(filterOptions("shapes", facets, none).map((o) => o.label)).toEqual(["Reels & Shorts", "Posts & carousels"]);
     expect(filterOptions("flags", facets, none).map((o) => o.label)).toEqual(["Needs attention"]);
+    expect(filterLabel("flags", "unsure")).toBe("Sorter unsure");
   });
 
   it("gathers what is switched on across every group, not just the first two", () => {

@@ -13,7 +13,7 @@ import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem,
 import { categoryDisplayName } from "../lib/category-names";
 import { ownCategories, useCreateCategory, useFacets } from "../lib/library";
 import { track, useTrackOnce } from "../lib/metrics";
-import { canRetrySorting, categoryLabel } from "../lib/sorting";
+import { canRetrySorting, canSortAgain, categoryLabel, isUnsure, summaryNote } from "../lib/sorting";
 import { openLink } from "../lib/open";
 import { hostLabel, platformIcon, platformLabel } from "../lib/platforms";
 import { useSession } from "../lib/session";
@@ -272,7 +272,23 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
               </View>
             )}
 
-            <Text style={[type.label, { color: p.inkMuted }]}>Put this under</Text>
+            {isUnsure(detail) && (
+              <Text style={[type.body, { color: p.inkMuted }]}>The sorter wasn't sure about this one — pick a category below.</Text>
+            )}
+            <View style={styles.between}>
+              <Text style={[type.label, { color: p.inkMuted }]}>Put this under</Text>
+              {canSortAgain(detail) && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sort this save again"
+                  disabled={retrySorting.isPending}
+                  onPress={() => { track(userId, "sort_again", { category: detail.modelCategory ?? "none" }); retrySorting.mutate(); }}
+                  hitSlop={8}
+                >
+                  <Text style={[type.label, { color: retrySorting.isPending ? p.inkMuted : p.accent }]}>{retrySorting.isPending ? "Sorting…" : "Sort again"}</Text>
+                </Pressable>
+              )}
+            </View>
             <View style={styles.wrap}>
               {[...CATEGORIES, ...mine].map((c) => (
                 <Chip key={c} label={categoryDisplayName(c)} selected={detail.category === c} onPress={() => setCategory.mutate(c, { onSuccess: () => track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: c }) })} />
@@ -281,6 +297,7 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             </View>
 
             {detail.summary && <Text style={[type.body, { color: p.inkMuted }]}>{detail.summary}</Text>}
+            {detail.summary && summaryNote(detail) && <Text style={[type.label, { color: p.inkMuted }]}>{summaryNote(detail)}</Text>}
             {detail.tags.length > 0 && <Text style={[type.label, { color: p.inkMuted }]}>{detail.tags.join(" · ")}</Text>}
             {detail.text && detail.text.trim() !== heading.trim() && <Text style={[type.body, { color: p.ink }]}>{detail.text}</Text>}
 
@@ -353,6 +370,7 @@ const styles = StyleSheet.create({
   meta: { marginTop: 2 },
   actions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: space.sm },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  between: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   block: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.lg, padding: space.lg, gap: space.sm },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.md, minHeight: 48 },
   noteInput: { minHeight: 88, textAlignVertical: "top" },

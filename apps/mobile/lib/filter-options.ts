@@ -37,12 +37,14 @@ export const FLAG_LABEL: Record<string, string> = {
   needs_attention: "Needs attention",
   repeated: "Saved more than once",
   noted: "Has a note",
+  unsure: "Sorter unsure",
 };
 
 export const FLAG_ICON: Record<string, string> = {
   needs_attention: "alert-circle-outline",
   repeated: "copy-outline",
   noted: "create-outline",
+  unsure: "help-circle-outline",
 };
 
 /**
