@@ -269,23 +269,6 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
         </View>
       </View>
 
-      <CategorySheet
-        visible={naming}
-        existing={mine}
-        onClose={() => setNaming(false)}
-        onSubmit={async ({ name, icon }) => {
-          try {
-            await createCategory.mutateAsync({ name, icon });
-            // Made from inside a save, so the save goes into it — that is why they opened this.
-            await setCategory.mutateAsync(name);
-            track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: name });
-            return null;
-          } catch (e) {
-            return e instanceof Error ? e.message : "Could not make the category.";
-          }
-        }}
-      />
-
       <Modal visible={!!sheet} animationType="slide" onRequestClose={() => { saveNote(); setSheet(false); }} presentationStyle="pageSheet">
         <View style={[styles.sheet, { backgroundColor: p.bg }]}>
           <View style={styles.sheetBar}>
@@ -429,19 +412,35 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
               </Section>
             )}
           </ScrollView>
+          {/* Opened from inside this sheet, so they live inside it: a modal presented beside a presented one never shows on iOS. */}
+          <CategorySheet
+            visible={naming}
+            existing={mine}
+            onClose={() => setNaming(false)}
+            onSubmit={async ({ name, icon }) => {
+              try {
+                await createCategory.mutateAsync({ name, icon });
+                // Made from inside a save, so the save goes into it — that is why they opened this.
+                await setCategory.mutateAsync(name);
+                track(userId, "category_changed", { from: detail.modelCategory ?? "none", to: name });
+                return null;
+              } catch (e) {
+                return e instanceof Error ? e.message : "Could not make the category.";
+              }
+            }}
+          />
+          <PlaceSheet
+            visible={placing}
+            initial={detail.userVenue ?? detail.venue}
+            busy={setPlace.isPending}
+            error={setPlace.error ? setPlace.error.message : null}
+            canClear={!!detail.userVenue}
+            onFind={(venue) => setPlace.mutate(venue, { onSuccess: () => { track(userId, "place_named", { had: detail.venue ? "venue" : "none" }); setPlacing(false); } })}
+            onClear={() => setPlace.mutate(null, { onSuccess: () => { track(userId, "place_cleared"); setPlacing(false); } })}
+            onClose={() => setPlacing(false)}
+          />
         </View>
       </Modal>
-
-      <PlaceSheet
-        visible={placing}
-        initial={detail.userVenue ?? detail.venue}
-        busy={setPlace.isPending}
-        error={setPlace.error ? setPlace.error.message : null}
-        canClear={!!detail.userVenue}
-        onFind={(venue) => setPlace.mutate(venue, { onSuccess: () => { track(userId, "place_named", { had: detail.venue ? "venue" : "none" }); setPlacing(false); } })}
-        onClear={() => setPlace.mutate(null, { onSuccess: () => { track(userId, "place_cleared"); setPlacing(false); } })}
-        onClose={() => setPlacing(false)}
-      />
 
       <MoreSheet
         visible={more}

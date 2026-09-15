@@ -442,11 +442,12 @@ entrypoint = "./functions/delete-account/index.ts"
 [functions.reprocess-item]
 enabled = true
 verify_jwt = true
+entrypoint = "./functions/reprocess-item/index.ts"
 
 [functions.resolve-place]
 enabled = true
 verify_jwt = true
-entrypoint = "./functions/reprocess-item/index.ts"
+entrypoint = "./functions/resolve-place/index.ts"
 
 [functions.reddit-thumbnail]
 enabled = true
