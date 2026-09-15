@@ -1,5 +1,5 @@
 import { describe as suite, expect, it } from "vitest";
-import { dayLabel, describe, groupByDay, when } from "../lib/activity";
+import { dayLabel, describe, entriesFor, groupByDay, groupEntries, when } from "../lib/activity";
 import type { LibraryItem } from "../lib/library";
 
 const save = (id: string, savedAt: string): LibraryItem =>
@@ -39,6 +39,19 @@ suite("the activity list", () => {
 
   it("has nothing to group when nothing has arrived", () => {
     expect(groupByDay([], new Date())).toEqual([]);
+  });
+
+  it("lists a reminder that has fired beside the saves, at the time it fired, newest first", () => {
+    const now = new Date(2026, 8, 10, 12, 0);
+    const a = save("a", new Date(2026, 8, 10, 11, 0).toISOString());
+    const b = save("b", new Date(2026, 8, 8, 9, 0).toISOString());
+    const reminded = { ...save("b", b.lastSavedAt), remindAt: new Date(2026, 8, 10, 9, 30).toISOString() };
+    const entries = entriesFor([a, b], [reminded]);
+    expect(entries.map((e) => [e.key, e.kind])).toEqual([["saved:a", "saved"], ["reminder:b", "reminder"], ["saved:b", "saved"]]);
+    const sections = groupEntries(entries, now);
+    expect(sections.map((s) => [s.title, s.data.map((e) => e.key)])).toEqual([["TODAY", ["saved:a", "reminder:b"]], [expect.stringMatching(/2026/), ["saved:b"]]]);
+    // A reminder still to come is not an entry: nothing has happened yet.
+    expect(entriesFor([], [{ ...reminded, remindAt: new Date(2026, 8, 12, 9, 0).toISOString() }], now).length).toBe(0);
   });
 
   it("reads a timestamp the way a notification does", () => {

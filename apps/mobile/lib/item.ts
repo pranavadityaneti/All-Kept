@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ClassificationStatus, ReprocessItemResponse } from "@allkept/contracts";
 import { parseAttachedLink } from "./attach-link";
 import { invalidateLibrary } from "./library";
+import { cancelReminder, scheduleReminder } from "./reminders";
 import { supabase } from "./supabase";
 import { forgetThumbnail } from "./thumbnails";
 
@@ -35,13 +36,15 @@ export interface ItemDetail {
   summary: string | null;
   /** The publisher, for a link from a site we have no platform name for. */
   siteName: string | null;
+  /** When the person asked to be reminded, if they did. */
+  remindAt: string | null;
   /** The video's shape as width ÷ height, when enrichment managed to learn it. A Short is 0.563. */
   aspect: number | null;
   /** False when the provider refuses to play this in a frame. Absent means nothing is known. */
   embeddable: boolean | null;
 }
 
-const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,item_ai(category,user_category,tags,summary,confidence,language,summary_language)";
+const SELECT = "id,platform,kind,status,classification_status,title,text,note,author_name,author_handle,canonical_url,source_url,external_id,thumbnail_path,last_saved_at,save_count,media_meta,remind_at,item_ai(category,user_category,tags,summary,confidence,language,summary_language)";
 
 type Row = Record<string, unknown>;
 
@@ -88,6 +91,7 @@ function toDetail(r: Row): ItemDetail {
     tags: Array.isArray(ai?.["tags"]) ? (ai!["tags"] as string[]) : [],
     summary: (ai?.["summary"] as string | null) ?? null,
     siteName: (meta?.["site_name"] as string | null) ?? null,
+    remindAt: (r["remind_at"] as string | null) ?? null,
     aspect: readAspect(meta),
     embeddable: typeof meta?.["embeddable"] === "boolean" ? (meta["embeddable"] as boolean) : null,
   };
@@ -176,6 +180,26 @@ export function useAttachLink(id: string, expectPlatform?: string, thumbnailPath
       void queryClient.invalidateQueries({ queryKey: ["item", id] });
       invalidateLibrary(queryClient);
     },
+  });
+}
+
+/**
+ * A reminder: the time on the save, and the notification on this phone. The server is written first,
+ * so a phone that cannot schedule (no permission) still keeps the promise for the phone that can.
+ */
+export function useSetReminder(id: string, title: string) {
+  return useItemMutation<number>(id, async (at) => {
+    const { error } = await supabase.from("items").update({ remind_at: new Date(at).toISOString() }).eq("id", id);
+    if (error) throw new Error(error.message);
+    await scheduleReminder(id, at, title).catch(() => undefined);
+  });
+}
+
+export function useClearReminder(id: string) {
+  return useItemMutation<void>(id, async () => {
+    const { error } = await supabase.from("items").update({ remind_at: null }).eq("id", id);
+    if (error) throw new Error(error.message);
+    await cancelReminder(id).catch(() => undefined);
   });
 }
 

@@ -38,6 +38,7 @@ export const FLAG_LABEL: Record<string, string> = {
   repeated: "Saved more than once",
   noted: "Has a note",
   unsure: "Sorter unsure",
+  reminder: "Reminder set",
 };
 
 export const FLAG_ICON: Record<string, string> = {
@@ -45,6 +46,7 @@ export const FLAG_ICON: Record<string, string> = {
   repeated: "copy-outline",
   noted: "create-outline",
   unsure: "help-circle-outline",
+  reminder: "alarm-outline",
 };
 
 /**

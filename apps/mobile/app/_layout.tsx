@@ -11,6 +11,7 @@ import { backfillInstagramPictures, pictureDeps } from "../lib/instagram-picture
 import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
 import { backfillUnresolvedLinks, resolveDeps } from "../lib/resolve-backfill";
 import { reportLanguage } from "../lib/language";
+import { syncReminders } from "../lib/reminders";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, type PropsWithChildren } from "react";
 import { AppState, StyleSheet, Text, View } from "react-native";
@@ -87,6 +88,8 @@ function Shell() {
       void reportStorefront().catch(() => undefined);
       // And the phone's language, so the sorter writes each save's summary in it.
       void reportLanguage().catch(() => undefined);
+      // And the reminders: the server's list is the truth, this phone's schedule follows it.
+      void syncReminders();
       // A subscription changes off the phone — a renewal, a lapse, a refund, the webhook landing
       // late — so the server's answer is re-read each time the app comes back, not trusted for a day.
       void queryClient.invalidateQueries({ queryKey: entitlementKey });

@@ -9,9 +9,10 @@ import { Chip } from "./Chip";
 import { EmbedPlayer } from "./EmbedPlayer";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
+import { RemindMe } from "./RemindMe";
 import { captionBody } from "../lib/caption";
 import { embedFit, embedUrl, fitBox, initialAspect, initialHeight } from "../lib/embed";
-import { DuplicateLinkError, openableUrl, useAttachLink, useDeleteItem, useItem, useSetCategory, useSetNote, useRetrySorting } from "../lib/item";
+import { DuplicateLinkError, openableUrl, useAttachLink, useClearReminder, useDeleteItem, useItem, useSetCategory, useSetNote, useSetReminder, useRetrySorting } from "../lib/item";
 import { categoryDisplayName } from "../lib/category-names";
 import { ownCategories, useCreateCategory, useFacets } from "../lib/library";
 import { track, useTrackOnce } from "../lib/metrics";
@@ -58,6 +59,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
   const createCategory = useCreateCategory(userId);
   const [naming, setNaming] = useState(false);
   const setNote = useSetNote(id);
+  const setReminder = useSetReminder(id, detail?.title?.trim() || detail?.text?.split("\n").find((l) => l.trim())?.trim() || "A save you wanted back");
+  const clearReminder = useClearReminder(id);
   const retrySorting = useRetrySorting(id);
   const remove = useDeleteItem(id, detail?.thumbnailPath ?? null);
   const attach = useAttachLink(id, detail?.status === "no_link" && detail.platform === "instagram" ? "instagram" : undefined, detail?.thumbnailPath ?? null);
@@ -335,6 +338,16 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
                   <Chip label="+ New category" onPress={() => setNaming(true)} />
                 </View>
               )}
+            </Section>
+
+            <Section title="Remind me">
+              <RemindMe
+                remindAt={detail.remindAt}
+                busy={setReminder.isPending}
+                onSet={(at) => setReminder.mutate(at, { onSuccess: () => track(userId, "reminder_set", { hours: Math.round((at - Date.now()) / 3_600_000) }) })}
+                onClear={() => clearReminder.mutate(undefined, { onSuccess: () => track(userId, "reminder_cleared") })}
+              />
+              {(setReminder.error || clearReminder.error) && <Text style={[type.label, { color: p.bad }]}>Could not save the reminder. Please try again.</Text>}
             </Section>
 
             {/* The person's own words come before the sorter's. */}

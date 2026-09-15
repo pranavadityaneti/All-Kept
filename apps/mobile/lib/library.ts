@@ -20,6 +20,8 @@ export interface LibraryItem {
   category: string | null;
   tags: string[];
   summary: string | null;
+  /** When the person asked to be reminded of this save, if they did; past or future. */
+  remindAt?: string | null;
 }
 
 // The groups themselves live in filter-groups.ts, which stays free of runtime imports.
@@ -47,12 +49,13 @@ export const toItem = (r: Row): LibraryItem => ({
   category: (r["category"] as string | null) ?? null,
   tags: Array.isArray(r["tags"]) ? (r["tags"] as string[]) : [],
   summary: (r["summary"] as string | null) ?? null,
+  remindAt: (r["remind_at"] as string | null) ?? null,
 });
 
 interface LibraryCursor { savedAt: string; id: string }
 
 async function fetchPage(filters: Filters, before: LibraryCursor | null): Promise<{ items: LibraryItem[]; nextCursor: LibraryCursor | null }> {
-  const { data, error } = await supabase.rpc("library_query_v4", {
+  const { data, error } = await supabase.rpc("library_query_v5", {
     platforms: filters.platforms.length ? filters.platforms : null,
     categories: filters.categories.length ? filters.categories : null,
     shapes: filters.shapes.length ? filters.shapes : null,
@@ -70,7 +73,7 @@ async function fetchPage(filters: Filters, before: LibraryCursor | null): Promis
 
 export function useLibrary(filters: Filters, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: ["library", "v4", filters],
+    queryKey: ["library", "v5", filters],
     enabled,
     initialPageParam: null as LibraryCursor | null,
     queryFn: ({ pageParam }) => fetchPage(filters, pageParam),
@@ -95,6 +98,19 @@ export function useSearch(q: string, filters: Filters, enabled: boolean) {
       return { ...data, items: data.items.map(toItem) };
     },
     getNextPageParam: (last) => last.nextCursor,
+  });
+}
+
+/** The saves whose reminder has fired in the last thirty days, for the Notifications screen. Keyed under "library", which invalidateLibrary matches. */
+export function useFiredReminders(enabled: boolean) {
+  return useQuery({
+    queryKey: ["library", "reminded"],
+    enabled,
+    queryFn: async (): Promise<LibraryItem[]> => {
+      const { data, error } = await supabase.rpc("library_query_v5", { flags: ["reminded"], lim: 50 });
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as Row[]).map(toItem);
+    },
   });
 }
 

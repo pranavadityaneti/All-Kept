@@ -35,6 +35,33 @@ export function dayLabel(iso: string, now: Date): string {
 }
 
 /**
+ * One line in the Notifications list: a save arriving, or a reminder firing. Keyed so the same save
+ * can appear twice — once when it arrived, once when it came back — and never collide.
+ */
+export interface Entry { key: string; kind: "saved" | "reminder"; item: LibraryItem; at: string }
+
+/** The saves and the reminders that have fired, as one list, newest first. A reminder still to come has not happened. */
+export function entriesFor(saves: LibraryItem[], reminded: LibraryItem[], now = new Date()): Entry[] {
+  const entries: Entry[] = saves.map((item) => ({ key: `saved:${item.id}`, kind: "saved", item, at: item.lastSavedAt }));
+  for (const item of reminded) {
+    if (item.remindAt && Date.parse(item.remindAt) <= now.getTime()) entries.push({ key: `reminder:${item.id}`, kind: "reminder", item, at: item.remindAt });
+  }
+  return entries.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+}
+
+/** Entries under their days, in the order given — which entriesFor has already made newest first. */
+export function groupEntries(entries: Entry[], now: Date): { title: string; data: Entry[] }[] {
+  const out: { title: string; data: Entry[] }[] = [];
+  for (const entry of entries) {
+    const title = dayLabel(entry.at, now);
+    const open = out[out.length - 1];
+    if (open && open.title === title) open.data.push(entry);
+    else out.push({ title, data: [entry] });
+  }
+  return out;
+}
+
+/**
  * Saves arrive newest first, so a run of the same day is always contiguous and grouping is a single
  * pass. Sorting again here would only risk disagreeing with the order the list was fetched in.
  */
