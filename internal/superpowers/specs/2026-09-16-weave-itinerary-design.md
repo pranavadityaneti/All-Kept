@@ -190,3 +190,40 @@ every field the validators read (the sorter's lesson). The function's handler wi
 3. Migration `weaves`; the `weave` function with its handler and tests.
 4. App: Plan a trip → profile → Customise → the plan screen → edits and versions.
 5. The test pile, and the tuning.
+
+## 11. The weave as a job (Pranav, 17 Sep — after the first live run)
+
+**What the first run taught.** Understanding 51 saves at medium effort took 40–55 s to spend the
+3,000 tokens it was allowed and never reached the answer (`incomplete: max_output_tokens`, eight
+times over). Given the room it needs it passes 60 s, where a phone stops waiting; Supabase's
+gateway answers 504 after 150 s regardless; and the plan stage — high effort on Astra, a retry,
+the suggestions, the season — needs minutes. No budget makes a held-open connection work.
+
+**The shape.** Both asks answer at once and carry on in the background (`EdgeRuntime.waitUntil`;
+a Pro-plan worker lives 400 s). The `weaves` row is the truth the app watches:
+
+- `understand` → creates the row as `reading`, answers `202 { weaveId, status: "reading" }`;
+  the worker reads, then writes `profiled` with `result = { profile, saves }`, or `failed`.
+- `plan` → sets the row `planning` (brief, profile as edited), answers
+  `202 { weaveId, status: "planning" }`; the worker selects, suggests, fetches the season, builds
+  the skeleton, asks, validates, retries once *only if 120 s remain* (the retry's own timeout is
+  what remains, less a margin), then writes `planned` with
+  `result = { plan, stops, leftOut, brief, cost }`, or `failed`.
+- `failed` carries `error` (the technical reason, for us) and `message` (the words the person is
+  shown). A running job touches its row every 20 s (a worker is reused across requests and may
+  have little of its 400 s left when a plan lands on it); a row silent for 90 s belongs to a
+  worker that died — the app stops waiting ("taking longer than it should") and the next `plan`
+  on it takes it over. A `plan` asked while the row is being touched is refused (409): "Still
+  weaving the last plan."
+- Budgets: understand 25,000 tokens / 180 s at medium; plan 50,000 / 240 s at high. Ceilings
+  at list price: sol ≈ $0.50 to understand, Astra ≈ $2.50 to plan; real runs cost what they use.
+
+**The app.** Reads its own row (RLS `weaves_own_read`, already granted) every 3 s until the
+status it waits for, or `failed`, or the deadline (5 min to read, 8 min to plan). "Reading your
+51 saves — usually a minute or two." "Weaving your plan — two to five minutes. You can leave;
+it carries on." The plan screen opens on the id and waits there, so a plan begun is reachable
+after the app was closed: the last weave's id is kept on the phone and offered on Plan a trip
+for an hour.
+
+**Migration.** `weaves.status` gains `reading`; `result jsonb` (what the app shows) and
+`message text` (what the person is told) are added.
