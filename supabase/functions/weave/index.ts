@@ -9,6 +9,9 @@ import { safeFetch } from "../_shared/safe-address.ts";
 import type { OpeningPeriod } from "../_shared/weave/skeleton.ts";
 import { handleWeave, type Suggestion, type WeaveRecord, type WeaveSaveRow } from "./handler.ts";
 
+/** The runtime's hook for work that outlives the answer: the worker stays up for it (400 s on the Pro plan). */
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+
 /** What to ask Google for when the saves leave a gap of a kind in a town. */
 const SUGGESTION_QUERY: Record<WeaveKind, string | null> = {
   food: "best local restaurant", coffee: "specialty coffee cafe", nightlife: "bar", culture: "temple museum or historic neighbourhood",
@@ -95,11 +98,16 @@ Deno.serve(async (req) => {
         if (error) throw error;
       },
       async get(userId, id) {
-        const { data, error } = await db.from("weaves").select("id,towns,profile,brief,skeleton,plan,status,version").eq("id", id).eq("user_id", userId).maybeSingle();
+        const { data, error } = await db.from("weaves").select("id,towns,profile,brief,skeleton,plan,status,version,updated_at").eq("id", id).eq("user_id", userId).maybeSingle();
         if (error) throw error;
-        return (data as WeaveRecord | null) ?? null;
+        if (!data) return null;
+        const { updated_at, ...rest } = data as Omit<WeaveRecord, "updatedAt"> & { updated_at: string };
+        return { ...rest, updatedAt: updated_at };
       },
       log,
+      // The reading and the arranging go on after the 202; without the hook (tests, an older runtime) they run in the request.
+      defer: (work) => { if (typeof EdgeRuntime !== "undefined" && EdgeRuntime) EdgeRuntime.waitUntil(work); else void work; },
+      now: () => Date.now(),
     });
   } catch (e) {
     console.error("weave failed", e);

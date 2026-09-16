@@ -34,11 +34,12 @@ function fakePlanner(user: string): unknown {
   return { overview: "A trip.", days, bookAhead: [], leftOut: stops.map((s) => ({ id: s.id, reason: "no room" })), assumptions: [] };
 }
 
-function deps(over: Partial<WeaveDeps> = {}): WeaveDeps & { created: Record<string, unknown>[]; updates: Record<string, unknown>[]; suggested: string[]; askedPlan: string[] } {
-  const created: Record<string, unknown>[] = [], updates: Record<string, unknown>[] = [], suggested: string[] = [], askedPlan: string[] = [];
-  const record: WeaveRecord = { id: WEAVE, towns: null, profile, brief: null, skeleton: null, plan: null, status: "profiled", version: 1 };
+function deps(over: Partial<WeaveDeps> = {}): WeaveDeps & { created: Record<string, unknown>[]; updates: Record<string, unknown>[]; suggested: string[]; askedPlan: string[]; deferred: Promise<void>[]; settled(): Promise<void> } {
+  const created: Record<string, unknown>[] = [], updates: Record<string, unknown>[] = [], suggested: string[] = [], askedPlan: string[] = [], deferred: Promise<void>[] = [];
+  const record: WeaveRecord = { id: WEAVE, towns: null, profile, brief: null, skeleton: null, plan: null, status: "profiled", version: 1, updatedAt: new Date().toISOString() };
   return {
-    created, updates, suggested, askedPlan,
+    created, updates, suggested, askedPlan, deferred, settled: async () => { await Promise.all(deferred); },
+    defer: (work) => { deferred.push(work); }, now: () => Date.now(),
     userId: async () => USER, entitled: async () => true, language: async () => "en",
     saves: async (_u, towns) => saves.filter((s) => !towns || towns.includes(s.town)),
     understand: async () => ({ output: profile, refused: false, model: "claude-opus-5", usage: { input_tokens: 1000, output_tokens: 200 } }),
@@ -64,16 +65,33 @@ Deno.test("towns: every town the saves name, with counts, most first", async () 
 Deno.test("understand: the saves in the chosen towns become a profile kept as a new weave, with only the towns the saves name", async () => {
   const d = deps({ understand: async () => ({ output: { ...profile, towns: [...profile.towns, { name: "Osaka", country: "JP", saves: 0, nights: 1 }] }, refused: false, model: "claude-opus-5", usage: { input_tokens: 1000, output_tokens: 200 } }) });
   const res = await handleWeave(post({ action: "understand", towns: ["Seoul", "Busan"] }), d);
-  const body = await res.json() as { weaveId: string; profile: WeaveProfile; saves: number };
-  assertEquals([res.status, body.weaveId, body.saves], [200, WEAVE, 5]);
-  assertEquals(body.profile.towns.map((t) => t.name), ["Seoul", "Busan"]);
-  assertEquals(d.created[0]!["status"], "profiled");
-  assert((d.created[0]!["cost_usd"] as number) > 0);
+  const body = await res.json() as { weaveId: string; status: string };
+  // Answered at once: the row exists as "reading" and the reading goes on after the answer.
+  assertEquals([res.status, body.weaveId, body.status], [202, WEAVE, "reading"]);
+  assertEquals(d.created[0]!["status"], "reading");
+  await d.settled();
+  const done = d.updates[d.updates.length - 1]!;
+  const result = done["result"] as { profile: WeaveProfile; saves: number };
+  assertEquals([done["status"], result.saves], ["profiled", 5]);
+  assertEquals(result.profile.towns.map((t) => t.name), ["Seoul", "Busan"]);
+  assert((done["cost_usd"] as number) > 0);
 });
 
-Deno.test("understand: a model that fails, refuses or answers nonsense is not a profile; a caller without a subscription is told", async () => {
-  assertEquals((await handleWeave(post({ action: "understand" }), deps({ understand: async () => ({ output: null, refused: false, model: "m", usage: null, error: "anthropic 529" }) }))).status, 503);
-  assertEquals((await handleWeave(post({ action: "understand" }), deps({ understand: async () => ({ output: { mix: [] }, refused: false, model: "m", usage: null }) }))).status, 503);
+Deno.test("understand: when the reading fails after the answer, the row says so in the person's words and in ours; a crash is a failure too, never a row left reading", async () => {
+  const failed = deps({ understand: async () => ({ output: null, refused: false, model: "m", usage: null, error: "incomplete: max_output_tokens" }) });
+  assertEquals((await handleWeave(post({ action: "understand" }), failed)).status, 202);
+  await failed.settled();
+  assertEquals([failed.updates[0]!["status"], failed.updates[0]!["error"], failed.updates[0]!["message"]], ["failed", "incomplete: max_output_tokens", "Couldn't read your saves just now. Try again in a moment."]);
+  const nonsense = deps({ understand: async () => ({ output: { mix: [] }, refused: false, model: "m", usage: null }) });
+  await handleWeave(post({ action: "understand" }), nonsense); await nonsense.settled();
+  assertEquals([nonsense.updates[0]!["status"], nonsense.updates[0]!["message"]], ["failed", "Couldn't make sense of your saves. Try again in a moment."]);
+  const crashed = deps({ understand: async () => { throw new Error("boom"); } });
+  await handleWeave(post({ action: "understand" }), crashed); await crashed.settled();
+  assertEquals([crashed.updates[0]!["status"], crashed.updates[0]!["message"]], ["failed", "The itinerary could not be made. Try again in a moment."]);
+  assert(String(crashed.updates[0]!["error"]).includes("boom"));
+});
+
+Deno.test("understand: a caller without a subscription is told at the door, and so is one whose saves name no place", async () => {
   assertEquals((await handleWeave(post({ action: "understand" }), deps({ entitled: async () => false }))).status, 402);
   assertEquals((await handleWeave(post({ action: "understand" }), deps({ saves: async () => [] }))).status, 400);
 });
@@ -81,8 +99,10 @@ Deno.test("understand: a model that fails, refuses or answers nonsense is not a 
 Deno.test("plan: the chosen saves, a suggestion for a gap, the season fetched, the skeleton computed, the plan validated and kept", async () => {
   const d = deps();
   const res = await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 3, startDate: "2026-10-08", nights: [{ town: "Seoul", nights: 2 }, { town: "Busan", nights: 1 }], pace: "relaxed" } }), d);
-  const body = await res.json() as { plan: { days: { town: string; stops: { id: string }[] }[]; leftOut: unknown[] }; stops: { id: string; source: string; openByDay: string[] }[]; leftOut: { id: string; reason: string }[]; cost: number };
-  assertEquals(res.status, 200, JSON.stringify(body));
+  assertEquals([res.status, (await res.json() as { status: string }).status], [202, "planning"]);
+  assertEquals([d.updates[0]!["status"], d.askedPlan.length], ["planning", 0]);
+  await d.settled();
+  const body = d.updates[d.updates.length - 1]!["result"] as { plan: { days: { town: string; stops: { id: string }[] }[]; leftOut: unknown[] }; stops: { id: string; source: string; openByDay: string[] }[]; leftOut: { id: string; reason: string }[]; cost: number };
   assertEquals(body.plan.days.map((day) => day.town), ["Seoul", "Seoul", "Busan"]);
   // Seoul had room for more food than was saved, Busan for a cityscape it lacked: one labelled suggestion — about a fifth of the stops at most — for the first gap.
   assertEquals(d.suggested, ["Seoul:food"]);
@@ -101,10 +121,43 @@ Deno.test("plan: a plan that does not hold together is sent back once with the p
   const asked: string[] = [];
   const d = deps({ plan: async (_s, user) => { asked.push(user); return { output: { overview: "", days: [{ day: 1, date: null, town: "Seoul", theme: "", stops: [{ id: "zz", slot: "morning", why: "", cites: [], tip: null, warning: null }], notes: null }], bookAhead: [], leftOut: [], assumptions: [] }, refused: false, model: "claude-fable-5-1", usage: { input_tokens: 10, output_tokens: 10 } }; } });
   const res = await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2, nights: [{ town: "Seoul", nights: 2 }] } }), d);
-  assertEquals([res.status, asked.length], [422, 2]);
+  assertEquals(res.status, 202);
+  await d.settled();
+  assertEquals(asked.length, 2);
   assert(asked[1]!.includes("Fix these and answer again"));
   assert(asked[1]!.includes("is not one of the stops given"));
+  const last = d.updates[d.updates.length - 1]!;
+  assertEquals([last["status"], last["message"]], ["failed", "Couldn't make a plan that holds together. Try fewer days, a wider pace, or fewer towns."]);
+});
+
+Deno.test("plan: the retry is asked only while the worker has time for it; with the clock nearly out, the first answer's problems are the failure", async () => {
+  let t = 0;
+  const asked: string[] = [];
+  const d = deps({
+    now: () => t,
+    plan: async (_s, user) => { asked.push(user); t += 290_000; return { output: { overview: "", days: [{ day: 1, date: null, town: "Seoul", theme: "", stops: [{ id: "zz", slot: "morning", why: "", cites: [], tip: null, warning: null }], notes: null }], bookAhead: [], leftOut: [], assumptions: [] }, refused: false, model: "m", usage: { input_tokens: 10, output_tokens: 10 } }; },
+  });
+  await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2, nights: [{ town: "Seoul", nights: 2 }] } }), d);
+  await d.settled();
+  assertEquals(asked.length, 1);
   assertEquals(d.updates[d.updates.length - 1]!["status"], "failed");
+});
+
+Deno.test("plan: a weave still being woven — its row touched within the heartbeat's patience — is not woven twice; one the worker abandoned is", async () => {
+  const fresh = deps({ get: async () => ({ id: WEAVE, towns: null, profile, brief: null, skeleton: null, plan: null, status: "planning", version: 1, updatedAt: new Date(Date.now() - 30_000).toISOString() }) });
+  const res = await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2 } }), fresh);
+  assertEquals([res.status, (await res.json() as { error: string }).error], [409, "Still weaving the last plan. Give it a minute."]);
+  const abandoned = deps({ get: async () => ({ id: WEAVE, towns: null, profile, brief: null, skeleton: null, plan: null, status: "planning", version: 1, updatedAt: new Date(Date.now() - 2 * 60_000).toISOString() }) });
+  assertEquals((await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2 } }), abandoned)).status, 202);
+});
+
+Deno.test("a running job touches its row on the heartbeat, so a worker that dies mid-way is told from one still at work", async () => {
+  const d = deps({ heartbeatMs: 10, understand: async () => { await new Promise((r) => setTimeout(r, 45)); return { output: profile, refused: false, model: "m", usage: { input_tokens: 1, output_tokens: 1 } }; } });
+  await handleWeave(post({ action: "understand" }), d);
+  await d.settled();
+  const beats = d.updates.filter((u) => Object.keys(u).length === 0).length;
+  assert(beats >= 2, `expected heartbeats while reading, got ${beats}`);
+  assertEquals(d.updates[d.updates.length - 1]!["status"], "profiled");
 });
 
 Deno.test("the brief is made whole from the profile: days default to seven, nights proportional and summing to the days, a split that disagrees with the days is scaled", () => {

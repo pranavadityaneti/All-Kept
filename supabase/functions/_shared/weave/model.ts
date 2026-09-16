@@ -8,7 +8,8 @@ import Anthropic from "npm:@anthropic-ai/sdk";
 import type { ModelResult } from "../classify.ts";
 import { normaliseUsage } from "../openai.ts";
 
-export type WeaveCall = (system: string, user: string, schema: Record<string, unknown>) => Promise<ModelResult>;
+/** One ask of a model. The patience is the options' unless the caller has less time left — a retry near the end of the worker's life. */
+export type WeaveCall = (system: string, user: string, schema: Record<string, unknown>, timeoutMs?: number) => Promise<ModelResult>;
 
 export interface WeaveModelOptions {
   maxTokens: number;
@@ -18,7 +19,7 @@ export interface WeaveModelOptions {
 
 export function weaveModel(apiKey: string, model: string, options: WeaveModelOptions): WeaveCall {
   const client = new Anthropic({ apiKey, timeout: options.timeoutMs, maxRetries: 0 });
-  return async (system, user, schema) => {
+  return async (system, user, schema, timeoutMs) => {
     try {
       const response = await client.beta.messages.create({
         model,
@@ -28,7 +29,7 @@ export function weaveModel(apiKey: string, model: string, options: WeaveModelOpt
         output_config: { effort: options.effort, format: { type: "json_schema", schema } },
         system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: user }],
-      } as never) as unknown as { content: { type: string; text?: string }[]; stop_reason: string; model: string; usage: ModelResult["usage"] };
+      } as never, { timeout: timeoutMs ?? options.timeoutMs }) as unknown as { content: { type: string; text?: string }[]; stop_reason: string; model: string; usage: ModelResult["usage"] };
       if (response.stop_reason === "refusal") return { output: null, refused: true, model: response.model, usage: response.usage };
       if (response.stop_reason === "max_tokens") return { output: null, refused: false, model: response.model, usage: response.usage, error: "the answer ran past its room" };
       const text = response.content.filter((b) => b.type === "text").map((b) => b.text ?? "").join("");
@@ -43,8 +44,14 @@ export function weaveModel(apiKey: string, model: string, options: WeaveModelOpt
 /** Claude, when the server has an Anthropic key: Opus 5 to understand — a reading job — and Fable 5.1 to plan — the judgement. */
 export const CLAUDE_UNDERSTAND_MODEL = "claude-opus-5";
 export const CLAUDE_PLAN_MODEL = "claude-fable-5-1";
-export const UNDERSTAND_OPTIONS: WeaveModelOptions = { maxTokens: 3000, effort: "medium", timeoutMs: 90_000 };
-export const PLAN_OPTIONS: WeaveModelOptions = { maxTokens: 10_000, effort: "high", timeoutMs: 140_000 };
+/**
+ * Room and patience, measured rather than guessed (17 Sep): fifty saves at medium effort spent
+ * 3,000 tokens thinking and never answered. On the Responses API the thinking counts against the
+ * same cap as the answer, so the cap is a ceiling on cost, not a target — a run costs what it
+ * uses. Both fit a Pro-plan worker's 400 s, the plan with a retry only while time remains.
+ */
+export const UNDERSTAND_OPTIONS: WeaveModelOptions = { maxTokens: 25_000, effort: "medium", timeoutMs: 180_000 };
+export const PLAN_OPTIONS: WeaveModelOptions = { maxTokens: 50_000, effort: "high", timeoutMs: 240_000 };
 
 /** OpenAI, which is what this server runs on (Pranav, 16 Sep): the sorter's own model for both stages, at a fraction of Fable's price. */
 export const OPENAI_MODEL = "gpt-5.6-sol";
@@ -61,9 +68,9 @@ interface ResponsesReply {
 
 /** The same call through OpenAI's Responses API, in the shape the sorter's adapter proved: instructions, a strict JSON schema, reasoning at the effort asked. */
 export function weaveModelOpenAI(apiKey: string, model: string, options: WeaveModelOptions, fetchImpl: typeof fetch = fetch): WeaveCall {
-  return async (system, user, schema) => {
+  return async (system, user, schema, timeoutMs) => {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), options.timeoutMs);
+    const t = setTimeout(() => ctrl.abort(), timeoutMs ?? options.timeoutMs);
     try {
       const res = await fetchImpl(OPENAI_ENDPOINT, {
         method: "POST",

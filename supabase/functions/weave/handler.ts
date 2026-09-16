@@ -5,8 +5,14 @@
 // edited and the brief turned into a plan — the select stage chooses, gaps become labelled
 // suggestions, the season and the occasions are fetched, the skeleton is computed, the model
 // arranges, the validator refuses what does not hold together (one retry with the problems named),
-// and the plan is kept. Pure; the caller's id, the saves, the models, the lookups, the store are
-// injected. See internal/superpowers/specs/2026-09-16-weave-itinerary-design.md.
+// and the plan is kept.
+//
+// Understanding and planning are jobs, not answers (§11 of the spec): a phone stops waiting at
+// 60 s and the gateway at 150 s, and a plan takes minutes. Both asks answer 202 at once with the
+// weave's id and go on after the answer; the row is the truth the app watches — reading →
+// profiled, planning → planned, or failed with the words the person is shown. Pure; the caller's
+// id, the saves, the models, the lookups, the store, the clock and the deferral are injected.
+// See internal/superpowers/specs/2026-09-16-weave-itinerary-design.md.
 import type { ModelResult, ModelUsage } from "../_shared/classify.ts";
 import type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile } from "../_shared/contracts.ts";
 import { WEAVE_KINDS } from "../_shared/contracts.ts";
@@ -18,7 +24,8 @@ import { allot, selectStops, type WeaveSave } from "../_shared/weave/select.ts";
 import { buildSkeleton, dateAfter, type ChosenStop, type PlaceFacts } from "../_shared/weave/skeleton.ts";
 import { PROFILE_SCHEMA, UNDERSTAND_PROMPT, understandingMessage, validateProfile } from "../_shared/weave/understand.ts";
 
-export type WeaveCall = (system: string, user: string, schema: Record<string, unknown>) => Promise<ModelResult>;
+/** One ask of a model; the patience is the adapter's unless less time is left — the retry near the end of the worker's life. */
+export type WeaveCall = (system: string, user: string, schema: Record<string, unknown>, timeoutMs?: number) => Promise<ModelResult>;
 
 /** A save as the function reads it from the database. */
 export interface WeaveSaveRow {
@@ -29,7 +36,7 @@ export interface WeaveSaveRow {
 
 export interface WeaveRecord {
   id: string; towns: string[] | null; profile: WeaveProfile | null; brief: WeaveBrief | null;
-  skeleton: Skeleton | null; plan: WeavePlan | null; status: string; version: number;
+  skeleton: Skeleton | null; plan: WeavePlan | null; status: string; version: number; updatedAt: string;
 }
 
 /** A place found for a gap, not from the saves. */
@@ -50,12 +57,41 @@ export interface WeaveDeps {
   update(id: string, patch: Record<string, unknown>): Promise<void>;
   get(userId: string, id: string): Promise<WeaveRecord | null>;
   log(message: string, meta?: Record<string, unknown>): void;
+  /** Work that goes on after the answer is sent; the runtime keeps the worker alive for it. */
+  defer(work: Promise<void>): void;
+  /** The wall clock, in ms: the plan's retry is asked only while the worker has time for it. */
+  now(): number;
+  /** How often a running job touches its row, so a job whose worker died is told from one still at work. Tests shorten it. */
+  heartbeatMs?: number;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const MAX_DAYS = 21;
 /** Suggestions never outnumber a fifth of the stops. */
 export const SUGGESTION_SHARE = 0.2;
+/** A Pro-plan worker lives this long from its first request; the plan stage keeps within it. */
+export const WORKER_LIFE_MS = 400_000;
+/** The validator's retry is asked only with this much of the worker's life left, and given what remains less the margin for writing the row. */
+export const RETRY_MIN_MS = 120_000;
+const WRITE_MARGIN_MS = 15_000;
+/**
+ * A running job touches its row this often (updated_at moves), and a row untouched for STALE_MS
+ * belongs to a worker that died — a worker is reused across requests and may have little of its
+ * 400 s left when a plan lands on it. The app keeps the same clock: it stops waiting at STALE_MS
+ * of silence, and the next "plan" on such a row takes it over.
+ */
+export const HEARTBEAT_MS = 20_000;
+export const STALE_MS = 90_000;
+
+/** What the person is told when a weave fails, by reason; the technical reason goes in `error`, for us. */
+export const SAID = {
+  read: "Couldn't read your saves just now. Try again in a moment.",
+  sense: "Couldn't make sense of your saves. Try again in a moment.",
+  plan: "Couldn't make the plan just now. Try again in a moment.",
+  holds: "Couldn't make a plan that holds together. Try fewer days, a wider pace, or fewer towns.",
+  crashed: "The itinerary could not be made. Try again in a moment.",
+  busy: "Still weaving the last plan. Give it a minute.",
+} as const;
 
 const isStr = (v: unknown): v is string => typeof v === "string";
 const strings = (v: unknown, max = 80): string[] => (Array.isArray(v) ? [...new Set(v.filter(isStr).map((s) => s.trim()).filter((s) => s.length > 0 && s.length <= max))] : []);
@@ -148,19 +184,9 @@ export async function handleWeave(req: Request, deps: WeaveDeps): Promise<Respon
     const towns = strings(body?.["towns"]);
     const saves = await deps.saves(userId, towns.length > 0 ? towns : null);
     if (saves.length === 0) return apiError("bad_request", "No saves name a place there yet.");
-    const r = await deps.understand(UNDERSTAND_PROMPT, understandingMessage(saves.map((s) => ({
-      id: s.id, category: s.category, summary: s.summary, tags: s.tags, names: s.names, screenText: s.screenText, note: s.note, town: s.town, saveCount: s.saveCount, reminded: s.reminded, visited: s.visited,
-    }))), PROFILE_SCHEMA as unknown as Record<string, unknown>);
-    if (r.error || r.refused || !r.output) { deps.log("weave: understand failed", { user: userId, error: r.error ?? "refused" }); return apiError("unavailable", "Couldn't read your saves just now. Try again in a moment."); }
-    const profile = validateProfile(r.output, new Set(saves.map((s) => s.id)));
-    if (!profile) return apiError("unavailable", "Couldn't make sense of your saves. Try again in a moment.");
-    // Only towns the saves actually name: the model may echo one it was told of but has nothing for.
-    const named = new Set(saves.map((s) => s.town));
-    profile.towns = profile.towns.filter((t) => named.has(t.name));
-    for (const name of named) if (!profile.towns.some((t) => t.name === name)) profile.towns.push({ name, country: null, saves: saves.filter((s) => s.town === name).length, nights: 1 });
-    const cost = costUsd(r.model, r.usage) ?? 0;
-    const weaveId = await deps.create(userId, { towns: towns.length > 0 ? towns : null, profile, status: "profiled", model_understand: r.model, usage: { understand: r.usage }, cost_usd: cost });
-    return json({ weaveId, profile, saves: saves.length });
+    const weaveId = await deps.create(userId, { towns: towns.length > 0 ? towns : null, status: "reading" });
+    deps.defer(guarded(deps, weaveId, () => readSaves(deps, userId, weaveId, saves)));
+    return json({ weaveId, status: "reading" }, 202);
   }
 
   if (action === "plan") {
@@ -169,6 +195,8 @@ export async function handleWeave(req: Request, deps: WeaveDeps): Promise<Respon
     if (!UUID.test(weaveId)) return apiError("bad_request", "weaveId is required");
     const record = await deps.get(userId, weaveId);
     if (!record?.profile) return apiError("not_found", "no such weave");
+    // One weaving at a time; a row a dead worker left planning is taken over once it is stale.
+    if (record.status === "planning" && deps.now() - Date.parse(record.updatedAt) < STALE_MS) return apiError("conflict", SAID.busy);
     const allSaves = await deps.saves(userId, record.towns);
     const ids = new Set(allSaves.map((s) => s.id));
     // The profile as edited by the person, made safe the same way as the model's.
@@ -182,77 +210,121 @@ export async function handleWeave(req: Request, deps: WeaveDeps): Promise<Respon
     }));
     const selection = selectStops(saves, profile, brief);
     if (selection.chosen.length === 0) return apiError("bad_request", "Nothing to plan with in those towns yet.");
-    await deps.update(weaveId, { status: "planning", brief });
-
-    const rows = new Map(allSaves.map((s) => [s.id, s]));
-    const mustIds = new Set([...profile.must.map((m) => m.id), ...brief.must]);
-    const chosen: ChosenStop[] = selection.chosen.map((s) => {
-      const row = rows.get(s.id)!;
-      return {
-        id: s.id, source: "save", name: row.place?.name ?? row.title?.trim() ?? row.names[0] ?? "A saved place", kind: s.kind, town: s.town ?? row.town,
-        about: row.summary, tags: row.tags, screen: row.screenText, note: row.note, must: mustIds.has(s.id), savedTimes: s.saveCount, place: row.place,
-      };
-    });
-    // Gaps become suggestions — labelled, about a fifth of the stops at most (one, on a trip of a few), never for a stay or "other".
-    const cap = Math.ceil(selection.chosen.length * SUGGESTION_SHARE);
-    const suggested = new Set<string>();
-    const countries = new Map(profile.towns.map((t) => [t.name, t.country]));
-    for (const gap of selection.gaps) {
-      if (gap.kind === "stay" || gap.kind === "other") continue;
-      for (let i = 0; i < gap.want && suggested.size < cap; i++) {
-        const found = await deps.suggest(gap.town, gap.kind, countries.get(gap.town) ?? null).catch(() => null);
-        if (!found || suggested.has(found.placeId)) break;
-        suggested.add(found.placeId);
-        chosen.push({ id: `s:${found.placeId}`, source: "suggested", name: found.name, kind: gap.kind, town: gap.town, about: null, tags: [], screen: null, note: null, must: false, savedTimes: 0, place: found.place });
-      }
-    }
-
-    // The season and the occasions, only with dates.
-    let holidays: Holiday[] = [], weather: string[] = [];
-    if (brief.startDate) {
-      const to = dateAfter(brief.startDate, brief.days - 1)!;
-      const codes = [...new Set(brief.nights.map((n) => countries.get(n.town)).filter((c): c is string => !!c))];
-      const centres = brief.nights.map((n) => centreOf(n.town, chosen)).filter((c): c is NonNullable<typeof c> => !!c);
-      [holidays, weather] = await Promise.all([
-        codes.length > 0 ? deps.holidays(codes, brief.startDate, to).catch(() => [] as Holiday[]) : Promise.resolve([] as Holiday[]),
-        centres.length > 0 ? deps.weather(centres, brief.startDate, to).catch(() => [] as string[]) : Promise.resolve([] as string[]),
-      ]);
-    }
-    const bases = brief.nights.map((n) => ({ town: n.town, name: brief.bases.find((b) => b.town === n.town)?.name ?? chosen.find((s) => s.town === n.town && s.kind === "stay")?.name ?? null }));
-    const skeleton = buildSkeleton(chosen, brief, selection.slots, { bases, holidays, weather });
-
-    const language = await deps.language(userId).catch(() => "en");
-    const usage: ModelUsage[] = [];
-    let cost = 0;
-    let problems: string[] = [];
-    let result: { plan: WeavePlan; problems: string[] } | null = null;
-    let model = deps.models.plan;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const r = await deps.plan(PLAN_PROMPT, planMessage(brief, profile, skeleton, language, problems), PLAN_SCHEMA as unknown as Record<string, unknown>);
-      if (r.usage) { usage.push(r.usage); cost += costUsd(r.model, r.usage) ?? 0; }
-      model = r.model;
-      if (r.error || r.refused || !r.output) {
-        deps.log("weave: plan failed", { weave: weaveId, attempt, error: r.error ?? "refused" });
-        await deps.update(weaveId, { status: "failed", error: r.error ?? "refused", usage: { plan: usage }, cost_usd: cost });
-        return apiError("unavailable", "Couldn't make the plan just now. Try again in a moment.");
-      }
-      result = validatePlan(r.output, skeleton, [...mustIds]);
-      if (!result) { problems = ["the answer was not a plan"]; continue; }
-      if (result.problems.length === 0) break;
-      problems = result.problems;
-      deps.log("weave: plan sent back", { weave: weaveId, attempt, problems: problems.slice(0, 6) });
-    }
-    if (!result || result.problems.length > 0) {
-      await deps.update(weaveId, { status: "failed", error: (result?.problems ?? problems).join("; ").slice(0, 600), skeleton, usage: { plan: usage }, cost_usd: cost });
-      return apiError("unprocessable", "Couldn't make a plan that holds together. Try fewer days, a wider pace, or fewer towns.");
-    }
-    await deps.update(weaveId, { status: "planned", brief, profile, skeleton, plan: result.plan, model_plan: model, usage: { plan: usage }, cost_usd: cost });
-    const stops: (SkeletonStop & { title: string | null; url: string | null })[] = skeleton.stops.map((s) => ({ ...s, title: rows.get(s.id)?.title ?? null, url: rows.get(s.id)?.url ?? null }));
-    const leftOut = selection.leftOut.map((l) => ({ ...l, title: rows.get(l.id)?.title ?? null }));
-    return json({ weaveId, plan: result.plan, stops, leftOut, brief, cost });
+    await deps.update(weaveId, { status: "planning", brief, profile, error: null, message: null, result: null });
+    const started = deps.now();
+    deps.defer(guarded(deps, weaveId, () => arrange(deps, userId, weaveId, started, allSaves, profile, brief, selection)));
+    return json({ weaveId, status: "planning" }, 202);
   }
 
   return apiError("bad_request", "action must be towns, understand or plan");
+}
+
+/** A job's failure is written on the row, never left as a row that reads or plans for ever; while it runs, the row is touched on the heartbeat. */
+async function guarded(deps: WeaveDeps, weaveId: string, work: () => Promise<void>): Promise<void> {
+  const beat = setInterval(() => { deps.update(weaveId, {}).catch(() => undefined); }, deps.heartbeatMs ?? HEARTBEAT_MS);
+  try { await work(); }
+  catch (e) {
+    deps.log("weave: crashed", { weave: weaveId, error: String(e).slice(0, 300) });
+    await deps.update(weaveId, { status: "failed", error: String(e).slice(0, 600), message: SAID.crashed }).catch(() => undefined);
+  } finally { clearInterval(beat); }
+}
+
+/** The understanding, after the answer: the saves read into a profile, the row profiled or failed. */
+async function readSaves(deps: WeaveDeps, userId: string, weaveId: string, saves: WeaveSaveRow[]): Promise<void> {
+  const r = await deps.understand(UNDERSTAND_PROMPT, understandingMessage(saves.map((s) => ({
+    id: s.id, category: s.category, summary: s.summary, tags: s.tags, names: s.names, screenText: s.screenText, note: s.note, town: s.town, saveCount: s.saveCount, reminded: s.reminded, visited: s.visited,
+  }))), PROFILE_SCHEMA as unknown as Record<string, unknown>);
+  const usage = { understand: r.usage }, cost = costUsd(r.model, r.usage) ?? 0;
+  if (r.error || r.refused || !r.output) {
+    deps.log("weave: understand failed", { weave: weaveId, user: userId, error: r.error ?? "refused" });
+    await deps.update(weaveId, { status: "failed", error: r.error ?? "refused", message: SAID.read, model_understand: r.model, usage, cost_usd: cost });
+    return;
+  }
+  const profile = validateProfile(r.output, new Set(saves.map((s) => s.id)));
+  if (!profile) {
+    deps.log("weave: understand made no profile", { weave: weaveId, user: userId });
+    await deps.update(weaveId, { status: "failed", error: "the answer was not a profile", message: SAID.sense, model_understand: r.model, usage, cost_usd: cost });
+    return;
+  }
+  // Only towns the saves actually name: the model may echo one it was told of but has nothing for.
+  const named = new Set(saves.map((s) => s.town));
+  profile.towns = profile.towns.filter((t) => named.has(t.name));
+  for (const name of named) if (!profile.towns.some((t) => t.name === name)) profile.towns.push({ name, country: null, saves: saves.filter((s) => s.town === name).length, nights: 1 });
+  await deps.update(weaveId, { status: "profiled", profile, model_understand: r.model, usage, cost_usd: cost, result: { profile, saves: saves.length } });
+}
+
+/** The arranging, after the answer: suggestions for the gaps, the season, the skeleton, the model, the validator; the row planned or failed. */
+async function arrange(
+  deps: WeaveDeps, userId: string, weaveId: string, started: number, allSaves: WeaveSaveRow[], profile: WeaveProfile, brief: WeaveBrief, selection: ReturnType<typeof selectStops>,
+): Promise<void> {
+  const rows = new Map(allSaves.map((s) => [s.id, s]));
+  const mustIds = new Set([...profile.must.map((m) => m.id), ...brief.must]);
+  const chosen: ChosenStop[] = selection.chosen.map((s) => {
+    const row = rows.get(s.id)!;
+    return {
+      id: s.id, source: "save", name: row.place?.name ?? row.title?.trim() ?? row.names[0] ?? "A saved place", kind: s.kind, town: s.town ?? row.town,
+      about: row.summary, tags: row.tags, screen: row.screenText, note: row.note, must: mustIds.has(s.id), savedTimes: s.saveCount, place: row.place,
+    };
+  });
+  // Gaps become suggestions — labelled, about a fifth of the stops at most (one, on a trip of a few), never for a stay or "other".
+  const cap = Math.ceil(selection.chosen.length * SUGGESTION_SHARE);
+  const suggested = new Set<string>();
+  const countries = new Map(profile.towns.map((t) => [t.name, t.country]));
+  for (const gap of selection.gaps) {
+    if (gap.kind === "stay" || gap.kind === "other") continue;
+    for (let i = 0; i < gap.want && suggested.size < cap; i++) {
+      const found = await deps.suggest(gap.town, gap.kind, countries.get(gap.town) ?? null).catch(() => null);
+      if (!found || suggested.has(found.placeId)) break;
+      suggested.add(found.placeId);
+      chosen.push({ id: `s:${found.placeId}`, source: "suggested", name: found.name, kind: gap.kind, town: gap.town, about: null, tags: [], screen: null, note: null, must: false, savedTimes: 0, place: found.place });
+    }
+  }
+
+  // The season and the occasions, only with dates.
+  let holidays: Holiday[] = [], weather: string[] = [];
+  if (brief.startDate) {
+    const to = dateAfter(brief.startDate, brief.days - 1)!;
+    const codes = [...new Set(brief.nights.map((n) => countries.get(n.town)).filter((c): c is string => !!c))];
+    const centres = brief.nights.map((n) => centreOf(n.town, chosen)).filter((c): c is NonNullable<typeof c> => !!c);
+    [holidays, weather] = await Promise.all([
+      codes.length > 0 ? deps.holidays(codes, brief.startDate, to).catch(() => [] as Holiday[]) : Promise.resolve([] as Holiday[]),
+      centres.length > 0 ? deps.weather(centres, brief.startDate, to).catch(() => [] as string[]) : Promise.resolve([] as string[]),
+    ]);
+  }
+  const bases = brief.nights.map((n) => ({ town: n.town, name: brief.bases.find((b) => b.town === n.town)?.name ?? chosen.find((s) => s.town === n.town && s.kind === "stay")?.name ?? null }));
+  const skeleton = buildSkeleton(chosen, brief, selection.slots, { bases, holidays, weather });
+
+  const language = await deps.language(userId).catch(() => "en");
+  const usage: ModelUsage[] = [];
+  let cost = 0;
+  let problems: string[] = [];
+  let result: { plan: WeavePlan; problems: string[] } | null = null;
+  let model = deps.models.plan;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    // The retry only while the worker has time for it, and only for the time it has.
+    const remaining = WORKER_LIFE_MS - (deps.now() - started);
+    if (attempt > 0 && remaining < RETRY_MIN_MS) { deps.log("weave: no time for a retry", { weave: weaveId, remaining }); break; }
+    const r = await deps.plan(PLAN_PROMPT, planMessage(brief, profile, skeleton, language, problems), PLAN_SCHEMA as unknown as Record<string, unknown>, attempt > 0 ? remaining - WRITE_MARGIN_MS : undefined);
+    if (r.usage) { usage.push(r.usage); cost += costUsd(r.model, r.usage) ?? 0; }
+    model = r.model;
+    if (r.error || r.refused || !r.output) {
+      deps.log("weave: plan failed", { weave: weaveId, attempt, error: r.error ?? "refused" });
+      await deps.update(weaveId, { status: "failed", error: r.error ?? "refused", message: SAID.plan, skeleton, model_plan: model, usage: { plan: usage }, cost_usd: cost });
+      return;
+    }
+    result = validatePlan(r.output, skeleton, [...mustIds]);
+    if (!result) { problems = ["the answer was not a plan"]; continue; }
+    if (result.problems.length === 0) break;
+    problems = result.problems;
+    deps.log("weave: plan sent back", { weave: weaveId, attempt, problems: problems.slice(0, 6) });
+  }
+  if (!result || result.problems.length > 0) {
+    await deps.update(weaveId, { status: "failed", error: (result?.problems ?? problems).join("; ").slice(0, 600), message: SAID.holds, skeleton, model_plan: model, usage: { plan: usage }, cost_usd: cost });
+    return;
+  }
+  const stops: (SkeletonStop & { title: string | null; url: string | null })[] = skeleton.stops.map((s) => ({ ...s, title: rows.get(s.id)?.title ?? null, url: rows.get(s.id)?.url ?? null }));
+  const leftOut = selection.leftOut.map((l) => ({ ...l, title: rows.get(l.id)?.title ?? null }));
+  await deps.update(weaveId, { status: "planned", skeleton, plan: result.plan, model_plan: model, usage: { plan: usage }, cost_usd: cost, result: { plan: result.plan, stops, leftOut, brief, cost } });
 }
 
 /** The kinds a suggestion may be asked for, for anyone wiring the lookup. */
