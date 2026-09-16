@@ -1648,3 +1648,30 @@ categories.
   library (`private/seed-korea-japan.sql`, gitignored; dry-run rolled back: 93 rows) — his to run.
 - Pending: migrations `20260918210000_places_reviews.sql`, `20260918220000_weaves.sql`; deploy
   `weave`, `sweeper`, `resolve-place`; push `d7966cd..`; the seed; then the first real plan.
+
+## 2026-09-16 — Weave live on OpenAI; the seed settled; the TestFlight build, four tries
+
+- Deployed `weave`, `sweeper`, `resolve-place`; migrations through `20260918230000_town_word.sql`
+  applied; Pranav ran the seed — 93 rows, all sorted, 43 with a venue, 29 placed. Two matcher
+  fixes on the way (`2d1acb6`: words that only say what a place is are set aside, and the
+  locality Google appends is exact; `bd74313`: `town_of()` — the town in the venue's own last
+  word, a country stripped, Google's ward only after). `うおがしや 渋谷店` still unmatched.
+- Weave's models: the `ANTHROPIC_API_KEY` secret is empty, so Pranav chose OpenAI only
+  (`7b46c0f`): `weaveModelOpenAI` on the Responses API, gpt-5.6-sol to understand, and
+  `WEAVE_PLAN_MODEL=gpt-6-astra` (his secret) to plan — ≈ $0.23 a plan on sol, ≈ $0.48 with
+  Astra; prices in `PRICES_PER_MTOK`. The first real plan is still to be run: the simulator
+  panel crashed and needs Pranav to reopen it.
+- The TestFlight build (his, `--profile testflight --auto-submit`): 31 fell on Apple refusing a
+  capability patch (`EXPO_NO_CAPABILITY_SYNC=1`) and on the fingerprint counting `extra`
+  (`ae4d9de`); 32 on the fingerprint counting package.json's scripts (`38ae754`); an `.easignore`
+  tried and withdrawn (`cd71fb0`) — it would have uploaded `.env` and the generated ios/ folder;
+  33 built and was submitted, and Apple's processing refused it by mail (ITMS-90683 — no
+  `NSMotionUsageDescription`; expo-location links CoreMotion and the scan reads symbols, not
+  calls) — `677ec76` restores an honest string; 34 (`ff208ae5`) uploaded 08:17 IST, submission
+  scheduled. RevenueCat deferred by Pranav ("sandbox until then"): the EAS environments hold
+  no `EXPO_PUBLIC_REVENUECAT_IOS` and RevenueCat has no App Store app, so the build's paywall
+  shows no prices — testing only, not for App Review as it stands.
+- An OTA update Pranav published from `cd71fb0` (message "…") sits on runtime `22d61c0a…`,
+  which the plist change moved on from — reaches nothing, harms nothing.
+- Next: Apple's mail on 34 (only that is "on TestFlight"); the first Weave plan on the seed
+  when the simulator panel is back; queue 52–55; the RevenueCat app when he says.
