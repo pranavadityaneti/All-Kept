@@ -23,7 +23,8 @@ Deno.serve(async (req) => {
         return data ?? [];
       },
     });
-  } catch {
+  } catch (e) {
+    console.error("search failed", e); // the cause stays in the log; the person gets a plain refusal
     return apiError("internal", "could not search your library");
   }
 });
