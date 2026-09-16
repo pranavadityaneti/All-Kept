@@ -370,3 +370,17 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued
 - **Date added:** 2026-09-16
 - **Originated from:** 16 Sep 2026 — stage C's decisions.
+
+### 56. "1 saves", "1 nights" on the Weave profile screen
+- **What + why:** The Nights card says "Daejeon 1 saves · 1 night" — the saves count is never singular. One word; seen on the first live run.
+- **Scope:** `apps/mobile/app/weave/index.tsx`, the Nights rows; a look for the same pattern on the towns chips.
+- **Status:** queued
+- **Date added:** 2026-09-17
+- **Originated from:** 17 Sep 2026 — the first live Weave run on the seeded pile.
+
+### 57. More towns ticked than the plan has days
+- **What + why:** Every town starts ticked. Twelve towns and a 7-day plan is refused by the server ("7 days cannot be split among 12 towns") only after the saves were read and paid for; a person should be told before "Read my saves", or be able to drop a town in Customise (nights never go below one today).
+- **Scope:** the towns stage (a line when the ticked towns outnumber the shortest plan), or Customise (a town at zero nights drops out of the brief); `readBrief` already refuses the impossible split.
+- **Status:** queued
+- **Date added:** 2026-09-17
+- **Originated from:** 17 Sep 2026 — the first live Weave run, all twelve towns ticked.

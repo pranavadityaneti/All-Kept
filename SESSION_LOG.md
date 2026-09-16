@@ -1675,3 +1675,32 @@ categories.
   which the plist change moved on from — reaches nothing, harms nothing.
 - Next: Apple's mail on 34 (only that is "on TestFlight"); the first Weave plan on the seed
   when the simulator panel is back; queue 52–55; the RevenueCat app when he says.
+
+## 2026-09-17 — build 34 on the phone; "Plan a trip is not working": two faults found, the weave made a job
+
+- Build 34 delivered and processed; Pranav on TestFlight. "Plan a trip" said "Something went
+  wrong." and search "Search failed". Pranav allowed the function logs to be read through the
+  Supabase CLI's session (management API, read-only) — the hour of guessing before that is the
+  argument for it.
+- Fault one, the app: `context instanceof Response` was false on every phone — Expo replaces the
+  global fetch with expo/fetch, whose responses are not the polyfill's class — so every server
+  message (import, playlist, weave) collapsed to a generic line. `lib/function-error.ts`
+  `serverSaid()` reads the reply by shape; all three readers use it (`5324850`).
+- Fault two, search: `search_library_v4` was granted to service_role alone (the sweeper's pattern
+  copied where v3 had authenticated); every search since stage B answered 500, and the function's
+  catch hid the cause. Grant migration `20260919000000` (`621e510`), the cause logged (`2edaf45`).
+- The weave: `incomplete: max_output_tokens` eight times — 51 saves at medium effort spent the
+  3,000 tokens thinking (40–55 s each). Given room it passes the 60 s a phone waits and the
+  gateway's 150 s; the plan at high effort on Astra needs minutes. Pranav's yes to the job design
+  (spec §11): 202 at once, the work under `EdgeRuntime.waitUntil`, the row the app watches
+  (reading → profiled, planning → planned, failed with `message` for the person and `error` for
+  us), a heartbeat every 20 s and 90 s of silence as death (a worker is reused; its 400 s are not
+  the request's), the retry only while time remains, budgets 25k/180 s and 50k/240 s. Migration
+  `20260919010000` (reading, result, message). App: `waitForWeave`, the plan screen waits on the
+  id, the last weave kept an hour (`68b6521`). Tests 333 Deno, 334 vitest.
+- Rolled out in order: db push (verified by value), `search-library` and `weave` deployed,
+  pushed, OTA on runtime `8f175b69…` (build 34's; Pranav published a twin — harmless).
+- First live understanding: 47 s, 3,228 output tokens (1,607 reasoning — the old cap 7% short),
+  $0.067, a sound profile (food 44%, coffee 26%, culture 14%; a must; nights in proportion).
+  The plan not yet run: all twelve towns were ticked and a 7-day plan cannot seat twelve; Pranav
+  to untick to Korea + Japan and read again. Queued 56 ("1 saves") and 57 (towns beyond days).
