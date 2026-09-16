@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "@tanstack/react-query";
 import type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { WEAVE_KINDS } from "@allkept/contracts";
 import { hoursLine, type OpeningPeriod } from "./hours";
@@ -23,8 +24,10 @@ export interface PlanStop {
 }
 
 export interface WeaveTowns { towns: { name: string; saves: number; placed: number }[] }
-export interface WeaveUnderstood { weaveId: string; profile: WeaveProfile; saves: number }
-export interface WeavePlanned { weaveId: string; plan: WeavePlan; stops: PlanStop[]; leftOut: { id: string; reason: string; title: string | null }[]; brief: WeaveBrief; cost: number }
+/** The server's answer to "understand" and "plan": the weave's id, and the work goes on — the row is watched for the rest. */
+export interface WeaveStarted { weaveId: string; status: "reading" | "planning" }
+export interface WeaveUnderstood { profile: WeaveProfile; saves: number }
+export interface WeavePlanned { plan: WeavePlan; stops: PlanStop[]; leftOut: { id: string; reason: string; title: string | null }[]; brief: WeaveBrief; cost: number }
 
 /** The server's refusal, with its code, so the screen can open the paywall or say why. */
 export class WeaveRefused extends Error {
@@ -46,19 +49,78 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
 }
 
 export const weaveTowns = () => call<WeaveTowns>({ action: "towns" });
-export const weaveUnderstand = (towns: string[]) => call<WeaveUnderstood>({ action: "understand", towns });
-export const weavePlan = (weaveId: string, profile: WeaveProfile, brief: Partial<WeaveBrief>) => call<WeavePlanned>({ action: "plan", weaveId, profile, brief });
+export const weaveUnderstand = (towns: string[]) => call<WeaveStarted>({ action: "understand", towns });
+export const weavePlan = (weaveId: string, profile: WeaveProfile, brief: Partial<WeaveBrief>) => call<WeaveStarted>({ action: "plan", weaveId, profile, brief });
 
 export function useWeaveTowns(enabled: boolean) {
   return useQuery({ queryKey: ["weave-towns"], queryFn: weaveTowns, enabled });
 }
 
-/** A plan made this session, kept in the query cache so the plan screen can open it by id without carrying it through the route. */
+/** The weave's row as the app reads it: the stage it is at, what the server wrote for the app, what the person is told on failure, and when it last moved. */
+export interface WeaveRow { status: string; result: unknown; message: string | null; updatedAt: string }
+
+/** The app looks at its row this often while a stage runs. */
+const LOOK_MS = 3000;
+/** A running job touches its row every 20 s; one silent for this long belongs to a worker that died — the same clock the server keeps. */
+export const STALE_MS = 90_000;
+/** The longest the app waits for each stage, past which it stops looking. */
+export const DEADLINE_MS = { profiled: 5 * 60_000, planned: 8 * 60_000 } as const;
+const TOO_LONG = "This is taking longer than it should. Try again in a moment.";
+
+async function readRow(weaveId: string): Promise<WeaveRow | null> {
+  const { data, error } = await supabase.from("weaves").select("status,result,message,updated_at").eq("id", weaveId).maybeSingle();
+  if (error) throw new WeaveRefused("internal", error.message);
+  if (!data) return null;
+  const r = data as { status: string; result: unknown; message: string | null; updated_at: string };
+  return { status: r.status, result: r.result, message: r.message, updatedAt: r.updated_at };
+}
+
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Waits for a stage of the weave by watching its row (spec §11): "profiled" after "Read my saves",
+ * "planned" after "Make a plan". Hands back what the server wrote for the app, or refuses with the
+ * server's own words when the stage failed, with "timeout" when the row has stopped moving or the
+ * deadline has passed, and with "aborted" when the screen has gone. The reader, the clock and
+ * the sleep are injectable for tests.
+ */
+export async function waitForWeave<T>(
+  weaveId: string, want: "profiled" | "planned",
+  deps: { read?: (weaveId: string) => Promise<WeaveRow | null>; now?: () => number; sleep?: (ms: number) => Promise<void>; deadlineMs?: number; signal?: AbortSignal } = {},
+): Promise<T> {
+  const read = deps.read ?? readRow, now = deps.now ?? Date.now, sleep = deps.sleep ?? pause;
+  const deadline = now() + (deps.deadlineMs ?? DEADLINE_MS[want]);
+  for (;;) {
+    if (deps.signal?.aborted) throw new WeaveRefused("aborted", "Stopped waiting.");
+    const row = await read(weaveId);
+    if (!row) throw new WeaveRefused("not_found", "This plan isn't there any more. Make it again from \"Plan a trip\" on the map.");
+    if (row.status === want) return row.result as T;
+    if (row.status === "failed") throw new WeaveRefused("failed", row.message ?? "Something went wrong.");
+    if (now() - Date.parse(row.updatedAt) > STALE_MS || now() >= deadline) throw new WeaveRefused("timeout", TOO_LONG);
+    await sleep(LOOK_MS);
+  }
+}
+
+/** The plan for a weave: waited for on the row, then kept for the session. The plan screen opens on the id alone. */
 export const planKey = (weaveId: string) => ["weave-plan", weaveId] as const;
-export const keepPlan = (queryClient: QueryClient, made: WeavePlanned): void => { queryClient.setQueryData(planKey(made.weaveId), made); };
-export function useKeptPlan(weaveId: string) {
-  const queryClient = useQueryClient();
-  return queryClient.getQueryData<WeavePlanned>(planKey(weaveId)) ?? null;
+export function usePlanned(weaveId: string) {
+  return useQuery({ queryKey: planKey(weaveId), queryFn: ({ signal }) => waitForWeave<WeavePlanned>(weaveId, "planned", { signal }), enabled: weaveId.length > 0, staleTime: Infinity, gcTime: 60 * 60_000, retry: false });
+}
+
+/** The last weave begun, kept on the phone for an hour so a plan begun and left is still reachable. */
+const LAST_KEY = "allkept.weave.last";
+const RECENT_MS = 60 * 60_000;
+export const rememberWeave = (weaveId: string): void => { AsyncStorage.setItem(LAST_KEY, JSON.stringify({ weaveId, at: Date.now() })).catch(() => undefined); };
+/** The remembered weave's id while it is recent; nothing for anything older, missing or malformed. */
+export function recentWeave(stored: string | null, now: number): string | null {
+  if (!stored) return null;
+  try {
+    const v = JSON.parse(stored) as { weaveId?: unknown; at?: unknown };
+    return typeof v.weaveId === "string" && typeof v.at === "number" && now - v.at <= RECENT_MS ? v.weaveId : null;
+  } catch { return null; }
+}
+export function useRecentWeave() {
+  return useQuery({ queryKey: ["weave-last"], queryFn: async () => recentWeave(await AsyncStorage.getItem(LAST_KEY).catch(() => null), Date.now()), staleTime: 0, gcTime: 0 });
 }
 
 /** More or less of a kind: its share moved by half, the rest folded back to one, nothing below a sliver. */

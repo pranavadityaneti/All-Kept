@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 
-export type EventName = | "app_open" | "library_view" | "map_view" | "near_me" | "trip_route" | "trip_share" | "weave_read" | "weave_plan" | "weave_share" | "item_open" | "open_original" | "share_out"
+export type EventName = | "app_open" | "library_view" | "map_view" | "near_me" | "trip_route" | "trip_share" | "weave_read" | "weave_plan" | "weave_planned" | "weave_share" | "item_open" | "open_original" | "share_out"
   | "search" | "category_changed" | "sort_again" | "reminder_set" | "reminder_cleared" | "copy_text" | "way_out" | "marked_done" | "unmarked_done" | "embed_gated" | "place_named" | "place_cleared" | "note_saved" | "link_started" | "link_completed"
   | "paste_link" | "item_deleted"
   | "import_opened" | "import_started" | "import_finished" | "import_failed"

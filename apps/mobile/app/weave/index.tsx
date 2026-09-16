@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
@@ -11,7 +11,7 @@ import { IconButton } from "../../components/IconButton";
 import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { radius, space, type, usePalette } from "../../lib/theme";
-import { keepPlan, KIND_LABEL, percent, setNights, shiftMix, splitDays, useWeaveTowns, weavePlan, weaveUnderstand, WeaveRefused, type WeaveProfile } from "../../lib/weave";
+import { KIND_LABEL, percent, planKey, rememberWeave, setNights, shiftMix, splitDays, useRecentWeave, useWeaveTowns, waitForWeave, weavePlan, weaveUnderstand, WeaveRefused, type WeaveProfile, type WeaveUnderstood } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -19,7 +19,9 @@ export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as con
 /**
  * Plan a trip: the towns the saves name, the profile the saves add up to — edited in the open —
  * and a plan of seven or twelve days, or Customise for the brief. Nothing is planned until the
- * person has seen what their saves say and moved what they want moved.
+ * person has seen what their saves say and moved what they want moved. Reading and planning are
+ * jobs (spec §11): the server answers at once and the row is watched — the reading here, the
+ * plan on its own screen, which is also where a plan begun earlier is picked up.
  */
 export default function Weave() {
   const p = usePalette();
@@ -29,6 +31,7 @@ export default function Weave() {
   const ready = session.status === "ready";
   const userId = ready && !session.anonymous ? session.userId : null;
   const towns = useWeaveTowns(ready);
+  const recent = useRecentWeave();
   const [picked, setPicked] = useState<Set<string> | null>(null);
   const [stage, setStage] = useState<"towns" | "reading" | "profile" | "making">("towns");
   const [weaveId, setWeaveId] = useState<string | null>(null);
@@ -37,18 +40,24 @@ export default function Weave() {
   const [error, setError] = useState<string | null>(null);
   // Every town ticked to begin with; the person unticks what is not this trip.
   useEffect(() => { if (towns.data && picked === null) setPicked(new Set(towns.data.towns.map((t) => t.name))); }, [towns.data, picked]);
+  // The wait on the row stops when the screen goes.
+  const gone = useRef(new AbortController());
+  useEffect(() => { const c = gone.current; return () => c.abort(); }, []);
+  const pickedSaves = towns.data?.towns.filter((t) => picked?.has(t.name)).reduce((a, t) => a + t.saves, 0) ?? 0;
 
   const refuse = (e: unknown) => {
     if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
+    if (e instanceof WeaveRefused && e.code === "aborted") return;
     setError(e instanceof Error ? e.message : "Something went wrong.");
   };
   const read = async () => {
     if (!picked || picked.size === 0) return;
     setStage("reading"); setError(null);
     try {
-      const out = await weaveUnderstand([...picked]);
-      setWeaveId(out.weaveId); setProfile(out.profile); setSavesRead(out.saves);
-      queryClient.setQueryData(profileKey(out.weaveId), out.profile);
+      const started = await weaveUnderstand([...picked]);
+      const out = await waitForWeave<WeaveUnderstood>(started.weaveId, "profiled", { signal: gone.current.signal });
+      setWeaveId(started.weaveId); setProfile(out.profile); setSavesRead(out.saves);
+      queryClient.setQueryData(profileKey(started.weaveId), out.profile);
       track(userId, "weave_read", { saves: out.saves, towns: picked.size });
       setStage("profile");
     } catch (e) { setStage("towns"); refuse(e); }
@@ -57,9 +66,11 @@ export default function Weave() {
     if (!weaveId || !profile) return;
     setStage("making"); setError(null);
     try {
-      const made = await weavePlan(weaveId, profile, { days, nights: splitDays(days, profile.towns) });
-      keepPlan(queryClient, made);
-      track(userId, "weave_plan", { days, stops: made.stops.length, cost: made.cost });
+      // The server answers at once and weaves on; the plan screen waits on the row.
+      await weavePlan(weaveId, profile, { days, nights: splitDays(days, profile.towns) });
+      queryClient.removeQueries({ queryKey: planKey(weaveId) }); // a plan made before on this weave is not the one now being woven
+      rememberWeave(weaveId);
+      track(userId, "weave_plan", { days });
       router.replace({ pathname: "/weave/plan", params: { weaveId } });
     } catch (e) { setStage("profile"); refuse(e); }
   };
@@ -79,6 +90,13 @@ export default function Weave() {
       <ScrollView contentContainerStyle={styles.page}>
         {stage === "towns" && (
           <>
+            {recent.data ? (
+              <Card>
+                <Text style={[type.heading, { color: p.ink }]}>A plan from earlier</Text>
+                <Text style={[type.label, { color: p.inkMuted }]}>Still weaving, or ready — open it to see.</Text>
+                <Button label="Open it" variant="secondary" onPress={() => router.push({ pathname: "/weave/plan", params: { weaveId: recent.data! } })} />
+              </Card>
+            ) : null}
             <Text style={[type.body, { color: p.inkMuted }]}>Where is this trip? Untick the towns that aren't part of it.</Text>
             {towns.isPending ? <ActivityIndicator color={p.accent} /> : towns.data && towns.data.towns.length === 0 ? (
               <Card><Text style={[type.body, { color: p.inkMuted }]}>No saves name a place yet. Save a few reels of cafés, sights and hotels, and come back once they are on the map.</Text></Card>
@@ -93,8 +111,8 @@ export default function Weave() {
             <Text style={[type.label, { color: p.inkMuted }]}>Allkept reads the posts you saved in these towns and says what they add up to. Nothing is planned until you've seen that.</Text>
           </>
         )}
-        {stage === "reading" && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your saves…</Text></View>}
-        {stage === "making" && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Arranging your trip… this takes a minute or two.</Text></View>}
+        {stage === "reading" && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your {pickedSaves} saves — usually a minute or two.</Text></View>}
+        {stage === "making" && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Starting your plan…</Text></View>}
         {stage === "profile" && profile && (
           <>
             <Card>

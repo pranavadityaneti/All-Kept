@@ -10,7 +10,7 @@ import { IconButton } from "../../components/IconButton";
 import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { radius, space, type, usePalette } from "../../lib/theme";
-import { keepPlan, setNights, splitDays, weavePlan, WeaveRefused, type WeaveBrief, type WeaveProfile } from "../../lib/weave";
+import { planKey, rememberWeave, setNights, splitDays, weavePlan, WeaveRefused, type WeaveBrief, type WeaveProfile } from "../../lib/weave";
 import { profileKey } from "./index";
 
 const GROUPS = [["solo", "Solo"], ["couple", "Couple"], ["family", "Family"], ["friends", "Friends"]] as const;
@@ -47,14 +47,16 @@ export default function Customise() {
     if (!weaveId || !profile) return;
     setBusy(true); setError(null);
     try {
-      const made = await weavePlan(weaveId, profile, {
+      // The server answers at once and weaves on; the plan screen waits on the row.
+      await weavePlan(weaveId, profile, {
         days, nights, startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate.trim()) ? startDate.trim() : null,
         arrival: arrival.trim() || null, departure: departure.trim() || null,
         bases: Object.entries(bases).filter(([, name]) => name.trim()).map(([town, name]) => ({ town, name: name.trim() })),
         group, pace, transport, budget, note: note.trim() || null,
       });
-      keepPlan(queryClient, made);
-      track(userId, "weave_plan", { days, stops: made.stops.length, cost: made.cost, customised: true });
+      queryClient.removeQueries({ queryKey: planKey(weaveId) }); // a plan made before on this weave is not the one now being woven
+      rememberWeave(weaveId);
+      track(userId, "weave_plan", { days, customised: true });
       router.replace({ pathname: "/weave/plan", params: { weaveId } });
     } catch (e) {
       if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }

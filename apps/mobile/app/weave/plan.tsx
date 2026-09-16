@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { useEffect } from "react";
+import { ActivityIndicator, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -10,18 +11,24 @@ import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { font, radius, space, type, usePalette } from "../../lib/theme";
 import { googleDirectionsUrl, type TripStop } from "../../lib/trips";
-import { crowdLine, planText, slotWord, stopHours, useKeptPlan, type PlanStop } from "../../lib/weave";
+import { crowdLine, planText, slotWord, stopHours, usePlanned, type PlanStop } from "../../lib/weave";
 
 const asTripStop = (s: PlanStop): TripStop => ({ id: s.id, title: s.title ?? s.name, url: s.url, lastSavedAt: "", place: { name: s.name, address: s.address, lat: s.lat, lng: s.lng, status: null, url: null, periods: null, utcOffsetMinutes: null, locality: s.town } });
 
-/** The plan: the overview, what to book, the days with their stops, what didn't fit — and the two ways out of a day. */
+/**
+ * The plan: the overview, what to book, the days with their stops, what didn't fit — and the two
+ * ways out of a day. Opened on the weave's id alone: it waits here while the plan is woven (the
+ * row is watched, spec §11), so a plan begun and left is still reachable.
+ */
 export default function Plan() {
   const p = usePalette();
   const router = useRouter();
   const session = useSession();
   const userId = session.status === "ready" && !session.anonymous ? session.userId : null;
   const { weaveId } = useLocalSearchParams<{ weaveId: string }>();
-  const made = useKeptPlan(weaveId ?? "");
+  const planned = usePlanned(weaveId ?? "");
+  const made = planned.data ?? null;
+  useEffect(() => { if (made) track(userId, "weave_planned", { stops: made.stops.length, cost: made.cost }); }, [made, userId]);
   const byId = new Map((made?.stops ?? []).map((s) => [s.id, s]));
   const title = made ? `${[...new Set(made.brief.nights.map((n) => n.town))].join(" · ")} — ${made.brief.days} ${made.brief.days === 1 ? "day" : "days"}` : "Your plan";
   const share = async () => {
@@ -38,7 +45,11 @@ export default function Plan() {
       </View>
       <ScrollView contentContainerStyle={styles.page}>
         {!made ? (
-          <Card><Text style={[type.body, { color: p.inkMuted }]}>This plan isn't open any more. Make it again from "Plan a trip" on the map.</Text></Card>
+          planned.isError ? (
+            <Card><Icon name="help" size={18} color={p.bad} /><Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{planned.error.message}</Text><Button label="Back" variant="secondary" onPress={() => router.back()} /></Card>
+          ) : (
+            <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Weaving your plan — two to five minutes. You can leave; it carries on, and it's here when you come back.</Text></View>
+          )
         ) : (
           <>
             <Text style={[type.body, { color: p.ink }]}>{made.plan.overview}</Text>
@@ -98,6 +109,7 @@ export default function Plan() {
 }
 
 const styles = StyleSheet.create({
+  centered: { alignItems: "center", gap: space.md, paddingVertical: space.xl },
   safe: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.sm },
   headerTitle: { flex: 1, textAlign: "center" },
