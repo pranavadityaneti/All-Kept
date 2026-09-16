@@ -305,3 +305,17 @@ again — which also explains why my later taps to restore the interests switch 
   git's view of the project and uploads everything the file does not exclude — including
   `.env` files and the 7 GB generated `ios/` folder unless each is listed. It belongs at the
   git root, mirroring .gitignore first; a rushed one would upload more, not less.
+
+## 2026-09-16 — build 33 refused by App Store Connect for a purpose string the app never uses
+- What didn't work: `motionUsagePermission: false` on the expo-location plugin, to strip
+  `NSMotionUsageDescription` because nothing in Allkept asks for motion. Build 33 uploaded, then
+  Apple's processing refused it (ITMS-90683, mail only — `eas submit` reported nothing wrong):
+  expo-location's native code links CoreMotion (`ios/Providers/MotionActivityStreamer.swift`),
+  and the scan looks for the symbols in the binary, not for calls.
+- What worked: a real, honest string — "Allkept does not use Motion & Fitness data. Its location
+  component references it, so this notice is required." The Always, camera and microphone strings
+  stay stripped: the same scan of build 33 accepted their absence, so that is evidence, not a guess.
+- Remember: a plugin permission string can be set to `false` only when the SDK's *native code*
+  does not reference the API (`grep -rl CoreMotion node_modules/<pkg>/ios`). The upload's
+  verdict arrives by mail an hour or more after "submitted", so "submission queued" is not
+  "on TestFlight" — check the mail before saying it is. Native change → new build, not an OTA.

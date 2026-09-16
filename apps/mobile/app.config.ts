@@ -88,10 +88,15 @@ const config: ExpoConfig = {
     ["expo-image-picker", { photosPermission: "Choose a photo for your Allkept profile.", cameraPermission: false, microphonePermission: false }],
     // Where you are, only while the app is open, only when you ask: how far the places you saved
     // are, and which of them are near. No Always permission — the strings for it are removed, so the
-    // build carries no claim it does not use — and no motion.
+    // build carries no claim it does not use. The motion string stays, though nothing asks for
+    // motion: expo-location's native code links CoreMotion (its MotionActivityStreamer), and App
+    // Store Connect scans the binary for the symbols, not for calls — build 33 was refused at upload
+    // (ITMS-90683) for the missing NSMotionUsageDescription. Its absence of the Always, camera and
+    // microphone strings passed the same scan, so those stay removed.
     ["expo-location", {
       locationWhenInUsePermission: "Allkept uses your location, only while you use the app, to show how far away the places you saved are.",
-      locationAlwaysAndWhenInUsePermission: false, locationAlwaysPermission: false, motionUsagePermission: false,
+      locationAlwaysAndWhenInUsePermission: false, locationAlwaysPermission: false,
+      motionUsagePermission: "Allkept does not use Motion & Fitness data. Its location component references it, so this notice is required.",
     }],
     // The share sheet is served by our own extension (targets/share) and Android share activity
     // (modules/share-save); expo-sharing stays only for sharing *out*.
