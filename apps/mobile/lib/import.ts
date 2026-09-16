@@ -1,5 +1,6 @@
 import type { ImportProgress, ImportSavesResponse } from "@allkept/contracts";
 import { File } from "expo-file-system";
+import { serverSaid } from "./function-error";
 import { isPaymentRequired } from "./paywall";
 import { supabase } from "./supabase";
 
@@ -53,14 +54,8 @@ export async function removeUpload(path: string): Promise<void> {
  * "non-2xx status code" tells the person nothing about the file they just picked.
  */
 async function reasonFrom(error: unknown): Promise<string> {
-  const context: unknown = (error as { context?: unknown })?.context;
-  if (context instanceof Response) {
-    try {
-      const body: unknown = await context.clone().json();
-      const said = (body as { error?: unknown })?.error;
-      if (typeof said === "string" && said) return said;
-    } catch { /* not JSON: fall through to the generic message */ }
-  }
+  const said = await serverSaid(error);
+  if (said?.error) return said.error;
   return error instanceof Error ? error.message : String(error);
 }
 

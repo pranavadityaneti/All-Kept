@@ -2,6 +2,7 @@ import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-quer
 import type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { WEAVE_KINDS } from "@allkept/contracts";
 import { hoursLine, type OpeningPeriod } from "./hours";
+import { serverSaid } from "./function-error";
 import { httpStatus } from "./paywall";
 import { supabase } from "./supabase";
 
@@ -33,11 +34,11 @@ export class WeaveRefused extends Error {
 async function call<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>("weave", { body });
   if (error) {
-    const context: unknown = (error as { context?: unknown })?.context;
-    let code = httpStatus(error) === 402 ? "payment_required" : "internal", message = "Something went wrong.";
-    if (context instanceof Response) {
-      try { const said = (await context.clone().json()) as { error?: unknown; code?: unknown }; if (typeof said.error === "string") message = said.error; if (typeof said.code === "string") code = said.code; } catch { /* not JSON */ }
-    }
+    const said = await serverSaid(error);
+    const status = httpStatus(error);
+    // No status at all: the request never reached the function — no network, or the phone gave up waiting.
+    const code = said?.code ?? (status === 402 ? "payment_required" : status === undefined ? "unreachable" : "internal");
+    const message = said?.error ?? (status === undefined ? "Couldn't reach Allkept. Check your connection and try again." : "Something went wrong.");
     throw new WeaveRefused(code, message);
   }
   if (!data) throw new WeaveRefused("internal", "The server did not answer.");

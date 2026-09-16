@@ -1,4 +1,5 @@
 import type { YoutubeRegisterResponse } from "@allkept/contracts";
+import { serverSaid } from "./function-error";
 import { supabase } from "./supabase";
 
 /**
@@ -6,14 +7,8 @@ import { supabase } from "./supabase";
  * "non-2xx status code" tells nobody why their playlist was refused.
  */
 async function reason(error: unknown): Promise<string> {
-  const context: unknown = (error as { context?: unknown })?.context;
-  if (context instanceof Response) {
-    try {
-      const body: unknown = await context.clone().json();
-      const said = (body as { error?: unknown })?.error;
-      if (typeof said === "string" && said) return said;
-    } catch { /* not JSON: fall through to the generic message */ }
-  }
+  const said = await serverSaid(error);
+  if (said?.error) return said.error;
   return error instanceof Error ? error.message : String(error);
 }
 
