@@ -259,7 +259,8 @@ export async function runPipeline(db: SupabaseClient, itemId: string, deps: Pipe
         p_usage: { ...(result.usage ?? {}), cost_usd: costUsd(result.model, result.usage) }, p_retryable: retryable,
       });
       if (error) throw error;
-      if (!result.output) deps.log("pipeline: classification failed", { item: itemId, attempt: claim.attempt, retryable });
+      // The reason goes to the log with the failure: without it, a revoked key and a retired model read the same.
+      if (!result.output) deps.log("pipeline: classification failed", { item: itemId, attempt: claim.attempt, retryable, error: result.error, model: result.model });
       return data === true;
     },
     async category() {
