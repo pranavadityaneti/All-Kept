@@ -245,73 +245,27 @@ input::placeholder {
   background: linear-gradient(160deg, var(--color-surface), var(--color-accent-900));
 }
 
-/* Nav */
+/* Nav — the lockup alone, centred. */
 .nav {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 22px 40px;
+  justify-content: center;
+  padding: 26px 40px;
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 14px;
   text-decoration: none;
 }
 .brand-mark {
-  width: 20px;
-  height: 20px;
+  width: 34px;
+  height: 34px;
 }
 .brand-word {
-  height: 19px;
+  height: 30px;
   width: auto;
-}
-.launch {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-}
-.launch-label {
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-}
-.countdown {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-}
-.cd-unit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  min-width: 34px;
-}
-.cd-num {
-  font-size: 20px;
-  line-height: 1;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  font-feature-settings: 'tnum' 1;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text);
-}
-.cd-label {
-  font-size: 8.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-neutral-500);
-}
-.cd-sep {
-  font-size: 15px;
-  line-height: 1;
-  color: var(--color-neutral-700);
-  margin-bottom: 11px;
 }
 
 /* Hero copy */
@@ -673,13 +627,7 @@ input::placeholder {
     background: linear-gradient(to bottom, transparent 40%, var(--color-bg) 100%);
   }
   .nav {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
     padding: 20px 24px;
-  }
-  .launch {
-    align-items: flex-start;
   }
   .hero-copy {
     padding: 24px 24px 0;

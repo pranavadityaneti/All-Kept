@@ -1,4 +1,3 @@
-import { Countdown } from '@/components/landing/Countdown';
 import { SlotImage } from '@/components/landing/SlotImage';
 import { WaitlistForm } from '@/components/landing/WaitlistForm';
 import { waitlistConfig } from '@/lib/waitlist';
@@ -197,10 +196,6 @@ export default function Home() {
               <img className="brand-mark" src="/design/mark.png" alt="" width={256} height={256} />
               <img className="brand-word" src="/design/wordmark-light.png" alt="All Kept" width={519} height={150} />
             </a>
-            <div className="launch">
-              <span className="launch-label">Launching 21 September 2026</span>
-              <Countdown />
-            </div>
           </nav>
 
           <div className="hero-copy">
