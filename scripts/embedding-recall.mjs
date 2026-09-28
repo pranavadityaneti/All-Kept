@@ -11,7 +11,22 @@
 //
 // Node 20+ (global fetch). No dependencies.
 //   OPENAI_API_KEY=sk-... GEMINI_API_KEY=... node scripts/embedding-recall.mjs
-// Run either key alone to see just that model; both to compare.
+// Run either key alone to see just that model; both to compare. Keys not in the environment are read
+// from supabase/.env.admin (git-ignored), the same file the other local scripts use, so putting
+// GEMINI_API_KEY beside the OpenAI key there is enough — no exports needed.
+import { existsSync, readFileSync } from "node:fs";
+
+const adminFile = new URL("../supabase/.env.admin", import.meta.url);
+if ((!process.env.OPENAI_API_KEY || !process.env.GEMINI_API_KEY) && existsSync(adminFile)) {
+  for (const line of readFileSync(adminFile, "utf8").split("\n")) {
+    const m = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
+    if (m && !process.env[m[1]]) {
+      let v = m[2];
+      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+      process.env[m[1]] = v;
+    }
+  }
+}
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY?.trim();
 const GEMINI_KEY = process.env.GEMINI_API_KEY?.trim();
