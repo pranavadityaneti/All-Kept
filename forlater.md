@@ -378,9 +378,16 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-17
 - **Originated from:** 17 Sep 2026 — the first live Weave run on the seeded pile.
 
-### 57. More towns ticked than the plan has days
-- **What + why:** Every town starts ticked. Twelve towns and a 7-day plan is refused by the server ("7 days cannot be split among 12 towns") only after the saves were read and paid for; a person should be told before "Read my saves", or be able to drop a town in Customise (nights never go below one today).
-- **Scope:** the towns stage (a line when the ticked towns outnumber the shortest plan), or Customise (a town at zero nights drops out of the brief); `readBrief` already refuses the impossible split.
+### 57. More towns picked than the plan has days
+- **What + why:** Narrowed on 28 Sep: the pre-ticking that caused this is gone (`78c3b4e`), so a person no longer arrives at twelve towns by default. The refusal still lands late, though — pick twelve towns yourself and the server's "7 days cannot be split among 12 towns" comes only after the saves have been read and paid for. Tell them before "Read my saves", or let a town drop out in Customise (nights never go below one today).
+- **Scope:** the towns stage (a line when the picked towns outnumber the shortest plan), or Customise (a town at zero nights drops out of the brief); `readBrief` already refuses the impossible split.
 - **Status:** queued
 - **Date added:** 2026-09-17
 - **Originated from:** 17 Sep 2026 — the first live Weave run, all twelve towns ticked.
+
+### 59. Ask whether a trip is being planned, rather than assuming one
+- **What + why:** Pranav, 28 Sep: "just because they save a certain number of reels of a place away from them, it doesn't mean that they want to have an itinerary planned for them. Our train of thought is wrong." The map no longer asserts a plan (`98c3b99`) and Weave no longer ticks towns (`78c3b4e`); the remaining half is the offer itself. A card on Home when the evidence is strong — several places saved across towns that sit near one another — asking rather than assuming: "You've saved 21 places around Seoul and Busan. Planning a trip?" → Plan it / Not now.
+- **Scope:** the rules matter more than the card. Never ask about a town the person is currently in (that covers home, and covers being mid-trip already); if location is not granted, do not ask at all — silence is the safe default and the prompt stays a bonus, never a dependency. One ask per cluster, dismissible, never repeated. Home has no home-town field and no location history today (checked 28 Sep): current position is the only honest signal, unless Pranav would rather be asked his home city once in Settings.
+- **Status:** queued
+- **Date added:** 2026-09-28
+- **Originated from:** 28 Sep 2026 — "Share itinerary" offered for one café in the city he lives in.
