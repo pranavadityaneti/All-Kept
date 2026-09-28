@@ -4,7 +4,7 @@ export const SITE_URL = 'https://www.allkept.app';
 export const SITE_NAME = 'All Kept';
 export const SITE_TITLE = 'All Kept — Your saves, sorted.';
 export const SITE_DESCRIPTION =
-  'One library for everything you save across Instagram, YouTube and the web. AI files it under food, travel, places and more. You just search. Launching 21 September 2026.';
+  'One library for everything you save across Instagram, YouTube and the web. AI files it under food, travel, places and more. You just search.';
 /** Meta Pixel — Events Manager → Allkept. */
 export const META_PIXEL_ID = '1608009750873679';
 /** Google Analytics 4 measurement id. Empty would mean: load nothing. */
