@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { googleDirectionsUrl, itineraryText, tripsFrom, type TripStop } from "../lib/trips";
+import { googleDirectionsUrl, itineraryText, tripsFrom, wayOutLabels, type TripStop } from "../lib/trips";
 
 const stop = (over: Partial<TripStop> & { id: string; locality: string | null }): TripStop => ({
   title: `Save ${over.id}`, url: `https://www.instagram.com/reel/${over.id}/`, lastSavedAt: "2026-09-15T10:00:00Z",
@@ -47,6 +47,27 @@ describe("the ways out of a trip", () => {
       "   Abimanagama Rd, Weligama",
       "   Open 24 hours",
       "   From: Save b — https://www.instagram.com/reel/b/",
+    ].join("\n"));
+  });
+});
+
+describe("what a town's ways out are called", () => {
+  it("names one place a place and several places places, and never calls either a plan the app did not make", () => {
+    expect(wayOutLabels(1)).toEqual({ route: "Directions in Google Maps", share: "Share place" });
+    expect(wayOutLabels(2)).toEqual({ route: "Open all in Google Maps", share: "Share places" });
+    expect(wayOutLabels(9)).toEqual({ route: "Open all in Google Maps", share: "Share places" });
+  });
+});
+
+describe("a town's places as text", () => {
+  it("numbers the places when there are several, and numbers nothing when there is one — a single place is not a sequence", () => {
+    const one = itineraryText("Hyderabad", [stop({ id: "c", locality: "Hyderabad" })], new Date("2026-09-28T09:00:00Z"));
+    expect(one).toBe([
+      "Hyderabad — 1 place saved in Allkept",
+      "",
+      "Place c",
+      "   c Street",
+      "   From: Save c — https://www.instagram.com/reel/c/",
     ].join("\n"));
   });
 });

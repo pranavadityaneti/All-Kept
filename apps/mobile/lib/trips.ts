@@ -1,6 +1,6 @@
 /**
  * Trips: the places a person saved, gathered by town, and the two ways out of one — every stop as
- * one route in Google Maps, and an itinerary as text to send. Grounded in the saves alone: every
+ * one route in Google Maps, and the places as text to send. Grounded in the saves alone: every
  * line names the save it came from. Pure; the map screen feeds it and the share sheet takes it.
  */
 import { hoursLine, type OpeningPeriod } from "./hours";
@@ -63,11 +63,24 @@ export function googleDirectionsUrl(stops: TripStop[]): string | null {
   return `https://www.google.com/maps/dir/?${q.toString()}`;
 }
 
-/** The itinerary as text: the town, each place with its address and hours, and the save it came from. */
+/**
+ * What the two ways out of a town are called, by how many places are in it. A town's saves are the
+ * places a person kept there — evidence of interest, not of a journey — so neither word promises a
+ * plan: the app never made one. The itinerary is Weave's, asked for and woven; this is a list.
+ */
+export function wayOutLabels(count: number): { route: string; share: string } {
+  return count === 1
+    ? { route: "Directions in Google Maps", share: "Share place" }
+    : { route: "Open all in Google Maps", share: "Share places" };
+}
+
+/** A town's places as text: the town, each place with its address and hours, and the save it came from. */
 export function itineraryText(town: string, stops: TripStop[], now: Date): string {
   const lines = [`${town} — ${stops.length} ${stops.length === 1 ? "place" : "places"} saved in Allkept`];
+  // Several places are numbered so the reader can follow them; one place is not a sequence and is not numbered.
+  const many = stops.length > 1;
   stops.forEach((s, i) => {
-    lines.push("", `${i + 1}. ${s.place.name}`);
+    lines.push("", many ? `${i + 1}. ${s.place.name}` : s.place.name);
     if (s.place.address) lines.push(`   ${s.place.address}`);
     if (s.place.status === "CLOSED_PERMANENTLY") lines.push("   Permanently closed");
     const hours = hoursLine(s.place.periods, s.place.utcOffsetMinutes, now);

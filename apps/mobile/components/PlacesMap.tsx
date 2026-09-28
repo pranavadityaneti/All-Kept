@@ -9,7 +9,7 @@ import { useHere } from "../lib/location";
 import { cameraFor, usePlacedSaves, type PlacedSave } from "../lib/places";
 import { font, radius, space, type, usePalette } from "../lib/theme";
 import { useThumbnails } from "../lib/thumbnails";
-import { googleDirectionsUrl, itineraryText, tripsFrom, type Trip, type TripStop } from "../lib/trips";
+import { googleDirectionsUrl, itineraryText, type Trip, tripsFrom, type TripStop, wayOutLabels } from "../lib/trips";
 import { Button } from "./Button";
 import { Card } from "./Card";
 import { Chip } from "./Chip";
@@ -182,10 +182,15 @@ function PlaceCard({ save, here, thumbnail, onPress }: { save: PlacedSave; here:
   );
 }
 
-/** A town's places, and the two ways out: every stop as one route in Google Maps, or the itinerary sent as text. */
+/**
+ * A town's places, and the two ways out: every stop as one route in Google Maps, or the places sent
+ * as text. What they are called follows the count — one place is a place, not an itinerary; the app
+ * has planned nothing here and says so by never claiming it.
+ */
 function TripBar({ trip, onClose, onWayOut }: { trip: Trip; onClose: () => void; onWayOut?: (what: "trip_route" | "trip_share") => void }) {
   const p = usePalette();
   const route = googleDirectionsUrl(trip.stops);
+  const labels = wayOutLabels(trip.stops.length);
   const share = async () => {
     onWayOut?.("trip_share");
     await Share.share({ message: itineraryText(trip.town, trip.stops, new Date()) }).catch(() => undefined);
@@ -198,8 +203,8 @@ function TripBar({ trip, onClose, onWayOut }: { trip: Trip; onClose: () => void;
       </View>
       <Text numberOfLines={2} style={[type.label, { color: p.inkMuted }]}>{trip.stops.map((s) => s.place.name).join(" · ")}</Text>
       <View style={styles.tripActions}>
-        {route && <Button label="Open all in Google Maps" onPress={() => { onWayOut?.("trip_route"); void Linking.openURL(route).catch(() => undefined); }} />}
-        <Button label="Share itinerary" variant="secondary" onPress={() => { void share(); }} />
+        {route && <Button label={labels.route} onPress={() => { onWayOut?.("trip_route"); void Linking.openURL(route).catch(() => undefined); }} />}
+        <Button label={labels.share} variant="secondary" onPress={() => { void share(); }} />
       </View>
     </View>
   );
