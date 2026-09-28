@@ -1,5 +1,12 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
+// Search embeddings stay on OpenAI, on purpose, even once sorting has moved to Gemini. The stored
+// vectors are text-embedding-3-small at 512 dimensions, and a vector from one model cannot be
+// compared with a vector from another: changing vendor is not a config flip but a re-embed of every
+// saved row, a change to the vector column's width, a task_type split for query vs document, and a
+// re-tuning of the 0.45 cosine threshold. Worth doing for the multilingual gain, on its own, later;
+// see internal/research/gemini-embeddings-audit-2026-09-28.md. Until then OPENAI_API_KEY is still
+// required for search, the sweeper's indexing pass and the query embedder here, whatever sorts.
 export const EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 512;
 export type Embed = (texts: string[]) => Promise<number[][]>;
