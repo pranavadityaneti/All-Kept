@@ -33,6 +33,12 @@ export const PRICES_PER_MTOK: Record<string, { input: number; output: number; ca
   "gpt-6-astra": { input: 10, output: 50, cacheRead: 1, cacheWrite: 0 },
   "gpt-5.6-terra": { input: 2, output: 12, cacheRead: 0.2, cacheWrite: 0 },
   "gpt-5.6-luna": { input: 0.2, output: 1.2, cacheRead: 0.02, cacheWrite: 0 },
+  // Gemini 2.5 Flash and Flash-Lite (list prices as the trackers report them; Google's page refused
+  // the read, so check before relying on the cost line). Cache storage is billed by the hour, not per
+  // token, so cacheWrite stays 0 here and is not modelled. The dated ids (…-002) match by prefix, so
+  // flash-lite is listed first: "gemini-2.5-flash-lite" also starts with "gemini-2.5-flash-".
+  "gemini-2.5-flash-lite": { input: 0.1, output: 0.4, cacheRead: 0.025, cacheWrite: 0 },
+  "gemini-2.5-flash": { input: 0.3, output: 2.5, cacheRead: 0.075, cacheWrite: 0 },
 };
 
 /** Cost of one call, or null when usage is missing or the model is not in the table (no guessing). */

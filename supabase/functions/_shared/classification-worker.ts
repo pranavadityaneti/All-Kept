@@ -29,7 +29,7 @@ async function pictureFor(claim: ClassificationClaim, deps: ClassificationWorker
 
 /** Configuration/auth/refusal failures need intervention; transport and malformed replies get bounded retries. */
 export function retryableClassificationError(error: string | null): boolean {
-  return !/^(refused|classifier unavailable)$|\b(?:openai|anthropic)\s+(400|401|403|404|422)\b/i.test(error ?? "");
+  return !/^(refused|classifier unavailable)$|\b(?:openai|anthropic|gemini)\s+(400|401|403|404|422)\b/i.test(error ?? "");
 }
 
 export async function runClassification(deps: ClassificationWorkerDeps, retry = false): Promise<string | null> {
