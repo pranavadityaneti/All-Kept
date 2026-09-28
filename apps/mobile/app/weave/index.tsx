@@ -32,18 +32,18 @@ export default function Weave() {
   const userId = ready && !session.anonymous ? session.userId : null;
   const towns = useWeaveTowns(ready);
   const recent = useRecentWeave();
-  const [picked, setPicked] = useState<Set<string> | null>(null);
+  // Nothing is ticked to begin with: saves in a town are what a person kept there, not a journey
+  // they have decided on, and the app does not decide it for them. They say where they are going.
+  const [picked, setPicked] = useState<Set<string>>(new Set());
   const [stage, setStage] = useState<"towns" | "reading" | "profile" | "making">("towns");
   const [weaveId, setWeaveId] = useState<string | null>(null);
   const [profile, setProfile] = useState<WeaveProfile | null>(null);
   const [savesRead, setSavesRead] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  // Every town ticked to begin with; the person unticks what is not this trip.
-  useEffect(() => { if (towns.data && picked === null) setPicked(new Set(towns.data.towns.map((t) => t.name))); }, [towns.data, picked]);
   // The wait on the row stops when the screen goes.
   const gone = useRef(new AbortController());
   useEffect(() => { const c = gone.current; return () => c.abort(); }, []);
-  const pickedSaves = towns.data?.towns.filter((t) => picked?.has(t.name)).reduce((a, t) => a + t.saves, 0) ?? 0;
+  const pickedSaves = towns.data?.towns.filter((t) => picked.has(t.name)).reduce((a, t) => a + t.saves, 0) ?? 0;
 
   const refuse = (e: unknown) => {
     if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
@@ -51,7 +51,7 @@ export default function Weave() {
     setError(e instanceof Error ? e.message : "Something went wrong.");
   };
   const read = async () => {
-    if (!picked || picked.size === 0) return;
+    if (picked.size === 0) return;
     setStage("reading"); setError(null);
     try {
       const started = await weaveUnderstand([...picked]);
@@ -97,17 +97,17 @@ export default function Weave() {
                 <Button label="Open it" variant="secondary" onPress={() => router.push({ pathname: "/weave/plan", params: { weaveId: recent.data! } })} />
               </Card>
             ) : null}
-            <Text style={[type.body, { color: p.inkMuted }]}>Where is this trip? Untick the towns that aren't part of it.</Text>
+            <Text style={[type.body, { color: p.inkMuted }]}>Where are you going? Tick the towns this trip is for.</Text>
             {towns.isPending ? <ActivityIndicator color={p.accent} /> : towns.data && towns.data.towns.length === 0 ? (
               <Card><Text style={[type.body, { color: p.inkMuted }]}>No saves name a place yet. Save a few reels of cafés, sights and hotels, and come back once they are on the map.</Text></Card>
             ) : (
               <View style={styles.wrap}>
                 {towns.data?.towns.map((t) => (
-                  <Chip key={t.name} label={`${t.name} ${t.saves}`} selected={picked?.has(t.name) ?? false} onPress={() => setPicked((s) => { const next = new Set(s ?? []); if (next.has(t.name)) next.delete(t.name); else next.add(t.name); return next; })} accessibilityLabel={`${t.name}, ${t.saves} saves`} />
+                  <Chip key={t.name} label={`${t.name} ${t.saves}`} selected={picked.has(t.name)} onPress={() => setPicked((s) => { const next = new Set(s); if (next.has(t.name)) next.delete(t.name); else next.add(t.name); return next; })} accessibilityLabel={`${t.name}, ${t.saves} saves`} />
                 ))}
               </View>
             )}
-            <Button label="Read my saves" disabled={!picked || picked.size === 0} onPress={() => { void read(); }} />
+            <Button label="Read my saves" disabled={picked.size === 0} onPress={() => { void read(); }} />
             <Text style={[type.label, { color: p.inkMuted }]}>Allkept reads the posts you saved in these towns and says what they add up to. Nothing is planned until you've seen that.</Text>
           </>
         )}
