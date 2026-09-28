@@ -375,6 +375,45 @@ input::placeholder {
   opacity: 0;
 }
 
+/* Store badges — Apple's SVG and Google's PNG exactly as they ship them. Google's file carries its
+   own clear space (41 of its 250 pixels, top and bottom), so for the same visible badge its box has
+   to be taller: 46 x 250/168 = 68. Centring the row lines the two badges up on one axis. */
+.stores {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.store {
+  display: block;
+  line-height: 0;
+}
+.store img {
+  display: block;
+  width: auto;
+}
+.badge-apple img {
+  height: 46px;
+}
+.badge-play img {
+  height: 68px;
+}
+/* No store link yet: shown, but plainly not something to tap. */
+.store-soon {
+  opacity: 0.5;
+  cursor: default;
+}
+a.store {
+  transition: opacity 0.15s ease;
+}
+a.store:hover {
+  opacity: 0.82;
+}
+.hero-copy .stores {
+  margin-top: 24px;
+}
+
 /* Phones — every measure derives from --pw (the frame width, 330 in the
    artboard) so the frame, screen and radius scale together. */
 .phone {
@@ -567,6 +606,10 @@ input::placeholder {
   align-items: flex-start;
   margin-top: 24px;
 }
+.footer-join .stores {
+  justify-content: flex-start;
+  margin-top: 22px;
+}
 .footer-rule {
   position: absolute;
   left: 80px;
@@ -634,6 +677,12 @@ input::placeholder {
   }
   .hero-copy h1 {
     font-size: clamp(40px, 10vw, 64px);
+  }
+  .badge-apple img {
+    height: 42px;
+  }
+  .badge-play img {
+    height: 62px;
   }
   .hero-sub {
     font-size: 17px;

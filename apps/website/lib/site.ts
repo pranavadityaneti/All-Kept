@@ -11,6 +11,15 @@ export const META_PIXEL_ID = '1608009750873679';
 export const GA_MEASUREMENT_ID = 'G-WZDX3LHXGB';
 /** The iOS app, for Safari's App Store banner. */
 export const APP_STORE_ID = '6809901300';
+/**
+ * The store listings the badges point at. Both are empty until the app is published, because a
+ * badge that links to an unlisted app sends people to a 404 — as of 28 September both of these
+ * addresses answer one. Fill them in and the badges become links; nothing else changes.
+ *   App Store:   https://apps.apple.com/app/id6809901300
+ *   Google Play: https://play.google.com/store/apps/details?id=app.allkept.mobile
+ */
+export const APP_STORE_URL = '';
+export const PLAY_STORE_URL = '';
 
 /**
  * The share preview every page carries. Next replaces a page's whole openGraph block rather than

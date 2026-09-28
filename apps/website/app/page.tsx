@@ -1,6 +1,5 @@
 import { SlotImage } from '@/components/landing/SlotImage';
-import { WaitlistForm } from '@/components/landing/WaitlistForm';
-import { waitlistConfig } from '@/lib/waitlist';
+import { StoreBadges } from '@/components/landing/StoreBadges';
 import { ConsentChoiceLink } from '@/components/site/ConsentBanner';
 
 // ── Hero tile field ──────────────────────────────────────────────────────
@@ -183,7 +182,6 @@ function StringAndButtons() {
 }
 
 export default function Home() {
-  const waitlist = waitlistConfig();
   return (
     <main className="page">
       {/* ── Hero ── */}
@@ -204,8 +202,8 @@ export default function Home() {
               One library for everything you save across Instagram, YouTube and the web. AI files
               it under food, travel, places and more. You just search.
             </p>
-            <WaitlistForm config={waitlist} source="site-hero" />
-            <p className="hero-note">Coming to iOS and Android</p>
+            <StoreBadges />
+            <p className="hero-note">Coming soon to iOS and Android</p>
           </div>
 
           <Phone
@@ -271,9 +269,9 @@ export default function Home() {
             </div>
 
             <div className="footer-join">
-              <h3>Join the waitlist</h3>
-              <p>One email when it opens. Nothing else.</p>
-              <WaitlistForm config={waitlist} source="site-footer" />
+              <h3>Get the app</h3>
+              <p>Coming soon to iOS and Android.</p>
+              <StoreBadges />
             </div>
           </div>
 
