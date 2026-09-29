@@ -391,3 +391,17 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued
 - **Date added:** 2026-09-28
 - **Originated from:** 28 Sep 2026 — "Share itinerary" offered for one café in the city he lives in.
+
+### 60. Deploy the enrichment functions to activate the named-entity decode
+- **What + why:** Fix 1 (29 Sep, `44835e2`) decodes the full HTML named-entity set, but it is server-side — it reaches new saves only once the functions bundling the enricher are deployed: `sweeper`, `reprocess-item`, `instagram-webhook`, `youtube-poll`, `reddit-thumbnail`. Held on 29 Sep because those functions also bundle another session's uncommitted Gemini-sorting work (`_shared/classifiers.ts`, `_shared/pipeline.ts`, `_shared/gemini.ts`); deploying would ship that half-finished work. Until then a newly saved title carrying `&mdash;` (or any named entity) is stored raw, and the one-off `&mdash;` backfill must be re-run to catch the gap.
+- **Scope:** once the Gemini work is committed and meant for release, `npx supabase functions deploy sweeper reprocess-item instagram-webhook youtube-poll reddit-thumbnail`; then re-run the backfill for anything saved in the meantime.
+- **Status:** blocked on the concurrent Gemini-sorting work landing.
+- **Date added:** 2026-09-29
+- **Originated from:** 29 Sep 2026 — the `&mdash;` / X-embed fixes; deploy held to avoid shipping another session's work.
+
+### 61. Strip the attribution cruft from an X save's stored text
+- **What + why:** X's oEmbed `html` is `<p>tweet</p>&mdash; Author (@handle) <a>date</a>`; enrichment's `stripTags` keeps all of it, so a tweet's stored `text` (and the heading derived from it) carries `— Author (@handle) date` after the tweet. Matters less now the embed renders the real tweet (`65620e4`), but the app's heading under it still reads that way. Trim to just the paragraph.
+- **Scope:** `_shared/enrich.ts` ~line 497, the `platform === "x"` text extraction — take the blockquote's `<p>`, drop the trailing attribution; a test in `enrich.test.ts`. Ships with item 60.
+- **Status:** queued.
+- **Date added:** 2026-09-29
+- **Originated from:** 29 Sep 2026 — noticed while verifying the X embed.
