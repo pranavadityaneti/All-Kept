@@ -161,6 +161,18 @@ Deno.test("decodeEntities handles named, decimal and hex entities and leaves inv
   assertEquals(decodeEntities("&#128512;"), "\u{1F600}");
 });
 
+Deno.test("decodeEntities knows the punctuation, symbol and accent names that titles actually carry, not just the six markup ones", () => {
+  // The one that showed raw in a saved tweet: "\u2026lose my mind&mdash; Mathias Chapelon".
+  assertEquals(decodeEntities("lose my mind&mdash;Mathias"), "lose my mind\u2014Mathias");
+  // The rest of the family that a web or social title routinely holds.
+  assertEquals(decodeEntities("wait&hellip; it&rsquo;s a &lsquo;test&rsquo;"), "wait\u2026 it\u2019s a \u2018test\u2019");
+  assertEquals(decodeEntities("&ldquo;quoted&rdquo; and en&ndash;dash"), "\u201cquoted\u201d and en\u2013dash");
+  assertEquals(decodeEntities("caf&eacute; &amp; r&ocirc;le \u2014 na&iuml;ve"), "caf\u00e9 & r\u00f4le \u2014 na\u00efve");
+  assertEquals(decodeEntities("&copy;2026 &middot; 20&deg;C &middot; &trade; &euro;5 &pound;3"), "\u00a92026 \u00b7 20\u00b0C \u00b7 \u2122 \u20ac5 \u00a33");
+  // A name that is not a real entity is still left exactly as written.
+  assertEquals(decodeEntities("&notareal; &mdashx;"), "&notareal; &mdashx;");
+});
+
 Deno.test("parseOpenGraph keeps apostrophes inside double-quoted content and reads single-quoted content", () => {
   const og = parseOpenGraph(`<meta property="og:title" content="Don't stop" /><meta property='og:description' content='He said "hi"' />`);
   assertEquals([og.title, og.description], ["Don't stop", 'He said "hi"']);
