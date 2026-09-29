@@ -62,6 +62,14 @@ export function embedUrl(item: EmbeddableItem): string | null {
     // Light to match the frame the embed is drawn in, as Instagram's card is.
     return `https://www.redditmedia.com${m[1]}/?embed=true&theme=light&showtitle=true&showmedia=true`;
   }
+  if (item.platform === "x" && item.externalId) {
+    // X's oEmbed hands back a <blockquote> that only becomes a tweet once its widgets script runs,
+    // so there is no page to load the way Instagram or YouTube publish one. platform.twitter.com's
+    // Tweet.html renders a single tweet by its status id and is a real address the WebView can hold,
+    // sized to its container. dnt=true asks X not to track the reader; the light theme matches the
+    // card's own frame, as Reddit's does. A profile has no status id and so no tweet to show.
+    return `https://platform.twitter.com/embed/Tweet.html?id=${item.externalId}&dnt=true&theme=light`;
+  }
   if (item.platform === "tiktok" && item.externalId && (item.kind === "short_video" || item.kind === "video" || item.kind === "image")) {
     // TikTok's Embed Player. loop, and none of the chrome we draw ourselves. Our speaker button owns
     // the sound for a video, so TikTok's volume control is hidden; a photo post's sound is its

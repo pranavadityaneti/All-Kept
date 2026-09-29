@@ -214,3 +214,26 @@ describe("a saved Reddit post", () => {
     expect(isPlayerAddress("https://www.reddit.com/r/SaaS/comments/1wdmycf/")).toBe(false);
   });
 });
+
+describe("a saved X post", () => {
+  const TWEET = "https://x.com/Mathias/status/1970123456789012345";
+  it("shows the tweet through X's own iframe embed, by its status id", () => {
+    // X's oEmbed is a script-driven blockquote, not a frame we can load; platform.twitter.com's
+    // Tweet.html renders one tweet by id and is the address the WebView can hold, the way YouTube's
+    // /embed/ is. dnt keeps X from tracking the reader; the light theme matches the card's frame.
+    const url = embedUrl(item({ platform: "x", kind: "post", canonicalUrl: TWEET, externalId: "1970123456789012345" }))!;
+    expect(url).toContain("https://platform.twitter.com/embed/Tweet.html");
+    expect(url).toContain("id=1970123456789012345");
+    expect(url).toContain("dnt=true");
+  });
+  it("has nothing to embed for a profile or a link with no status id", () => {
+    expect(embedUrl(item({ platform: "x", kind: "profile", canonicalUrl: "https://x.com/Mathias", externalId: null }))).toBeNull();
+    expect(embedUrl(item({ platform: "x", kind: "post", canonicalUrl: TWEET, externalId: null }))).toBeNull();
+  });
+  it("is a card that reports its own height — a tweet is as tall as it is", () => {
+    expect(embedFit("x")).toBe("card");
+  });
+  it("is a page the player may stay on", () => {
+    expect(isPlayerAddress("https://platform.twitter.com/embed/Tweet.html?id=1970123456789012345&dnt=true")).toBe(true);
+  });
+});
