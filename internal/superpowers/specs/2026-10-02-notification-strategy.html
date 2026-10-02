@@ -1,0 +1,1052 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Allkept notification strategy</title>
+<style>
+:root{--ink:#14161C;--muted:#5F6675;--line:#E1E5EE;--soft:#F4F5F9;--accent:#6D46F2;--accentSoft:#EFEBFE;--good:#2E7D4F;--goodSoft:#EAF6EF;--bad:#B3372F;--badSoft:#FCECEA;--warn:#9A6A12;--warnSoft:#FFF6E5}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:#fff;color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:1120px;margin:0 auto;padding:40px 28px 96px}
+h1{font-size:34px;line-height:1.15;letter-spacing:-.025em;margin:0 0 6px}
+h2{font-size:27px;line-height:1.2;letter-spacing:-.015em;margin:64px 0 14px;padding-top:20px;border-top:2px solid var(--line)}
+h3{font-size:20px;line-height:1.3;margin:38px 0 10px;letter-spacing:-.01em}
+h4{font-size:16px;margin:22px 0 6px}
+p{margin:8px 0 12px} ul,ol{margin:8px 0 14px;padding-left:24px} li{margin:4px 0}
+a{color:var(--accent)}
+.sub{color:var(--muted);font-size:15px;margin-bottom:20px}
+.status{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:14.5px;margin:12px 0 20px}
+.plain{background:var(--accentSoft);border-left:4px solid var(--accent);padding:14px 18px;border-radius:10px;margin:18px 0 22px;break-inside:avoid}
+.plain b.k{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.warnbox{background:var(--warnSoft);border-left:4px solid var(--warn);padding:12px 16px;border-radius:10px;margin:14px 0;break-inside:avoid}
+.okbox{background:var(--goodSoft);border-left:4px solid var(--good);padding:12px 16px;border-radius:10px;margin:14px 0;break-inside:avoid}
+.badbox{background:var(--badSoft);border-left:4px solid var(--bad);padding:12px 16px;border-radius:10px;margin:14px 0;break-inside:avoid}
+.toc{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin:20px 0 8px;columns:2;column-gap:40px}
+.toc ol{margin:0;padding-left:20px} .toc li{break-inside:avoid} .toc ol ol{padding-left:18px;font-size:14.5px}
+.toc a{text-decoration:none}
+table{border-collapse:collapse;width:100%;font-size:13.8px;line-height:1.45;margin:10px 0 18px}
+th,td{border:1px solid var(--line);padding:7px 9px;vertical-align:top;text-align:left}
+thead th{background:var(--soft);font-weight:650}
+tbody tr:nth-child(even) td{background:#FCFCFE}
+tr{break-inside:avoid}
+td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.spec th{width:200px;background:var(--soft);font-weight:650}
+table.spec td{background:#fff!important}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;background:#F2F3F7;padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
+pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.5;background:#F6F7FA;border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow:auto;white-space:pre;break-inside:avoid}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-radius:6px;padding:1px 6px;vertical-align:1px;white-space:nowrap}
+.tag.v{background:#EAF6EF;color:#1F6A3F}.tag.i{background:#FFF1D6;color:#7D560D}.tag.u{background:#ECEAF3;color:#4A4560}
+.sev{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;border-radius:6px;padding:1px 6px;white-space:nowrap}
+.sev.high{background:#FCE8E6;color:#9C2A22}.sev.med{background:#FFF0D6;color:#7D560D}.sev.low{background:#ECEAF3;color:#4A4560}
+.pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px;background:var(--soft);border:1px solid var(--line);white-space:nowrap}
+.small{font-size:13px;color:var(--muted)}
+.copy{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.copy b{display:block}
+.fam{border:1px solid var(--line);border-radius:14px;padding:4px 20px 8px;margin:18px 0}
+ol.decisions>li{margin:12px 0}
+ol.decisions .rec{display:block}
+ol.decisions .trade{display:block;color:var(--muted);font-size:14.5px}
+@media (max-width:760px){main{padding:24px 16px 64px}.toc{columns:1}h1{font-size:28px}table.spec th{width:120px}}
+@media print{
+  body{font-size:10.5pt}
+  main{max-width:none;padding:0}
+  h2{break-before:page;border-top:none;margin-top:0}
+  h2#summary{break-before:auto}
+  h3,h4{break-after:avoid}
+  .toc{columns:2}
+  a{color:var(--ink);text-decoration:none}
+  .src a[href^="http"]::after{content:" (" attr(href) ")";font-size:9pt;color:var(--muted)}
+  pre{white-space:pre-wrap}
+}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Notifications at Allkept: a strategy to agree before anything is built</h1>
+<p class="sub">Draft · 2 October 2026 · for Pranav and the lead engineer · prepared read-only</p>
+
+<div class="status">
+<b>Status.</b> This is a proposal, not a record of work. Nothing described here has been built, deployed, migrated or sent. The only file created is this one. Database figures come from aggregate, read-only queries (counts and distributions only; listed in <a href="#appendix-queries">Appendix A</a>).<br>
+<b>How to read the tags.</b> <span class="tag v">Verified</span> means I read the code, the live database's metadata or the source document myself. <span class="tag i">Inferred</span> means it follows from what I read but I did not see it happen. <span class="tag u">Not verified</span> means I could not check it; it is listed again in <a href="#appendix-unverified">Appendix C</a>.<br>
+<b>Line numbers</b> are from the files as they stood on 2 October. For <code>supabase/functions/_shared/pipeline.ts</code> they are from the committed version, because another engineer's uncommitted work shifts the working copy's line numbers by six or seven.
+</div>
+
+<nav class="toc" aria-label="Contents">
+<ol start="0">
+<li><a href="#summary">The recommendation on one screen</a></li>
+<li><a href="#today">What exists today</a>
+  <ol><li><a href="#today-pieces">The pieces, file by file</a></li><li><a href="#today-sent">What is sent today</a></li><li><a href="#today-numbers">The numbers</a></li><li><a href="#today-findings">What is wrong or missing</a></li></ol></li>
+<li><a href="#rules">Principles and global rules</a>
+  <ol><li><a href="#rules-test">The test every notification must pass</a></li><li><a href="#rules-classes">Four kinds of notification</a></li><li><a href="#rules-budget">The weekly budget</a></li><li><a href="#rules-priority">Priority when several are due</a></li><li><a href="#rules-quiet">Quiet hours and time zones</a></li><li><a href="#rules-dedupe">Never twice for the same thing</a></li><li><a href="#rules-backoff">Back-off, dismissal, turning off</a></li><li><a href="#rules-ask">Asking for permission</a></li><li><a href="#rules-ios">iOS: deliver quietly, interruption levels</a></li><li><a href="#rules-android">Android channels</a></li><li><a href="#rules-settings">Settings</a></li><li><a href="#rules-privacy">Lock screen and privacy</a></li><li><a href="#rules-grouping">Grouping, the bell, badges</a></li><li><a href="#rules-words">How the words are written</a></li></ol></li>
+<li><a href="#families">The six families</a>
+  <ol><li><a href="#sorting">Sorting</a></li><li><a href="#reengagement">Re-engagement</a></li><li><a href="#trips">Trips</a></li><li><a href="#oldsaves">Old saves</a></li><li><a href="#weekly">Understanding your saves</a></li><li><a href="#interests">Interests</a></li></ol></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#rollout">Phased rollout</a></li>
+<li><a href="#decisions">Decisions for Pranav</a></li>
+<li><a href="#appendix-queries">Appendix A · queries run</a></li>
+<li><a href="#appendix-sources">Appendix B · outside sources checked</a></li>
+<li><a href="#appendix-unverified">Appendix C · what I could not verify</a></li>
+<li><a href="#appendix-files">Appendix D · files changed</a></li>
+</ol>
+</nav>
+
+<!-- ============================================================ 0 -->
+<h2 id="summary">0. The recommendation on one screen</h2>
+
+<p>Allkept already sends three kinds of push notification (a save was sorted, a save needs you, news about the subscription) and schedules reminders that people set on a save. Before adding anything, five problems in what exists should be fixed, because they make today's notifications impossible to switch off from the app, start them without a clear yes, or send one notification per save during an import. After that, build one small gate that every notification passes through, then add new kinds one at a time, starting with the ones that answer something the person started.</p>
+
+<h4>What to send</h4>
+<ol>
+<li><b>Answers to something the person started</b>, on by default once notifications are on: <i>"Your trip plan is ready"</i> (today the plan takes two to five minutes and people are told they can leave); <i>"Your older saves are sorted"</i>, one note per import instead of one per save; <i>"A save needs its link"</i>, only when they are the one who can fix it and Instagram's reply hasn't already told them.</li>
+<li><b>Things the person asked for</b>: the reminders they set on a save (these exist), and, for a trip with dates, two reminders they agree to when they enter the dates.</li>
+<li><b>From your library</b>, off until the person says yes: one weekly note, <i>"Your week in Allkept"</i>, which also carries one older save worth another look and a count of new interests.</li>
+<li><b>Not now:</b> "come back" notes, "Planning a trip?" pushes (that stays an in-app card, per queue item 59), standalone interest pushes, badges, iOS "deliver quietly", Time Sensitive.</li>
+</ol>
+
+<h4>How often</h4>
+<p>At most <b>5 a week</b> per person, not counting reminders they set or account notices; of those, at most <b>2</b> that Allkept starts on its own; at most <b>2 a day</b>; nothing Allkept starts between <b>21:00 and 08:00</b> their time, and nothing it starts in their <b>first week</b>. Lock-screen text never names a save, a place, a person or an interest unless the person turns on <i>Show save details</i>.</p>
+
+<h4>In what order to build</h4>
+<p>Phase 0 fixes → one gate (a send log, preferences, caps) → Trips → Sorting v2 → trip-date reminders → the weekly note → recording which save was opened → away notes, only if Pranav decides to. None of it needs a new native build: everything uses modules already in build 34. It ships through migrations Pranav runs, function deploys and over-the-air updates, each on his explicit yes.</p>
+
+<table>
+<thead><tr><th>#</th><th>Family</th><th>What Allkept would send</th><th>Kind</th><th>Default</th><th>At most</th><th>Phase</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Sorting</td><td>"A save needs its link"; "Your older saves are sorted"; per-save "Saved to Food" only for people who ask</td><td>Answer</td><td>on · on · off</td><td>needs-you 1 per 12 h; 1 per batch</td><td>0, 3</td></tr>
+<tr><td>2</td><td>Re-engagement</td><td>Nothing by default. If decided: "notes when you've been away", two per absence</td><td>Promotional</td><td>off; not built now</td><td>1 per 14 days</td><td>7, if decided</td></tr>
+<tr><td>3</td><td>Trips</td><td>Plan ready / saves read / didn't finish; before a dated trip, when agreed</td><td>Answer · Asked for</td><td>on · asked per trip</td><td>1 per stage; 2 per dated trip</td><td>2, 4</td></tr>
+<tr><td>4</td><td>Old saves</td><td>One save worth another look, inside the weekly note; standalone later</td><td>From your library</td><td>inside the weekly note</td><td>1 a week</td><td>5, 6</td></tr>
+<tr><td>5</td><td>Understanding your saves</td><td>"Your week in Allkept"</td><td>From your library</td><td>off until asked</td><td>1 a week</td><td>5</td></tr>
+<tr><td>6</td><td>Interests</td><td>A count line in the weekly note; never a name on the lock screen</td><td>From your library</td><td>follows Interests and the note</td><td>inside the note</td><td>5</td></tr>
+</tbody>
+</table>
+
+<div class="plain"><b class="k">In plain English</b>
+First make the notifications Allkept already sends behave: switching them off must work, they must start only after a real yes, and an import must not set the phone buzzing ninety times. Then add, slowly, only the notifications people would thank us for: "your trip plan is ready", "your import is done", "this save needs its link", and, for those who want it, one calm note a week. Five a week at the very most, none at night, and nothing private on the lock screen.</div>
+
+<!-- ============================================================ 1 -->
+<h2 id="today">1. What exists today</h2>
+
+<h3 id="today-pieces">1.1 The pieces, file by file</h3>
+
+<h4>On the phone (<code>apps/mobile</code>)</h4>
+<table>
+<thead><tr><th style="width:18%">Piece</th><th style="width:27%">Where</th><th>What it does</th><th style="width:9%"></th></tr></thead>
+<tbody>
+<tr><td>Permission and device registration</td><td><code>lib/push.ts</code> L68–85 <code>registerForPush()</code></td><td>Asks the operating system if it hasn't been asked (the full prompt; no "deliver quietly" option), fetches an Expo push token for EAS project <code>55c2d8b3…</code>, and stores it through the database function <code>claim_push_token</code>.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Android channel</td><td><code>lib/push.ts</code> L43–50, called at L71</td><td>One channel, <code>saves</code> ("Saves"), default importance, contents hidden on a secure lock screen. Created only inside <code>registerForPush</code>, so only when someone turns the switch on.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>While the app is open</td><td><code>lib/push.ts</code> L20–27</td><td>Every notification shows as a banner and in the list, without sound or badge, including one about the save the person is looking at.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Forgetting a device</td><td><code>lib/push.ts</code> L93–99; <code>app/(tabs)/settings.tsx</code> L76–80, L114</td><td>Deletes the token row when the switch goes off and on sign-out.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Where a tap goes</td><td><code>lib/push.ts</code> L111–127; <code>app/_layout.tsx</code> L79–84</td><td><code>itemId</code> opens <code>/item/:id</code>; <code>reason: "billing"</code> opens the paywall. Nothing else can be opened from a notification. The cold-start case uses <code>getLastNotificationResponseAsync</code>, which expo-notifications 57 marks deprecated, and never clears the last response.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Settings</td><td><code>app/(tabs)/settings.tsx</code> L49–95, L224–251</td><td>A master switch "Notifications" and, below it, "A save has landed" and "A save needs you". The switch shows on only when <code>notify_enabled</code> is true <i>and</i> the phone has granted permission. L69–72 registers the device again whenever Settings is on screen with both true.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Reminders on a save (local)</td><td><code>lib/reminders.ts</code> L63–68, L70–76, L91–102; <code>components/RemindMe.tsx</code> L52–53; <code>app/_layout.tsx</code> L96</td><td>Asks the phone for permission when a reminder is first set. Schedules a local notification titled "Allkept reminder" whose body is the save's title. Passes no Android channel, so Android files it under expo's fallback channel, "Miscellaneous". Reconciled with the server's list every time the app comes to the front.</td><td><span class="tag v">Verified</span> (fallback channel read in <code>node_modules/expo-notifications</code> 57.0.17)</td></tr>
+<tr><td>iOS share sheet banner (local)</td><td><code>targets/share/ShareViewController.swift</code> L49–53, L90–106</td><td>The share extension posts its own banner, "Saved to Allkept · Sorting it now" (or "Waiting in Allkept"), when notifications are allowed or allowed quietly (L98). Android shows a toast instead (<code>modules/share-save/…/ShareActivity.kt</code> L46).</td><td><span class="tag v">Verified</span> in code; in build 34 <span class="tag u">Not verified</span></td></tr>
+<tr><td>The "Notifications" screen</td><td><code>app/activity.tsx</code>, <code>lib/activity.ts</code>; bell at <code>app/(tabs)/index.tsx</code> L121</td><td>A list worked out from recent saves, fired reminders, saves marked done and the subscription notice. It is not a record of what was sent.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Measurement</td><td><code>lib/metrics.ts</code> L4–8; <code>components/ItemDetail.tsx</code> L57</td><td>No notification events exist. <code>app_open</code> is recorded once per mount of Home and of Library, not each time the app returns. <code>item_open</code> carries no save id, and <code>items.opened_at</code> is never written (queue item 20).</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Native set-up</td><td><code>app.config.ts</code> L59, L114; <code>google-services.json</code></td><td>The expo-notifications plugin with a one-colour Android icon. FCM through Firebase project <code>allkept-6a042</code> for package <code>app.allkept.mobile</code>. The generated iOS project carries <code>aps-environment</code>. There is no Time Sensitive capability, no Notification Service Extension and no remote-notification background mode.</td><td><span class="tag v">Verified</span> (iOS from the local, git-ignored prebuild)</td></tr>
+</tbody>
+</table>
+
+<h4>On the server (<code>supabase</code>)</h4>
+<table>
+<thead><tr><th style="width:18%">Piece</th><th style="width:27%">Where</th><th>What it does</th><th style="width:9%"></th></tr></thead>
+<tbody>
+<tr><td>Devices</td><td><code>migrations/20260910040000_push_notifications.sql</code> L10–32</td><td><code>device_push_tokens</code>, one row per install, keyed on the token, rows visible only to their owner.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Switches</td><td>same file, L39–43</td><td><code>profiles.notify_enabled</code>, <code>notify_sorted</code>, <code>notify_attention</code>, all defaulting to <b>true</b>, plus <code>ai_sorting_enabled</code>.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Token ownership</td><td><code>migrations/20260913130000_push_token_owner.sql</code> L13–33</td><td><code>claim_push_token()</code> moves a token to whoever presents it, so a phone that changes hands stops ringing for the old owner.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>One push per save</td><td><code>migrations/20260910050000_push_trigger_and_feedback.sql</code> L9–10</td><td><code>items.push_sent_at</code>, claimed atomically before sending.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>The sender</td><td><code>functions/_shared/push.ts</code> L33–43, L78–119, L122–130</td><td><code>wants()</code> applies the master switch and the two sub-switches; account news obeys the master switch only. <code>notify()</code> posts to Expo's push service in batches of 100 with an 8-second limit, never throws, and marks a token dead when Expo's immediate answer (the "ticket") says <code>DeviceNotRegistered</code>. Each message carries a title, a body, <code>{itemId, reason}</code> and <code>channelId: "saves"</code>. It sets no expiry, priority, iOS interruption level, thread or collapse id, sends no access token, and never fetches the later delivery receipts. <code>compose()</code> writes the words.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>When "sorted" and "needs you" fire</td><td><code>functions/_shared/pipeline.ts</code> L114–134 <code>pushDeps()</code>, L144–168 <code>announce()</code>, called at L240 and L273</td><td>A save whose status is <code>ready</code> announces "sorted"; <code>no_link</code> or <code>preview_unavailable</code> announces "needs you". The mark is claimed before sending. Every door hands its save to the sweeper function straight away (<code>functions/sweeper/index.ts</code> L46–59); the same function also runs every five minutes for anything left over, such as imported saves, in batches of up to 50 per query (L62–88).</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Account news</td><td><code>functions/billing-webhook/handler.ts</code> L67–78, <code>index.ts</code> L38–42, <code>_shared/billing.ts</code> L139–161</td><td>"Your subscription has ended" and "Payment problem", under the master switch only; a tap opens the paywall.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Instagram replies (not a push)</td><td><code>functions/instagram-webhook/process.ts</code> L73–95, L248–256</td><td>After a save sent by direct message, a reply in the thread: "Saved · Food", with the no-link instruction added at L254. Switched by "stop replies" and the Settings row "Reply in the Instagram thread". It is a second confirmation channel for the same save.</td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Trips (Weave)</td><td><code>functions/weave/handler.ts</code> L187–189, L213–216, L253, L327; failures L228–322; messages L87–92</td><td>Each trip moves reading → profiled, then planning → planned, or to failed with a message written for the person. No notification is sent at any step. The trip screen says a plan "Takes 2–5 minutes. You can leave." (<code>app/weave/index.tsx</code> L354), and while it is made, "You can leave — it's in Your trips when it's ready." (<code>app/weave/plan.tsx</code> L121). <span class="small">These screens were reworked by another session on 2 October; the line numbers are from the latest commit.</span></td><td><span class="tag v">Verified</span></td></tr>
+<tr><td>Scheduled jobs</td><td><code>migrations/20260909000300_sweeper_cron.sql</code>, <code>20260912130000_pin_cron_region.sql</code></td><td>pg_cron calls functions through pg_net with a secret from Vault, pinned to the database's region. A notification job would follow the same pattern.</td><td><span class="tag v">Verified</span></td></tr>
+</tbody>
+</table>
+
+<h4>What has been promised in public</h4>
+<ul>
+<li><code>docs/privacy.html</code> §9 says Allkept sends a push only when a save has finished sorting or needs something from the person; notifications are off until turned on; and the phone is asked for permission from the Settings switch "and not anywhere else". §3.9 lists the four switches. <span class="tag v">Verified</span></li>
+<li><code>docs/terms.html</code> calls notifications "service messages about your own library, not marketing". <span class="tag v">Verified</span></li>
+<li><code>internal/store-submission.html</code> tells App Review that notifications are requested only when the user turns a switch on in Settings, never at launch. <span class="tag v">Verified</span></li>
+</ul>
+<p>Every new family in this document changes at least one of those three sentences, so each phase below includes the wording change it needs.</p>
+
+<h3 id="today-sent">1.2 What is sent today, by what, to whom</h3>
+<table>
+<thead><tr><th>Notification</th><th>Sent by</th><th>When</th><th>To whom</th><th>Words today</th><th>Tap opens</th></tr></thead>
+<tbody>
+<tr><td>A save sorted</td><td>sweeper → <code>announce()</code></td><td>a save settles as <code>ready</code></td><td>every live device of the owner, if master and "A save has landed" are on</td><td class="copy"><b>Saved</b>&lt;save title&gt; is in &lt;category&gt;. (or "…is in your library.")</td><td>the save</td></tr>
+<tr><td>A save needs you</td><td>same</td><td>a save settles as <code>no_link</code> or <code>preview_unavailable</code></td><td>same, if "A save needs you" is on</td><td class="copy"><b>A save needs you</b>&lt;save title&gt; arrived without something we could show.</td><td>the save</td></tr>
+<tr><td>Subscription ended</td><td>billing webhook</td><td>RevenueCat expiration (or a support cancellation) once access has really ended</td><td>master switch only</td><td class="copy"><b>Your subscription has ended</b>Everything you saved is still here. New links will wait until you renew.</td><td>paywall</td></tr>
+<tr><td>Payment problem</td><td>billing webhook</td><td>RevenueCat billing issue</td><td>master switch only</td><td class="copy"><b>Payment problem</b>&lt;Apple / Google Play&gt; couldn't charge your card. Update it in your subscriptions to keep saving.</td><td>paywall</td></tr>
+<tr><td>Reminder (local)</td><td>the phone</td><td>the time the person chose</td><td>each phone that synced the reminder</td><td class="copy"><b>Allkept reminder</b>&lt;save title&gt;</td><td>the save</td></tr>
+<tr><td>Share sheet banner (local, iOS)</td><td>the share extension</td><td>the moment of sharing</td><td>that iPhone, if allowed</td><td class="copy"><b>Saved to Allkept</b>Sorting it now</td><td>the app</td></tr>
+<tr><td>Instagram reply (not a push)</td><td>Instagram webhook</td><td>after a direct-message save</td><td>the Instagram thread, if replies are on</td><td class="copy"><b>—</b>Saved · Food</td><td>—</td></tr>
+</tbody>
+</table>
+
+<h3 id="today-numbers">1.3 The numbers <span class="tag v">Verified</span></h3>
+<p>Aggregate, read-only queries on 2 October (<a href="#appendix-queries">Appendix A</a>). They describe essentially one library and one active account, by its activity most likely the founder's own, so they show the <i>shape</i> of things, not rates. No open rate or habit can be read from them.</p>
+<table>
+<thead><tr><th>What</th><th class="num">Count</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>Accounts / anonymous</td><td class="num">3 / 0</td><td>Only one has saves and recent activity.</td></tr>
+<tr><td>Accounts with any notification switch off, or AI sorting off</td><td class="num">0</td><td>Every switch is still at its default (see F1).</td></tr>
+<tr><td>Push tokens (all iOS, all live)</td><td class="num">1</td><td>Created 10 Sep; last seen 16 Sep.</td></tr>
+<tr><td>Saves</td><td class="num">349</td><td>Direct message 108 · share sheet 89 · import 93 · YouTube playlist 59.</td></tr>
+<tr><td>Status</td><td class="num">321 / 15 / 13</td><td>ready / preview_unavailable / no_link.</td></tr>
+<tr><td>Sorting failed</td><td class="num">24</td><td>Classification status <code>failed</code>.</td></tr>
+<tr><td>Saves with <code>push_sent_at</code> claimed</td><td class="num">349</td><td>339 of them after the token existed.</td></tr>
+<tr><td>Most claims in one hour / one day</td><td class="num">95 / 143</td><td>15 Sep, the day the 93 imported saves were sorted.</td></tr>
+<tr><td>Saved more than 30 days ago, not done, no reminder</td><td class="num">82</td><td>The pool an "old saves" note would draw from.</td></tr>
+<tr><td>Marked done / reminders set / reminders pending</td><td class="num">1 / 2 / 0</td><td></td></tr>
+<tr><td>Saves with <code>opened_at</code> written</td><td class="num">0</td><td>Nothing writes it.</td></tr>
+<tr><td>Intent of sorted saves</td><td class="num"></td><td>watch 119 · go 81 · try 52 · reference 49 · read 13 · buy 4 · none 8 · not sorted 24.</td></tr>
+<tr><td>Saves in categories I treat as sensitive</td><td class="num">52</td><td>Money &amp; career 44 · Life &amp; relationships 6 · Fitness &amp; health 1 · News &amp; opinion 1; about 16% of categorised saves.</td></tr>
+<tr><td>Trips</td><td class="num">6</td><td>5 read, 1 planned, none with a start date. Time from creation to last update: median 28 s, longest 252 s (a rough proxy; it includes the person's own pauses).</td></tr>
+<tr><td>Places on the map</td><td class="num">36</td><td>Across 14 towns.</td></tr>
+<tr><td>App events, last 30 days</td><td class="num">2,536 in all</td><td>One active account: <code>app_open</code> 433, <code>item_open</code> 1,534, <code>weave_read</code> 5, <code>weave_planned</code> 1.</td></tr>
+</tbody>
+</table>
+
+<h3 id="today-findings">1.4 What is wrong or missing</h3>
+
+<p><b>F1 · The notification switches cannot be saved from the app.</b> <span class="sev high">High</span> <span class="tag v">Verified</span> in the live database; consequence <span class="tag i">Inferred</span><br>
+On 2 October the database reports that the signed-in role may <b>not</b> update <code>notify_enabled</code>, <code>notify_sorted</code>, <code>notify_attention</code> or <code>ai_sorting_enabled</code> (it may update <code>interests_enabled</code>, <code>language</code> and <code>display_name</code>). The cause is in the migrations: <code>20260909124351_profile_onboarding.sql</code> L52–54 removed the general right to update profiles and granted it back for five named columns; the switches were added the next day without a grant. The app writes them directly (<code>lib/preferences.ts</code>), and a refused write rolls back silently (L80–83). So turning notifications off deletes the device, the preference stays on, and Settings registers the device again straight away (<code>settings.tsx</code> L69–72): <b>notifications cannot really be switched off from inside Allkept</b>, only from the phone's own settings. ERRORS.md (13 September) records a hand test in which a switch held, so either a grant existed then and has since gone, or that test misled. A two-minute hand test settles it. The same gap affects "Sort saves automatically", which belongs to another feature: flagged here, not touched.</p>
+
+<p><b>F2 · Notifications can start without the switch being turned on.</b> <span class="sev high">High</span> <span class="tag v">Verified</span> in code, not seen on a device<br>
+<code>notify_enabled</code> defaults to true, and Settings registers the device whenever the phone has granted permission. Permission is granted by setting a reminder (<code>RemindMe.tsx</code> L53), and, on Android 12L and older, by default, because those versions have no runtime notification permission (Android's documentation; that expo then reports "granted" is <span class="tag i">Inferred</span>). After either, simply opening Settings stores a token and "Saved" and "needs you" pushes begin, which contradicts the privacy policy's "off until you turn them on".</p>
+
+<p><b>F3 · An import sends one notification per save.</b> <span class="sev high">High</span> <span class="tag v">Verified</span><br>
+Imported saves are inserted as pending with no <code>push_sent_at</code> (<code>import-saves/index.ts</code> L136–149), and a newly linked playlist's back catalogue arrives the same way; the sweeper then announces each one as it settles. On 15 September, 95 saves were claimed for a push in a single hour while the account had a live token. Whether those were delivered cannot be known, because nothing records sends. A 500-save import would mean hundreds of notifications within the hour (<span class="tag i">Inferred</span> from the sweeper's batch of 50 per query, its 80-second budget and its five-minute rhythm).</p>
+
+<p><b>F4 · "Saved" goes out when sorting failed or is waiting to retry.</b> <span class="sev med">Medium</span> <span class="tag v">Verified</span><br>
+After a failed attempt, <code>runClassification</code> still returns (with no category) (<code>_shared/classification-worker.ts</code> L35–52) and <code>announce()</code> runs regardless, because it reads only the save's link status. The one push is spent on "…is in your library", and the successful sort that follows tells no one. 24 saves have failed sorting; all were claimed.</p>
+
+<p><b>F5 · The same save is announced two or three times.</b> <span class="sev med">Medium</span> <span class="tag v">Verified</span><br>
+A direct-message save gets Instagram's "Saved · Food" and a push seconds later. An iOS share-sheet save gets the extension's "Saved to Allkept" banner and then the push. A link pasted inside the app puts a banner over the screen the person is already looking at.</p>
+
+<p><b>F6 · Signing out or deleting the account leaves reminders scheduled on the phone.</b> <span class="sev med">Medium</span> <span class="tag v">Verified</span> in code<br>
+Neither sign-out (<code>settings.tsx</code> L114) nor deletion (<code>lib/account.ts</code> L17–28) cancels local notifications. A pending reminder still fires, showing a save's title to whoever holds the phone, until the next signed-in launch reconciles it away. This is the local-notification version of the bug <code>claim_push_token()</code> fixed for pushes.</p>
+
+<p><b>F7 · Save titles appear on the lock screen.</b> <span class="sev med">Medium</span> <span class="tag v">Verified</span><br>
+Both pushes and reminders put the save's title in the body. Android's <code>saves</code> channel hides content on a secure lock screen, but reminders land in the fallback channel, which sets no private visibility (<span class="tag i">Inferred</span> from the expo source). About one categorised save in six is about money, relationships, health or politics.</p>
+
+<p><b>F8 · Delivery receipts are never read.</b> <span class="sev med">Medium</span> <span class="tag v">Verified</span><br>
+Only the immediate tickets are checked. Expo's documentation says delivery problems (a dead device, rate limits, bad credentials) show up in receipts fetched about fifteen minutes later. So dead tokens can linger and a credentials problem would be invisible.</p>
+
+<p><b>F9 · No access token on sends.</b> <span class="sev med">Medium</span> <span class="tag u">Not verified</span><br>
+The sender sends no <code>Authorization</code> header (<code>_shared/push.ts</code> L58–62). Either Expo's optional "enhanced security" is off, in which case anyone who obtains a token can send to that phone, or it is on and every send is being refused. It is an EAS dashboard setting I could not see.</p>
+
+<p><b>F10 · Device tokens go stale.</b> <span class="sev low">Low</span> <span class="tag i">Inferred</span><br>
+Registration is refreshed only while Settings is on screen, and a tab's screen is first drawn when it is first visited (React Navigation's default). The only token was last seen on 16 September. A reinstall or a rotated token is not repaired until Settings is opened.</p>
+
+<p><b>F11 · "Needs you" means two things.</b> <span class="sev low">Low</span> <span class="tag v">Verified</span> (queue item 19)<br>
+The push fires for <code>preview_unavailable</code>, where the person usually can do nothing; the Library's "needs attention" filter leaves that status out.</p>
+
+<p><b>F12 · Nothing measures notifications.</b> <span class="sev med">Medium</span> <span class="tag v">Verified</span><br>
+There is no record of sends and no "opened from a notification" event. Because no save-level open is recorded, "you haven't opened this since…" cannot be said honestly today.</p>
+
+<p><b>F13 · One Android channel for everything</b> (account news included), created only when the switch is turned on. <span class="sev low">Low</span> <span class="tag v">Verified</span></p>
+
+<p><b>F14 · Cold-start routing could replay an old tap.</b> <span class="sev low">Low</span> <span class="tag i">Inferred</span><br>
+The last response is never cleared, so if the routing hook runs again (after signing out and back in, say), the old notification could open again.</p>
+
+<p><b>F15 · The policy has drifted.</b> <span class="sev low">Low</span> <span class="tag v">Verified</span><br>
+§9 says permission is asked "not anywhere else"; reminders have asked since 15 September, and the policy is dated 14 September.</p>
+
+<p><b>F16 · Deploy hazard.</b> <span class="sev med">Medium</span> <span class="tag v">Verified</span><br>
+Every function that would carry notification code (<code>sweeper</code>, <code>reprocess-item</code>, <code>billing-webhook</code>, <code>weave</code>) imports <code>_shared/pipeline.ts</code>, which holds another engineer's uncommitted Gemini work. Deploying from this working tree would ship that work (queue item 60).</p>
+
+<h4>Missing entirely</h4>
+<p>A send log; per-family preferences; a record of consent; quiet hours and the person's time zone; caps and back-off; delivery receipts; open measurement; routes for anything other than a save or the paywall; channels per family; any trip notification; one summary per batch; lock-screen-safe wording.</p>
+
+<div class="plain"><b class="k">In plain English</b>
+The pipes exist: phones register, the server can send, and taps open the right save. But the switch to turn notifications off probably does not work today, notifications can begin without anyone saying yes, an import of 93 saves triggered 95 "sent" marks in an hour, and the same save can be announced two or three times. Nothing records what was sent or opened. These need fixing before anything new is added.</div>
+
+<!-- ============================================================ 2 -->
+<h2 id="rules">2. Principles and global rules</h2>
+
+<h3 id="rules-test">2.1 The test every notification must pass</h3>
+<ol>
+<li><b>Did the person start it, ask for it, or say yes to this kind?</b> If not, don't send it.</li>
+<li><b>Is it about their own library</b>, rather than about Allkept wanting attention?</li>
+<li><b>Is it true right now?</b> Every send re-reads the state just before sending.</li>
+<li><b>Would they be glad of it even if they never tap it?</b></li>
+<li><b>Is it safe for whoever is holding the phone to read?</b></li>
+</ol>
+<p>Only then do the mechanical gates apply: is this the only notification about this thing, is there budget left, is it outside quiet hours?</p>
+
+<h3 id="rules-classes">2.2 Four kinds of notification</h3>
+<table>
+<thead><tr><th>Kind</th><th>Examples</th><th>Default</th><th>Consent needed</th><th>Counts against</th></tr></thead>
+<tbody>
+<tr><td><b>A · Asked for</b></td><td>reminders the person sets; the two before a dated trip, agreed when the dates are entered</td><td>on; they asked</td><td>the act of asking</td><td>nothing</td></tr>
+<tr><td><b>B · Answers</b> to something the person started or needs to act on</td><td>trip plan ready, saves read, didn't finish; import sorted; a save needs its link</td><td>on, once notifications are on</td><td>master switch and the family's switch</td><td>the weekly 5</td></tr>
+<tr><td><b>C · From your library</b> (Allkept-initiated, about their own saves)</td><td>weekly note, with an old save and interest counts; a standalone old save, later</td><td><b>off until the person says yes</b> in context</td><td>a yes to that family</td><td>the weekly 5 and the proactive 2</td></tr>
+<tr><td><b>D · Promotional</b></td><td>"notes when you've been away", feature news, offers</td><td>off, and not built now</td><td>explicit consent words in the app, under Apple guideline 4.5.4, plus a change to our Terms</td><td>the weekly 5 and the proactive 2</td></tr>
+<tr><td><b>Account</b></td><td>subscription ended, payment problem</td><td>on with the master switch</td><td>master switch</td><td>nothing (rare and contractual)</td></tr>
+</tbody>
+</table>
+
+<h3 id="rules-budget">2.3 The weekly budget</h3>
+<ul>
+<li><b>At most 5 per person in any rolling 7 days</b>, all kinds B, C and D together.</li>
+<li><b>At most 2 of them C or D</b>, at most one a day, never on two days running.</li>
+<li><b>At most 2 a day</b> of B, C and D together.</li>
+<li><b>No C or D in the first 7 days</b> after sign-up; let people find their feet.</li>
+<li>Asked-for notifications (A) and account notices don't count: the person chose the first, and the second is rare and contractual.</li>
+<li>When the budget is spent, C and D are <b>dropped</b>, never queued for later; B is folded into a roll-up ("3 saves need their links") or waits for the next allowed slot, and is always in the in-app list.</li>
+</ul>
+<p class="small">A typical week if everything here is built: one weekly note, nought or one "needs its link", and one or two trip notes in a week when a trip is being planned. That estimate is a judgement, not data.</p>
+
+<h3 id="rules-priority">2.4 Priority when several are due</h3>
+<ol>
+<li>Account: a payment problem.</li>
+<li>Asked for: reminders and trip dates (local, at the person's time).</li>
+<li>A job finished: trip plan, saves read, import sorted.</li>
+<li>A save needs its link.</li>
+<li>The weekly note.</li>
+<li>A standalone old save (later).</li>
+<li>Away notes (only if ever built).</li>
+</ol>
+<p>Two due within 30 minutes: send the higher one. If the lower is in the same family it is folded into the higher (one roll-up); otherwise B waits for the next slot and C or D is dropped.</p>
+
+<h3 id="rules-quiet">2.5 Quiet hours and time zones</h3>
+<ul>
+<li><b>Quiet hours 21:00–08:00 in the person's own time</b> for everything Allkept starts (B, C, D, account). What is due in the night waits until 08:00; C and D that miss their window that day are dropped rather than sent late.</li>
+<li><b>One exception:</b> when the person started the job less than 30 minutes ago (a plan begun at 23:00 that finishes at 23:04), it is sent at once: they are plainly awake and waiting.</li>
+<li>Asked-for notifications (A) ignore quiet hours: the person chose the time.</li>
+<li><b>Time zone:</b> the server does not know it today. The phone should report its time-zone name (for example <code>Asia/Kolkata</code>) when the app starts and the zone has changed, the same pattern <code>lib/language.ts</code> uses for the language. Without a zone, nothing time-dependent (C, D) is sent to that person, and B follows the 30-minute rule only. Never guess the zone from the store country.</li>
+<li>When travelling, the zone updates at the next launch; local notifications follow the phone's clock by themselves.</li>
+<li>iOS Focus and Scheduled Summary are the person's own controls. Allkept never tries to break through them.</li>
+</ul>
+
+<h3 id="rules-dedupe">2.6 Never twice for the same thing</h3>
+<p>Every notification carries a <b>key that names the thing it is about</b>. The send log holds one row per person per key, claimed before sending, the same way <code>push_sent_at</code> works today, so two workers can never both send.</p>
+<table>
+<thead><tr><th>About</th><th>Key</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td>Any sorting notification about one save</td><td><code>save:&lt;save id&gt;</code></td><td>One sorting notification per save, ever: never "needs its link" and then "sorted".</td></tr>
+<tr><td>A batch</td><td><code>batch:&lt;import or batch id&gt;</code></td><td>One per import or playlist back catalogue.</td></tr>
+<tr><td>A trip stage</td><td><code>trip:&lt;trip id&gt;:v&lt;version&gt;:&lt;stage&gt;</code></td><td>One per stage of each version; a later stage replaces the earlier on screen.</td></tr>
+<tr><td>Trip dates (local)</td><td><code>tripdate:&lt;trip id&gt;:&lt;start date&gt;:&lt;T-3 or day 1&gt;</code></td><td>Rescheduled if the dates change, cancelled if the trip goes.</td></tr>
+<tr><td>Weekly note</td><td><code>weekly:&lt;the person's ISO week&gt;</code></td><td>One per week.</td></tr>
+<tr><td>An old save</td><td><code>rediscover:&lt;save id&gt;:&lt;half-year&gt;</code></td><td>The same save at most about every six months.</td></tr>
+<tr><td>Away notes</td><td><code>away:&lt;first quiet day&gt;:&lt;1 or 2&gt;</code></td><td>Two per absence at most.</td></tr>
+<tr><td>Account</td><td><code>billing:&lt;RevenueCat event id&gt;</code></td><td>As today; events are already de-duplicated.</td></tr>
+</tbody>
+</table>
+<p><b>Across channels:</b> no push about a save when Instagram's reply already said the same thing (the <code>replies</code> table records the save and whether the reply was sent); no "Saved" push for a share-sheet save, whose banner has already said it; no banner for the save or the trip the person is looking at.</p>
+<p><b>At send time:</b> the save still exists and still needs its link; the trip is still at that version; the old save has not been deleted, done or reminded since it was picked.</p>
+<p><b>Two phones:</b> pushes go to each device, which is right. Local notifications are scheduled per phone, so two phones would both fire, as reminders do today. That is accepted.</p>
+
+<h3 id="rules-backoff">2.7 Back-off, dismissal and turning off</h3>
+<ul>
+<li><b>What "ignored" means:</b> not opened within 48 hours. Swipes cannot be relied on: iOS reports a dismissal only for notifications set up with a custom dismiss action, and I am not certain expo-notifications reports dismissals on Android at all (<span class="tag u">Not verified</span>). So the signal is "opened or not".</li>
+<li><b>C (weekly note, old saves):</b> two ignored in a row halves the rhythm (weekly becomes fortnightly). Four in a row pauses the family and puts a card in the app the next time the person opens it: <i>"You haven't been opening the weekly note. Keep it, make it monthly, or switch it off?"</i> No answer means it stays paused. Ask, don't assume.</li>
+<li><b>B "needs its link":</b> three ignored in a row stops those pushes; the saves wait in the in-app list, and Settings shows the switch as paused with a way to resume.</li>
+<li><b>Away</b> means no app opening <i>and</i> no new save for 14 days. Someone who keeps saving by direct message but never opens the app is not away: they are exactly who the weekly note is for. While someone is away only A and account notices continue, plus away notes if they were ever opted into; the rest resumes when they come back.</li>
+<li><b>A family switched off:</b> takes effect immediately, because preferences are read at the moment of sending, and the phone cancels that family's scheduled local notifications.</li>
+<li><b>The master switch off:</b> the device is forgotten (as today), the preference is actually saved (F1), and every local notification Allkept scheduled is cancelled. Reminders the person set themselves stay, because they asked for those, and Settings says so.</li>
+<li><b>Turned off in the phone's own settings:</b> noticed at the next launch, recorded, and sends stop. Allkept never nags; the existing "Allow them in Settings" row is the only way back.</li>
+<li><b>In-app asks:</b> "No thanks" is final for that ask. "Not now" waits 30 days. At most three asks for notification permission, ever.</li>
+</ul>
+
+<h3 id="rules-ask">2.8 Asking for permission</h3>
+<p>Keep the rule "never at first launch". Change "only from Settings" to "<b>in context, at a moment that earns it</b>". Allkept shows its own card first, and the phone's prompt appears only after the person taps "Turn on"; iOS gives an app a single chance at that prompt, so it should be spent on a yes. In order of strength:</p>
+<ol>
+<li><b>After "Make my plan".</b> The wait is two to five minutes. <i>"Want a notification when your plan is ready? You can leave this screen."</i> [Notify me] [No thanks]. The value is obvious and immediate.</li>
+<li><b>When an import starts or a playlist is linked.</b> <i>"Sorting 93 saves takes a few minutes. Want a notification when they're done?"</i></li>
+<li><b>Setting a reminder</b>, which asks today. Keep it, put one line of explanation before the phone's prompt, and make sure it no longer switches pushes on (F2).</li>
+<li><b>The Settings switch</b>, as today.</li>
+</ol>
+<p>A yes in context turns on the B families (needs its link, batches, trips). It never turns on C or D, which have their own asks. Android 13 and later behave the same way: when an app targets Android 13 or newer, the system dialog appears only when the app asks. The privacy policy (§9) and the App Review note need one sentence each changed.</p>
+
+<h3 id="rules-ios">2.9 iOS: "deliver quietly" and interruption levels</h3>
+<p><b>Provisional authorisation ("deliver quietly").</b> Apple lets an app start sending without asking. Those notifications are delivered quietly, only into Notification Center's history, with no sound, no banner and nothing on the lock screen, and each offers the person <i>Keep</i> or <i>Turn Off</i>. <b>Recommendation: don't use it.</b> It means sending to people who never said yes, which runs against "ask, don't assume" and against the privacy policy's "off until you turn them on". It would also change the share extension: that code treats quiet permission as permission (Swift L98) and would start posting its "Saved to Allkept" banner into Notification Center history. If reach ever matters more, use it for the weekly note alone, after the policy has been changed.</p>
+<table>
+<thead><tr><th>Level (iOS 15+)</th><th>What Apple says it does</th><th>Allkept uses it for</th></tr></thead>
+<tbody>
+<tr><td>Passive</td><td>Added to the list without lighting the screen or making a sound</td><td>weekly note, old saves, away notes</td></tr>
+<tr><td>Active (the default)</td><td>Shown at once, lights the screen, may make a sound</td><td>trips, needs its link, batches, reminders, account</td></tr>
+<tr><td>Time Sensitive</td><td>Also breaks through Focus and Scheduled Summary</td><td><b>never</b>. Apple's guidelines keep it for things happening now or within the hour, never for marketing, and I believe it needs an extra capability (<span class="tag u">Not verified</span>).</td></tr>
+<tr><td>Critical</td><td>Bypasses the mute switch; needs Apple's approval</td><td>never</td></tr>
+</tbody>
+</table>
+
+<h3 id="rules-android">2.10 Android channels</h3>
+<p>A channel's id is permanent, and once created its importance and lock-screen visibility belong to the person, who can change them in Android's settings. So the list is decided once. Channels are created when the app starts (a JavaScript call, so it ships over the air), not only when the switch is turned on, so that every notification, local or remote, lands on the right one.</p>
+<table>
+<thead><tr><th>Id</th><th>Name the person sees</th><th>Importance</th><th>Lock screen</th><th>Carries</th></tr></thead>
+<tbody>
+<tr><td><code>saves</code> (exists; id kept)</td><td>Your saves</td><td>Default</td><td>Private</td><td>needs its link, batches, per-save (if asked for)</td></tr>
+<tr><td><code>trips</code></td><td>Trips</td><td>Default</td><td>Private</td><td>plan ready, saves read, didn't finish, trip dates</td></tr>
+<tr><td><code>weekly</code></td><td>Weekly note</td><td>Low (no sound)</td><td>Private</td><td>weekly note, old saves</td></tr>
+<tr><td><code>reminders</code></td><td>Reminders you set</td><td>High (pops up)</td><td>Private</td><td>reminders on a save</td></tr>
+<tr><td><code>account</code></td><td>Account</td><td>Default</td><td>Private</td><td>subscription, payment</td></tr>
+<tr><td><code>away</code></td><td>Notes when you've been away</td><td>Low</td><td>Private</td><td>created only if the person opts in</td></tr>
+</tbody>
+</table>
+
+<h3 id="rules-settings">2.11 Settings</h3>
+<pre>Settings › Notifications
+┌────────────────────────────────────────────────────────────────┐
+│ Notifications                                           [ on ] │
+│                                                                │
+│ ABOUT THINGS YOU STARTED                                       │
+│   A save needs you                                      [ on ] │
+│     when one arrives without its link                          │
+│   Imports and playlists finished                        [ on ] │
+│   Trips                                                 [ on ] │
+│     your plan is ready; before a trip with dates               │
+│   Every save as it's sorted                             [ off] │
+│                                                                │
+│ FROM YOUR LIBRARY · ONE NOTE A WEEK AT MOST                    │
+│   Weekly note · Saturdays at 10:00                      [ off] │
+│     what you saved, one older save, new interests              │
+│                                                                │
+│ PRIVACY                                                        │
+│   Show save details in notifications                    [ off] │
+│     off: titles, places and names stay inside the app          │
+│   Quiet hours 21:00–08:00 · nothing we start at night          │
+│                                                                │
+│ ALWAYS, WHILE NOTIFICATIONS IS ON                              │
+│   Subscription and payment problems                            │
+│   Reminders you set arrive at the time you chose.              │
+└────────────────────────────────────────────────────────────────┘</pre>
+<p>The sub-switches stay hidden while the master is off (as today). "Every save as it's sorted" replaces today's "A save has landed" with a new default (decision D5). "Notes when you've been away" appears only if D13 says to build it.</p>
+
+<h3 id="rules-privacy">2.12 Lock screen and privacy</h3>
+<ul>
+<li><b>What lock-screen text may contain:</b> counts, Allkept's own words, and the plain name of a built-in, non-sensitive category ("recipes", "places", "things to watch").</li>
+<li><b>What it never contains</b> unless <i>Show save details</i> is on: a save's title or author, a town or place, a person's name, an interest, the name of a custom category, or anything from <i>Money &amp; career</i>, <i>Life &amp; relationships</i>, <i>Fitness &amp; health</i> or <i>News &amp; opinion</i>. Travel plans are included in this, because a town on the lock screen tells a stranger you will be away from home.</li>
+<li><b>What travels in the payload:</b> ids only: the notification's id, its family, and the route to open.</li>
+<li><b>Android:</b> every channel private. <b>iOS:</b> whether a locked screen shows previews is the person's own setting; the wording must be safe even when it does.</li>
+<li>Interest names never travel in a notification at all (see §3.6).</li>
+</ul>
+
+<h3 id="rules-grouping">2.13 Grouping, the bell, badges</h3>
+<ul>
+<li><b>iOS threads</b> per family (<code>saves</code>, <code>trip-&lt;id&gt;</code>, <code>weekly</code>, <code>reminders</code>, <code>account</code>), so Notification Center stacks them sensibly. Expo's push service supports a thread id.</li>
+<li><b>Replace rather than stack:</b> a trip's later stage replaces the earlier one ("saves read" becomes "plan ready"), and a roll-up replaces single notes. That is Expo's <code>collapseId</code> on iOS and its <code>tag</code> on Android.</li>
+<li><b>The bell</b> on Home opens a screen called "Notifications" that today lists recent saves. It should become the record of what Allkept actually told the person, read from the send log, so a notification swiped away by mistake can be found again (D16).</li>
+<li><b>Badges: none.</b> A number on the icon reads as a debt of unread saves, which is the opposite of calm. Keep <code>shouldSetBadge: false</code>.</li>
+</ul>
+
+<h3 id="rules-words">2.14 How the words are written</h3>
+<ul>
+<li>Say what has happened, once it has happened. Re-check before sending.</li>
+<li>Never blame the person, and never blame anyone else either: "arrived without its link", not "Instagram broke it", and never "check your connection" when the fault is ours.</li>
+<li>No hype ("Don't miss", "Hurry", exclamation marks), no guilt ("You haven't…", "We miss you"), no streaks, no false urgency, no emoji.</li>
+<li>Short: a lock screen shows about one line of each (the rule already in <code>_shared/push.ts</code> L121). Aim for a title under about 35 characters and a body under about 90.</li>
+<li>One idea per notification, and the tap opens exactly the thing it names.</li>
+<li>The same words on the lock screen as inside the app.</li>
+</ul>
+
+<div class="plain"><b class="k">In plain English</b>
+Allkept only speaks when the person started something, asked for something, or said yes to a kind of note. Five a week at most, two of them Allkept's own idea, none at night or in the first week, never the same thing twice, and quieter whenever they are ignored. Permission is asked at the moment its value is obvious, such as while a trip plan is being made, never at launch. The lock screen never gives away what someone saved.</div>
+
+<!-- ============================================================ 3 -->
+<h2 id="families">3. The six families</h2>
+<p>Each family has the same parts: the need it serves; what triggers it and what rules it out; timing and limits; example words with what the tap opens; the data it needs; its switch; how it is measured; risks; and store policy. "(new)" next to a route means the app cannot open it yet.</p>
+
+<!-- 3.1 -->
+<h3 id="sorting">3.1 Sorting</h3>
+<p><b>The need.</b> People save from outside the app, by direct message or the share sheet, and trust Allkept to file it. They don't need to hear that it worked: the door they used already told them. They need to hear when something went wrong that only they can fix, and when a big batch they started has finished.</p>
+
+<div class="fam">
+<h4>1a · A save needs its link (Answer · on)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>A save settles as <code>no_link</code>: an Instagram post arrived without its link, so the card cannot open the original until the person pastes it.</td></tr>
+<tr><th>Ruled out</th><td>Any other status: <code>preview_unavailable</code> still opens, <code>failed</code> is ours to retry, and a failed sort can be fixed with "Sort again" (these wait in the in-app list instead). Also ruled out: Instagram's reply already carried the instruction (replies on and sent, L254); the save is part of an import or a playlist back catalogue; the link has been added since; the save is on screen.</td></tr>
+<tr><th>Timing and limits</th><td>Checked 10 minutes after the save settles, which gives time to reply in the Instagram thread with the link; sent only if still needed. Quiet hours apply. At most one every 12 hours (several become one roll-up) and three a week. Sent by the server.</td></tr>
+<tr><th>Words</th><td>
+<table>
+<thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>A save needs its link</td><td>An Instagram post arrived without its link. Paste it and the save is complete.</td><td><code>/item/&lt;id&gt;</code></td></tr>
+<tr><td>3 saves need their links</td><td>They arrived without links. Tap to add them.</td><td><code>/library?needs=you</code> (new)</td></tr>
+<tr><td>"&lt;save title&gt;" needs its link</td><td>Paste the post's link and it's complete. <span class="small">(only with Show save details on)</span></td><td><code>/item/&lt;id&gt;</code></td></tr>
+</tbody></table></td></tr>
+<tr><th>Data</th><td>All exists: <code>items.status</code>, the <code>replies</code> table (save and time sent), <code>captured_via</code>, <code>import_id</code>. The Library cannot yet be opened filtered to "needs you" (it accepts only <code>?category=</code>).</td></tr>
+<tr><th>Switch</th><td>"A save needs you" (today's <code>notify_attention</code>), on.</td></tr>
+<tr><th>Measured by</th><td>Sent and skipped, with the reason, in the send log; <code>notification_opened</code>; the link added within 24 hours (status leaves <code>no_link</code>; <code>paste_link</code> already exists). Starting target, to calibrate rather than a benchmark: at least half lead to a link within a day. Failure: switched off within a week of one.</td></tr>
+<tr><th>Risks and guardrails</th><td>Asking for something the person can't do: prevented by the definition. A duplicate of the Instagram reply: prevented by the check. The title on the lock screen: not shown by default.</td></tr>
+<tr><th>Store policy</th><td>A service notification about something the person sent. Not promotional under Apple 4.5.4; nothing in the Google Play pages I read restricts it.</td></tr>
+</table>
+</div>
+
+<div class="fam">
+<h4>1b · An import or a playlist is finished (Answer · on)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>The last unsettled save of an import (<code>items.import_id</code>), or of a playlist's back catalogue, settles.</td></tr>
+<tr><th>Ruled out</th><td>Batches under 5 saves (those simply arrive); new videos added to a playlist later, which are like any other save. Saves inside a batch never send their own sorting notification (closes F3).</td></tr>
+<tr><th>Timing and limits</th><td>When done; quiet hours apply unless the import was started in the last 30 minutes. One per batch. Sent by the server: the notification job counts unsettled saves per batch.</td></tr>
+<tr><th>Words</th><td>
+<table><thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>Your older saves are sorted</td><td>93 saves, now in 8 categories. 3 still need a link.</td><td><code>/library</code></td></tr>
+<tr><td>Your playlist is in</td><td>41 videos, sorted into your library.</td><td><code>/library</code></td></tr>
+</tbody></table></td></tr>
+<tr><th>Data</th><td><code>import_id</code> exists. A playlist's back catalogue has no batch marker: the first poll would need to write one (small; does not exist).</td></tr>
+<tr><th>Switch</th><td>"Imports and playlists finished", on.</td></tr>
+<tr><th>Measured by</th><td>Opened; <code>library_view</code> or <code>item_open</code> within the hour.</td></tr>
+<tr><th>Risks</th><td>Announcing "sorted" while some saves are still being retried: the count says what is true ("3 still need a link", "2 couldn't be sorted").</td></tr>
+<tr><th>Store policy</th><td>Service. No concerns.</td></tr>
+</table>
+</div>
+
+<div class="fam">
+<h4>1c · Every save as it's sorted (Answer · off unless asked for)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>A save's sorting is final: done, or failed for good. Never on a first failure (closes F4).</td></tr>
+<tr><th>Ruled out</th><td>Instagram's reply already gave the category; a share-sheet save, whose banner already confirmed it; batch saves; AI sorting off (nothing new to say); the save on screen.</td></tr>
+<tr><th>Timing and limits</th><td>Immediate (the person has just saved). Within the weekly 5; two or more in ten minutes become one ("4 saves sorted").</td></tr>
+<tr><th>Words</th><td>
+<table><thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>Saved to Food &amp; recipes</td><td>Tap to see it, or move it somewhere else.</td><td><code>/item/&lt;id&gt;</code></td></tr>
+<tr><td>Saved, but we weren't sure where</td><td>It's in Other for now. Tap to choose a category.</td><td><code>/item/&lt;id&gt;</code></td></tr>
+</tbody></table>
+<span class="small">A sensitive or custom category is never named on the lock screen: the title becomes "Saved and sorted".</span></td></tr>
+<tr><th>Data</th><td>All exists (classification status, confidence below <code>UNSURE_BELOW</code> = 0.4).</td></tr>
+<tr><th>Switch</th><td>"Every save as it's sorted", <b>off</b> (D5).</td></tr>
+<tr><th>Measured by</th><td><code>category_changed</code> after an "unsure" note; switched off again.</td></tr>
+<tr><th>Risks</th><td>Noise, which is why it is off by default.</td></tr>
+<tr><th>Store policy</th><td>Service.</td></tr>
+</table>
+</div>
+
+<div class="plain"><b class="k">In plain English</b>
+Stop telling people "saved" every time they save, because Instagram's reply or the share sheet has already said so. Speak up in two cases only: a save that is broken until they paste its link (and only if Instagram hasn't already said so), and an import that has finished, as one note rather than ninety. Anyone who likes a note per save can switch it on.</div>
+
+<!-- 3.2 -->
+<h3 id="reengagement">3.2 Re-engagement</h3>
+<p><b>The need.</b> A person who has stopped coming back still has a library working for them, and one honest reminder of something they chose to keep can be welcome. A run of "we miss you" is spam, and our Terms promise notifications are "not marketing".</p>
+<div class="okbox"><b>Recommendation:</b> don't build a "come back" notification now. Most of the job is done by the weekly note (§3.5), which reaches the people who keep saving but never open the app. If Pranav wants more, offer an opt-in family, "Notes when you've been away", treated as promotional (kind D).</div>
+
+<div class="fam">
+<h4>2 · Notes when you've been away (Promotional · off; only if D13 says build it)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>Away for 14 days: no app opening and no new save. Then one note on day 14 and one on day 35, and nothing more until the person comes back.</td></tr>
+<tr><th>Ruled out</th><td>Not opted in; still saving by direct message (not away); notifications or this family switched off; a dated trip coming up (the trip notes do the job); the subscription ended in the last 30 days, because that already has its own notice and a "come back and pay" message would be marketing on top of it.</td></tr>
+<tr><th>Timing and limits</th><td>A weekday evening, 18:00–19:00 local. At most one every 14 days, two per absence. Sent by the server, which can see direct-message saves while the app is closed and already has <code>app_open</code> events; it needs the time zone.</td></tr>
+<tr><th>Words</th><td>
+<table><thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>Your saved places are still here</td><td>6 places you kept. Ready when you are.</td><td><code>/library?category=Travel%20%26%20places</code></td></tr>
+<tr><td>From your library</td><td>A recipe you saved in June. Still want to make it?</td><td><code>/item/&lt;id&gt;</code></td></tr>
+</tbody></table>
+<span class="small">Never: "We miss you", "Your saves are waiting", "Don't lose…", "You haven't opened Allkept in 14 days".</span></td></tr>
+<tr><th>Data</th><td><code>app_events</code> and <code>items.created_at</code> exist. Time zone, consent, and the version of the consent words shown do not.</td></tr>
+<tr><th>Switch</th><td>"Notes when you've been away", off; turned on only through a card that shows the consent words, whose version is stored.</td></tr>
+<tr><th>Measured by</th><td>The app opened within 72 hours; switched off afterwards. If fewer than one note in five brings someone back, stop the family (an internal rule).</td></tr>
+<tr><th>Risks</th><td>Reads as marketing; damages a calm brand; contradicts today's Terms.</td></tr>
+<tr><th>Store policy</th><td><b>Apple 4.5.4:</b> pushes for promotions or direct marketing need the customer to have "explicitly opted in to receive them via consent language displayed in your app's UI", and a way to opt out inside the app. I would treat these notes as covered by that. <b>Google Play:</b> the policy pages I read on 2 October (App Promotion, Ads, Spam) contain no explicit opt-in rule for promotional pushes. They forbid notifications that imitate system alerts, and Android 13+ requires runtime permission anyway. Other Play pages, and laws outside the stores (such as India's DPDP Act or US state law), were not assessed. Our own <b>Terms</b> must change first.</td></tr>
+</table>
+</div>
+
+<div class="plain"><b class="k">In plain English</b>
+Don't build "we miss you" messages. The weekly note already gives quiet savers a reason to look. If you want to win back people who have drifted away, make it something they tick a box for, send two at most, make them about their own saves, and change the Terms first, because today they promise notifications are not marketing.</div>
+
+<!-- 3.3 -->
+<h3 id="trips">3.3 Trips</h3>
+<p><b>The need.</b> "Tell me when my plan is ready, so I don't have to watch the screen", and "don't let me forget the plan when the trip comes". Pranav's rule governs everything else: many saves about a place is not a wish for an itinerary, so Allkept asks rather than assumes, and never about a town the person is in.</p>
+
+<div class="fam">
+<h4>3a · Plan ready / saves read / didn't finish (Answer · on)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>A trip row moves to <code>profiled</code> (handler L253), <code>planned</code> (L327) or <code>failed</code> (L228–322).</td></tr>
+<tr><th>Ruled out</th><td>The trip has moved on again or been deleted (re-checked); a newer version exists; the person is looking at that trip (the phone suppresses the banner; the screen updates itself).</td></tr>
+<tr><th>Timing and limits</th><td>At once: the job began minutes ago, so quiet hours don't apply under the 30-minute rule. One per stage; the later replaces the earlier. Sent by the server, inline when the row changes, with the notification job as a safety net. A five-minute polling delay on a two-to-five-minute job would double the wait.</td></tr>
+<tr><th>Words</th><td>
+<table><thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>Your trip plan is ready</td><td>5 days, built from 23 of your saves.</td><td><code>/weave/plan?weaveId=&lt;id&gt;</code></td></tr>
+<tr><td>Your saves are read</td><td>See what they say about this trip, then make the plan.</td><td><code>/weave?weaveId=&lt;id&gt;</code></td></tr>
+<tr><td>Your trip plan didn't finish</td><td>Couldn't make the plan just now. Try again in a moment. <span class="small">(the row's own message, L87–92)</span></td><td><code>/weave/plan?weaveId=&lt;id&gt;</code></td></tr>
+</tbody></table>
+<span class="small">With Show save details on: "Your Seoul and Busan plan is ready".</span></td></tr>
+<tr><th>Data</th><td>All exists: status, version, message, result.</td></tr>
+<tr><th>Switch</th><td>"Trips", on. This is also the strongest moment to ask for permission (§2.8). The waiting screen should say "we'll send a notification" only to people who will actually get one.</td></tr>
+<tr><th>Measured by</th><td>Opened within an hour; <code>weave_planned</code> (exists) after the tap; <code>trip_route</code> or <code>weave_share</code> within 7 days.</td></tr>
+<tr><th>Risks</th><td>A town on the lock screen reveals travel plans (not shown by default); announcing a plan that was replaced (version check).</td></tr>
+<tr><th>Store policy</th><td>Service, answering the person's own request.</td></tr>
+</table>
+</div>
+
+<div class="fam">
+<h4>3b · Before a trip with dates (Asked for · offered per trip)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>A plan whose brief has a <code>startDate</code> (entered under More options on the trip screen, <code>components/TripOptions.tsx</code>; the old Customise screen now redirects there). When the dates are entered, ask inline: <i>"Remind me 3 days before, and on the first morning?"</i> [Yes] [No].</td></tr>
+<tr><th>Ruled out</th><td>No dates; the person said no; the trip was re-planned (reschedule) or deleted (cancel); the start date has passed.</td></tr>
+<tr><th>Timing and limits</th><td>Two at most per trip: three days before at 18:00, sent only if the plan lists places to book ahead; and 08:00 on day 1. Scheduled <b>on the phone</b>, because it works offline while roaming and follows the phone's clock, and reconciled with the server row at every launch, exactly as reminders are. Day 1 at 08:00 means 08:00 <i>at the destination</i>, worked out from the place's <code>utc_offset_minutes</code>, which the places table already holds. On Android 12 and later, expo-notifications uses an exact alarm only if the phone allows one, and otherwise an inexact one (<code>ExpoSchedulingDelegate.kt</code> L106–114); the app does not declare the exact-alarm permission, so these may arrive some minutes late (<span class="tag i">Inferred</span>). That is fine for "3 days before".</td></tr>
+<tr><th>Words</th><td>
+<table><thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>Your trip starts on Friday</td><td>2 places on your plan say to book ahead.</td><td><code>/weave/plan?weaveId=&lt;id&gt;</code></td></tr>
+<tr><td>Day 1 of your trip</td><td>4 stops planned for today.</td><td><code>/weave/plan?weaveId=&lt;id&gt;&amp;day=1</code> (new)</td></tr>
+</tbody></table></td></tr>
+<tr><th>Data</th><td>Exists: <code>brief.startDate</code>, <code>plan.bookAhead</code>, <code>plan.days</code>, the places' time offsets. No trip has dates today.</td></tr>
+<tr><th>Switch</th><td>"Trips", plus the yes or no for each trip.</td></tr>
+<tr><th>Measured by</th><td>Opened; <code>trip_route</code> on day 1.</td></tr>
+<tr><th>Risks</th><td>Dates changed outside the app: the plan screen gets a "Stop trip reminders" control.</td></tr>
+<tr><th>Store policy</th><td>Asked for. No concerns.</td></tr>
+</table>
+</div>
+
+<div class="badbox"><b>3c · "Planning a trip?" is not a notification.</b> Queue item 59's ask stays an in-app card. Location is read only while the app is open and never sent to the server (the privacy policy says no location is collected), so a push cannot know whether the person is in that town right now. Asking about someone's intentions at a moment Allkept chooses is exactly the assumption Pranav rejected. Walking-past nudges (queue item 55: geofences, the Always location permission, its own build and review wording) are a separate feature; if ever built they are local, opted into, and never about the person's home town.</div>
+
+<div class="plain"><b class="k">In plain English</b>
+When someone asks Allkept to plan a trip, tell them when the plan is ready, so they can put the phone down. If they have entered travel dates, offer two reminders: one three days before, if anything needs booking, and one on the first morning. Never send "are you planning a trip?" as a notification; that stays a question on the Home screen, under the rules already agreed.</div>
+
+<!-- 3.4 -->
+<h3 id="oldsaves">3.4 Old saves</h3>
+<p><b>The need.</b> Allkept's founding promise is "ready when you need it": most saves are never visited again. A single, well-timed save is a gift; a stream of them is a feed, and Allkept promises no feed.</p>
+<div class="warnbox"><b>Blocked in part:</b> nothing records which save was opened (F12, queue item 20). Until it does, the words may never say "you haven't opened this". Start with saves picked by age and intent, and by date ("one year ago this week"), which need no open tracking.</div>
+
+<div class="fam">
+<h4>4 · One save worth another look (From your library · inside the weekly note; standalone later)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>Picked when the weekly note is written: saved 30 or more days ago; not done; no reminder pending; sorted, with a picture; an intent of <i>try</i>, <i>go</i>, <i>watch</i> or <i>read</i> (265 saves today, about three in four); once opens are recorded, not opened in the last 60 days. Or "one year ago this week": saves from this week a year back (none in this library yet).</td></tr>
+<tr><th>Ruled out</th><td>Sensitive or custom categories (they can still be shown inside the app, never named outside it); the same save within about six months; deleted since it was picked.</td></tr>
+<tr><th>Timing and limits</th><td>Inside the weekly note: one a week. A standalone "Rediscover" (later) would be at most one a week, on a different day from the note. Matching the day to the intent, "watch" on Friday or Saturday evening and "try" or "go" on Saturday morning, is a judgement, not data.</td></tr>
+<tr><th>Words</th><td>
+<table><thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>A place you saved in March</td><td>Still on your list? Tap to see it again.</td><td><code>/item/&lt;id&gt;</code></td></tr>
+<tr><td>One year ago this week</td><td>You saved 3 things. Here they are.</td><td><code>/library?from=…&amp;to=…</code> (new)</td></tr>
+<tr><td>Haku, saved in March</td><td>Still want to go? <span class="small">(Show save details on)</span></td><td><code>/item/&lt;id&gt;</code></td></tr>
+</tbody></table></td></tr>
+<tr><th>Data</th><td>Exists: <code>saved_at</code>, <code>done_at</code>, <code>remind_at</code>, intent, category, picture. Missing: <code>opened_at</code> (never written).</td></tr>
+<tr><th>Switch</th><td>Part of "Weekly note". A separate "Rediscover old saves" switch (off until asked) only if the note shows people want more.</td></tr>
+<tr><th>Measured by</th><td>Opened, then <code>marked_done</code>, <code>reminder_set</code>, <code>open_original</code> or a way out within 7 days (all exist). Two ignored in a row means back off.</td></tr>
+<tr><th>Risks</th><td>Bringing back something painful: an ex, a diagnosis, money worries. Hence the category exclusions and no titles. Showing a deleted save: re-checked at send time. Repetition: the six-month rule.</td></tr>
+<tr><th>Store policy</th><td>About the person's own content: service, not promotion. Kept opt-in anyway.</td></tr>
+</table>
+</div>
+
+<div class="plain"><b class="k">In plain English</b>
+Once a week, inside the weekly note, bring back one thing the person saved a while ago and probably meant to do: a recipe, a place, a film. Never something about health, money or relationships on the lock screen, never the same one twice in six months, and never "you haven't opened this" until Allkept actually records opens.</div>
+
+<!-- 3.5 -->
+<h3 id="weekly">3.5 Understanding your saves: the weekly note</h3>
+<p><b>The need.</b> People save on reflex and rarely look back. A short weekly note turns a pile into a picture and gives a calm reason to look. It also carries the old save (§3.4) and the interest count (§3.6), so three families cost one notification.</p>
+
+<div class="fam">
+<h4>5 · Your week in Allkept (From your library · off until the person says yes)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>Weekly, at the person's slot (default Saturday 10:00 their time; D10).</td></tr>
+<tr><th>Ruled out</th><td>Not opted in; no time zone; fewer than 14 days since sign-up or fewer than 20 saves before the first note; nothing worth saying this week. Something worth saying means 3 or more new saves, an old save worth another look, a new interest, or a dated trip within 14 days. A quiet week sends nothing: never "you saved nothing this week".</td></tr>
+<tr><th>Timing and limits</th><td>One a week; counts towards the proactive 2. Written <b>at the moment of sending</b> on the server (counts by category, the main intent, one old save, the number of new interests if interests are on, a trip coming up), so the numbers are true when read. A note written on the phone at the last launch would be stale by Saturday.</td></tr>
+<tr><th>Words</th><td>
+<table><thead><tr><th>Title</th><th>Body</th><th>Opens</th></tr></thead>
+<tbody>
+<tr><td>Your week in Allkept</td><td>14 saves, most of them recipes. One from March is worth another look.</td><td><code>/week</code> (new)</td></tr>
+<tr><td>Your week in Allkept</td><td>9 saves, and 2 new interests turned up.</td><td><code>/week</code> (new)</td></tr>
+<tr><td>Your week in Allkept</td><td>A quiet week. Your trip starts in 12 days.</td><td><code>/week</code> (new)</td></tr>
+</tbody></table>
+<span class="small">If the main category is sensitive or custom, the body gives the count only ("14 saves this week.").</span></td></tr>
+<tr><th>Data</th><td>Counts, intents and trips exist. Missing: time zone, the opt-in, a small <code>/week</code> screen, and a way for the server to count interests for a given person (§3.6).</td></tr>
+<tr><th>Switch</th><td>"Weekly note", off until a Home card, shown once after 20 saves and 14 days, gets a yes: <i>"A short note each Saturday about what you saved: one notification a week at most. Switch it off any time."</i> [Yes, Saturdays] [No thanks]. It follows the existing pattern of the interests card (<code>app/(tabs)/index.tsx</code> L190–199).</td></tr>
+<tr><th>Measured by</th><td>Opened; an action within 24 hours (<code>item_open</code>, <code>marked_done</code>, <code>reminder_set</code>, <code>weave_read</code>); switched off; weeks skipped. Internal rule: fewer than one note in five opened over four weeks means move to fortnightly automatically.</td></tr>
+<tr><th>Risks</th><td>Becoming a feed (one note, no list in the notification); counts that read as guilt (none); sensitive categories (never named); stale numbers (written at sending).</td></tr>
+<tr><th>Store policy</th><td>A summary of the person's own content: service. Opt-in anyway, by choice. A passive interruption level on iOS; the low-importance channel on Android.</td></tr>
+</table>
+</div>
+
+<div class="plain"><b class="k">In plain English</b>
+For people who say yes, one short note on Saturday morning: how many things they saved this week, what kind, one older save worth another look, and whether a new interest turned up. No note in a quiet week, nothing private on the lock screen, and it slows down by itself if nobody opens it.</div>
+
+<!-- 3.6 -->
+<h3 id="interests">3.6 Interests</h3>
+<p><b>The need.</b> The pleasure of "Allkept noticed what I keep saving", and a way to see that thread in one place.</p>
+<div class="warnbox"><b>The promise that shapes this family.</b> Interests are opt-in (<code>interests_enabled</code> is empty until asked, and one of the three accounts has said yes). The privacy policy and the interests migration (L1–5) say they are shown only to the person, counted on request, and <b>never stored as a profile</b>. A server notification that named an interest would send that name through Expo and Apple or Google, and leave it in our send log.</div>
+
+<div class="fam">
+<h4>6 · New interests, as a count inside the weekly note (From your library)</h4>
+<table class="spec">
+<tr><th>Trigger</th><td>Interests whose third save (<code>crossed_at</code>) fell in the past 7 days, counted with the app's own folding and exclusions (<code>lib/interests.ts</code>: floor 3, "Claude" and "Claude Code" counted as one thread, platforms and category names never counted).</td></tr>
+<tr><th>Ruled out</th><td>Interests not switched on; no weekly note; any standalone interest notification.</td></tr>
+<tr><th>Timing and limits</th><td>Only inside the weekly note. A later "10 saves about one thing: see them together?" milestone is <b>not recommended now</b>, and if ever built it stays nameless on the lock screen.</td></tr>
+<tr><th>Words</th><td>Inside the note: "…and 2 new interests turned up." → <code>/interests</code>, where <code>isNewInterest</code> already marks new ones for 7 days. The names appear only inside the app.</td></tr>
+<tr><th>Data</th><td><code>user_interests()</code> exists but answers only for the signed-in caller (it runs as the caller and uses <code>auth.uid()</code>), so the server needs a service-only twin that takes a person. The folding and exclusion rules live only in the app today; they would move to <code>packages/contracts</code>, which is shared through <code>scripts/sync-shared.mjs</code>, so both count the same way. That touches the Interests feature and needs approval.</td></tr>
+<tr><th>Switch</th><td>None of its own: it follows "Interests from your saves" and "Weekly note".</td></tr>
+<tr><th>Measured by</th><td><code>interest_opened</code> (exists) arriving from the note.</td></tr>
+<tr><th>Risks</th><td>Breaking the "never stored" promise (only counts are sent, nothing stored); intimate names on a lock screen (none).</td></tr>
+<tr><th>Store policy</th><td>Service. The privacy policy must add that interests are also counted when the weekly note is written.</td></tr>
+</table>
+</div>
+
+<div class="plain"><b class="k">In plain English</b>
+Interests are private by promise, so no notification names one. For people who have turned interests on, the weekly note may say "2 new interests turned up"; tapping it shows them inside the app, where only the person can see them.</div>
+
+<!-- ============================================================ 4 -->
+<h2 id="architecture">4. Architecture</h2>
+<p>Proportionate to a product with three accounts and one active library: two tables, a one-row pause switch, a few database functions, one shared module, one scheduled function, and small changes in the app. No notification vendor, no queueing system, no machine-learned send times.</p>
+
+<h3>4.1 The shape</h3>
+<pre>  WHAT HAPPENS                        ONE GATE                                WHERE IT GOES
+  ────────────                        ────────                                ─────────────
+  a save settles (pipeline) ───┐
+  an import / batch empties ───┤      enqueue(person, family, kind,           ┌─► Expo push ─► Apple / Google ─► phone
+  a trip changes stage ────────┼────►   key, due_at, data)                    │     tickets now; receipts after 15 min
+  billing webhook ─────────────┤      ▼                                       │
+  hourly: weekly note, ────────┘      notification_log  (one row per key)    │
+    old saves, away notes             ▼                                       │
+                                      dispatch():  pause? consent? switch?    │
+                                                   still true? quiet hours?   ├─► skipped, with the reason
+                                                   budget? back-off?          │
+                                                   words (lock-safe) ─────────┘
+
+  ON THE PHONE (local)
+  reminders you set (exist) · trip dates (new) ── scheduled on the phone, reconciled with the server at every launch
+  a tap ─► opens the route ─► mark_notification_opened(id) + track("notification_opened")</pre>
+
+<h3>4.2 Preferences</h3>
+<p>A table of its own rather than more columns on <code>profiles</code>, because that table's column-by-column rights are exactly what broke the switches (F1). Written only through one checked database function, so a missing right can never silently stop a switch from saving again.</p>
+<pre>-- sketch, not a migration
+create table public.notification_settings (
+  user_id         uuid primary key references auth.users(id) on delete cascade,
+  consented_at    timestamptz,             -- when the person said yes inside Allkept; null = never
+  consent_source  text,                    -- 'settings' | 'trip' | 'import' | 'reminder'
+  saves_needs_you boolean not null default true,
+  saves_batches   boolean not null default true,
+  saves_each      boolean not null default false,
+  trips           boolean not null default true,
+  weekly_note     boolean,                 -- null = not asked; false = said no
+  weekly_day      smallint not null default 6,      -- 0 Sunday … 6 Saturday
+  weekly_time     time not null default '10:00',
+  away_notes      boolean,                 -- kind D; null = not asked
+  away_consent_version text,               -- which consent words were shown
+  show_details    boolean not null default false,
+  quiet_start     time not null default '21:00',
+  quiet_end       time not null default '08:00',
+  time_zone       text,                    -- the phone's zone name, checked against pg_timezone_names
+  os_permission   text,                    -- last status the phone reported
+  asks            jsonb not null default '{}',      -- per ask: when shown, the answer
+  updated_at      timestamptz not null default now()
+);
+-- read own row; write only through set_notification_setting(name, value), security definer, allow-listed names.
+-- profiles.notify_* are copied across, kept until the app no longer reads them, then dropped.</pre>
+
+<h3>4.3 The send log</h3>
+<pre>-- sketch, not a migration
+create table public.notification_log (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  family      text not null,     -- saves | trips | weekly | away | account
+  kind        text not null,     -- needs_link | batch_done | each_save | trip_read | trip_ready | trip_failed
+                                 -- | weekly_note | rediscover | away | billing_ended | billing_issue
+  dedupe_key  text not null,     -- names the thing (§2.6)
+  status      text not null default 'queued',   -- queued | sent | skipped | failed
+  skip_reason text,              -- paused | consent | muted | os_denied | stale | quiet | budget | backoff | no_device
+  due_at      timestamptz not null default now(),
+  retry_at    timestamptz,
+  sent_at     timestamptz,
+  opened_at   timestamptz,
+  title text, body text,         -- exactly what was shown, for the in-app list; lock-safe unless show_details
+  route       text,              -- what a tap opens, e.g. '/weave/plan?weaveId=…'
+  tickets     jsonb,             -- Expo ticket ids per device, for receipts
+  receipts_checked_at timestamptz,
+  created_at  timestamptz not null default now(),
+  unique (user_id, dedupe_key)
+);
+-- indexes: (status, due_at) where status = 'queued';  (user_id, sent_at desc) for budgets and the in-app list.
+-- owner may read own rows; mark_notification_opened(id) sets opened_at; rows deleted after 90 days.</pre>
+<p>Local notifications (reminders, trip dates) are not in the log when they are scheduled; their taps are measured by the same <code>notification_opened</code> event. <code>items.push_sent_at</code> keeps being written until the log has replaced it, then stops.</p>
+
+<h3>4.4 Scheduling</h3>
+<table>
+<thead><tr><th>What</th><th>How</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Needs its link; batch finished</td><td>Event → a queued row with <code>due_at</code> (+10 minutes, or when the batch empties) → the notification job, every 5 minutes</td><td>Needs a delay and a re-check.</td></tr>
+<tr><td>Trip stages; account news</td><td>Event → queued row → sent straight away; the job is a safety net</td><td>A five-minute delay on a two-to-five-minute job would double the wait.</td></tr>
+<tr><td>Weekly note, old saves, away notes</td><td>The job, once an hour: people whose local slot falls in this hour</td><td>Words written when sent; one place for budgets.</td></tr>
+<tr><td>Reminders; trip dates</td><td>On the phone; the server row is the truth; reconciled at every launch</td><td>The person's own clock; works offline.</td></tr>
+</tbody>
+</table>
+<p>One new function, <code>supabase/functions/notifier</code>, on pg_cron every five minutes and pinned to the database's region like the sweeper: due rows, retries, receipts, deleting old rows, and, in the first run of each hour, the weekly slot. It stays out of the sweeper, whose 80-second budget belongs to sorting.</p>
+
+<h3>4.5 How it is sent: keep Expo's push service</h3>
+<ul>
+<li><b>Why Expo, not Apple's and Google's services directly:</b> it is already wired and tested (<code>_shared/push.ts</code>, <code>tests/push.test.ts</code>). The FCM credentials live in EAS, Expo handles APNs, and the stored tokens are Expo tokens. Going direct would mean keeping an APNs key and an FCM service account in Supabase's secrets, two code paths, and switching the app to native device tokens with a migration of the stored ones: more secrets and more work for no gain anyone would notice at this size. Expo's documented limits are 600 notifications per second per project and 4 KiB per message. Expo is already named in the privacy policy.</li>
+<li><b>Add:</b> the access token ("enhanced security"; closes F9); a receipts check 15 minutes to 24 hours after sending (Expo keeps receipts about a day), which marks dead devices and logs credential errors loudly (closes F8); and per message: <code>channelId</code>, <code>interruptionLevel</code>, <code>threadId</code>, <code>collapseId</code> or <code>tag</code> where one note replaces another, and <code>ttl</code> (trip ready 6 h, needs its link 24 h, weekly note 6 h: a stale note is worse than none). Passive notes use normal priority.</li>
+</ul>
+
+<h3>4.6 Words and languages</h3>
+<ul>
+<li>One catalogue of wording in <code>packages/contracts</code>, synced into the functions by <code>scripts/sync-shared.mjs</code>, so local and remote notifications use the same words. Each entry has an id, a family, a lock-safe title and body, a detailed variant, length limits and the route to open.</li>
+<li>Tests: length limits; no title, town, name or interest in a lock-safe variant; a list of banned phrases; each claim tied to the state it describes.</li>
+<li>English at launch. <code>profiles.language</code> already holds the phone's language (one of the three accounts has reported one), so translations can key off it later. Until then, English for everyone, rather than half-translated notes.</li>
+</ul>
+
+<h3>4.7 The gate</h3>
+<pre>dispatch(row):
+  if paused or family disabled in notification_config   → skip 'paused'
+  s = settings(row.user)
+  if s.consented_at is null                              → skip 'consent'   (closes F2)
+  if family or kind switched off                         → skip 'muted'
+  if s.os_permission = 'denied'                          → skip 'os_denied'
+  if not still_true(row)                                 → skip 'stale'     (re-read save / trip)
+  if quiet_hours(s) and not exempt(row)                  → B: due_at = next 08:00 · C/D: skip 'quiet'
+  if over_budget(row.user, row.kind)                     → B: roll up or defer · C/D: skip 'budget'
+  if backed_off(row.user, row.family)                    → skip 'backoff'
+  words  = compose(row.kind, row.data, s.show_details, language)
+  phones = live_tokens(row.user);  if none               → skip 'no_device'
+  claim the row, send, store tickets, mark sent</pre>
+
+<h3>4.8 When something fails</h3>
+<ul>
+<li>A notification never fails the thing that caused it (today's rule, kept).</li>
+<li>The row is claimed before sending, so it is sent at most once. A passing failure (timeout, 429, a 5xx) gets a <code>retry_at</code> with back-off, up to the message's <code>ttl</code>, then is abandoned. A dead device is marked dead; a malformed message is logged.</li>
+<li>Devices are registered again at every launch while consent stands (closes F10); devices dead for 30 days are deleted.</li>
+<li>Sign-out and account deletion cancel this phone's scheduled notifications and clear the delivered ones (closes F6); the server already deletes the devices.</li>
+</ul>
+
+<h3>4.9 What travels, and what is kept</h3>
+<ul>
+<li>Payload: <code>{ nid, family, route }</code>, plus the save or trip id where the route needs it. No content.</li>
+<li>Title and body are lock-safe unless the person turns details on. Expo, Apple and Google see that text, as the policy already discloses, so it is kept minimal.</li>
+<li>Function logs never contain a title or a body (today's don't).</li>
+<li>The time zone is new personal data and needs a line in the policy. Interest names never travel. The log keeps the words for 90 days and is deleted with the account.</li>
+</ul>
+
+<h3>4.10 How it is measured</h3>
+<ul>
+<li><b>Server:</b> the send log: sent, skipped by reason, failed, delivered (from receipts).</li>
+<li><b>App</b> (first-party <code>app_events</code>, as today): <code>notification_opened</code> {family, kind, nid}; <code>notification_setting_changed</code> {family, on, source}; <code>notification_ask</code> {moment, answer}; <code>notification_permission</code> {status} when it changes. The privacy policy describes a fixed list of events, so the list must be updated.</li>
+<li><b>Per family:</b> delivered → opened within 48 h → did the thing the notification was for → switched off within 7 days.</li>
+<li>With one active account nothing here is statistically meaningful. For now these numbers exist to catch mistakes, such as a storm or a run of "consent" skips, not to tune open rates.</li>
+</ul>
+
+<h3>4.11 A pause switch</h3>
+<p>A one-row <code>notification_config</code> (paused; families enabled), read at sending. One SQL update stops everything or one family: no deploy, no build.</p>
+
+<h3>4.12 Deliberately not built</h3>
+<p>Pictures in notifications (iOS would need a Notification Service Extension, which means a native build); action buttons, except perhaps "Stop trip reminders" later; a notification vendor; send-time optimisation; A/B testing.</p>
+
+<div class="plain"><b class="k">In plain English</b>
+Every notification goes through one checkpoint that asks: did they say yes, is this switched on, is it still true, is it night where they are, have we already said enough this week? Then it sends and writes down what it sent. Keep using Expo to deliver, because it already works, and add the missing safety parts: a key on every send, delivery receipts, and a pause button that needs no deploy.</div>
+
+<!-- ============================================================ 5 -->
+<h2 id="rollout">5. Phased rollout</h2>
+<p>One change per step, each approved before the next. "Needs first" names the decision in §6 that must be made before the step starts, so no step depends on something undecided.</p>
+<table>
+<thead><tr><th>Ships by</th><th>Means</th></tr></thead>
+<tbody>
+<tr><td><b>Migration</b></td><td>A SQL file in <code>supabase/migrations/</code>. Pranav runs <code>db push</code> himself.</td></tr>
+<tr><td><b>Deploy</b></td><td><code>supabase functions deploy &lt;name&gt;</code> on Pranav's yes, <b>from a clean checkout of a commit</b>, never from a working tree holding someone else's uncommitted work (F16, D17).</td></tr>
+<tr><td><b>OTA</b></td><td>An over-the-air update to build 34 (<code>npm run ota:preview</code> for TestFlight) on Pranav's yes.</td></tr>
+<tr><td><b>Website</b></td><td><code>docs/privacy.html</code> or <code>docs/terms.html</code>, then the website copy, on Pranav's yes; coordinate with whoever holds those files (queue item 15).</td></tr>
+<tr><td><b>Dashboard</b></td><td>A setting Pranav changes himself (EAS).</td></tr>
+<tr><td><b>Native build</b></td><td><b>None needed for any step below.</b> Channels, local schedules, permission options and routes all use modules already in build 34.</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 0 · Make today's notifications honest (no new kinds)</h3>
+<p class="small">Steps that edit <code>supabase/functions/_shared/pipeline.ts</code> (0.6, 0.7, 1.4, 3.1) wait until the Gemini work in that file is committed, both to avoid shipping it and to avoid editing a file another engineer has open.</p>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>0.1</td><td>The notification switches can be saved: grant the signed-in role update on <code>notify_enabled</code>, <code>notify_sorted</code> and <code>notify_attention</code>. Verify with a privilege query, a flip on the phone, and reading it back.</td><td>new <code>supabase/migrations/…_notification_switch_grants.sql</code></td><td>Migration</td><td>D1, D2</td></tr>
+<tr><td>0.1b</td><td>(If D2 says yes, as its own step) the same grant for <code>ai_sorting_enabled</code>: same cause, different feature.</td><td>new migration</td><td>Migration</td><td>D2</td></tr>
+<tr><td>0.2</td><td>Consent is a real yes: <code>notify_enabled</code> defaults to false, and is set false for accounts with no live device (2 of 3).</td><td>new migration; <code>apps/mobile/lib/preferences.ts</code> (the default it assumes)</td><td>Migration, then OTA</td><td>0.1</td></tr>
+<tr><td>0.3</td><td>Sign-out and account deletion cancel this phone's scheduled notifications and clear delivered ones. <span class="small">Touches Reminders: needs approval (rule 7).</span></td><td><code>apps/mobile/lib/reminders.ts</code>, <code>app/(tabs)/settings.tsx</code>, <code>lib/account.ts</code></td><td>OTA</td><td>D1</td></tr>
+<tr><td>0.4</td><td>The device is registered again at every launch while consent stands, instead of only while Settings is on screen.</td><td><code>apps/mobile/app/_layout.tsx</code>, <code>app/(tabs)/settings.tsx</code></td><td>OTA</td><td>0.2, or it would register everyone with phone permission</td></tr>
+<tr><td>0.5</td><td>Reminders get their own private Android channel, created at launch. <span class="small">Touches Reminders: needs approval.</span></td><td><code>apps/mobile/lib/push.ts</code>, <code>lib/reminders.ts</code>, <code>app/_layout.tsx</code></td><td>OTA</td><td>D1</td></tr>
+<tr><td>0.6</td><td>No sorting notification for saves inside an import or a playlist back catalogue.</td><td><code>supabase/functions/_shared/pipeline.ts</code> (<code>announce</code>), <code>supabase/functions/tests/</code></td><td>Deploy <code>sweeper</code>, <code>reprocess-item</code></td><td>D17; the Gemini work committed or excluded (queue item 60)</td></tr>
+<tr><td>0.7</td><td>"Sorted" only after the final sort, so a failed attempt no longer spends the one notification.</td><td>same file</td><td>Deploy, same two</td><td>0.6</td></tr>
+<tr><td>0.8</td><td>Sends carry Expo's access token; then Pranav turns on enhanced security in EAS. In that order, so nothing breaks in between.</td><td><code>supabase/functions/_shared/push.ts</code>; Supabase secret</td><td>Deploy <code>billing-webhook</code>, <code>sweeper</code>, <code>reprocess-item</code> (every function that sends), then Dashboard</td><td>D17</td></tr>
+<tr><td>0.9</td><td>Public words match the code: §9 says reminders also ask for permission, and the review note says the same.</td><td><code>docs/privacy.html</code>, <code>internal/store-submission.html</code></td><td>Website</td><td>D1</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 1 · One gate (nothing changes for people yet)</h3>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>1.1</td><td>Tables and functions: <code>notification_settings</code>, <code>notification_log</code>, <code>notification_config</code>, <code>set_notification_setting</code>, <code>mark_notification_opened</code>; today's switches copied across.</td><td>new migration</td><td>Migration</td><td>D4, D5, D6, D7, D11</td></tr>
+<tr><td>1.2</td><td>Server module: enqueue, dispatch, the Expo sender with receipts; the wording catalogue in contracts; tests. Not deployed yet.</td><td><code>supabase/functions/_shared/notify/</code>, <code>packages/contracts/src/index.ts</code> (+ sync), tests</td><td>none yet</td><td>1.1</td></tr>
+<tr><td>1.3</td><td>The notification job, scheduled every five minutes.</td><td><code>supabase/functions/notifier/</code>; new cron migration</td><td>Deploy + Migration</td><td>1.2</td></tr>
+<tr><td>1.4</td><td>Today's sends go through the gate, with the same words.</td><td><code>_shared/pipeline.ts</code>, <code>billing-webhook/index.ts</code></td><td>Deploy (clean checkout)</td><td>1.3, D17</td></tr>
+<tr><td>1.5</td><td>The app opens any route, records opens, clears the last tap, shows no banner for the thing on screen, and saves switches through the function.</td><td><code>apps/mobile/lib/push.ts</code>, <code>lib/metrics.ts</code>, <code>lib/preferences.ts</code>, <code>app/_layout.tsx</code></td><td>OTA; Website (event list)</td><td>1.1</td></tr>
+<tr><td>1.6</td><td>Lock-safe words for the existing notifications, and the "Show save details" switch.</td><td>the catalogue; <code>app/(tabs)/settings.tsx</code></td><td>Deploy + OTA</td><td>D7</td></tr>
+<tr><td>1.7</td><td>The bell's screen lists what was actually sent.</td><td><code>apps/mobile/app/activity.tsx</code>, <code>lib/activity.ts</code></td><td>OTA</td><td>D16</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 2 · Trips: plan ready</h3>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>2.1</td><td>The trip function queues "saves read", "plan ready" and "didn't finish".</td><td><code>supabase/functions/weave/handler.ts</code> (L253, L327, failure paths)</td><td>Deploy <code>weave</code> (clean checkout)</td><td>Phase 1, D3</td></tr>
+<tr><td>2.2</td><td>The Trips switch, and the in-context ask under "Make my plan"; the waiting words promise a notification only to people who will get one.</td><td><code>apps/mobile/app/weave/index.tsx</code> (the "Make my plan" line), <code>app/weave/plan.tsx</code> (the waiting words), <code>app/(tabs)/settings.tsx</code>, <code>lib/push.ts</code></td><td>OTA</td><td>D8</td></tr>
+<tr><td>2.3</td><td>§9 and the review note: trips, and asking in context.</td><td><code>docs/privacy.html</code>, <code>internal/store-submission.html</code></td><td>Website</td><td>D8</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 3 · Sorting, second version</h3>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>3.1</td><td>"Needs its link": <code>no_link</code> only, skipped when Instagram's reply said it, a 10-minute check, roll-ups. Aligning the Library's filter (queue item 19) is a separate step in the Library feature.</td><td><code>_shared/notify/</code>, <code>_shared/pipeline.ts</code></td><td>Deploy</td><td>D6</td></tr>
+<tr><td>3.2</td><td>One note per finished import or playlist back catalogue, with a batch marker written by the playlist poll.</td><td><code>notifier</code>, <code>youtube-poll/index.ts</code>; a migration if a column is chosen</td><td>Deploy (+ Migration)</td><td>D3</td></tr>
+<tr><td>3.3</td><td>"Every save as it's sorted" becomes opt-in.</td><td>migration (default), <code>app/(tabs)/settings.tsx</code></td><td>Migration + OTA</td><td>D5</td></tr>
+<tr><td>3.4</td><td>The in-context ask when an import starts.</td><td><code>apps/mobile/app/import.tsx</code></td><td>OTA</td><td>D8</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 4 · Before a dated trip</h3>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>4.1</td><td>Local trip-date reminders, offered when dates are entered, reconciled at launch, cancelled on re-plan.</td><td>new <code>apps/mobile/lib/trip-reminders.ts</code>, <code>components/TripOptions.tsx</code>, <code>app/weave/index.tsx</code>, <code>app/weave/plan.tsx</code>, <code>app/_layout.tsx</code></td><td>OTA</td><td>Phase 2</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 5 · The weekly note</h3>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>5.1</td><td>The phone reports its time zone when it changes; the policy says so.</td><td>new <code>apps/mobile/lib/time-zone.ts</code>, <code>app/_layout.tsx</code>; <code>docs/privacy.html</code></td><td>OTA + Website</td><td>D12</td></tr>
+<tr><td>5.2</td><td>Interest rules shared, and a service-only way to count them. <span class="small">Touches Interests: needs approval.</span></td><td><code>packages/contracts</code>, <code>apps/mobile/lib/interests.ts</code>; a migration for the function</td><td>Migration + OTA</td><td>D14</td></tr>
+<tr><td>5.3</td><td>The weekly note written and sent from the job's hourly slot.</td><td><code>supabase/functions/notifier/</code>, <code>_shared/notify/</code></td><td>Deploy</td><td>D10, 5.1, 5.2</td></tr>
+<tr><td>5.4</td><td>The Home card that asks, the <code>/week</code> screen, and the Settings row.</td><td><code>apps/mobile/app/(tabs)/index.tsx</code>, new <code>app/week.tsx</code>, <code>app/(tabs)/settings.tsx</code></td><td>OTA</td><td>D10</td></tr>
+<tr><td>5.5</td><td>The policy: the weekly note, and interests counted for it.</td><td><code>docs/privacy.html</code></td><td>Website</td><td>D14</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 6 · Know which save was opened, then better old saves</h3>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>6.1</td><td>Record when a save is opened, with a policy line (queue item 20).</td><td>migration (a function to record it), <code>apps/mobile/components/ItemDetail.tsx</code>, <code>docs/privacy.html</code></td><td>Migration + OTA + Website</td><td>D15</td></tr>
+<tr><td>6.2</td><td>Old-save picks skip recently opened saves; the words may say "not opened since…" where that is true.</td><td><code>_shared/notify/</code></td><td>Deploy</td><td>6.1</td></tr>
+<tr><td>6.3</td><td>(Optional) a standalone "Rediscover" switch, at most once a week.</td><td><code>notifier</code>, <code>app/(tabs)/settings.tsx</code></td><td>Deploy + OTA</td><td>evidence from the note</td></tr>
+</tbody>
+</table>
+
+<h3>Phase 7 · Away notes, only if decided</h3>
+<table>
+<thead><tr><th>Step</th><th>The one change</th><th>Files</th><th>Ships by</th><th>Needs first</th></tr></thead>
+<tbody>
+<tr><td>7.1</td><td>Terms and policy changed first.</td><td><code>docs/terms.html</code>, <code>docs/privacy.html</code></td><td>Website</td><td>D13</td></tr>
+<tr><td>7.2</td><td>A consent card with versioned words, and the switch.</td><td><code>apps/mobile/app/(tabs)/settings.tsx</code>, a new card</td><td>OTA</td><td>7.1</td></tr>
+<tr><td>7.3</td><td>The two-note sequence in the job.</td><td><code>supabase/functions/notifier/</code></td><td>Deploy</td><td>7.2</td></tr>
+</tbody>
+</table>
+
+<div class="plain"><b class="k">In plain English</b>
+First, ten small steps so today's notifications can be switched off, start only after a real yes, stop flooding during imports, and stop lingering after sign-out. Then the checkpoint. Then, one at a time: trip plans, better sorting notes, trip reminders, the weekly note, and recording opens. "Away" notes come only if you decide. You run every database change yourself and approve every deploy and update; no new app build is needed for any of it.</div>
+
+<!-- ============================================================ 6 -->
+<h2 id="decisions">6. Decisions for Pranav</h2>
+<p>Most important first. Each has my recommendation and the trade-off in one line. The numbers are the D-numbers used in the rollout tables (D1 is the first item).</p>
+<ol class="decisions">
+<li><b>Fix today's notifications before adding any new kind (Phase 0)?</b><span class="rec">Recommend: yes.</span><span class="trade">Trade-off: a few weeks with nothing visibly new, against building on a switch that can't be turned off.</span></li>
+<li><b>Close the same missing grant for "Sort saves automatically", which belongs to another feature, as its own step?</b><span class="rec">Recommend: yes; same cause, and a privacy switch.</span><span class="trade">Trade-off: touching the AI-sorting consent path, against leaving a privacy switch that probably can't be saved.</span></li>
+<li><b>Launch order.</b><span class="rec">Recommend: trip plan ready → sorting v2 (needs its link, batch done) → trip-date reminders → weekly note → recording opens → away notes only if decided.</span><span class="trade">Trade-off: trips are the clearest value but few people plan trips; the weekly note reaches everyone but needs the time zone and an opt-in first.</span></li>
+<li><b>The budget.</b><span class="rec">Recommend: at most 5 a week (not counting reminders the person set or account notices), at most 2 of them Allkept's own idea, at most 2 a day, none of Allkept's own in the first week.</span><span class="trade">Trade-off: fewer chances to bring people back, against trust that is hard to win back once lost.</span></li>
+<li><b>Per-save "Saved" notification by default?</b><span class="rec">Recommend: off; people can switch it on.</span><span class="trade">Trade-off: some people like seeing where each save was filed; Instagram's reply and the share banner already confirm the save.</span></li>
+<li><b>What "needs you" means.</b><span class="rec">Recommend: only when the person can fix it (no link), and not when Instagram's reply already said so; everything else waits in the app's list.</span><span class="trade">Trade-off: preview-less and unsorted saves are no longer announced.</span></li>
+<li><b>Lock-screen privacy.</b><span class="rec">Recommend: no titles, places, names, interests or sensitive categories unless "Show save details" is on (off by default); this applies to reminders too.</span><span class="trade">Trade-off: plainer notes, perhaps fewer taps, against never embarrassing anyone.</span></li>
+<li><b>Ask for permission in context, not only in Settings.</b><span class="rec">Recommend: yes, after "Make my plan" and when an import starts; three asks ever; "Not now" waits 30 days; policy and review note updated.</span><span class="trade">Trade-off: more people reachable, against the current "only in Settings" promise.</span></li>
+<li><b>iOS "deliver quietly".</b><span class="rec">Recommend: no.</span><span class="trade">Trade-off: reach, against sending to people who never said yes.</span></li>
+<li><b>The weekly note: how it is offered, which day, what time.</b><span class="rec">Recommend: off until a Home card gets a yes (after 20 saves and 14 days); Saturdays at 10:00 local.</span><span class="trade">Trade-off: Sunday may feel more reflective; Saturday morning suits the try/go/watch saves. A judgement, not data.</span></li>
+<li><b>Quiet hours.</b><span class="rec">Recommend: 21:00–08:00 local for anything Allkept starts, fixed at launch; jobs the person started in the last 30 minutes are exempt.</span><span class="trade">Trade-off: simplicity, against night owls and early risers.</span></li>
+<li><b>Store the phone's time zone.</b><span class="rec">Recommend: yes, the zone's name only, with a policy line.</span><span class="trade">Trade-off: a coarse hint of location, against being unable to time anything from the server.</span></li>
+<li><b>Away notes (re-engagement).</b><span class="rec">Recommend: not now. If ever: explicit opt-in with shown consent words, two per absence, and the Terms changed first.</span><span class="trade">Trade-off: some drifting people won't come back, against the brand and Apple 4.5.4.</span></li>
+<li><b>Interests in notifications.</b><span class="rec">Recommend: a count inside the weekly note only; never a name; no standalone interest notes.</span><span class="trade">Trade-off: less delight, against keeping "never stored as a profile" true.</span></li>
+<li><b>Record which save was opened (queue item 20).</b><span class="rec">Recommend: yes, before any standalone old-save notification.</span><span class="trade">Trade-off: new personal data and a policy line, against honest "not opened since…" wording.</span></li>
+<li><b>The bell's screen becomes a real record of notifications.</b><span class="rec">Recommend: yes, in Phase 1.</span><span class="trade">Trade-off: one more screen to build, against a swiped-away note being lost for good.</span></li>
+<li><b>Deploy hygiene.</b><span class="rec">Recommend: functions that include <code>_shared/pipeline.ts</code> are deployed only from a clean checkout of a commit.</span><span class="trade">Trade-off: a little more ceremony, against shipping someone else's half-finished work.</span></li>
+<li><b>Badges.</b><span class="rec">Recommend: none.</span><span class="trade">Trade-off: none worth having; a number on the icon reads as a debt.</span></li>
+</ol>
+
+<div class="plain"><b class="k">In plain English</b>
+The five that matter most: (1) fix what exists first; (3) build trips, then sorting, then the weekly note; (4) five a week at most; (7) keep the lock screen private by default; (8 and 9) ask for permission at good moments, and never send to anyone who hasn't said yes.</div>
+
+<!-- ============================================================ A -->
+<h2 id="appendix-queries">Appendix A · Queries run</h2>
+<p>All read-only and aggregate, run on 2 October through <code>supabase db query --linked</code>. No titles, notes, links, names, emails or tokens were selected. One distribution of category labels also returned the name of a custom category; it is deliberately not repeated anywhere in this document.</p>
+<pre>-- people, switches, devices
+select count(*) from auth.users;  select count(*) from auth.users where is_anonymous;
+select count(*) filter (where notify_enabled) …, interests_enabled null/true/false, language/storefront present
+  from public.profiles;
+select count(*), count(*) filter (where failed_at is null), count(distinct user_id), platform split,
+       fail_reason split, min/max(last_seen_at)::date, min(created_at)::date from public.device_push_tokens;
+
+-- saves
+select status split, captured_via split, push_sent_at claimed (before/after the first token),
+       max claims per hour and per day, saved more than 14/30/90 days ago, done, reminders, opened_at set
+  from public.items;
+select actionability split, category split, count in four sensitive categories from public.item_ai;
+select classification_status split from public.items;
+
+-- activity, trips, places
+select app_events by name (30 days), distinct active people (7 and 30 days), days since last event;
+select weaves by status, with a start date, median/max (updated_at - created_at);
+select count(*) from public.places;  count(distinct locality);
+
+-- rights (metadata only)
+select has_column_privilege('authenticated', 'public.profiles', c, 'UPDATE')  for the switch columns;
+select has_table_privilege('authenticated', 'public.profiles', 'UPDATE');
+select policyname, cmd, roles from pg_policies where tablename in ('profiles', 'device_push_tokens');</pre>
+
+<div class="plain"><b class="k">In plain English</b>
+I only counted things; I never looked at what anyone saved. The counts come from one real library, so they show what could happen, not how people behave.</div>
+
+<!-- ============================================================ B -->
+<h2 id="appendix-sources">Appendix B · Outside sources checked</h2>
+<p>All read on 2 October 2026. Paraphrased, except the one short quotation in §3.2.</p>
+<ul class="src">
+<li><b>Apple, App Review Guidelines, 4.5.4 Push Notifications</b> (<a href="https://developer.apple.com/app-store/review/guidelines/">developer.apple.com/app-store/review/guidelines</a>). Notifications must not be required for the app to work and should not carry sensitive personal information; promotions and direct marketing need explicit opt-in through consent words in the app and a way to opt out in the app. Related: 4.5.3 (no spam through Apple services) and 5.1.2(i) (an app may not require people to enable notifications to get something).</li>
+<li><b>Apple, Human Interface Guidelines, Managing notifications</b> (<a href="https://developer.apple.com/design/human-interface-guidelines/managing-notifications">developer.apple.com/design/human-interface-guidelines/managing-notifications</a>). Get explicit permission before promotional notifications; let people manage notifications inside the app; Time Sensitive only for things happening now or within the hour, never for marketing; Passive for information people can read at leisure.</li>
+<li><b>Apple, Asking permission to use notifications</b> (<a href="https://developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications">developer.apple.com/documentation/usernotifications/asking-permission-to-use-notifications</a>). Ask in context rather than at first launch. Provisional notifications are delivered quietly into Notification Center's history only, with Keep or Turn Off, and no prompt is shown.</li>
+<li><b>Apple, UNNotificationInterruptionLevel</b> (<a href="https://developer.apple.com/documentation/usernotifications/unnotificationinterruptionlevel">developer.apple.com/documentation/usernotifications/unnotificationinterruptionlevel</a>). What Passive, Active, Time Sensitive and Critical each do.</li>
+<li><b>Google Play, App Promotion</b> (<a href="https://support.google.com/googleplay/android-developer/answer/9899004">support.google.com/googleplay/android-developer/answer/9899004</a>). Forbids deceptive ads, including notifications that look like system notifications or alerts.</li>
+<li><b>Google Play, Ads</b> (<a href="https://support.google.com/googleplay/android-developer/answer/9857753">support.google.com/googleplay/android-developer/answer/9857753</a>). Ads must not imitate notifications or warnings of the operating system.</li>
+<li><b>Google Play, Spam</b> (<a href="https://support.google.com/googleplay/android-developer/answer/9899034">support.google.com/googleplay/android-developer/answer/9899034</a>). The rule I could confirm concerns messages sent on the user's behalf without confirmation. I found no explicit opt-in rule for promotional pushes on these three pages.</li>
+<li><b>Android, Notification runtime permission</b> (<a href="https://developer.android.com/develop/ui/views/notifications/notification-permission">developer.android.com/develop/ui/views/notifications/notification-permission</a>). Android 13+ needs the runtime permission and new installs start with notifications off; Android 12L and lower need none; ask in context, after people understand the value.</li>
+<li><b>Expo, Sending notifications</b> (<a href="https://docs.expo.dev/push-notifications/sending-notifications/">docs.expo.dev/push-notifications/sending-notifications</a>). Message fields (including channelId, interruptionLevel, threadId, collapseId, tag, ttl, priority); tickets versus receipts (check receipts about 15 minutes later, kept about a day); 600 notifications per second per project; 4 KiB per message; an optional access token.</li>
+<li><b>expo-notifications 57.0.17 source</b> (in <code>node_modules</code>): the fallback channel "Miscellaneous" (<code>BaseNotificationBuilder.kt</code>, <code>strings.xml</code>); exact or inexact alarms (<code>ExpoSchedulingDelegate.kt</code> L106–114); the <code>allowProvisional</code> option; <code>getLastNotificationResponseAsync</code> deprecated and <code>clearLastNotificationResponse</code> available.</li>
+</ul>
+
+<div class="plain"><b class="k">In plain English</b>
+Apple is explicit: marketing notifications need a clear opt-in inside the app. Google's pages that I could read only forbid notifications that pretend to be system alerts, plus spam. Our own Terms are stricter than both, because they promise no marketing at all.</div>
+
+<!-- ============================================================ C -->
+<h2 id="appendix-unverified">Appendix C · What I could not verify</h2>
+<ul>
+<li>Whether the switches really fail on a phone today. The database's rights say they would; ERRORS.md says a switch held on 13 September. A hand test settles it: switch "A save has landed" off, leave Settings, come back.</li>
+<li>Whether any of the 95 notifications on 15 September were delivered (no send log).</li>
+<li>Whether Expo's enhanced security is on (an EAS dashboard setting).</li>
+<li>Whether build 34 contains the share extension's banner (it was built after those commits).</li>
+<li>That expo reports "granted" on Android 12L and older without a prompt.</li>
+<li>That the Settings tab is drawn only when first visited (React Navigation's default).</li>
+<li>That Time Sensitive needs an extra capability; and whether expo-notifications reports swipe-dismissals on Android.</li>
+<li>Google Play pages other than the three read, and any law outside the stores (for example India's DPDP Act, US state privacy law). These need a legal view before away notes.</li>
+<li>That the JavaScript engine on the phones returns a proper time-zone name; check on a device in step 5.1.</li>
+<li>The trip timings (median 28 s, longest 252 s) are a proxy; the app's own wording says two to five minutes for a plan.</li>
+<li>Judgements, not data: Saturday 10:00; the budget numbers; which categories count as sensitive; the 48-hour "ignored" window; the starting targets.</li>
+</ul>
+
+<div class="plain"><b class="k">In plain English</b>
+These are the things I am not sure of. The most important, whether switching notifications off actually works today, takes two minutes to check by hand.</div>
+
+<!-- ============================================================ D -->
+<h2 id="appendix-files">Appendix D · Files changed</h2>
+<p>Created: <code>internal/superpowers/specs/2026-10-02-notification-strategy.html</code> (this file). Nothing else was created, edited or deleted. No commit, push, deploy, migration or database write was made; no notification was sent; the simulator was not touched. The uncommitted work in <code>supabase/functions/_shared/</code> was read, not changed.</p>
+
+<div class="plain"><b class="k">In plain English</b>
+This document is the only thing that changed.</div>
+
+</main>
+</body>
+</html>
