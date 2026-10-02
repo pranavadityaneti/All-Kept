@@ -412,3 +412,17 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** parked
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — Pranav's request for quick actions; "Park Part 1 for later, and execute part 2".
+
+### 63. A request iOS drops on a stale connection is reported as "Couldn't reach Allkept"
+- **What + why:** Found 2 Oct while checking the UI audit's PT-01 ("Read my saves" failed within 17 s and said "Check your connection" while the phone was online). The request never reached the server: no `weave` call in the function logs at 03:53:45 UTC and no weave row. The same app session logged `track: item_open refused — fetch failed: The network connection was lost`, which is iOS's NSURLErrorNetworkConnectionLost: a pooled keep-alive connection the server had already closed. iOS repeats such a request by itself only when it is safe to repeat (GET), never a POST. So any one-shot POST (starting a weave, saving a link, an RPC, an event) can fail this way, and the person is told to check a connection that is fine. How often this happens on real phones is unknown; it was seen twice in one simulator session.
+- **Scope:** one retry, in one place: a `fetch` wrapper given to `createClient` in `apps/mobile/lib/supabase.ts` that repeats a request once, straight away, when it failed with that transport error before any response, and only for requests safe to repeat. GETs are safe, and so is save-link (it carries `requestId`). Starting a weave (understand/plan) first needs the same kind of request id, so a repeat cannot start and charge for a second read. Each RPC and insert the app makes needs checking. Tests for the wrapper. The wording stays honest: if the retry also fails, "Couldn't reach Allkept" is true.
+- **Status:** queued — Pranav to decide.
+- **Date added:** 2026-10-02
+- **Originated from:** 2 Oct 2026 — the UI audit's Weave read failure, traced through the function logs and the Metro log.
+
+### 64. UI polish and the Plan a trip redesign — the audit's 38-step plan, one step at a time
+- **What + why:** The Opus design-engineer audit (2 Oct) proposes a five-step Plan a trip journey (your trips with live status → where is this trip → honest waits that survive leaving → what your saves say, with Customise folded in → the plan) and app-wide fixes: a 12-tier type scale, one shared text field, dark-mode contrast, the Maps pill overflow, focus states and micro-interactions. It also lists functional bugs: Customise dates and times can't be typed on the number pad and bad values are dropped silently; the plan screen opened without an id waits forever; the nights buttons re-split; a town card repeats a place up to four times; day routes always drive.
+- **Scope:** `internal/superpowers/specs/2026-10-02-ui-polish-audit.html`, section 8 lists every step. Its step 0 (the read-failure investigation) is done: see item 63. Steps 1, 2, 8, 20 and 22 change shared pieces (Chip, `lib/trips.ts`, all text styles, the dark accent) and are flagged there. Step 38 deletes unused components and two orphan screens and needs an explicit yes. Folds in 56, 57 and 59 where they overlap.
+- **Status:** queued — each step for Pranav's approval.
+- **Date added:** 2026-10-02
+- **Originated from:** 2 Oct 2026 — "Assign a Opus agent to be a UI/UX design engineer…"; report returned the same day.

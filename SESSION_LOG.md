@@ -1743,3 +1743,30 @@ categories.
   WCAG 2.2 / Nielsen / Atomic Design gates), report to
   `internal/superpowers/specs/2026-10-02-ui-polish-audit.html`; one real read + one 7-day plan
   allowed (~$0.55). Fixes land one step at a time on Pranav's approval.
+
+## 2026-10-02 (later) — the audit lands; Home's keyboard fixed; the audit's read failure traced
+
+- **UI/UX audit returned:** `internal/superpowers/specs/2026-10-02-ui-polish-audit.html` plus 30
+  screenshots in `…/ui-polish-audit/`; no source changed (checked). Top findings: PT-01 the read
+  failure (below); PT-02 Customise dates and times can't be typed on the number pad and bad values
+  are dropped silently; PT-03 a paid read is lost on leaving the screen; PT-06 nights re-split;
+  AW-01 the Maps pill overflows its card; AW-02/03 dark-mode contrast; AW-04/05 fourteen text
+  fields in seven styles. A five-step Plan a trip redesign and a 38-step plan, each step for
+  Pranav's approval (item 64).
+- **PT-01 traced — not the server:** at 03:53:45 UTC no `weave` call reached the function and no
+  weave row was written; the same app session logged `fetch failed: The network connection was
+  lost` (iOS dropping a POST on a stale pooled connection). "Couldn't reach Allkept" was true.
+  Queued as 63 (one safe retry in the Supabase client's fetch; starting a weave needs a request
+  id first). The Management API's `logs.all` endpoint is gone; the new recipe is in ERRORS.
+- **Home's keyboard, both fixes (Pranav: "Yes, go ahead with both fixes"):** `02e61f3` — the
+  first tap while the keyboard is up reaches the tick, a card or a pill
+  (`keyboardShouldPersistTaps="handled"` on the page and on the two rows that scroll inside it),
+  and the tick closes the keyboard as it saves. `53380cc` — the note box is lifted clear of the
+  keyboard when it appears, when it grows, and when a keyboard opens over it
+  (`automaticallyAdjustKeyboardInsets`, plus `scrollResponderScrollNativeHandleToKeyboard` from
+  Home, triggered by the paste box). Verified on the simulator by simulating the keyboard through
+  the dev debugger, with a control run proving the setup reproduces the old two-tap bug. Not
+  pushed; no OTA yet.
+- **Open:** push + OTA on Pranav's Yes, then his phone check of the note box above a real
+  keyboard; the four test saves still exist (his delete one-liner not run yet); 60 waits on the
+  Gemini work; 63 and 64 for his decision.

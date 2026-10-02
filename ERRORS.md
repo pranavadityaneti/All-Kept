@@ -344,3 +344,40 @@ again — which also explains why my later taps to restore the interests switch 
   nothing happened, prove the log works in that run first. Compare against the original component
   as a baseline before blaming either. A control on a known-working field (ItemDetail's note) is
   what separated harness from app here.
+
+## 2026-10-02 — reading function logs: the Management API's `logs.all` is gone
+- What didn't work: `GET /v1/projects/<ref>/analytics/endpoints/logs.all` ("endpoint has been
+  removed"); then the new endpoint with the old tables (`function_edge_logs` "does not exist");
+  then `source_name` (no such field); then `select *` ("Backend error").
+- What worked: `GET /v1/projects/<ref>/analytics/endpoints/logs` with `sql`,
+  `iso_timestamp_start`, `iso_timestamp_end`, querying one table, `logs`, filtered by `source`:
+  `select timestamp, source, event_message from logs where source in ('function_edge_logs',
+  'function_logs') order by timestamp`. Sources seen: `function_edge_logs` (one line per call:
+  `POST | 200 | …/functions/v1/weave`), `function_logs` (console output, boots), `edge_logs` (REST
+  and auth through the gateway, with the user agent), `postgres_logs`, `auth_logs`,
+  `storage_logs`, `pgbouncer_logs`. Token: `security find-generic-password -s "Supabase CLI" -w`
+  (strip `go-keyring-base64:` and base64-decode if it isn't `sbp_…`). Read-only.
+- Remember: "the request never arrived" is provable — no `function_edge_logs` line and no row
+  written. Check that before blaming the server for an app-side failure.
+
+## 2026-10-02 — keyboard bugs can't be seen on this simulator; simulate the keyboard instead
+- What didn't work: reproducing "the first tap only closes the keyboard" and "the note box is
+  under the keyboard" on the simulator. With the Mac's keyboard attached it shows no on-screen
+  keyboard and React Native receives no keyboard events, so neither bug can happen there (the thin
+  shortcut bar seen earlier did not appear this time). Connecting to the dev debugger failed
+  twice: Node's built-in WebSocket sends no Origin, and `ws` ignored `headers: { Origin }` — Metro
+  logged origin 'undefined' and closed the socket.
+- What worked: `ws` with `{ origin: "http://127.0.0.1:8081" }` to the `webSocketDebuggerUrl`
+  from `http://localhost:8081/json/list`, then `Runtime.evaluate`. Find modules by path with
+  `__r.getModules()` (each has `verboseName`), then on `RCTDeviceEventEmitter` emit
+  `keyboardWillShow` and `keyboardDidShow` with `{ endCoordinates: { screenX, screenY, width,
+  height } }`. JavaScript then treats the keyboard as open at that height, which is enough to
+  test tap persistence and scroll-into-view. A control run with the fix removed showed the same
+  tap swallowed, proving the setup reproduces the bug.
+- Also learned: `keyboardShouldPersistTaps` belongs to each scroll view. Set on Home's page
+  alone, a card in the horizontal recent-saves rail was still swallowed, because the inner scroll
+  view captures the touch first. Every scroll view between the tap and the screen needs it.
+- Remember: the native half (`automaticallyAdjustKeyboardInsets`) never sees a simulated
+  keyboard, so a phone check is still owed for anything native. The debugger evaluates code in
+  the app signed into Pranav's real account: inspect and emit events only, never call app
+  functions that write.
