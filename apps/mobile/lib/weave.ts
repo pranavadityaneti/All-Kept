@@ -232,6 +232,25 @@ export function shiftMix(profile: WeaveProfile, kind: WeaveKind, direction: "mor
   return { ...profile, mix: mix.map((m) => ({ ...m, share: Math.round((m.share / total) * 1000) / 1000 })) };
 }
 
+/**
+ * A night moved into or out of a place, taken from or given to the biggest other place, so the
+ * nights always add up to the days the plan is made for. Null when the move can't be made: a
+ * place can't go below a night, and with one place the nights are simply the days.
+ */
+export function moveNight(nights: { town: string; nights: number }[], town: string, delta: 1 | -1): { town: string; nights: number }[] | null {
+  const self = nights.find((n) => n.town === town);
+  if (!self || (delta === -1 && self.nights <= 1)) return null;
+  const others = nights.filter((n) => n.town !== town && (delta === -1 || n.nights > 1));
+  if (others.length === 0) return null;
+  const other = others.reduce((a, b) => (b.nights > a.nights ? b : a));
+  return nights.map((n) => (n.town === town ? { ...n, nights: n.nights + delta } : n.town === other.town ? { ...n, nights: n.nights - delta } : n));
+}
+
+/** The days a plan starts at: a week, or a day for every place when there are more, never past the longest plan. */
+export const defaultDays = (places: number): number => Math.min(MAX_PLAN_DAYS, Math.max(7, places));
+/** The lengths offered at a tap; anything else is set with the stepper. */
+export const DAY_CHOICES = [5, 7, 10, 12] as const;
+
 /** A town's nights moved by one, never below one. */
 export function setNights(nights: { town: string; nights: number }[], town: string, delta: number): { town: string; nights: number }[] {
   return nights.map((n) => (n.town === town ? { ...n, nights: Math.max(1, n.nights + delta) } : n));

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { briefLine, crowdLine, foldPlaces, pickSummary, planText, shiftMix, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
+import { briefLine, crowdLine, defaultDays, foldPlaces, moveNight, pickSummary, planText, shiftMix, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -22,6 +22,28 @@ describe("editing what the saves say", () => {
     expect(splitDays(7, profile.towns)).toEqual([{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }]);
     expect(splitDays(2, [{ name: "A", nights: 5 }, { name: "B", nights: 1 }, { name: "C", nights: 1 }]).reduce((a, n) => a + n.nights, 0)).toBe(3);
     expect(splitDays(3, [])).toEqual([]);
+  });
+});
+
+describe("how long, and the nights in each place", () => {
+  it("moves a night from or to the biggest other place, so the nights always add up to the days", () => {
+    const n = [{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }];
+    expect(moveNight(n, "Busan", 1)).toEqual([{ town: "Seoul", nights: 4 }, { town: "Busan", nights: 3 }]);
+    expect(moveNight(n, "Busan", -1)).toEqual([{ town: "Seoul", nights: 6 }, { town: "Busan", nights: 1 }]);
+    expect(moveNight([{ town: "A", nights: 3 }, { town: "B", nights: 2 }, { town: "C", nights: 2 }], "C", 1)).toEqual([{ town: "A", nights: 2 }, { town: "B", nights: 2 }, { town: "C", nights: 3 }]);
+  });
+
+  it("refuses a move that would leave a place without a night, or that has nowhere to go", () => {
+    expect(moveNight([{ town: "Seoul", nights: 6 }, { town: "Busan", nights: 1 }], "Busan", -1)).toBeNull();
+    expect(moveNight([{ town: "Seoul", nights: 6 }, { town: "Busan", nights: 1 }], "Seoul", 1)).toBeNull();
+    expect(moveNight([{ town: "Seoul", nights: 7 }], "Seoul", 1)).toBeNull();
+    expect(moveNight([{ town: "Seoul", nights: 7 }], "Seoul", -1)).toBeNull();
+  });
+
+  it("starts a plan at a week, or at a day for every place when there are more, never past the longest", () => {
+    expect(defaultDays(2)).toBe(7);
+    expect(defaultDays(9)).toBe(9);
+    expect(defaultDays(30)).toBe(21);
   });
 });
 

@@ -17,7 +17,7 @@ import { track } from "../../lib/metrics";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
-import { foldPlaces, KIND_LABEL, markPlanAsked, percent, pickSummary, runningFor, setNights, shiftMix, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
+import { DAY_CHOICES, defaultDays, foldPlaces, KIND_LABEL, markPlanAsked, MAX_PLAN_DAYS, moveNight, percent, pickSummary, runningFor, shiftMix, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -74,6 +74,23 @@ export default function Weave() {
   const base = stage.kind === "profiled" ? stage.profile : record.data?.profile ?? null;
   const profile = draft && draft.weaveId === weaveId ? draft.profile : base;
   const edit = (next: WeaveProfile) => { if (weaveId) setDraft({ weaveId, profile: next }); };
+  // How long, and the nights in each place: what the plan is sent, exactly as shown. A trip made
+  // before starts from what it was made with; a new one at a week, split as the saves are.
+  const [shape, setShape] = useState<{ weaveId: string; days: number; nights: { town: string; nights: number }[] } | null>(null);
+  const [otherDays, setOtherDays] = useState(false);
+  const madeWith = record.data?.brief && record.data.brief.nights.length > 0 ? record.data.brief : null;
+  const startDays = madeWith?.days ?? defaultDays(profile?.towns.length ?? 0);
+  const ownShape = shape && shape.weaveId === weaveId ? shape : null;
+  const days = ownShape?.days ?? startDays;
+  const nights = ownShape?.nights ?? madeWith?.nights ?? splitDays(startDays, profile?.towns ?? []);
+  const minDays = Math.max(1, nights.length);
+  // A new length keeps the person's proportions between places, whole and summing to the days.
+  const setLength = (next: number) => {
+    if (!weaveId) return;
+    const d = Math.max(minDays, Math.min(MAX_PLAN_DAYS, next));
+    setShape({ weaveId, days: d, nights: splitDays(d, nights.map((n) => ({ name: n.town, nights: n.nights }))) });
+  };
+  const move = (town: string, delta: 1 | -1) => { const next = moveNight(nights, town, delta); if (next && weaveId) setShape({ weaveId, days, nights: next }); };
   // A read counted once, when it is seen to finish here — not again each time the trip is reopened.
   const watched = useRef(false);
   const savesRead = stage.kind === "profiled" ? stage.saves : 0;
@@ -101,19 +118,19 @@ export default function Weave() {
       router.setParams({ weaveId: started.weaveId });
     } catch (e) { refuse(e, "Couldn't start reading your saves", () => { void read(names, count); }); } finally { setBusy(false); }
   };
-  const make = async (days: number) => {
+  const make = async () => {
     if (!weaveId || !profile) return;
     setBusy(true); setError(null);
     try {
       // The server answers at once and weaves on; the plan screen is drawn from the row.
-      await weavePlan(weaveId, profile, { days, nights: splitDays(days, profile.towns) });
+      await weavePlan(weaveId, profile, { days, nights });
       markPlanAsked(weaveId);
       void queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
       void queryClient.invalidateQueries({ queryKey: tripsKey });
       track(userId, "weave_plan", { days });
       // Pushed, not replaced: Back from the plan comes back here, to the profile as it was.
       router.push({ pathname: "/weave/plan", params: { weaveId } });
-    } catch (e) { refuse(e, "Couldn't start the plan", () => { void make(days); }); } finally { setBusy(false); }
+    } catch (e) { refuse(e, "Couldn't start the plan", () => { void make(); }); } finally { setBusy(false); }
   };
   const customise = () => {
     if (!weaveId || !profile) return;
@@ -132,6 +149,8 @@ export default function Weave() {
   const picking = !weaveId && !hub && !(trips.isPending && !trips.isError && !choosing);
 
   const reading = busy && !weaveId ? true : stage.kind === "reading";
+  // The trip is being shaped: read, and not being planned this moment.
+  const shaping = !!weaveId && !!profile && stage.kind !== "reading" && stage.kind !== "planning" && stage.kind !== "loading" && stage.kind !== "missing" && !(stage.kind === "failed" && stage.during === "read");
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
@@ -227,7 +246,7 @@ export default function Weave() {
         {weaveId && stage.kind === "failed" && stage.during === "plan" && (
           <InlineMessage title="The last plan couldn't be made" body={`${stage.message} Change what you like below and make it again.`} />
         )}
-        {weaveId && profile && stage.kind !== "reading" && stage.kind !== "planning" && !(stage.kind === "failed" && stage.during === "read") && (
+        {shaping && profile && (
           <>
             <Card>
               <Text style={[type.heading, { color: p.ink }]}>What your saves say</Text>
@@ -243,24 +262,41 @@ export default function Weave() {
               {profile.must.length > 0 && <Text style={[type.label, { color: p.inkMuted }]}>{profile.must.length} {profile.must.length === 1 ? "save you clearly mean" : "saves you clearly mean"} — they'll be in.</Text>}
             </Card>
             <Card>
-              <Text style={[type.heading, { color: p.ink }]}>Nights</Text>
-              {profile.towns.map((t) => (
-                <View key={t.name} style={styles.row}>
-                  <Text style={[type.body, styles.grow, { color: p.ink }]}>{t.name} <Text style={{ color: p.inkMuted }}>{t.saves} saves · {t.nights} {t.nights === 1 ? "night" : "nights"}</Text></Text>
-                  <IconButton name="minus" label={`Fewer nights in ${t.name}`} size={32} tone="plain" onPress={() => edit({ ...profile, towns: setNights(profile.towns.map((x) => ({ town: x.name, nights: x.nights })), t.name, -1).map((n, i) => ({ ...profile.towns[i]!, nights: n.nights })) })} />
-                  <IconButton name="plus" label={`More nights in ${t.name}`} size={32} tone="plain" onPress={() => edit({ ...profile, towns: setNights(profile.towns.map((x) => ({ town: x.name, nights: x.nights })), t.name, 1).map((n, i) => ({ ...profile.towns[i]!, nights: n.nights })) })} />
+              <Text style={[type.heading, { color: p.ink }]}>How long</Text>
+              <View style={styles.wrap}>
+                {DAY_CHOICES.filter((d) => d >= minDays).map((d) => (
+                  <Chip key={d} label={days === d && !otherDays ? `${d} days` : `${d}`} selected={days === d && !otherDays} onPress={() => { setOtherDays(false); setLength(d); }} accessibilityLabel={`${d} days`} />
+                ))}
+                <Chip label="Other…" selected={otherDays || !(DAY_CHOICES as readonly number[]).includes(days)} onPress={() => setOtherDays(true)} accessibilityLabel="Another number of days" />
+              </View>
+              {(otherDays || !(DAY_CHOICES as readonly number[]).includes(days)) && (
+                <View style={styles.row}>
+                  <Text style={[type.body, styles.grow, { color: p.ink }]}>{days} {days === 1 ? "day" : "days"}</Text>
+                  <IconButton name="minus" label="A day fewer" size={32} tone="plain" disabled={days <= minDays} onPress={() => setLength(days - 1)} />
+                  <IconButton name="plus" label="A day more" size={32} tone="plain" disabled={days >= MAX_PLAN_DAYS} onPress={() => setLength(days + 1)} />
+                </View>
+              )}
+              {nights.map((n) => (
+                <View key={n.town} style={styles.row}>
+                  <Text style={[type.body, styles.grow, { color: p.ink }]}>{n.town} <Text style={{ color: p.inkMuted }}>{n.nights} {n.nights === 1 ? "night" : "nights"}</Text></Text>
+                  <IconButton name="minus" label={`A night fewer in ${n.town}`} size={32} tone="plain" disabled={!moveNight(nights, n.town, -1)} onPress={() => move(n.town, -1)} />
+                  <IconButton name="plus" label={`A night more in ${n.town}`} size={32} tone="plain" disabled={!moveNight(nights, n.town, 1)} onPress={() => move(n.town, 1)} />
                 </View>
               ))}
-              <Text style={[type.label, { color: p.inkMuted }]}>In proportion to what you saved. A 7- or 12-day plan splits its days the same way.</Text>
+              <Text style={[type.label, { color: p.inkMuted }]}>The nights always add up to the {days} {days === 1 ? "day" : "days"} — exactly what the plan uses.</Text>
             </Card>
-            <Button label="Make a 7-day plan" busy={busy} onPress={() => { void make(7); }} />
-            <Button label="Make a 12-day plan" variant="secondary" disabled={busy} onPress={() => { void make(12); }} />
             <Button label="Customise…" variant="secondary" disabled={busy} onPress={customise} />
           </>
         )}
         {error && <InlineMessage title={error.title} body={error.message} actions={[{ label: "Try again", busy, onPress: () => { const again = error.retry; setError(null); again(); } }]} />}
       </ScrollView>
       {hub && <ActionBar><Button label="Plan a new trip" onPress={() => setChoosing(true)} /></ActionBar>}
+      {shaping && (
+        <ActionBar>
+          <Button label={stage.kind === "planned" ? `Remake as a ${days}-day plan` : `Make my ${days}-day plan`} busy={busy} onPress={() => { void make(); }} />
+          <Text style={[type.label, styles.centeredText, { color: p.inkMuted }]}>{stage.kind === "planned" ? "Replaces the plan this trip has. " : ""}Takes 2–5 minutes. You can leave.</Text>
+        </ActionBar>
+      )}
       {picking && !reading && places.length > 0 && (
         <ActionBar>
           <View style={styles.summaryRow}>
@@ -303,6 +339,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
   summaryRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.sm },
   summary: { ...font("600") },
+  centeredText: { textAlign: "center" },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   centered: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
   row: { flexDirection: "row", alignItems: "center", gap: space.xs },
