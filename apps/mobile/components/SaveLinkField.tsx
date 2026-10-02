@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Keyboard, LayoutAnimation, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { LIMITS, type SaveLinkResponse } from "@allkept/contracts";
@@ -30,8 +30,11 @@ const slide = () => LayoutAnimation.configureNext(LayoutAnimation.Presets.easeIn
  * Paste a link and keep it, without leaving the screen you are on — with a note, if you like. The
  * note field appears once the field holds a link, and the note travels with the save rather than
  * being patched on afterwards, so the sorter reads it when it files the link.
+ *
+ * `keepInView` is the screen's way to bring a field clear of the keyboard. The note field needs it:
+ * it appears below the link while the keyboard is already up, where nothing else would move it.
  */
-export function SaveLinkField() {
+export function SaveLinkField({ keepInView }: { keepInView?: (field: TextInput) => void }) {
   const p = usePalette();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -39,6 +42,7 @@ export function SaveLinkField() {
   // here, never written back. Written back, it raced the heavier render that mounts the note field
   // the moment the text becomes a link, and fast typing lost every character after that point.
   const linkField = useRef<TextInput>(null);
+  const noteField = useRef<TextInput>(null);
   const [text, setText] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -52,6 +56,18 @@ export function SaveLinkField() {
     const t = setTimeout(() => setSaid(null), CLEARS_AFTER_MS[said.tone]);
     return () => clearTimeout(t);
   }, [said]);
+
+  // While this box is being typed in, the note field is kept clear of the keyboard: when it appears
+  // or grows (its layout changes), and when the keyboard opens or changes size.
+  const keepNoteInView = useCallback(() => {
+    const field = noteField.current;
+    if (!keepInView || !field || !Keyboard.isVisible()) return;
+    if (linkField.current?.isFocused() || field.isFocused()) keepInView(field);
+  }, [keepInView]);
+  useEffect(() => {
+    const opened = Keyboard.addListener("keyboardDidShow", keepNoteInView);
+    return () => opened.remove();
+  }, [keepNoteInView]);
 
   // Keyed on the link and the note together: an unchanged retry reuses its id and is still one
   // save; a retry with a different note is a new ask, and on an already-kept link that note is added.
@@ -136,6 +152,8 @@ export function SaveLinkField() {
       </View>
       {isLink && (
         <TextInput
+          ref={noteField}
+          onLayout={keepNoteInView}
           accessibilityLabel="A note to keep with this link"
           value={note}
           onChangeText={setNote}

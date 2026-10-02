@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Dimensions, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useRef, useState } from "react";
+import { Dimensions, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -95,6 +95,25 @@ export default function Home() {
     void Promise.allSettled([recent.refetch(), facets.refetch()]).then(() => setPulled(false));
   };
 
+  // The page lifts the field being typed in when the keyboard opens, but not a field that appears
+  // below it afterwards: the paste box's note field slides in under the link with the keyboard
+  // already up, and grows as a note wraps. This brings such a field clear of the keyboard with a
+  // little air under it, and only when it is actually covered, so a page the person has placed stays put.
+  const page = useRef<ScrollView>(null);
+  const keepInView = useCallback((field: TextInput) => {
+    const keyboard = Keyboard.metrics();
+    if (!keyboard) return;
+    field.measureInWindow((_x, top, _width, height) => {
+      if (top + height + space.md <= keyboard.screenY) return;
+      const scroller = page.current;
+      if (!scroller) return;
+      scroller.getNativeScrollRef()?.measureInWindow((_px, pageTop) => {
+        // React Native reckons this scroll from the top of the screen; Home's page starts under its header.
+        scroller.scrollResponderScrollNativeHandleToKeyboard(field, pageTop + space.md, true);
+      });
+    });
+  }, []);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <ScreenHeader>
@@ -103,10 +122,13 @@ export default function Home() {
       </ScreenHeader>
 
       <ScrollView
+        ref={page}
         contentContainerStyle={styles.page}
         // A tap while the keyboard is up does what it was aimed at. At the default, the first tap only
         // closed the keyboard, so the paste box's tick, a card or a pill each took two.
         keyboardShouldPersistTaps="handled"
+        // iPhone: room under the page for the keyboard, so what it covers can be scrolled clear of it.
+        automaticallyAdjustKeyboardInsets
         refreshControl={<RefreshControl refreshing={pulled} onRefresh={onRefresh} tintColor={p.inkMuted} />}
       >
 
@@ -159,7 +181,7 @@ export default function Home() {
 
 
         <View style={styles.standing}>
-          <SaveLinkField />
+          <SaveLinkField keepInView={keepInView} />
           <SavesStanding userId={userId} />
         </View>
 
