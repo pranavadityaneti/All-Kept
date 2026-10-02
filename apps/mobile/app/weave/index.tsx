@@ -268,7 +268,7 @@ export default function Weave() {
           <>
             <Card>
               <Text style={[type.heading, { color: p.ink }]}>What your saves say</Text>
-              {stage.kind === "profiled" && stage.saves > 0 ? <Text style={[type.label, { color: p.inkMuted }]}>{stage.saves} saves read</Text> : null}
+              {stage.kind === "profiled" && stage.saves > 0 ? <Text style={[type.label, { color: p.inkMuted }]}>{stage.saves} {stage.saves === 1 ? "save" : "saves"} read</Text> : null}
               {profile.style ? <Text style={[type.body, { color: p.ink }]}>“{profile.style}”</Text> : null}
               {profile.must.length > 0 && (
                 <View style={styles.mustRow}>
