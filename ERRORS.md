@@ -319,3 +319,28 @@ again — which also explains why my later taps to restore the interests switch 
   does not reference the API (`grep -rl CoreMotion node_modules/<pkg>/ios`). The upload's
   verdict arrives by mail an hour or more after "submitted", so "submission queued" is not
   "on TestFlight" — check the mail before saying it is. Native change → new build, not an OTA.
+
+## 2026-10-02 — a note field on the paste box: four faults behind "the note didn't save"
+- **Dropped keystrokes (real, fixed):** the link field was controlled (`value={text}`). Mounting the
+  note field the moment the text became a link made that render heavy enough to open React
+  Native's controlled-input race: the app wrote back a slightly old copy and every character typed
+  after that point was lost. Proved against a baseline — the original field kept all 43 characters
+  of a fast-typed link, mine kept 23. Fix: the link field is uncontrolled (a ref, `.clear()` after a
+  save); the race cannot happen when nothing is written back.
+- **Done raced the last keystrokes (real, fixed):** a note saved on the keyboard's Done read the
+  app's stored copy, which lagged the box by the last few characters ("go after 7pm" stored as
+  "go after"). Fix: each Done hands `save()` its own `e.nativeEvent.text` — the text actually there.
+- **One-tap save (real, fixed):** with a text box focused, Home's scroll view (default
+  `keyboardShouldPersistTaps="never"`) keeps the first tap on a non-text target, so the tick only
+  closed the keyboard. The multiline note box had no Done, so saving a note took two taps. Fix:
+  `returnKeyType="done"` + `submitBehavior="blurAndSubmit"` + `onSubmitEditing` on the note box.
+  The tick's double tap is pre-existing for the link field too; changing Home is Pranav's call.
+- **Two false trails (instrument and harness, not the app):** (1) `console.log` lines stopped
+  reaching the Metro log partway through, so "zero change events" was the instrument failing — the
+  database showed the note arriving. (2) The simulator's `text` action types in milliseconds, and a
+  tap sent straight after it can land before the app has processed the keystrokes, or mid-animation
+  where the new box isn't yet. Pause ~2 s after injected typing before tapping.
+- **Remember:** judge app behaviour by the database, not by logs alone; when a debug log says
+  nothing happened, prove the log works in that run first. Compare against the original component
+  as a baseline before blaming either. A control on a known-working field (ItemDetail's note) is
+  what separated harness from app here.
