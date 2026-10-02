@@ -1814,3 +1814,29 @@ categories.
   carries `145191f` (Customise's dates), `efd5b94` (sheets above the keyboard) and `1ce20a8` (the
   shared `Screen` layout). `1ce20a8` and `abf037d` were not yet pushed when it shipped; the push
   is Pranav's (the session's automatic check refuses mine).
+
+## 2026-10-02 (evening) — the Plan a trip redesign, built; a notification strategy commissioned
+
+- **Asked:** "Go ahead and execute the plan redesign" (the audit's S0–S7). Paused once ("Stop the
+  execution now"), resumed ("Continue"). Built, each step its own commit, each checked on the
+  simulator without spending (trips faked in the app's memory, requests intercepted):
+  `2ff8203` honest no-answer copy · `46aec80` trips resume from their row (id in the address,
+  `useWeave`/`weaveStage`) · `4314ff1` Your trips (`TripList`, `ActionBar`, `useSavePictures`) ·
+  `c98ce38` one error layout (`InlineMessage`) · `8b06b39` Where is this trip? (ticks, More
+  places, pinned "Read 22 saves", the too-many-places warning — queue 57) · `0481a16` the reading
+  `JobCard` · `1da30da` the planning card, the trip screen knowing a plan is under way ·
+  `a87464b` How long (days 5·7·10·12·Other, nights that always add up, sent as shown) ·
+  `3e0b41c` the mix as Less · As saved · More with a live bar · `8209289` More options in place,
+  /weave/customise redirects there · `8ea5413` the plan page (day chips, timeline, StopCard with
+  the saves' pictures, dates in words, the suggested label in full, didn't-fit folded, Change and
+  remake) · `b7bd442`, `0587723` copy · `b9b0125` an audit fix (Try again sent stale choices).
+- **Incident:** a test tap started a real 7-day plan on Pranav's "Seoul & Tokyo" trip at 15:46 UTC.
+  The session restart had wiped the scratch folder, so the intercept never installed, and the tap
+  had been batched with it. The plan then failed on its own at the 240 s model limit (no usage
+  recorded) → ERRORS `15c275f`, queue 67.
+- **Notifications:** an Opus agent writing the strategy (sorting, re-engagement, trips, old saves,
+  understanding saves, interests) to `internal/superpowers/specs/2026-10-02-notification-strategy.html`;
+  stopped by the restart, resumed. Nothing built until Pranav and Claude agree it.
+- **Open:** Pranav's OK for the three shared-code steps (Maps travel mode in `lib/trips.ts`; the
+  map's Plan a trip entry; Chip's label); push + OTA on his Yes; the four test saves; the app-wide
+  audit steps; queue 63, 65, 67.

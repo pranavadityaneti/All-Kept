@@ -371,17 +371,17 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-09-16
 - **Originated from:** 16 Sep 2026 — stage C's decisions.
 
-### 56. "1 saves", "1 nights" on the Weave profile screen
+### 56. "1 saves", "1 nights" on the Weave profile screen — DONE 2 Oct 2026
 - **What + why:** The Nights card says "Daejeon 1 saves · 1 night" — the saves count is never singular. One word; seen on the first live run.
 - **Scope:** `apps/mobile/app/weave/index.tsx`, the Nights rows; a look for the same pattern on the towns chips.
-- **Status:** queued
+- **Status:** done — `0587723` ("1 save read"); the Nights card that said "1 saves" was replaced by How long (`a87464b`).
 - **Date added:** 2026-09-17
 - **Originated from:** 17 Sep 2026 — the first live Weave run on the seeded pile.
 
-### 57. More towns picked than the plan has days
+### 57. More towns picked than the plan has days — DONE 2 Oct 2026
 - **What + why:** Narrowed on 28 Sep: the pre-ticking that caused this is gone (`78c3b4e`), so a person no longer arrives at twelve towns by default. The refusal still lands late, though — pick twelve towns yourself and the server's "7 days cannot be split among 12 towns" comes only after the saves have been read and paid for. Tell them before "Read my saves", or let a town drop out in Customise (nights never go below one today).
 - **Scope:** the towns stage (a line when the picked towns outnumber the shortest plan), or Customise (a town at zero nights drops out of the brief); `readBrief` already refuses the impossible split.
-- **Status:** queued
+- **Status:** done — the picker says so before anything is read ("8 places need at least 8 days…", `8b06b39`), holds the button past 21, and How long never offers fewer days than places (`a87464b`).
 - **Date added:** 2026-09-17
 - **Originated from:** 17 Sep 2026 — the first live Weave run, all twelve towns ticked.
 
@@ -423,7 +423,7 @@ Each item records: what + why · scope · status · date added · originated fro
 ### 64. UI polish and the Plan a trip redesign — the audit's 38-step plan, one step at a time
 - **What + why:** The Opus design-engineer audit (2 Oct) proposes a five-step Plan a trip journey (your trips with live status → where is this trip → honest waits that survive leaving → what your saves say, with Customise folded in → the plan) and app-wide fixes: a 12-tier type scale, one shared text field, dark-mode contrast, the Maps pill overflow, focus states and micro-interactions. It also lists functional bugs: Customise dates and times can't be typed on the number pad and bad values are dropped silently; the plan screen opened without an id waits forever; the nights buttons re-split; a town card repeats a place up to four times; day routes always drive.
 - **Scope:** `internal/superpowers/specs/2026-10-02-ui-polish-audit.html`, section 8 lists every step. Its step 0 (the read-failure investigation) is done: see item 63. Steps 1, 2, 8, 20 and 22 change shared pieces (Chip, `lib/trips.ts`, all text styles, the dark accent) and are flagged there. Step 38 deletes unused components and two orphan screens and needs an explicit yes. Folds in 56, 57 and 59 where they overlap.
-- **Status:** queued — each step for Pranav's approval.
+- **Status:** in progress — Plan a trip redesign built 2 Oct on Pranav's "Go ahead and execute the plan redesign": honest no-answer copy, trips resume from their row, Your trips, one error layout, Where is this trip?, JobCards for reading and planning, How long, the mix control, More options (Customise folded in), the plan page (`2ff8203`..`b9b0125`). Left of the redesign, each needing Pranav's OK because it touches shared code: Maps routes following Getting around (`lib/trips.ts`, shared with the map's trip bar), the Plan a trip entry on the map (`PlacesMap.tsx`, `library.tsx`), Chip passing its label when not pressable. Server steps (S1) not started. The app-wide steps (19–38) not started.
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — "Assign a Opus agent to be a UI/UX design engineer…"; report returned the same day.
 
@@ -440,3 +440,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** done — `1ce20a8` (Pranav: "Go ahead", 2 Oct). The playlist box itself sat at about 590–640pt, under a phone keyboard, not only the button. Phone check owed.
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — audit fix AW-07.
+
+### 67. A 7-day plan can outrun the plan call's time limit
+- **What + why:** Seen 2 Oct (an accidental real run on Pranav's "Seoul & Tokyo" trip, 7 days, full pace, transit): the plan model call (gpt-6-astra) was cut off at its 240 s limit — `AbortError: The signal has been aborted`, row failed about 245 s after it began, "Couldn't make the plan just now. Try again in a moment.", no usage recorded. With the worker's 400 s life there was no room for a second try, so a full week at full pace may simply not fit. Whether the provider billed the aborted call is unknown (our row says $0).
+- **Scope:** `supabase/functions/weave` (`PLAN_OPTIONS` timeout, `WORKER_LIFE_MS`, the attempt loop in `arrange`) and `_shared/weave/model.ts`. Options to weigh: stream the answer so a slow plan isn't cut off; a longer worker if the runtime allows; a smaller prompt or a plan woven a few days at a time. Measure first: how long the 28 Sep plan took, and how often plans fail this way. Function deploy only — no app build. Note the bundle rule: never deploy a function whose bundle includes the other session's uncommitted Gemini files.
+- **Status:** queued — needs investigation before a fix is proposed.
+- **Date added:** 2026-10-02
+- **Originated from:** 2 Oct 2026 — the redesign session's accidental real plan (ERRORS, same day).
