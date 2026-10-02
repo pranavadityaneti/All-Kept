@@ -405,3 +405,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued.
 - **Date added:** 2026-09-29
 - **Originated from:** 29 Sep 2026 — noticed while verifying the X embed.
+
+### 62. Long-press quick actions on a save card (Part 1 — parked, design agreed)
+- **What + why:** Pranav, 2 Oct: long-press a card to add a note, move it to another category, mark it done or set a reminder — without opening the post. Design agreed and written up; parked by Pranav on 2 Oct so Part 2 (a note with a pasted link) could ship first.
+- **Scope:** the full design is in `internal/superpowers/specs/2026-10-02-save-quick-actions-and-paste-note-design.md`, Part 1 — Apple's native `Link.Menu` on iPhone (already in build 34, so OTA) and a bottom sheet on Android; note / move ▸ / done / remind ▸; tap unchanged; wraps the shared `ItemCard` / `ItemRow`, does not touch `ItemDetail`. The Android sheet needs a one-time emulator setup before it can be seen.
+- **Status:** parked
+- **Date added:** 2026-10-02
+- **Originated from:** 2 Oct 2026 — Pranav's request for quick actions; "Park Part 1 for later, and execute part 2".
