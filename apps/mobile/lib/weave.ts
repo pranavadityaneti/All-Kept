@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { WEAVE_KINDS } from "@allkept/contracts";
@@ -6,7 +5,7 @@ import { hoursLine, type OpeningPeriod } from "./hours";
 import { serverSaid } from "./function-error";
 import { httpStatus } from "./paywall";
 import { supabase } from "./supabase";
-import { dayValue } from "./when";
+import { dayValue, describeDay, describeTime, timeValue } from "./when";
 
 export type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile };
 export { WEAVE_KINDS };
@@ -96,6 +95,59 @@ export function useWeave(weaveId: string | null) {
   });
 }
 
+/**
+ * A trip as Your trips lists it: light columns only — the days from its brief, and one of its saves
+ * to picture it by (the first the read counted towards its biggest kind) — never the plan itself.
+ */
+export interface TripSummary {
+  id: string; status: WeaveRecord["status"]; towns: string[] | null; days: number | null; message: string | null;
+  createdAt: string; updatedAt: string; pictureId: string | null;
+}
+export const tripsKey = ["weave-trips"] as const;
+async function readTrips(): Promise<TripSummary[]> {
+  const { data, error } = await supabase.from("weaves")
+    .select("id,status,towns,days:brief->days,message,created_at,updated_at,picture:profile->mix->0->evidence->>0")
+    .order("created_at", { ascending: false }).limit(30);
+  if (error) throw new WeaveRefused("internal", error.message);
+  return (data ?? []).map((r) => {
+    const row = r as { id: string; status: WeaveRecord["status"]; towns: string[] | null; days: unknown; message: string | null; created_at: string; updated_at: string; picture: string | null };
+    return { id: row.id, status: row.status, towns: row.towns, days: typeof row.days === "number" ? row.days : null, message: row.message, createdAt: row.created_at, updatedAt: row.updated_at, pictureId: row.picture };
+  });
+}
+const live = (t: Pick<TripSummary, "status" | "updatedAt">, now: number) => (t.status === "reading" || t.status === "planning") && now - Date.parse(t.updatedAt) <= STALE_MS;
+/** The person's trips, newest first; looked at again while one of them is still being read or woven. */
+export function useTrips(enabled: boolean) {
+  return useQuery({ queryKey: tripsKey, queryFn: readTrips, enabled, refetchInterval: (query) => ((query.state.data ?? []).some((t) => live(t, Date.now())) ? 5000 : false) });
+}
+
+/** A trip named by its places, the way a person says them: "Seoul & Busan", "Seoul, Tokyo & 3 more". */
+export function tripTitle(towns: string[] | null): string {
+  if (!towns || towns.length === 0) return "Everywhere you've saved";
+  if (towns.length === 1) return towns[0]!;
+  if (towns.length <= 3) return `${towns.slice(0, -1).join(", ")} & ${towns[towns.length - 1]}`;
+  return `${towns.slice(0, 2).join(", ")} & ${towns.length - 2} more`;
+}
+
+/** "0:42", "12:05": how long a job has run. */
+export const runningFor = (ms: number): string => { const s = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+/** Where a trip is, in words with a tone — the words carry the state, so the colour is never the only sign. */
+export function tripStatus(t: Pick<TripSummary, "status" | "createdAt" | "updatedAt">, now: number): { tone: "accent" | "good" | "bad"; text: string } {
+  const stopped = { tone: "bad" as const, text: "Couldn't finish — tap to try again" };
+  if ((t.status === "reading" || t.status === "planning") && !live(t, now)) return stopped;
+  switch (t.status) {
+    case "reading": return { tone: "accent", text: `Reading your saves · ${runningFor(now - Date.parse(t.createdAt))}` };
+    case "profiled": return { tone: "accent", text: "Ready to plan" };
+    case "planning": return { tone: "accent", text: "Weaving your plan…" };
+    case "planned": {
+      const made = new Date(t.updatedAt);
+      const today = dayValue(made) === dayValue(new Date(now));
+      return { tone: "good", text: `Ready · made ${today ? `today, ${describeTime(timeValue(made))}` : describeDay(dayValue(made), new Date(now))}` };
+    }
+    default: return stopped;
+  }
+}
+
 /** Where a trip is, as a screen draws it. */
 export type WeaveStage =
   | { kind: "loading" } | { kind: "missing" }
@@ -125,22 +177,6 @@ export function weaveStage(record: WeaveRecord | null | undefined, now: number):
     case "planned": return { kind: "planned", planned: record.result as WeavePlanned };
     default: return { kind: "failed", during, message: record.message ?? "Something went wrong.", stalled: false };
   }
-}
-
-/** The last weave begun, kept on the phone for an hour so a plan begun and left is still reachable. */
-const LAST_KEY = "allkept.weave.last";
-const RECENT_MS = 60 * 60_000;
-export const rememberWeave = (weaveId: string): void => { AsyncStorage.setItem(LAST_KEY, JSON.stringify({ weaveId, at: Date.now() })).catch(() => undefined); };
-/** The remembered weave's id while it is recent; nothing for anything older, missing or malformed. */
-export function recentWeave(stored: string | null, now: number): string | null {
-  if (!stored) return null;
-  try {
-    const v = JSON.parse(stored) as { weaveId?: unknown; at?: unknown };
-    return typeof v.weaveId === "string" && typeof v.at === "number" && now - v.at <= RECENT_MS ? v.weaveId : null;
-  } catch { return null; }
-}
-export function useRecentWeave() {
-  return useQuery({ queryKey: ["weave-last"], queryFn: async () => recentWeave(await AsyncStorage.getItem(LAST_KEY).catch(() => null), Date.now()), staleTime: 0, gcTime: 0 });
 }
 
 /** More or less of a kind: its share moved by half, the rest folded back to one, nothing below a sliver. */

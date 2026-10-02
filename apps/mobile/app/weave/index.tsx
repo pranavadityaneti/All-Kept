@@ -3,15 +3,18 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ActionBar } from "../../components/ActionBar";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Chip } from "../../components/Chip";
 import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
+import { TripList } from "../../components/TripList";
 import { track } from "../../lib/metrics";
+import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { radius, space, type, usePalette } from "../../lib/theme";
-import { KIND_LABEL, percent, rememberWeave, setNights, shiftMix, splitDays, useRecentWeave, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type WeaveProfile } from "../../lib/weave";
+import { KIND_LABEL, percent, setNights, shiftMix, splitDays, tripsKey, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -34,7 +37,14 @@ export default function Weave() {
   const params = useLocalSearchParams<{ weaveId?: string }>();
   const weaveId = typeof params.weaveId === "string" && params.weaveId ? params.weaveId : null;
   const towns = useWeaveTowns(ready && !weaveId);
-  const recent = useRecentWeave();
+  // Your trips: every trip asked for, so none is lost; a new one is planned from here.
+  const trips = useTrips(ready && !weaveId);
+  const pictures = useSavePictures((trips.data ?? []).map((t) => t.pictureId));
+  const [choosing, setChoosing] = useState(false);
+  const running = (trips.data ?? []).some((t) => t.status === "reading" || t.status === "planning");
+  const [now, setNow] = useState(Date.now());
+  // A running trip shows how long it has run; the clock only ticks while one does.
+  useEffect(() => { if (!running) return; const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, [running]);
   const record = useWeave(weaveId);
   const stage = weaveStage(record.data, Date.now());
   // Nothing is ticked to begin with: saves in a town are what a person kept there, not a journey
@@ -68,6 +78,7 @@ export default function Weave() {
     try {
       const started = await weaveUnderstand(names);
       watched.current = true;
+      void queryClient.invalidateQueries({ queryKey: tripsKey });
       // From here the trip lives on its row: its id goes in the address, so leaving loses nothing.
       router.setParams({ weaveId: started.weaveId });
     } catch (e) { refuse(e); } finally { setBusy(false); }
@@ -79,7 +90,7 @@ export default function Weave() {
       // The server answers at once and weaves on; the plan screen is drawn from the row.
       await weavePlan(weaveId, profile, { days, nights: splitDays(days, profile.towns) });
       void queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
-      rememberWeave(weaveId);
+      void queryClient.invalidateQueries({ queryKey: tripsKey });
       track(userId, "weave_plan", { days });
       // Pushed, not replaced: Back from the plan comes back here, to the profile as it was.
       router.push({ pathname: "/weave/plan", params: { weaveId } });
@@ -90,26 +101,37 @@ export default function Weave() {
     queryClient.setQueryData(profileKey(weaveId), profile);
     router.push({ pathname: "/weave/customise", params: { weaveId } });
   };
-  const startOver = () => { setError(null); setPicked(new Set()); router.setParams({ weaveId: "" }); };
+  const startOver = () => { setError(null); setPicked(new Set()); setChoosing(true); router.setParams({ weaveId: "" }); };
+  // A trip opens where it is: the read and the profile on this screen, the plan on its own.
+  const openTrip = (t: TripSummary) => {
+    const planStage = t.status === "planning" || t.status === "planned" || (t.status === "failed" && t.days !== null);
+    router.push({ pathname: planStage ? "/weave/plan" : "/weave", params: { weaveId: t.id } });
+  };
+  const hub = !weaveId && !choosing && !busy && (trips.data?.length ?? 0) > 0;
+  const picking = !weaveId && !hub && !(trips.isPending && !trips.isError && !choosing);
 
   const reading = busy && !weaveId ? true : stage.kind === "reading";
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
-        <IconButton name="back" label="Back" onPress={() => router.back()} />
+        {/* Back from picking places for a new trip steps back to Your trips, one stage, not off the screen. */}
+        <IconButton name="back" label="Back" onPress={() => { if (choosing && !weaveId && (trips.data?.length ?? 0) > 0) setChoosing(false); else router.back(); }} />
         <Text style={[type.heading, styles.headerTitle, { color: p.ink }]}>Plan a trip</Text>
         <View style={styles.spacer} />
       </View>
       <ScrollView contentContainerStyle={styles.page}>
-        {!weaveId && !reading && (
+        {!weaveId && trips.isPending && !trips.isError && !choosing && <View style={styles.centered}><ActivityIndicator color={p.accent} /></View>}
+        {hub && (
           <>
-            {recent.data ? (
-              <Card>
-                <Text style={[type.heading, { color: p.ink }]}>A plan from earlier</Text>
-                <Text style={[type.label, { color: p.inkMuted }]}>Still weaving, or ready — open it to see.</Text>
-                <Button label="Open it" variant="secondary" onPress={() => router.push({ pathname: "/weave/plan", params: { weaveId: recent.data! } })} />
-              </Card>
-            ) : null}
+            <View style={styles.intro}>
+              <Text style={[type.section, { color: p.ink }]}>Your trips</Text>
+              <Text style={[type.label, { color: p.inkMuted }]}>Plans you've asked for. Nothing is planned until you ask.</Text>
+            </View>
+            <TripList trips={trips.data ?? []} pictures={pictures} now={now} onOpen={openTrip} />
+          </>
+        )}
+        {picking && !reading && (
+          <>
             <Text style={[type.body, { color: p.inkMuted }]}>Where are you going? Tick the towns this trip is for.</Text>
             {towns.isPending ? <ActivityIndicator color={p.accent} /> : towns.data && towns.data.towns.length === 0 ? (
               <Card><Text style={[type.body, { color: p.inkMuted }]}>No saves name a place yet. Save a few reels of cafés, sights and hotels, and come back once they are on the map.</Text></Card>
@@ -179,6 +201,7 @@ export default function Weave() {
         )}
         {error && <View style={[styles.error, { backgroundColor: p.surface, borderColor: p.border }]}><Icon name="help" size={18} color={p.bad} /><Text accessibilityRole="alert" style={[type.body, styles.grow, { color: p.bad }]}>{error}</Text></View>}
       </ScrollView>
+      {hub && <ActionBar><Button label="Plan a new trip" onPress={() => setChoosing(true)} /></ActionBar>}
     </SafeAreaView>
   );
 }
@@ -189,6 +212,7 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, textAlign: "center" },
   spacer: { width: 44 },
   page: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
+  intro: { gap: space.xs },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   centered: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
   row: { flexDirection: "row", alignItems: "center", gap: space.xs },

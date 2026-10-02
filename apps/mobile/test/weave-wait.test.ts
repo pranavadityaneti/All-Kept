@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-vi.mock("@react-native-async-storage/async-storage", () => ({ default: { getItem: async () => null, setItem: async () => undefined } }));
 vi.mock("../lib/supabase", () => ({ supabase: {} }));
 import type { WeaveProfile } from "@allkept/contracts";
-import { recentWeave, weaveStage, type WeaveRecord } from "../lib/weave";
+import { weaveStage, type WeaveRecord } from "../lib/weave";
 
 const NOW = Date.parse("2026-10-02T10:00:00Z");
 const at = (secondsAgo: number) => new Date(NOW - secondsAgo * 1000).toISOString();
@@ -44,16 +43,5 @@ describe("where a trip is, read from its row", () => {
     expect(weaveStage(row({ updatedAt: at(2 * 60) }), NOW)).toEqual({ kind: "failed", during: "read", message: "This stopped partway through. Nothing was planned; try again.", stalled: true });
     expect(weaveStage(row({ status: "planning", brief: { days: 7 } as never, updatedAt: at(2 * 60) }), NOW))
       .toEqual({ kind: "failed", during: "plan", message: "This stopped partway through. Nothing was planned; try again.", stalled: true });
-  });
-});
-
-describe("the last weave, remembered for an hour", () => {
-  it("is offered while it is recent, and forgotten after", () => {
-    const now = Date.parse("2026-09-17T10:00:00Z");
-    expect(recentWeave(JSON.stringify({ weaveId: "w1", at: now - 30 * 60_000 }), now)).toBe("w1");
-    expect(recentWeave(JSON.stringify({ weaveId: "w1", at: now - 61 * 60_000 }), now)).toBeNull();
-    expect(recentWeave(null, now)).toBeNull();
-    expect(recentWeave("not json", now)).toBeNull();
-    expect(recentWeave(JSON.stringify({ at: now }), now)).toBeNull();
   });
 });

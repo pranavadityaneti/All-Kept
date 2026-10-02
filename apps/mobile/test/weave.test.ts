@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { crowdLine, planText, shiftMix, splitDays, stopHours, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop } from "../lib/weave";
+import { crowdLine, planText, shiftMix, splitDays, stopHours, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -22,6 +22,34 @@ describe("editing what the saves say", () => {
     expect(splitDays(7, profile.towns)).toEqual([{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }]);
     expect(splitDays(2, [{ name: "A", nights: 5 }, { name: "B", nights: 1 }, { name: "C", nights: 1 }]).reduce((a, n) => a + n.nights, 0)).toBe(3);
     expect(splitDays(3, [])).toEqual([]);
+  });
+});
+
+describe("a trip as Your trips lists it", () => {
+  const now = new Date(2026, 9, 2, 15, 0).getTime();
+  const ago = (s: number) => new Date(now - s * 1000).toISOString();
+  const trip = (over: Partial<TripSummary>): TripSummary => ({ id: "t1", status: "profiled", towns: ["Seoul"], days: null, message: null, createdAt: ago(60), updatedAt: ago(5), pictureId: null, ...over });
+
+  it("is named by its places, the way a person says them", () => {
+    expect(tripTitle(["Seoul"])).toBe("Seoul");
+    expect(tripTitle(["Seoul", "Busan"])).toBe("Seoul & Busan");
+    expect(tripTitle(["Seoul", "Tokyo", "Kyoto"])).toBe("Seoul, Tokyo & Kyoto");
+    expect(tripTitle(["Seoul", "Tokyo", "Busan", "Osaka", "Kyoto"])).toBe("Seoul, Tokyo & 3 more");
+    expect(tripTitle(null)).toBe("Everywhere you've saved");
+  });
+
+  it("says where it is in words, never colour alone", () => {
+    expect(tripStatus(trip({ status: "reading", createdAt: ago(42) }), now)).toEqual({ tone: "accent", text: "Reading your saves · 0:42" });
+    expect(tripStatus(trip({ status: "profiled" }), now)).toEqual({ tone: "accent", text: "Ready to plan" });
+    expect(tripStatus(trip({ status: "planning", days: 7 }), now)).toEqual({ tone: "accent", text: "Weaving your plan…" });
+    expect(tripStatus(trip({ status: "planned", days: 7, updatedAt: new Date(2026, 9, 2, 9, 41).toISOString() }), now)).toEqual({ tone: "good", text: "Ready · made today, 9:41 am" });
+    expect(tripStatus(trip({ status: "planned", days: 7, updatedAt: new Date(2026, 8, 28, 9, 32).toISOString() }), now)).toEqual({ tone: "good", text: "Ready · made Mon 28 Sep" });
+    expect(tripStatus(trip({ status: "failed" }), now)).toEqual({ tone: "bad", text: "Couldn't finish — tap to try again" });
+  });
+
+  it("a job gone silent past the heartbeat reads as stopped, not running", () => {
+    expect(tripStatus(trip({ status: "reading", updatedAt: ago(5 * 60) }), now)).toEqual({ tone: "bad", text: "Couldn't finish — tap to try again" });
+    expect(tripStatus(trip({ status: "planning", days: 7, updatedAt: ago(5 * 60) }), now)).toEqual({ tone: "bad", text: "Couldn't finish — tap to try again" });
   });
 });
 
