@@ -1777,3 +1777,29 @@ categories.
   files, which are not in the bundle. The push of `1f72fa1..fe5bfca` (and this line) to
   `origin/claude/sorting-gemini-flash` was refused by the session's automatic check ("out-of-place
   publication") despite the Yes; not retried, left for Pranav to run himself.
+
+## 2026-10-02 (afternoon) — the audit's two broken things fixed: Customise's dates, sheets under the keyboard
+
+- **PT-02, Customise's dates (`145191f`):** the date and time boxes opened the iPhone number pad
+  (no "-" or ":"), and anything not typed exactly was dropped silently. They are now rows that open
+  the phone's own picker (a calendar with nothing before today; a time wheel; Android's dialogs),
+  read "Tue 6 Oct" / "2:00 pm", clear with ×, and carry the server's own formats, so nothing is
+  filtered out. "That start date has passed" and "On a one-day trip, leaving has to be after
+  arriving" are said, and they hold the button. New: `lib/when.ts` (formats, tested),
+  `whenProblem` in `lib/weave.ts` (tested), `lib/date-picker.ts` (RemindMe's guard, shared),
+  `components/WhenRow.tsx`. Verified on the simulator by loading the real profile of this
+  morning's read into the app's cache via the dev debugger (no paid read) and intercepting the
+  outgoing call when "Make the plan" was pressed. The request carried "startDate":"2026-10-06",
+  "arrival":"14:00", nothing was sent, and the weave row was untouched. Cache entry removed
+  afterwards.
+- **AW-07, sheets under the keyboard (`efd5b94`):** the Done, Add place and New category panels
+  rise with the keyboard (`KeyboardAvoidingView`, iPhone). Verified with the simulated keyboard:
+  each panel's bottom lands on the keyboard's top and drops back when it closes. A save's
+  details sheet and Customise now make room for the keyboard
+  (`automaticallyAdjustKeyboardInsets`); that is native, so it needs a phone check. `Screen.tsx`
+  (shared by the setup and save screens) was left out and queued as 66 for Pranav's yes.
+  RemindMe's own copy of the picker guard is queued as 65.
+- **Seen in passing:** a "Read my saves" for Seoul + Tokyo at 10:52 IST (Pranav's phone, it
+  seems) profiled in 22 s. Pranav pushed `425dc14..b8749bc` himself.
+- **Open:** push + OTA on Pranav's Yes; phone checks (the date picker, the sheets, the note and
+  Customise lifting above a real keyboard); 65, 66; the four test saves still to delete.

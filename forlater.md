@@ -426,3 +426,17 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** queued — each step for Pranav's approval.
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — "Assign a Opus agent to be a UI/UX design engineer…"; report returned the same day.
+
+### 65. RemindMe keeps its own copy of the date-picker check
+- **What + why:** The Customise date fix (`145191f`) added `lib/date-picker.ts`, the shared "is the native picker in this build?" check plus lazy load. `components/RemindMe.tsx` (Reminders) still has its own identical `pickerAvailable()` / `loadPicker()`, left alone because it belongs to another feature (rule 7). Two copies of one guard can drift.
+- **Scope:** `RemindMe.tsx` imports `loadDatePicker` from `lib/date-picker.ts` and drops its copy. Behaviour unchanged; check Reminders' "Pick a time…" on the simulator after.
+- **Status:** queued — needs Pranav's OK to touch Reminders.
+- **Date added:** 2026-10-02
+- **Originated from:** 2 Oct 2026 — audit fix PT-02.
+
+### 66. Room for the keyboard on the setup and save screens (the shared `Screen` wrapper)
+- **What + why:** The keyboard fix for sheets (`efd5b94`) left out `components/Screen.tsx`, the wrapper used by `save`, `auth-callback`, `setup/instagram` and `setup/youtube`, because it is shared (rule 7). On YouTube setup the playlist box sits under a card of steps, so with the keyboard up its "Connect playlist" button is likely behind the keyboard; the person has to close the keyboard to reach it.
+- **Scope:** one prop, `automaticallyAdjustKeyboardInsets`, on `Screen`'s ScrollView (iPhone). It has no effect on screens without a text box, since no keyboard ever opens there. Phone check on YouTube setup.
+- **Status:** awaiting Pranav's yes.
+- **Date added:** 2026-10-02
+- **Originated from:** 2 Oct 2026 — audit fix AW-07.
