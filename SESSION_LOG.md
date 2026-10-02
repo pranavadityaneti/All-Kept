@@ -1808,3 +1808,9 @@ categories.
   about 590–640pt, so a phone keyboard covered the box itself as well as Connect. Approved by
   Pranav ("Go ahead"). Pranav pushed `b8749bc..cd857e0`; `1ce20a8` and this line are unpushed. No
   OTA yet. Phone check owed.
+- **Shipped (2 Oct):** OTA to preview on Pranav's "Yes, ship the OTA". iOS group
+  `7f3671a4-aae9-4fa4-a2ab-ecf1bea9cf7c` on build 34's runtime `8f175b69…` (resolved before
+  publishing; the app tree was clean); Android group `2f48545f-f8b0-49c4-8285-643ab7014b53`. It
+  carries `145191f` (Customise's dates), `efd5b94` (sheets above the keyboard) and `1ce20a8` (the
+  shared `Screen` layout). `1ce20a8` and `abf037d` were not yet pushed when it shipped; the push
+  is Pranav's (the session's automatic check refuses mine).
