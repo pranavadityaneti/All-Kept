@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
-import { crowdLine, planText, shiftMix, splitDays, stopHours, type PlanStop } from "../lib/weave";
+import { crowdLine, planText, shiftMix, splitDays, stopHours, whenProblem, type PlanStop } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -21,6 +21,30 @@ describe("editing what the saves say", () => {
     expect(splitDays(7, profile.towns)).toEqual([{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }]);
     expect(splitDays(2, [{ name: "A", nights: 5 }, { name: "B", nights: 1 }, { name: "C", nights: 1 }]).reduce((a, n) => a + n.nights, 0)).toBe(3);
     expect(splitDays(3, [])).toEqual([]);
+  });
+});
+
+describe("dates the plan can use", () => {
+  const today = new Date(2026, 9, 2, 15, 0);
+  const brief = (over: Partial<{ days: number; startDate: string | null; arrival: string | null; departure: string | null }>) =>
+    ({ days: 3, startDate: null, arrival: null, departure: null, ...over });
+
+  it("takes nothing at all, or any day from today on", () => {
+    expect(whenProblem(brief({}), today)).toBeNull();
+    expect(whenProblem(brief({ startDate: "2026-10-02" }), today)).toBeNull();
+    expect(whenProblem(brief({ startDate: "2027-03-01", arrival: "06:00", departure: "23:00" }), today)).toBeNull();
+  });
+
+  it("says so when the start has passed, rather than planning around it", () => {
+    expect(whenProblem(brief({ startDate: "2026-10-01" }), today)).toBe("That start date has passed. Pick today or a day after.");
+  });
+
+  it("says so when a one-day trip leaves before it arrives", () => {
+    expect(whenProblem(brief({ days: 1, arrival: "14:00", departure: "13:00" }), today)).toBe("On a one-day trip, leaving has to be after arriving.");
+    expect(whenProblem(brief({ days: 1, arrival: "14:00", departure: "14:00" }), today)).toBe("On a one-day trip, leaving has to be after arriving.");
+    expect(whenProblem(brief({ days: 1, arrival: "09:00", departure: "18:00" }), today)).toBeNull();
+    // Arriving on the first day and leaving on another can be any two times.
+    expect(whenProblem(brief({ days: 2, arrival: "14:00", departure: "09:00" }), today)).toBeNull();
   });
 });
 

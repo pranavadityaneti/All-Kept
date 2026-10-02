@@ -6,6 +6,7 @@ import { hoursLine, type OpeningPeriod } from "./hours";
 import { serverSaid } from "./function-error";
 import { httpStatus } from "./paywall";
 import { supabase } from "./supabase";
+import { dayValue } from "./when";
 
 export type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile };
 export { WEAVE_KINDS };
@@ -133,6 +134,17 @@ export function shiftMix(profile: WeaveProfile, kind: WeaveKind, direction: "mor
 /** A town's nights moved by one, never below one. */
 export function setNights(nights: { town: string; nights: number }[], town: string, delta: number): { town: string; nights: number }[] {
   return nights.map((n) => (n.town === town ? { ...n, nights: Math.max(1, n.nights + delta) } : n));
+}
+
+/**
+ * What would make the dates unusable, said plainly; null when they can be planned. Said rather than
+ * dropped: a value the plan quietly ignores is a plan the person thinks used it.
+ */
+export function whenProblem(when: { days: number; startDate: string | null; arrival: string | null; departure: string | null }, now: Date): string | null {
+  if (when.startDate && when.startDate < dayValue(now)) return "That start date has passed. Pick today or a day after.";
+  // "HH:MM" strings compare as times do.
+  if (when.days === 1 && when.arrival && when.departure && when.departure <= when.arrival) return "On a one-day trip, leaving has to be after arriving.";
+  return null;
 }
 
 /** Days split among towns in proportion to the profile's nights, whole and at least one each, summing to the days. */

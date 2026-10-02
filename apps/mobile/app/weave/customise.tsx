@@ -7,10 +7,12 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Chip } from "../../components/Chip";
 import { IconButton } from "../../components/IconButton";
+import { WhenRow } from "../../components/WhenRow";
 import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { radius, space, type, usePalette } from "../../lib/theme";
-import { planKey, rememberWeave, setNights, splitDays, weavePlan, WeaveRefused, type WeaveBrief, type WeaveProfile } from "../../lib/weave";
+import { planKey, rememberWeave, setNights, splitDays, weavePlan, WeaveRefused, whenProblem, type WeaveBrief, type WeaveProfile } from "../../lib/weave";
+import { timeDate } from "../../lib/when";
 import { profileKey } from "./index";
 
 const GROUPS = [["solo", "Solo"], ["couple", "Couple"], ["family", "Family"], ["friends", "Friends"]] as const;
@@ -29,9 +31,11 @@ export default function Customise() {
   const profile = queryClient.getQueryData<WeaveProfile>(profileKey(weaveId ?? "")) ?? null;
   const [days, setDays] = useState(7);
   const [nights, setNightsState] = useState(() => splitDays(7, profile?.towns ?? []));
-  const [startDate, setStartDate] = useState("");
-  const [arrival, setArrival] = useState("");
-  const [departure, setDeparture] = useState("");
+  // Picked, never typed: each is in the server's own form or null, so nothing has to be filtered out on the way.
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [arrival, setArrival] = useState<string | null>(null);
+  const [departure, setDeparture] = useState<string | null>(null);
+  const [picking, setPicking] = useState<"start" | "arrival" | "departure" | null>(null);
   const [bases, setBases] = useState<Record<string, string>>({});
   const [group, setGroup] = useState<WeaveBrief["group"]>(profile?.group ?? null);
   const [pace, setPace] = useState<WeaveBrief["pace"]>("relaxed");
@@ -42,15 +46,20 @@ export default function Customise() {
   const [error, setError] = useState<string | null>(null);
   const changeDays = (next: number) => { const d = Math.max(1, Math.min(21, next)); setDays(d); setNightsState(splitDays(d, profile?.towns ?? [])); };
   const totalNights = nights.reduce((a, n) => a + n.nights, 0);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const problem = whenProblem({ days, startDate, arrival, departure }, now);
+  const pick = (row: "start" | "arrival" | "departure") => (open: boolean) => setPicking(open ? row : null);
 
   const make = async () => {
     if (!weaveId || !profile) return;
+    // A picker left open would go on changing a date after the plan was asked for with the old one.
+    setPicking(null);
     setBusy(true); setError(null);
     try {
       // The server answers at once and weaves on; the plan screen waits on the row.
       await weavePlan(weaveId, profile, {
-        days, nights, startDate: /^\d{4}-\d{2}-\d{2}$/.test(startDate.trim()) ? startDate.trim() : null,
-        arrival: arrival.trim() || null, departure: departure.trim() || null,
+        days, nights, startDate, arrival, departure,
         bases: Object.entries(bases).filter(([, name]) => name.trim()).map(([town, name]) => ({ town, name: name.trim() })),
         group, pace, transport, budget, note: note.trim() || null,
       });
@@ -63,10 +72,10 @@ export default function Customise() {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally { setBusy(false); }
   };
-  const field = (label: string, value: string, set: (v: string) => void, placeholder: string, inputMode: "text" | "numeric" = "text") => (
+  const field = (label: string, value: string, set: (v: string) => void, placeholder: string) => (
     <View style={styles.field}>
       <Text style={[type.label, { color: p.inkMuted }]}>{label}</Text>
-      <TextInput accessibilityLabel={label} value={value} onChangeText={set} placeholder={placeholder} placeholderTextColor={p.inkMuted} autoCapitalize="none" autoCorrect={false} inputMode={inputMode} editable={!busy}
+      <TextInput accessibilityLabel={label} value={value} onChangeText={set} placeholder={placeholder} placeholderTextColor={p.inkMuted} autoCapitalize="none" autoCorrect={false} editable={!busy}
         style={[type.body, { color: p.ink, backgroundColor: p.surface, padding: space.md, borderRadius: radius.md }]} />
     </View>
   );
@@ -87,9 +96,11 @@ export default function Customise() {
         <Card>
           <View style={styles.row}><Text style={[type.heading, styles.grow, { color: p.ink }]}>{days} {days === 1 ? "day" : "days"}</Text>
             <IconButton name="minus" label="A day fewer" size={32} tone="plain" onPress={() => changeDays(days - 1)} /><IconButton name="plus" label="A day more" size={32} tone="plain" onPress={() => changeDays(days + 1)} /></View>
-          {field("Starting on (YYYY-MM-DD)", startDate, setStartDate, "2026-10-06", "numeric")}
-          <View style={styles.pair}>{field("Arriving at (HH:MM)", arrival, setArrival, "14:30", "numeric")}{field("Leaving at (HH:MM)", departure, setDeparture, "18:00", "numeric")}</View>
+          <WhenRow label="Starting on" mode="date" value={startDate} onChange={setStartDate} open={picking === "start"} onOpen={pick("start")} opensAt={today} minimumDate={today} disabled={busy} />
+          <WhenRow label="Arriving at" mode="time" value={arrival} onChange={setArrival} open={picking === "arrival"} onOpen={pick("arrival")} opensAt={timeDate("14:00", now)} disabled={busy} />
+          <WhenRow label="Leaving at" mode="time" value={departure} onChange={setDeparture} open={picking === "departure"} onOpen={pick("departure")} opensAt={timeDate("18:00", now)} disabled={busy} />
           <Text style={[type.label, { color: p.inkMuted }]}>With the dates, the plan knows each place's hours that day, the public holidays, and what the weather is typically like.</Text>
+          {problem && <Text accessibilityRole="alert" style={[type.label, { color: p.bad }]}>{problem}</Text>}
         </Card>
         <Card>
           <Text style={[type.heading, { color: p.ink }]}>Nights {totalNights !== days ? <Text style={{ color: p.bad }}>· {totalNights} of {days}</Text> : null}</Text>
@@ -113,7 +124,7 @@ export default function Customise() {
           <View style={styles.wrap}>{BUDGETS.map(([k, label]) => <Chip key={k} label={label} selected={budget === k} onPress={() => setBudget(budget === k ? null : k)} />)}</View>
           {field("Anything else", note, setNote, "We land late on day one; keep the last day light…")}
         </Card>
-        <Button label="Make the plan" busy={busy} disabled={totalNights !== days} onPress={() => { void make(); }} />
+        <Button label="Make the plan" busy={busy} disabled={totalNights !== days || problem !== null} onPress={() => { void make(); }} />
         {busy && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Arranging your trip… this takes a minute or two.</Text></View>}
         {error && <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{error}</Text>}
       </ScrollView>
@@ -128,7 +139,6 @@ const styles = StyleSheet.create({
   spacer: { width: 44 },
   page: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
   row: { flexDirection: "row", alignItems: "center", gap: space.xs },
-  pair: { flexDirection: "row", gap: space.sm },
   field: { flex: 1, gap: space.xs },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   grow: { flex: 1 },
