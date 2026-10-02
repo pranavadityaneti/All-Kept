@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { crowdLine, planText, shiftMix, splitDays, stopHours, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
+import { crowdLine, foldPlaces, pickSummary, planText, shiftMix, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -22,6 +22,39 @@ describe("editing what the saves say", () => {
     expect(splitDays(7, profile.towns)).toEqual([{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }]);
     expect(splitDays(2, [{ name: "A", nights: 5 }, { name: "B", nights: 1 }, { name: "C", nights: 1 }]).reduce((a, n) => a + n.nights, 0)).toBe(3);
     expect(splitDays(3, [])).toEqual([]);
+  });
+});
+
+describe("picking the places for a trip", () => {
+  const towns = [
+    { name: "Seoul", saves: 15, placed: 9 }, { name: "Tokyo", saves: 12, placed: 8 }, { name: "Busan", saves: 7, placed: 4 },
+    { name: "Osaka", saves: 6, placed: 4 }, { name: "Kyoto", saves: 3, placed: 2 }, { name: "Weligama", saves: 2, placed: 1 },
+    { name: "Daejeon", saves: 1, placed: 1 }, { name: "Jaipur", saves: 1, placed: 0 }, { name: "Claremont", saves: 1, placed: 1 },
+  ];
+
+  it("keeps places with one save under More places once there are enough of the rest", () => {
+    const { main, more } = foldPlaces(towns);
+    expect(main.map((t) => t.name)).toEqual(["Seoul", "Tokyo", "Busan", "Osaka", "Kyoto", "Weligama"]);
+    expect(more.map((t) => t.name)).toEqual(["Daejeon", "Jaipur", "Claremont"]);
+  });
+
+  it("folds nothing when there are few places, or when nearly all of them have one save", () => {
+    expect(foldPlaces(towns.slice(0, 4)).more).toEqual([]);
+    const small = [{ name: "A", saves: 3, placed: 1 }, { name: "B", saves: 1, placed: 1 }, { name: "C", saves: 1, placed: 1 }, { name: "D", saves: 1, placed: 1 }, { name: "E", saves: 1, placed: 1 }, { name: "F", saves: 1, placed: 1 }, { name: "G", saves: 1, placed: 1 }];
+    expect(foldPlaces(small).more).toEqual([]);
+  });
+
+  it("sums what was picked into the line above the button", () => {
+    expect(pickSummary(towns, new Set())).toEqual({ saves: 0, line: "Pick at least one place" });
+    expect(pickSummary(towns, new Set(["Seoul"]))).toEqual({ saves: 15, line: "1 place · 15 saves" });
+    expect(pickSummary(towns, new Set(["Seoul", "Busan"]))).toEqual({ saves: 22, line: "2 places · 22 saves" });
+    expect(pickSummary(towns, new Set(["Daejeon"]))).toEqual({ saves: 1, line: "1 place · 1 save" });
+  });
+
+  it("warns, before anything is read, when the places outnumber the days a plan can give them", () => {
+    expect(tooManyPlaces(7)).toBeNull();
+    expect(tooManyPlaces(8)).toEqual({ blocking: false, text: "8 places need at least 8 days — every place gets a day or more. Pick fewer, or plan 8 days or longer." });
+    expect(tooManyPlaces(22)).toEqual({ blocking: true, text: "22 places is more than the longest plan (21 days) can visit. Pick 21 or fewer." });
   });
 });
 

@@ -120,6 +120,37 @@ export function useTrips(enabled: boolean) {
   return useQuery({ queryKey: tripsKey, queryFn: readTrips, enabled, refetchInterval: (query) => ((query.state.data ?? []).some((t) => live(t, Date.now())) ? 5000 : false) });
 }
 
+type Place = WeaveTowns["towns"][number];
+/**
+ * The places to pick from, with the ones holding a single save kept under "More places" — once
+ * there are more than six places and at least two with more saves, so a short list stays whole.
+ */
+export function foldPlaces(towns: Place[]): { main: Place[]; more: Place[] } {
+  const big = towns.filter((t) => t.saves > 1);
+  if (towns.length <= 6 || big.length < 2) return { main: towns, more: [] };
+  return { main: big, more: towns.filter((t) => t.saves <= 1) };
+}
+
+/** What was picked, summed for the line above the button: "2 places · 22 saves". */
+export function pickSummary(towns: Place[], picked: Set<string>): { saves: number; line: string } {
+  const chosen = towns.filter((t) => picked.has(t.name));
+  const saves = chosen.reduce((a, t) => a + t.saves, 0);
+  if (chosen.length === 0) return { saves: 0, line: "Pick at least one place" };
+  return { saves, line: `${chosen.length} ${chosen.length === 1 ? "place" : "places"} · ${saves} ${saves === 1 ? "save" : "saves"}` };
+}
+
+/** The longest plan the server makes, in days. */
+export const MAX_PLAN_DAYS = 21;
+/**
+ * Said before anything is read (and paid for): every place in a plan gets a day or more, so more
+ * places than days can't all be visited. Past the longest plan it can't be planned at all.
+ */
+export function tooManyPlaces(count: number): { blocking: boolean; text: string } | null {
+  if (count > MAX_PLAN_DAYS) return { blocking: true, text: `${count} places is more than the longest plan (${MAX_PLAN_DAYS} days) can visit. Pick ${MAX_PLAN_DAYS} or fewer.` };
+  if (count > 7) return { blocking: false, text: `${count} places need at least ${count} days — every place gets a day or more. Pick fewer, or plan ${count} days or longer.` };
+  return null;
+}
+
 /** A trip named by its places, the way a person says them: "Seoul & Busan", "Seoul, Tokyo & 3 more". */
 export function tripTitle(towns: string[] | null): string {
   if (!towns || towns.length === 0) return "Everywhere you've saved";

@@ -1,20 +1,21 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActionBar } from "../../components/ActionBar";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Chip } from "../../components/Chip";
+import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
 import { InlineMessage } from "../../components/InlineMessage";
 import { TripList } from "../../components/TripList";
 import { track } from "../../lib/metrics";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
-import { space, type, usePalette } from "../../lib/theme";
-import { KIND_LABEL, percent, setNights, shiftMix, splitDays, tripsKey, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile } from "../../lib/weave";
+import { font, space, type, usePalette } from "../../lib/theme";
+import { foldPlaces, KIND_LABEL, percent, pickSummary, setNights, shiftMix, splitDays, tooManyPlaces, tripsKey, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -56,7 +57,14 @@ export default function Weave() {
   const [busy, setBusy] = useState(false);
   // What failed, in its own words, with the one thing that most likely fixes it: the same step again.
   const [error, setError] = useState<{ title: string; message: string; retry: () => void } | null>(null);
-  const pickedSaves = towns.data?.towns.filter((t) => picked.has(t.name)).reduce((a, t) => a + t.saves, 0) ?? 0;
+  const places = towns.data?.towns ?? [];
+  const folded = foldPlaces(places);
+  const summary = pickSummary(places, picked);
+  const tooMany = tooManyPlaces(picked.size);
+  // Places with a single save wait under "More places"; opened by the person, and never hiding one they picked.
+  const [showMore, setShowMore] = useState(false);
+  const pickedInMore = folded.more.filter((t) => picked.has(t.name)).length;
+  const toggle = (name: string) => setPicked((s) => { const next = new Set(s); if (next.has(name)) next.delete(name); else next.add(name); return next; });
 
   const base = stage.kind === "profiled" ? stage.profile : record.data?.profile ?? null;
   const profile = draft && draft.weaveId === weaveId ? draft.profile : base;
@@ -133,25 +141,40 @@ export default function Weave() {
         )}
         {picking && !reading && (
           <>
-            <Text style={[type.body, { color: p.inkMuted }]}>Where are you going? Tick the towns this trip is for.</Text>
-            {towns.isPending ? <ActivityIndicator color={p.accent} /> : towns.data && towns.data.towns.length === 0 ? (
-              <Card><Text style={[type.body, { color: p.inkMuted }]}>No saves name a place yet. Save a few reels of cafés, sights and hotels, and come back once they are on the map.</Text></Card>
+            <View style={styles.intro}>
+              <Text style={[type.section, { color: p.ink }]}>Where is this trip?</Text>
+              <Text style={[type.label, { color: p.inkMuted }]}>Pick the places. Allkept reads what you saved there first — nothing is planned until you say so.</Text>
+            </View>
+            {towns.isPending ? <ActivityIndicator color={p.accent} /> : towns.isError ? (
+              <InlineMessage title="Couldn't load your places just now" body={towns.error.message} actions={[{ label: "Try again", onPress: () => { void towns.refetch(); } }]} />
+            ) : places.length === 0 ? (
+              <InlineMessage tone="info" title="No saves name a place yet" body="Save a few reels of cafés, sights and hotels, and come back once they're on the map." />
             ) : (
-              <View style={styles.wrap}>
-                {towns.data?.towns.map((t) => (
-                  <Chip key={t.name} label={`${t.name} ${t.saves}`} selected={picked.has(t.name)} onPress={() => setPicked((s) => { const next = new Set(s); if (next.has(t.name)) next.delete(t.name); else next.add(t.name); return next; })} accessibilityLabel={`${t.name}, ${t.saves} saves`} />
-                ))}
-              </View>
+              <>
+                <View style={styles.groupHead}>
+                  <Text style={[type.label, styles.overline, { color: p.inkMuted }]}>YOUR PLACES</Text>
+                  <Text style={[type.label, { color: p.inkMuted }]}>numbers are your saves</Text>
+                </View>
+                <View style={styles.wrap}>{folded.main.map((t) => <PlaceChip key={t.name} place={t} on={picked.has(t.name)} onPress={() => toggle(t.name)} />)}</View>
+                {folded.more.length > 0 && (
+                  <>
+                    <Pressable accessibilityRole="button" accessibilityState={{ expanded: showMore }} onPress={() => setShowMore((v) => !v)} style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}>
+                      <Text style={[type.body, { color: p.ink }]}>More places ({folded.more.length}){pickedInMore > 0 ? <Text style={{ color: p.accent }}> · {pickedInMore} picked</Text> : null}</Text>
+                      <Icon name="down" size={16} color={p.inkMuted} style={showMore ? styles.flip : undefined} />
+                    </Pressable>
+                    {showMore && <View style={styles.wrap}>{folded.more.map((t) => <PlaceChip key={t.name} place={t} on={picked.has(t.name)} onPress={() => toggle(t.name)} />)}</View>}
+                  </>
+                )}
+                {tooMany && <InlineMessage tone={tooMany.blocking ? "error" : "warning"} title={tooMany.text} />}
+              </>
             )}
-            <Button label="Read my saves" disabled={picked.size === 0} onPress={() => { void read([...picked]); }} />
-            <Text style={[type.label, { color: p.inkMuted }]}>Allkept reads the posts you saved in these towns and says what they add up to. Nothing is planned until you've seen that.</Text>
           </>
         )}
         {weaveId && stage.kind === "loading" && !record.isError && <View style={styles.centered}><ActivityIndicator color={p.accent} /></View>}
         {weaveId && record.isError && (
           <InlineMessage title="Couldn't load this trip just now" actions={[{ label: "Try again", onPress: () => { void record.refetch(); } }]} />
         )}
-        {reading && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your {pickedSaves > 0 ? `${pickedSaves} ` : ""}saves — usually a minute or two.</Text></View>}
+        {reading && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your {summary.saves > 0 ? `${summary.saves} ` : ""}saves — usually a minute or two.</Text></View>}
         {weaveId && stage.kind === "missing" && (
           <InlineMessage tone="info" title="This trip isn't there any more" actions={[{ label: "Plan a new trip", onPress: startOver }]} />
         )}
@@ -198,7 +221,31 @@ export default function Weave() {
         {error && <InlineMessage title={error.title} body={error.message} actions={[{ label: "Try again", busy, onPress: () => { const again = error.retry; setError(null); again(); } }]} />}
       </ScrollView>
       {hub && <ActionBar><Button label="Plan a new trip" onPress={() => setChoosing(true)} /></ActionBar>}
+      {picking && !reading && places.length > 0 && (
+        <ActionBar>
+          <View style={styles.summaryRow}>
+            <Text style={[type.label, styles.summary, { color: picked.size > 0 ? p.ink : p.inkMuted }]}>{summary.line}</Text>
+            {picked.size > 0 && <Text style={[type.label, { color: p.inkMuted }]}>usually about a minute to read</Text>}
+          </View>
+          <Button label={summary.saves > 0 ? `Read ${summary.saves} ${summary.saves === 1 ? "save" : "saves"}` : "Read my saves"} busy={busy} disabled={picked.size === 0 || !!tooMany?.blocking} onPress={() => { void read([...picked]); }} />
+        </ActionBar>
+      )}
     </SafeAreaView>
+  );
+}
+
+/** A place to pick: its name and how many saves it holds; picked, it fills and carries a tick, so the choice is never shown by colour alone. */
+function PlaceChip({ place, on, onPress }: { place: WeaveTowns["towns"][number]; on: boolean; onPress: () => void }) {
+  const p = usePalette();
+  return (
+    <Chip
+      label={place.name}
+      selected={on}
+      onPress={onPress}
+      leading={on ? <Icon name="check" size={15} color={p.accentInk} /> : undefined}
+      trailing={<Text style={[type.label, { color: on ? p.accentInk : p.inkMuted, opacity: on ? 0.85 : 1 }]}>{place.saves}</Text>}
+      accessibilityLabel={`${place.name}, ${place.saves} ${place.saves === 1 ? "save" : "saves"}`}
+    />
   );
 }
 
@@ -209,6 +256,13 @@ const styles = StyleSheet.create({
   spacer: { width: 44 },
   page: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
   intro: { gap: space.xs },
+  groupHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: space.sm },
+  overline: { ...font("700"), letterSpacing: 0.8 },
+  moreRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44 },
+  flip: { transform: [{ rotate: "180deg" }] },
+  pressed: { opacity: 0.6 },
+  summaryRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.sm },
+  summary: { ...font("600") },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   centered: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
   row: { flexDirection: "row", alignItems: "center", gap: space.xs },
