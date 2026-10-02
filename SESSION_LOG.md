@@ -1859,3 +1859,4 @@ categories.
     built; needs his OK).
   - Route waypoints repeat a place saved more than once (audit step 8's other half).
   - The notification decisions.
+- **Applied and pushed (2 Oct):** Pranav ran the migration — `20261002120000` is in the history and the four columns are updatable (checked by value) — and pushed `70bcb1e..fcc0754`.
