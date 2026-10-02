@@ -37,6 +37,16 @@ export function describeDay(value: string, now: Date): string {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ` ${d.getFullYear()}` : ""}`;
 }
 
+/** A trip's days as a range — "Tue 6 – Mon 12 Oct" — naming the month once when it doesn't change, and the year when it isn't this one. */
+export function describeRange(start: string, days: number, now: Date): string {
+  if (days <= 1) return describeDay(start, now);
+  const from = dayDate(start);
+  const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + days - 1);
+  const end = describeDay(dayValue(to), now);
+  if (from.getMonth() === to.getMonth() && from.getFullYear() === to.getFullYear()) return `${DAYS[from.getDay()]} ${from.getDate()} – ${end}`;
+  return `${describeDay(start, now)} – ${end}`;
+}
+
 /** "2:30 pm" — as a reminder's time reads. */
 export function describeTime(value: string): string {
   const [h, m] = value.split(":").map(Number);

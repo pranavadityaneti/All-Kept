@@ -17,7 +17,7 @@ import { track } from "../../lib/metrics";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
-import { foldPlaces, KIND_LABEL, percent, pickSummary, runningFor, setNights, shiftMix, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
+import { foldPlaces, KIND_LABEL, markPlanAsked, percent, pickSummary, runningFor, setNights, shiftMix, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -107,6 +107,7 @@ export default function Weave() {
     try {
       // The server answers at once and weaves on; the plan screen is drawn from the row.
       await weavePlan(weaveId, profile, { days, nights: splitDays(days, profile.towns) });
+      markPlanAsked(weaveId);
       void queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
       void queryClient.invalidateQueries({ queryKey: tripsKey });
       track(userId, "weave_plan", { days });
@@ -215,7 +216,18 @@ export default function Weave() {
               : [{ label: "Plan a new trip", onPress: startOver }]}
           />
         )}
-        {weaveId && profile && stage.kind !== "reading" && !(stage.kind === "failed" && stage.during === "read") && (
+        {weaveId && stage.kind === "planning" && (
+          <InlineMessage tone="info" title="Your plan is being woven" body="It carries on without you here, and it's in Your trips when it's ready."
+            actions={[{ label: "See how it's going", onPress: () => router.push({ pathname: "/weave/plan", params: { weaveId } }) }, { label: "Back to Your trips", onPress: later }]} />
+        )}
+        {weaveId && stage.kind === "planned" && (
+          <InlineMessage tone="info" title="This trip has a plan" body="Open it, or change anything below and make it again."
+            actions={[{ label: "Open the plan", onPress: () => router.push({ pathname: "/weave/plan", params: { weaveId } }) }]} />
+        )}
+        {weaveId && stage.kind === "failed" && stage.during === "plan" && (
+          <InlineMessage title="The last plan couldn't be made" body={`${stage.message} Change what you like below and make it again.`} />
+        )}
+        {weaveId && profile && stage.kind !== "reading" && stage.kind !== "planning" && !(stage.kind === "failed" && stage.during === "read") && (
           <>
             <Card>
               <Text style={[type.heading, { color: p.ink }]}>What your saves say</Text>

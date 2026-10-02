@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayDate, dayValue, describeDay, describeTime, timeDate, timeValue } from "../lib/when";
+import { dayDate, dayValue, describeDay, describeRange, describeTime, timeDate, timeValue } from "../lib/when";
 
 describe("a day and a time, picked rather than typed", () => {
   it("writes a picked day as the brief carries it, from the phone's own calendar", () => {
@@ -32,5 +32,13 @@ describe("a day and a time, picked rather than typed", () => {
     expect(describeTime("14:30")).toBe("2:30 pm");
     expect(describeTime("00:05")).toBe("12:05 am");
     expect(describeTime("12:00")).toBe("12:00 pm");
+  });
+
+  it("says a trip's days as a range, the month once when it doesn't change", () => {
+    const now = new Date(2026, 9, 2);
+    expect(describeRange("2026-10-06", 7, now)).toBe("Tue 6 – Mon 12 Oct");
+    expect(describeRange("2026-10-28", 7, now)).toBe("Wed 28 Oct – Tue 3 Nov");
+    expect(describeRange("2026-12-29", 5, now)).toBe("Tue 29 Dec – Sat 2 Jan 2027");
+    expect(describeRange("2026-10-06", 1, now)).toBe("Tue 6 Oct");
   });
 });

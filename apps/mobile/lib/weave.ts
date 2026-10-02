@@ -5,7 +5,7 @@ import { hoursLine, type OpeningPeriod } from "./hours";
 import { serverSaid } from "./function-error";
 import { httpStatus } from "./paywall";
 import { supabase } from "./supabase";
-import { dayValue, describeDay, describeTime, timeValue } from "./when";
+import { dayValue, describeDay, describeRange, describeTime, timeValue } from "./when";
 
 export type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile };
 export { WEAVE_KINDS };
@@ -119,6 +119,21 @@ const live = (t: Pick<TripSummary, "status" | "updatedAt">, now: number) => (t.s
 export function useTrips(enabled: boolean) {
   return useQuery({ queryKey: tripsKey, queryFn: readTrips, enabled, refetchInterval: (query) => ((query.state.data ?? []).some((t) => live(t, Date.now())) ? 5000 : false) });
 }
+
+const PACE_WORD: Record<WeaveBrief["pace"], string> = { relaxed: "Relaxed", full: "Full days" };
+const TRANSPORT_WORD: Record<WeaveBrief["transport"], string> = { walk_cab: "walking and cabs", car: "by car", transit: "by transit" };
+/** A plan's choices in one line, for the card while it is woven: "Relaxed · walking and cabs · Tue 6 – Mon 12 Oct". */
+export function briefLine(brief: Pick<WeaveBrief, "days" | "startDate" | "pace" | "transport">, now: Date): string {
+  return [PACE_WORD[brief.pace], TRANSPORT_WORD[brief.transport], brief.startDate ? describeRange(brief.startDate, brief.days, now) : null].filter(Boolean).join(" · ");
+}
+
+/**
+ * When this phone asked for a plan, by trip, for the clock on the planning card: the row keeps no
+ * start time for a plan, so the clock shows only when it is known, never a guess.
+ */
+const planAsked = new Map<string, number>();
+export const markPlanAsked = (weaveId: string): void => { planAsked.set(weaveId, Date.now()); };
+export const planAskedAt = (weaveId: string): number | null => planAsked.get(weaveId) ?? null;
 
 type Place = WeaveTowns["towns"][number];
 /**

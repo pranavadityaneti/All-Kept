@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { crowdLine, foldPlaces, pickSummary, planText, shiftMix, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
+import { briefLine, crowdLine, foldPlaces, pickSummary, planText, shiftMix, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -22,6 +22,15 @@ describe("editing what the saves say", () => {
     expect(splitDays(7, profile.towns)).toEqual([{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }]);
     expect(splitDays(2, [{ name: "A", nights: 5 }, { name: "B", nights: 1 }, { name: "C", nights: 1 }]).reduce((a, n) => a + n.nights, 0)).toBe(3);
     expect(splitDays(3, [])).toEqual([]);
+  });
+});
+
+describe("a plan's choices in one line", () => {
+  const now = new Date(2026, 9, 2);
+  it("says the pace, how they get around, and the dates when there are any", () => {
+    expect(briefLine({ days: 7, startDate: "2026-10-06", pace: "relaxed", transport: "walk_cab" }, now)).toBe("Relaxed · walking and cabs · Tue 6 – Mon 12 Oct");
+    expect(briefLine({ days: 12, startDate: null, pace: "full", transport: "transit" }, now)).toBe("Full days · by transit");
+    expect(briefLine({ days: 3, startDate: null, pace: "relaxed", transport: "car" }, now)).toBe("Relaxed · by car");
   });
 });
 

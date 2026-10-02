@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -9,11 +9,13 @@ import { Chip } from "../../components/Chip";
 import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
 import { InlineMessage } from "../../components/InlineMessage";
+import { JobCard } from "../../components/JobCard";
 import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { font, radius, space, type, usePalette } from "../../lib/theme";
 import { googleDirectionsUrl, type TripStop } from "../../lib/trips";
-import { crowdLine, planText, slotWord, stopHours, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop } from "../../lib/weave";
+import { briefLine, crowdLine, markPlanAsked, planAskedAt, planText, runningFor, slotWord, stopHours, tripsKey, tripTitle, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop } from "../../lib/weave";
+import { describeRange } from "../../lib/when";
 
 const asTripStop = (s: PlanStop): TripStop => ({ id: s.id, title: s.title ?? s.name, url: s.url, lastSavedAt: "", place: { name: s.name, address: s.address, lat: s.lat, lng: s.lng, status: null, url: null, periods: null, utcOffsetMinutes: null, locality: s.town } });
 
@@ -41,6 +43,9 @@ export default function Plan() {
     if (stage.kind === "planning") watched.current = true;
     if (made && watched.current) { watched.current = false; track(userId, "weave_planned", { stops: made.stops.length, cost: made.cost }); }
   }, [stage.kind, made, userId]);
+  // The planning card's clock, ticking only while the plan is woven and only when this phone knows when it was asked for.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { if (stage.kind !== "planning") return; setNow(Date.now()); const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, [stage.kind]);
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
   // The same trip, the same brief, woven again on the same row.
@@ -50,7 +55,9 @@ export default function Plan() {
     setRetrying(true); setRetryError(null);
     try {
       await weavePlan(weaveId, r.profile, r.brief);
+      markPlanAsked(weaveId);
       watched.current = true;
+      void queryClient.invalidateQueries({ queryKey: tripsKey });
       await queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
     } catch (e) {
       if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
@@ -58,17 +65,24 @@ export default function Plan() {
     } finally { setRetrying(false); }
   };
   const byId = new Map((made?.stops ?? []).map((s) => [s.id, s]));
-  const title = made ? `${[...new Set(made.brief.nights.map((n) => n.town))].join(" · ")} — ${made.brief.days} ${made.brief.days === 1 ? "day" : "days"}` : "Your plan";
+  // Named by its places, with its days — and its dates when it has them — under the name.
+  const brief = made?.brief ?? record.data?.brief ?? null;
+  const title = record.data ? tripTitle(record.data.towns ?? (brief ? [...new Set(brief.nights.map((n) => n.town))] : null)) : "Your plan";
+  const subtitle = brief ? `${brief.days} ${brief.days === 1 ? "day" : "days"}${brief.startDate ? ` · ${describeRange(brief.startDate, brief.days, new Date())}` : ""}` : null;
+  const asked = weaveId ? planAskedAt(weaveId) : null;
   const share = async () => {
     if (!made) return;
     track(userId, "weave_share", {});
-    await Share.share({ message: planText(made.plan, made.stops, title) }).catch(() => undefined);
+    await Share.share({ message: planText(made.plan, made.stops, subtitle ? `${title} — ${subtitle}` : title) }).catch(() => undefined);
   };
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <IconButton name="back" label="Back" onPress={() => router.back()} />
-        <Text numberOfLines={1} style={[type.heading, styles.headerTitle, { color: p.ink }]}>{title}</Text>
+        <View style={styles.headerTitle}>
+          <Text numberOfLines={1} style={[type.heading, styles.centeredText, { color: p.ink }]}>{title}</Text>
+          {subtitle ? <Text numberOfLines={1} style={[type.label, styles.centeredText, { color: p.inkMuted }]}>{subtitle}</Text> : null}
+        </View>
         {made ? <IconButton name="share" label="Share the plan" onPress={() => { void share(); }} /> : <View style={styles.spacer} />}
       </View>
       <ScrollView contentContainerStyle={styles.page}>
@@ -91,7 +105,19 @@ export default function Plan() {
             // A trip opened here before it has a plan: its own screen is where the next step is.
             <InlineMessage tone="info" title="This trip has no plan yet" actions={[{ label: "Go to the trip", onPress: () => router.replace({ pathname: "/weave", params: { weaveId: weaveId! } }) }]} />
           ) : (
-            <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Weaving your plan — two to five minutes. You can leave; it carries on, and it's here when you come back.</Text></View>
+            <JobCard
+              steps={[
+                { label: "What your saves say", state: "done" },
+                { label: brief ? `Arranging your ${brief.days} ${brief.days === 1 ? "day" : "days"}` : "Arranging your days", state: "active", detail: asked ? `${runningFor(now - asked)} · usually 2–5 minutes` : "usually 2–5 minutes" },
+                { label: "Your plan", state: "todo" },
+              ]}
+              notes={[
+                ...(brief ? [briefLine(brief, new Date(now))] : []),
+                ...(asked && now - asked > 8 * 60_000 ? ["Taking longer than usual — it's still going."] : []),
+                "You can leave — it's in Your trips when it's ready.",
+              ]}
+              actions={[{ label: "Do this later", onPress: () => router.back() }]}
+            />
           )
         ) : (
           <>
@@ -152,10 +178,10 @@ export default function Plan() {
 }
 
 const styles = StyleSheet.create({
-  centered: { alignItems: "center", gap: space.md, paddingVertical: space.xl },
   safe: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.sm },
-  headerTitle: { flex: 1, textAlign: "center" },
+  headerTitle: { flex: 1, alignItems: "center" },
+  centeredText: { textAlign: "center" },
   spacer: { width: 44 },
   page: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
   day: { gap: space.sm, marginTop: space.md },

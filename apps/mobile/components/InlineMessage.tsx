@@ -30,12 +30,9 @@ export function InlineMessage({ tone = "error", title, body, actions = [] }: {
         </View>
       </View>
       {actions.length > 0 && (
+        // Stacked full width, so a label is never squeezed onto two lines beside another.
         <View style={styles.actions}>
-          {actions.map((a, i) => (
-            <View key={a.label} style={styles.action}>
-              <Button label={a.label} variant={i === 0 ? "primary" : "secondary"} busy={a.busy} onPress={a.onPress} />
-            </View>
-          ))}
+          {actions.map((a, i) => <Button key={a.label} label={a.label} variant={i === 0 ? "primary" : "secondary"} busy={a.busy} onPress={a.onPress} />)}
         </View>
       )}
     </View>
@@ -47,6 +44,5 @@ const styles = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "flex-start", gap: space.sm },
   words: { flex: 1, gap: space.xs },
   title: { ...font("600") },
-  actions: { flexDirection: "row", gap: space.sm },
-  action: { flex: 1 },
+  actions: { gap: space.sm },
 });
