@@ -8,6 +8,7 @@ import { Card } from "../../components/Card";
 import { Chip } from "../../components/Chip";
 import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
+import { InlineMessage } from "../../components/InlineMessage";
 import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { font, radius, space, type, usePalette } from "../../lib/theme";
@@ -73,19 +74,22 @@ export default function Plan() {
       <ScrollView contentContainerStyle={styles.page}>
         {!made ? (
           record.isError ? (
-            <Card><Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>Couldn't load this plan just now.</Text><Button label="Try again" onPress={() => { void record.refetch(); }} /></Card>
+            <InlineMessage title="Couldn't load this plan just now" actions={[{ label: "Try again", onPress: () => { void record.refetch(); } }]} />
           ) : stage.kind === "missing" ? (
-            <Card><Text style={[type.body, { color: p.ink }]}>This trip isn't there any more.</Text><Button label="Plan a new trip" variant="secondary" onPress={() => router.replace("/weave")} /></Card>
+            <InlineMessage tone="info" title="This trip isn't there any more" actions={[{ label: "Plan a new trip", onPress: () => router.replace("/weave") }]} />
           ) : stage.kind === "failed" && stage.during === "plan" ? (
-            <Card>
-              <Icon name="help" size={18} color={p.bad} />
-              <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{retryError ?? stage.message}</Text>
-              <Button label="Try again" busy={retrying} onPress={() => { void retry(); }} />
-              <Button label="Back" variant="secondary" onPress={() => router.back()} />
-            </Card>
+            <InlineMessage
+              title="Couldn't make the plan"
+              body={retryError ?? stage.message}
+              actions={[
+                { label: "Try again", busy: retrying, onPress: () => { void retry(); } },
+                // The advice ("try fewer days…") is acted on where the trip is shaped, with everything it was asked kept.
+                { label: "Change the trip", onPress: () => router.push({ pathname: "/weave", params: { weaveId: weaveId! } }) },
+              ]}
+            />
           ) : stage.kind === "reading" || stage.kind === "profiled" || stage.kind === "failed" ? (
             // A trip opened here before it has a plan: its own screen is where the next step is.
-            <Card><Text style={[type.body, { color: p.ink }]}>This trip has no plan yet.</Text><Button label="Go to the trip" variant="secondary" onPress={() => router.replace({ pathname: "/weave", params: { weaveId: weaveId! } })} /></Card>
+            <InlineMessage tone="info" title="This trip has no plan yet" actions={[{ label: "Go to the trip", onPress: () => router.replace({ pathname: "/weave", params: { weaveId: weaveId! } }) }]} />
           ) : (
             <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Weaving your plan — two to five minutes. You can leave; it carries on, and it's here when you come back.</Text></View>
           )

@@ -7,13 +7,13 @@ import { ActionBar } from "../../components/ActionBar";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Chip } from "../../components/Chip";
-import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
+import { InlineMessage } from "../../components/InlineMessage";
 import { TripList } from "../../components/TripList";
 import { track } from "../../lib/metrics";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
-import { radius, space, type, usePalette } from "../../lib/theme";
+import { space, type, usePalette } from "../../lib/theme";
 import { KIND_LABEL, percent, setNights, shiftMix, splitDays, tripsKey, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
@@ -54,7 +54,8 @@ export default function Weave() {
   // the first move, so another trip opened on this screen never shows this one's edits.
   const [draft, setDraft] = useState<{ weaveId: string; profile: WeaveProfile } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // What failed, in its own words, with the one thing that most likely fixes it: the same step again.
+  const [error, setError] = useState<{ title: string; message: string; retry: () => void } | null>(null);
   const pickedSaves = towns.data?.towns.filter((t) => picked.has(t.name)).reduce((a, t) => a + t.saves, 0) ?? 0;
 
   const base = stage.kind === "profiled" ? stage.profile : record.data?.profile ?? null;
@@ -68,9 +69,9 @@ export default function Weave() {
     if (stage.kind === "profiled" && watched.current) { watched.current = false; track(userId, "weave_read", { saves: savesRead, towns: base?.towns.length ?? 0 }); }
   }, [stage.kind, savesRead, base, userId]);
 
-  const refuse = (e: unknown) => {
+  const refuse = (e: unknown, title: string, retry: () => void) => {
     if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
-    setError(e instanceof Error ? e.message : "Something went wrong.");
+    setError({ title, message: e instanceof Error ? e.message : "Something went wrong.", retry });
   };
   const read = async (names: string[]) => {
     if (names.length === 0) return;
@@ -81,7 +82,7 @@ export default function Weave() {
       void queryClient.invalidateQueries({ queryKey: tripsKey });
       // From here the trip lives on its row: its id goes in the address, so leaving loses nothing.
       router.setParams({ weaveId: started.weaveId });
-    } catch (e) { refuse(e); } finally { setBusy(false); }
+    } catch (e) { refuse(e, "Couldn't start reading your saves", () => { void read(names); }); } finally { setBusy(false); }
   };
   const make = async (days: number) => {
     if (!weaveId || !profile) return;
@@ -94,7 +95,7 @@ export default function Weave() {
       track(userId, "weave_plan", { days });
       // Pushed, not replaced: Back from the plan comes back here, to the profile as it was.
       router.push({ pathname: "/weave/plan", params: { weaveId } });
-    } catch (e) { refuse(e); } finally { setBusy(false); }
+    } catch (e) { refuse(e, "Couldn't start the plan", () => { void make(days); }); } finally { setBusy(false); }
   };
   const customise = () => {
     if (!weaveId || !profile) return;
@@ -148,25 +149,20 @@ export default function Weave() {
         )}
         {weaveId && stage.kind === "loading" && !record.isError && <View style={styles.centered}><ActivityIndicator color={p.accent} /></View>}
         {weaveId && record.isError && (
-          <Card>
-            <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>Couldn't load this trip just now.</Text>
-            <Button label="Try again" onPress={() => { void record.refetch(); }} />
-          </Card>
+          <InlineMessage title="Couldn't load this trip just now" actions={[{ label: "Try again", onPress: () => { void record.refetch(); } }]} />
         )}
         {reading && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your {pickedSaves > 0 ? `${pickedSaves} ` : ""}saves — usually a minute or two.</Text></View>}
         {weaveId && stage.kind === "missing" && (
-          <Card>
-            <Text style={[type.body, { color: p.ink }]}>This trip isn't there any more.</Text>
-            <Button label="Plan a new trip" variant="secondary" onPress={startOver} />
-          </Card>
+          <InlineMessage tone="info" title="This trip isn't there any more" actions={[{ label: "Plan a new trip", onPress: startOver }]} />
         )}
         {weaveId && stage.kind === "failed" && stage.during === "read" && (
-          <Card>
-            <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{stage.message}</Text>
-            {record.data?.towns?.length
-              ? <Button label="Try again" busy={busy} onPress={() => { void read(record.data?.towns ?? []); }} />
-              : <Button label="Plan a new trip" variant="secondary" onPress={startOver} />}
-          </Card>
+          <InlineMessage
+            title="Couldn't read your saves"
+            body={stage.message}
+            actions={record.data?.towns?.length
+              ? [{ label: "Try again", busy, onPress: () => { void read(record.data?.towns ?? []); } }]
+              : [{ label: "Plan a new trip", onPress: startOver }]}
+          />
         )}
         {weaveId && profile && stage.kind !== "reading" && !(stage.kind === "failed" && stage.during === "read") && (
           <>
@@ -199,7 +195,7 @@ export default function Weave() {
             <Button label="Customise…" variant="secondary" disabled={busy} onPress={customise} />
           </>
         )}
-        {error && <View style={[styles.error, { backgroundColor: p.surface, borderColor: p.border }]}><Icon name="help" size={18} color={p.bad} /><Text accessibilityRole="alert" style={[type.body, styles.grow, { color: p.bad }]}>{error}</Text></View>}
+        {error && <InlineMessage title={error.title} body={error.message} actions={[{ label: "Try again", busy, onPress: () => { const again = error.retry; setError(null); again(); } }]} />}
       </ScrollView>
       {hub && <ActionBar><Button label="Plan a new trip" onPress={() => setChoosing(true)} /></ActionBar>}
     </SafeAreaView>
@@ -217,5 +213,4 @@ const styles = StyleSheet.create({
   centered: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
   row: { flexDirection: "row", alignItems: "center", gap: space.xs },
   grow: { flex: 1 },
-  error: { flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
 });
