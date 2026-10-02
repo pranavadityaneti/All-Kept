@@ -91,7 +91,8 @@ export default function Customise() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}><IconButton name="back" label="Back" onPress={() => router.back()} /><Text style={[type.heading, styles.headerTitle, { color: p.ink }]}>Customise</Text><View style={styles.spacer} /></View>
-      <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+      {/* iPhone: room for the keyboard, and the box being typed in lifted above it — "Anything else" sits at the very bottom. */}
+      <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <Text style={[type.body, { color: p.inkMuted }]}>Everything here is optional. What you leave alone, the plan takes from your saves.</Text>
         <Card>
           <View style={styles.row}><Text style={[type.heading, styles.grow, { color: p.ink }]}>{days} {days === 1 ? "day" : "days"}</Text>

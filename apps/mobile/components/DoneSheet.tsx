@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
@@ -32,28 +32,31 @@ export function DoneSheet({ visible, doneAt, journal, intent, busy, error, onDon
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <SafeAreaView style={styles.safe} edges={["bottom", "left", "right"]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}>
-          <View style={styles.bar}>
-            <Text style={[type.section, { color: p.ink }]}>{doneAt ? line0 : `${verb}?`}</Text>
-            <IconButton name="close" label="Close" onPress={onClose} />
+        {/* The panel rises with the keyboard, so the line being written and its button stay in view. */}
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}>
+            <View style={styles.bar}>
+              <Text style={[type.section, { color: p.ink }]}>{doneAt ? line0 : `${verb}?`}</Text>
+              <IconButton name="close" label="Close" onPress={onClose} />
+            </View>
+            <Text style={[type.label, { color: p.inkMuted }]}>{doneAt ? "A line for the journal, if you like. Undo marks it not done." : `Mark this ${verb.toLowerCase()}, and leave a line for the journal if you like.`}</Text>
+            <TextInput
+              accessibilityLabel="A line for the journal"
+              value={line}
+              onChangeText={setLine}
+              placeholder="Went in June, worth it…"
+              placeholderTextColor={p.inkMuted}
+              style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
+              returnKeyType="done"
+              onSubmitEditing={() => onDone(line)}
+            />
+            <View style={styles.actions}>
+              <View style={styles.button}><Button label={doneAt ? "Save" : verb} busy={busy} onPress={() => onDone(line)} /></View>
+              {doneAt && <View style={styles.button}><Button label="Undo" variant="secondary" onPress={onUndo} /></View>}
+            </View>
+            {error && <Text style={[type.label, { color: p.bad }]}>Could not save that. Please try again.</Text>}
           </View>
-          <Text style={[type.label, { color: p.inkMuted }]}>{doneAt ? "A line for the journal, if you like. Undo marks it not done." : `Mark this ${verb.toLowerCase()}, and leave a line for the journal if you like.`}</Text>
-          <TextInput
-            accessibilityLabel="A line for the journal"
-            value={line}
-            onChangeText={setLine}
-            placeholder="Went in June, worth it…"
-            placeholderTextColor={p.inkMuted}
-            style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
-            returnKeyType="done"
-            onSubmitEditing={() => onDone(line)}
-          />
-          <View style={styles.actions}>
-            <View style={styles.button}><Button label={doneAt ? "Save" : verb} busy={busy} onPress={() => onDone(line)} /></View>
-            {doneAt && <View style={styles.button}><Button label="Undo" variant="secondary" onPress={onUndo} /></View>}
-          </View>
-          {error && <Text style={[type.label, { color: p.bad }]}>Could not save that. Please try again.</Text>}
-        </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
@@ -31,41 +31,44 @@ export function PlaceSheet({ visible, initial, busy, error, canClear, onFind, on
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <SafeAreaView style={styles.safe} edges={["bottom", "left", "right"]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}>
-          <View style={styles.bar}>
-            <Text style={[type.section, { color: p.ink }]}>{initial ? "Change the place" : "Add the place"}</Text>
-            <IconButton name="close" label="Close" onPress={onClose} />
+        {/* The panel rises with the keyboard, so both fields and Find it stay in view. */}
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}>
+            <View style={styles.bar}>
+              <Text style={[type.section, { color: p.ink }]}>{initial ? "Change the place" : "Add the place"}</Text>
+              <IconButton name="close" label="Close" onPress={onClose} />
+            </View>
+            <Text style={[type.label, { color: p.inkMuted }]}>The name as the sign spells it, and the area or city. The map finds the rest.</Text>
+            <TextInput
+              accessibilityLabel="The place's name"
+              value={name}
+              onChangeText={setName}
+              placeholder="Doppler Coffee"
+              placeholderTextColor={p.inkMuted}
+              autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="next"
+              style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
+            />
+            <TextInput
+              accessibilityLabel="Where it is"
+              value={locality}
+              onChangeText={setLocality}
+              placeholder="C-Scheme, Jaipur"
+              placeholderTextColor={p.inkMuted}
+              autoCapitalize="words"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={() => { if (ready) onFind({ name: name.trim(), locality: locality.trim() }); }}
+              style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
+            />
+            <View style={styles.actions}>
+              <View style={styles.button}><Button label="Find it" busy={busy} disabled={!ready} onPress={() => onFind({ name: name.trim(), locality: locality.trim() })} /></View>
+              {canClear && <View style={styles.button}><Button label="Remove" variant="secondary" onPress={onClear} /></View>}
+            </View>
+            {error && <Text style={[type.label, { color: p.bad }]}>{error}</Text>}
           </View>
-          <Text style={[type.label, { color: p.inkMuted }]}>The name as the sign spells it, and the area or city. The map finds the rest.</Text>
-          <TextInput
-            accessibilityLabel="The place's name"
-            value={name}
-            onChangeText={setName}
-            placeholder="Doppler Coffee"
-            placeholderTextColor={p.inkMuted}
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="next"
-            style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
-          />
-          <TextInput
-            accessibilityLabel="Where it is"
-            value={locality}
-            onChangeText={setLocality}
-            placeholder="C-Scheme, Jaipur"
-            placeholderTextColor={p.inkMuted}
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="done"
-            onSubmitEditing={() => { if (ready) onFind({ name: name.trim(), locality: locality.trim() }); }}
-            style={[styles.input, type.body, { backgroundColor: p.surfaceAlt, borderColor: p.border, color: p.ink }]}
-          />
-          <View style={styles.actions}>
-            <View style={styles.button}><Button label="Find it" busy={busy} disabled={!ready} onPress={() => onFind({ name: name.trim(), locality: locality.trim() })} /></View>
-            {canClear && <View style={styles.button}><Button label="Remove" variant="secondary" onPress={onClear} /></View>}
-          </View>
-          {error && <Text style={[type.label, { color: p.bad }]}>{error}</Text>}
-        </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );

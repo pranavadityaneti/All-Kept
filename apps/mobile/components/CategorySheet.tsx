@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
@@ -61,55 +61,58 @@ export function CategorySheet({ visible, initial, existing, onClose, onSubmit }:
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <SafeAreaView style={styles.safe} edges={["bottom", "left", "right"]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}>
-          <View style={styles.bar}>
-            <Text style={[type.heading, { color: p.ink }]}>{editing ? "Edit category" : "New category"}</Text>
-            <IconButton name="close" label="Close" onPress={onClose} />
+        {/* The panel rises with the keyboard, so the name being typed and the button under it stay in view. */}
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={[styles.panel, { backgroundColor: p.surface, borderColor: p.border }]}>
+            <View style={styles.bar}>
+              <Text style={[type.heading, { color: p.ink }]}>{editing ? "Edit category" : "New category"}</Text>
+              <IconButton name="close" label="Close" onPress={onClose} />
+            </View>
+
+            <TextInput
+              accessibilityLabel="Category name"
+              value={name}
+              onChangeText={(value) => { setName(value); setFailure(null); }}
+              editable={!busy}
+              autoFocus
+              maxLength={MAX_NAME}
+              placeholder="Wedding, Recipes to try…"
+              placeholderTextColor={p.inkMuted}
+              style={[type.body, styles.field, { color: p.ink, backgroundColor: p.surfaceAlt, borderColor: p.border }]}
+            />
+            {shown && <Text accessibilityRole="alert" style={[type.label, { color: p.bad }]}>{shown}</Text>}
+
+            <Text style={[type.label, { color: p.inkMuted }]}>Pick a mark</Text>
+            <ScrollView style={styles.marks} contentContainerStyle={styles.marksInner} keyboardShouldPersistTaps="handled">
+              {PICKER_MARKS.map((option) => {
+                const on = option === icon;
+                return (
+                  <Pressable
+                    key={option}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={option.replace(/_/g, " ")}
+                    onPress={() => setIcon(option)}
+                    style={({ pressed }) => [
+                      styles.mark,
+                      { backgroundColor: on ? tint(p.accent, 0.14) : p.surfaceAlt, borderColor: on ? p.accent : p.border },
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <CategoryMark mark={option} palette={categoryPalette(name)} size={30} />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <Button
+              label={editing ? "Save changes" : "Create category"}
+              busy={busy}
+              disabled={!("name" in checked)}
+              onPress={() => { void submit(); }}
+            />
           </View>
-
-          <TextInput
-            accessibilityLabel="Category name"
-            value={name}
-            onChangeText={(value) => { setName(value); setFailure(null); }}
-            editable={!busy}
-            autoFocus
-            maxLength={MAX_NAME}
-            placeholder="Wedding, Recipes to try…"
-            placeholderTextColor={p.inkMuted}
-            style={[type.body, styles.field, { color: p.ink, backgroundColor: p.surfaceAlt, borderColor: p.border }]}
-          />
-          {shown && <Text accessibilityRole="alert" style={[type.label, { color: p.bad }]}>{shown}</Text>}
-
-          <Text style={[type.label, { color: p.inkMuted }]}>Pick a mark</Text>
-          <ScrollView style={styles.marks} contentContainerStyle={styles.marksInner} keyboardShouldPersistTaps="handled">
-            {PICKER_MARKS.map((option) => {
-              const on = option === icon;
-              return (
-                <Pressable
-                  key={option}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  accessibilityLabel={option.replace(/_/g, " ")}
-                  onPress={() => setIcon(option)}
-                  style={({ pressed }) => [
-                    styles.mark,
-                    { backgroundColor: on ? tint(p.accent, 0.14) : p.surfaceAlt, borderColor: on ? p.accent : p.border },
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <CategoryMark mark={option} palette={categoryPalette(name)} size={30} />
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          <Button
-            label={editing ? "Save changes" : "Create category"}
-            busy={busy}
-            disabled={!("name" in checked)}
-            onPress={() => { void submit(); }}
-          />
-        </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );

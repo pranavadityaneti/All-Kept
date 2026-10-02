@@ -286,7 +286,8 @@ export function ItemDetail({ id, width, height, active, onBack }: { id: string; 
             </View>
             <IconButton name="close" label="Close" onPress={() => { saveNote(); setSheet(false); }} />
           </View>
-          <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+          {/* iPhone: room for the keyboard, and the box being typed in lifted above it — the note sits well down the sheet. */}
+          <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
             {needsLink && (
               <View style={[styles.block, { backgroundColor: p.surface, borderColor: p.border }]}>
                 <Text style={[type.heading, { color: p.ink }]}>{detail.status === "failed" ? "That link did not work" : "Add the post's link"}</Text>
