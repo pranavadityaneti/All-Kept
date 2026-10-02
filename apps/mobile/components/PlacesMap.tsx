@@ -6,6 +6,7 @@ import { placeLine } from "../lib/export";
 import { distanceKm, distanceWord } from "../lib/geo";
 import { hoursLine } from "../lib/hours";
 import { useHere } from "../lib/location";
+import { useReducedMotion } from "../lib/motion";
 import { cameraFor, usePlacedSaves, type PlacedSave } from "../lib/places";
 import { font, radius, space, type, usePalette } from "../lib/theme";
 import { useThumbnails } from "../lib/thumbnails";
@@ -137,7 +138,8 @@ export function PlacesMap({ filters, enabled, onOpen, onPlan, onWayOut }: {
     <View style={styles.fill}>
       {trips.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.trips} contentContainerStyle={styles.tripsInner}>
-          <Chip label="Plan a trip" leading={<Icon name="route" size={15} color={p.inkMuted} />} onPress={onPlan} accessibilityLabel="Plan a trip from your saved places" />
+          <PlanTripChip onPress={onPlan} />
+          {trips.length > 1 && <View style={[styles.divider, { backgroundColor: p.border }]} />}
           {trips.length > 1 && trips.map((t) => <Chip key={t.town} label={`${t.town} ${t.stops.length}`} selected={trip?.town === t.town} onPress={() => pickTrip(t)} accessibilityLabel={`${t.town}, ${t.stops.length} ${t.stops.length === 1 ? "place" : "places"}`} />)}
         </ScrollView>
       )}
@@ -157,6 +159,27 @@ export function PlacesMap({ filters, enabled, onOpen, onPlan, onWayOut }: {
         {trip && !selected && <TripBar trip={trip} onClose={() => setTrip(null)} onWayOut={onWayOut} />}
       </View>
     </View>
+  );
+}
+
+/**
+ * Plan a trip: an action, not a filter — so it doesn't look like the town chips beside it. The
+ * accent outline and words with the route mark say it starts something; it shrinks a touch when
+ * pressed, unless Reduce Motion is on.
+ */
+function PlanTripChip({ onPress }: { onPress: () => void }) {
+  const p = usePalette();
+  const reduced = useReducedMotion();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Plan a trip from your saved places"
+      onPress={onPress}
+      style={({ pressed }) => [styles.planChip, { borderColor: p.accent, backgroundColor: p.surface }, pressed && (reduced ? styles.pressed : styles.planPressed)]}
+    >
+      <Icon name="route" size={15} color={p.accent} />
+      <Text style={[type.label, styles.planText, { color: p.accent }]}>Plan a trip</Text>
+    </Pressable>
   );
 }
 
@@ -214,7 +237,12 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   empty: { padding: space.lg },
   trips: { flexGrow: 0 },
-  tripsInner: { paddingHorizontal: space.lg, paddingBottom: space.sm, gap: space.sm },
+  // 8 pt under the filter row, as the rows above it are spaced.
+  tripsInner: { paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: space.sm, gap: space.sm, alignItems: "center" },
+  planChip: { flexDirection: "row", alignItems: "center", gap: space.sm, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: space.xs + 2 },
+  planText: { ...font("600") },
+  planPressed: { transform: [{ scale: 0.96 }], opacity: 0.85 },
+  divider: { width: StyleSheet.hairlineWidth, alignSelf: "stretch", marginVertical: space.xs },
   nearMe: { position: "absolute", top: space.md, right: space.lg },
   denied: { position: "absolute", top: space.md + 48, left: space.lg, right: space.lg + 48 },
   // Above the floating tab bar, which would otherwise cover the place and its hours.

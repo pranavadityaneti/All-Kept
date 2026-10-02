@@ -39,7 +39,7 @@ export default function Weave() {
   const session = useSession();
   const ready = session.status === "ready";
   const userId = ready && !session.anonymous ? session.userId : null;
-  const params = useLocalSearchParams<{ weaveId?: string; options?: string }>();
+  const params = useLocalSearchParams<{ weaveId?: string; options?: string; filtered?: string }>();
   const weaveId = typeof params.weaveId === "string" && params.weaveId ? params.weaveId : null;
   const towns = useWeaveTowns(ready && !weaveId);
   // Your trips: every trip asked for, so none is lost; a new one is planned from here.
@@ -197,6 +197,8 @@ export default function Weave() {
             <View style={styles.intro}>
               <Text style={[type.section, { color: p.ink }]}>Where is this trip?</Text>
               <Text style={[type.label, { color: p.inkMuted }]}>Pick the places. Allkept reads what you saved there first — nothing is planned until you say so.</Text>
+              {/* Came from a filtered map: its counts were the filter's; these are every save. */}
+              {params.filtered === "1" && <Text style={[type.label, { color: p.inkMuted }]}>Map filters don't apply here: every save in these places is read.</Text>}
             </View>
             {towns.isPending ? <ActivityIndicator color={p.accent} /> : towns.isError ? (
               <InlineMessage title="Couldn't load your places just now" body={towns.error.message} actions={[{ label: "Try again", onPress: () => { void towns.refetch(); } }]} />
