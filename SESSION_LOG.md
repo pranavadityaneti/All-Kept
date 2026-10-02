@@ -1770,3 +1770,10 @@ categories.
 - **Open:** push + OTA on Pranav's Yes, then his phone check of the note box above a real
   keyboard; the four test saves still exist (his delete one-liner not run yet); 60 waits on the
   Gemini work; 63 and 64 for his decision.
+- **Shipped (2 Oct):** OTA to preview on Pranav's "Yes, push and ship the OTA". iOS update group
+  `2610176d-7fcf-4b93-997f-ee6d4db37568` on build 34's runtime `8f175b69…` (resolved and checked
+  before publishing); Android group `31873d11-cc2f-4322-af9d-dbd5d2baac1b`. The app and packages
+  trees were clean; the `*` on the commit is the other session's uncommitted server and video
+  files, which are not in the bundle. The push of `1f72fa1..fe5bfca` (and this line) to
+  `origin/claude/sorting-gemini-flash` was refused by the session's automatic check ("out-of-place
+  publication") despite the Yes; not retried, left for Pranav to run himself.
