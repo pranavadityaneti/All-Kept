@@ -1803,3 +1803,8 @@ categories.
   seems) profiled in 22 s. Pranav pushed `425dc14..b8749bc` himself.
 - **Open:** push + OTA on Pranav's Yes; phone checks (the date picker, the sheets, the note and
   Customise lifting above a real keyboard); 65, 66; the four test saves still to delete.
+- **Item 66 (2 Oct):** `1ce20a8` — the shared `Screen` layout (save, sign-in callback,
+  Instagram setup, YouTube setup) makes room for the keyboard. YouTube setup's playlist box sat at
+  about 590–640pt, so a phone keyboard covered the box itself as well as Connect. Approved by
+  Pranav ("Go ahead"). Pranav pushed `b8749bc..cd857e0`; `1ce20a8` and this line are unpushed. No
+  OTA yet. Phone check owed.

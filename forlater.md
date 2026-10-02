@@ -434,9 +434,9 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — audit fix PT-02.
 
-### 66. Room for the keyboard on the setup and save screens (the shared `Screen` wrapper)
+### 66. Room for the keyboard on the setup and save screens (the shared `Screen` wrapper) — DONE 2 Oct 2026
 - **What + why:** The keyboard fix for sheets (`efd5b94`) left out `components/Screen.tsx`, the wrapper used by `save`, `auth-callback`, `setup/instagram` and `setup/youtube`, because it is shared (rule 7). On YouTube setup the playlist box sits under a card of steps, so with the keyboard up its "Connect playlist" button is likely behind the keyboard; the person has to close the keyboard to reach it.
 - **Scope:** one prop, `automaticallyAdjustKeyboardInsets`, on `Screen`'s ScrollView (iPhone). It has no effect on screens without a text box, since no keyboard ever opens there. Phone check on YouTube setup.
-- **Status:** awaiting Pranav's yes.
+- **Status:** done — `1ce20a8` (Pranav: "Go ahead", 2 Oct). The playlist box itself sat at about 590–640pt, under a phone keyboard, not only the button. Phone check owed.
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — audit fix AW-07.
