@@ -112,3 +112,19 @@ Deno.test("a picture address that does not belong to the link's platform is left
     assertEquals(f.captured[0]!.snapshotUrl, undefined, String(pictureUrl));
   }
 });
+Deno.test("a note typed with the link reaches capture trimmed, and capped at the note limit", async () => {
+  const f = fake();
+  await handleSaveLink(req({ text: URL, requestId: "request-note-1", note: "  for the Seoul trip  " }), f.deps);
+  assertEquals(f.captured[0]!.note, "for the Seoul trip");
+  const long = fake();
+  await handleSaveLink(req({ text: URL, requestId: "request-note-2", note: "x".repeat(2500) }), long.deps);
+  assertEquals(long.captured[0]!.note!.length, 2000);
+});
+Deno.test("a missing, blank or non-text note is no note, and the save still lands", async () => {
+  for (const note of [undefined, "", "   ", 42, null, { evil: true }, ["a"]]) {
+    const f = fake();
+    const res = await handleSaveLink(req({ text: URL, requestId: "request-note-3", note }), f.deps);
+    assertEquals(res.status, 200);
+    assertEquals(f.captured[0]!.note, undefined);
+  }
+});

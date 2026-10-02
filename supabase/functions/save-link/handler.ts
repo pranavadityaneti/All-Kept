@@ -43,12 +43,20 @@ export async function handleSaveLink(req: Request, deps: SaveLinkDeps): Promise<
   const picture = body?.["pictureUrl"];
   const pictureUrl = typeof picture === "string" && isPictureHost(picture, link.platform) ? picture : undefined;
 
+  // A note the person typed with the link: taken only when it is text with something in it, and cut
+  // at the note limit by character, so an emoji on the boundary is not split in half.
+  const typedNote = body?.["note"];
+  const note = typeof typedNote === "string" && typedNote.trim()
+    ? Array.from(typedNote.trim()).slice(0, LIMITS.noteMaxChars).join("")
+    : undefined;
+
   let result: CaptureResult;
   try {
     result = await deps.capture({
       userId, sourceId: null, sourceKind: "share", sourceEventId: requestId,
       savedAt: new Date().toISOString(), sharedUrl: link.canonicalUrl ?? link.sourceUrl!, sharedText: text,
       ...(pictureUrl ? { snapshotUrl: pictureUrl } : {}),
+      ...(note ? { note } : {}),
     });
   } catch (e) {
     // The free saves are used and there is no subscription. 402 rather than 400: the app opens the

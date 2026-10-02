@@ -10,6 +10,7 @@ class Fake implements CaptureDeps {
   items: (ExistingItem & { row: NewItemRow })[] = [];
   captures: CaptureRecord[] = [];
   bumps: string[] = [];
+  bumpNotes: (string | null | undefined)[] = [];
   forceConflict: "identity" | "other" | null = null;
   admitted = true;
   admits = 0;
@@ -30,7 +31,7 @@ class Fake implements CaptureDeps {
     this.items.push({ id, platform: row.platform, kind: row.kind, canonicalUrl: row.canonical_url, status: row.status, row });
     return { ok: true as const, id };
   }
-  async bumpSave(itemId: string) { this.bumps.push(itemId); }
+  async bumpSave(itemId: string, _userId: string, _at: Date, note?: string | null) { this.bumps.push(itemId); this.bumpNotes.push(note); }
   async recordCapture(rec: CaptureRecord) { this.captures.push(rec); }
 }
 
@@ -173,4 +174,31 @@ Deno.test("a redelivered event never asks — the answer was already given", asy
 
 Deno.test("PaymentRequiredError is a CaptureError, so a door that only knows CaptureError still fails closed", () => {
   assert(new PaymentRequiredError("x") instanceof CaptureError);
+});
+
+Deno.test("a note typed with a save is the item's note — the sorter reads it from the first sort", async () => {
+  const f = new Fake();
+  await capture(base({ sourceKind: "share", sharedText: "https://www.youtube.com/watch?v=WfJPBVXPt8k", note: "for the Seoul trip" }), f);
+  assertEquals(f.items[0]!.row.note, "for the Seoul trip");
+});
+
+Deno.test("a typed note and words pasted around the link are both kept — the typed note first, nothing dropped", async () => {
+  const f = new Fake();
+  await capture(base({ sourceKind: "share", sharedText: "watch this https://www.youtube.com/watch?v=WfJPBVXPt8k later", note: "for the Seoul trip" }), f);
+  assertEquals(f.items[0]!.row.note, "for the Seoul trip\nwatch this later");
+});
+
+Deno.test("re-saving a link you already have hands your new note to the save bump, which appends it", async () => {
+  const f = new Fake();
+  await capture(base({ sourceKind: "share", sharedText: "https://www.youtube.com/watch?v=WfJPBVXPt8k" }), f);
+  const again = await capture(base({ sourceKind: "share", sharedText: "https://www.youtube.com/watch?v=WfJPBVXPt8k", note: "go back to 3:20" }), f);
+  assertEquals(again.deduplicated, true);
+  assertEquals(f.bumpNotes, ["go back to 3:20"]);
+});
+
+Deno.test("a re-save with no typed note bumps with no note, as it always did", async () => {
+  const f = new Fake();
+  await capture(base({ sourceKind: "share", sharedText: "https://www.youtube.com/watch?v=WfJPBVXPt8k" }), f);
+  await capture(base({ sourceKind: "share", sharedText: "https://www.youtube.com/watch?v=WfJPBVXPt8k" }), f);
+  assertEquals(f.bumpNotes, [null]);
 });

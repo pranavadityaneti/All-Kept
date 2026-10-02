@@ -98,6 +98,8 @@ export interface CaptureInput {
   snapshotUrl?: string;
   /** True when the platform gave no link back to the original (Instagram post shares). */
   noLink?: boolean;
+  /** A note the person typed with this save. Comes before any words around the link; a duplicate appends it. */
+  note?: string;
   /** Overrides used when there is no URL to normalise (Instagram post shares): platform, kind and the platform's own id. */
   platform?: Platform;
   kind?: Kind;
@@ -193,7 +195,12 @@ export interface ImportSavesResponse { importId: string; found: number; added: n
 export interface ImportProgress { found: number; added: number; ready: number; waiting: number; failed?: number; finished: boolean }
 
 /** Direct share/paste of an Instagram permalink. requestId is reused when retrying a save. */
-export interface SaveLinkRequest { text: string; requestId: string }
+export interface SaveLinkRequest {
+  text: string;
+  requestId: string;
+  /** The person's own note, typed with the save. Travels with it so the sorter reads it; a re-save appends it. */
+  note?: string;
+}
 export type SaveLinkResponse = CaptureResult;
 
 /** What a category holds and what it is about — the Library's header when one category is open. */

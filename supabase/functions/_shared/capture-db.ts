@@ -39,8 +39,9 @@ export function captureDeps(db: SupabaseClient): CaptureDeps {
       if (error) throw error;
       return data === true;
     },
-    async bumpSave(itemId, userId, at) {
-      const { error } = await db.rpc("bump_item_save", { p_item_id: itemId, p_user_id: userId, p_note: null, p_at: at.toISOString() });
+    async bumpSave(itemId, userId, at, note) {
+      // bump_item_save appends a non-empty note on a new line and leaves the old one as it was.
+      const { error } = await db.rpc("bump_item_save", { p_item_id: itemId, p_user_id: userId, p_note: note ?? null, p_at: at.toISOString() });
       if (error) throw error;
     },
     async recordCapture(rec) {

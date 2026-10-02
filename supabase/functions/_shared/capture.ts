@@ -55,7 +55,8 @@ export interface CaptureDeps {
   findCapture(userId: string, sourceKind: SourceKind | "share", sourceEventId: string): Promise<{ item: ExistingItem; deduplicated: boolean } | null>;
   findExisting(userId: string, identity: ItemIdentity): Promise<ExistingItem | null>;
   insertItem(row: NewItemRow): Promise<InsertResult>;
-  bumpSave(itemId: string, userId: string, at: Date): Promise<void>;
+  /** One more save of an item already kept. A note typed with this save is appended to the item's own, never over it. */
+  bumpSave(itemId: string, userId: string, at: Date, note?: string | null): Promise<void>;
   recordCapture(rec: CaptureRecord): Promise<void>;
 }
 
@@ -79,12 +80,18 @@ export function wordsAround(text: string | null): string | null {
   return words.length > 0 ? words : null;
 }
 
+/** Two of the person's own notes as one: the first, then the second on its own line. Either may be missing. */
+const joinNotes = (first: string | null, second: string | null): string | null =>
+  [first, second].filter((n): n is string => !!n).join("\n") || null;
+
 export async function capture(input: CaptureInput, deps: CaptureDeps): Promise<CaptureResult> {
   // Exact idempotency per door event: a redelivered message returns the original answer.
   const prior = await deps.findCapture(input.userId, input.sourceKind, input.sourceEventId);
   if (prior) return result(prior.item, prior.deduplicated);
 
   const now = deps.now();
+  // A note typed with the save, cleaned. The door that took it has already capped its length.
+  const typed = input.note?.trim() || null;
   const savedMs = Date.parse(input.savedAt);
   const savedAt = Number.isFinite(savedMs) && savedMs <= now.getTime() ? new Date(savedMs) : now;
 
@@ -98,7 +105,7 @@ export async function capture(input: CaptureInput, deps: CaptureDeps): Promise<C
   };
 
   const finishDuplicate = async (existing: ExistingItem): Promise<CaptureResult> => {
-    await deps.bumpSave(existing.id, input.userId, savedAt);
+    await deps.bumpSave(existing.id, input.userId, savedAt, typed);
     await deps.recordCapture({ userId: input.userId, sourceKind: input.sourceKind, sourceEventId: input.sourceEventId, itemId: existing.id, deduplicated: true });
     return result(existing, true);
   };
@@ -122,7 +129,9 @@ export async function capture(input: CaptureInput, deps: CaptureDeps): Promise<C
     needs_expansion: link?.needsExpansion ?? false,
     title: input.title ?? null,
     text: input.caption ?? (isNote ? link?.text ?? null : null),
-    note: isNote ? null : wordsAround(link?.text ?? null), // the user's own words around a link, if there were any
+    // The person's words: a note typed with the save first, then any words around the link — neither
+    // dropped. The sorter reads this, so it lands in the same insert rather than patched on afterwards.
+    note: isNote ? null : joinNotes(typed, wordsAround(link?.text ?? null)),
     thumbnail_url_remote: input.snapshotUrl ?? null,
     captured_via: input.sourceKind,
     status,
