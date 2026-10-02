@@ -1704,3 +1704,42 @@ categories.
   $0.067, a sound profile (food 44%, coffee 26%, culture 14%; a must; nights in proportion).
   The plan not yet run: all twelve towns were ticked and a 7-day plan cannot seat twelve; Pranav
   to untick to Korea + Japan and read again. Queued 56 ("1 saves") and 57 (towns beyond days).
+
+## 2026-09-20 → 10-02 — disk, wording, X, a note with a pasted link; a UI audit begun
+
+- **Disk (26 Sep):** 4.9 GB → 70 GB free (caches, `ios/build`, four simulators — each checked
+  for other projects' apps first; Sakha untouched). A `/space` command and a CLAUDE.md section
+  written to `~/.claude` (machine-local; Pranav chose not to version them). A message drafted for
+  the Sakha session to clear `~/.cache` (uv) and the pnpm store when it rests.
+- **Saves are interest, not a journey (28 Sep):** Pranav — "our train of thought is wrong". The
+  map's town bar speaks by count and never says itinerary (`98c3b99`); Weave ticks no town for
+  the person (`78c3b4e`); queue 59 (ask "planning a trip?" — never about a town you're in, no
+  location no prompt), 57 narrowed (`7d1d935`). OTA.
+- **X posts and stray codes (29 Sep):** X had no embed case — the tweet now renders through
+  `platform.twitter.com/embed/Tweet.html` (`65620e4`, verified on both saved tweets). The
+  entity decoder knew six names; now the whole HTML 4.01 set (`44835e2`). Backfill run by Pranav
+  (2 rows, `&mdash;` only, verified 0 left). The enrichment deploy that carries the decode is HELD
+  (item 60): `sweeper`/`reprocess-item` bundle another session's uncommitted Gemini-sorting work.
+  Item 61 queued (X text keeps `— Author (@handle) date`). Pushed; OTA.
+- **Research (30 Sep):** adoskin.com SEO teardown (programmatic guides, vs-pages, `llms.txt`,
+  UCP/MCP agent commerce) → `~/Desktop/adoskin-seo-analysis.html`; an Allkept SEO strategy
+  discussed (app ≠ store: ASO first, problem-aware "graveyard" content, places as the category
+  only Allkept owns); nothing built. Brand-video addendum + 13 screenshots →
+  `~/Desktop/allkept-video-assets/` (HTML and markdown).
+- **A note with a pasted link (2 Oct):** spec `internal/superpowers/specs/2026-10-02-…` (`f4b58f5`);
+  long-press quick actions designed and parked (62, `a9ab174`). Built: the note travels with the
+  save (`072fd58`, `save-link` v25 deployed — its tree is clean of the Gemini files), the app's
+  note field (`2947dfd`). Testing found and fixed three real faults in it — dropped keystrokes
+  (link field now uncontrolled), Done racing the last keystrokes (Done saves `nativeEvent.text`),
+  a two-tap save (Done on the note box) — and two false trails (a dead log, injected-typing
+  timing): ERRORS `425dc14`. Verified against the live server: new save stores the note, a
+  re-save appends. Pushed `65620e4..425dc14`; OTA.
+- **Open:** four test saves now in Pranav's library (Gyeongbokgung, Insa-dong, Myeong-dong, a
+  broken bukchon URL) — his call to keep or delete; keyboard covering the note field — needs an
+  on-device look; the tick's two taps with the keyboard up (Home's scroll view, pre-existing) —
+  his call; item 60 waits on the Gemini work.
+- **UI/UX audit (2 Oct):** an Opus design-engineer agent dispatched, phase 1 = audit and redesign
+  proposal only (Plan a trip journey, app-wide polish, typography tiers, micro-interactions,
+  WCAG 2.2 / Nielsen / Atomic Design gates), report to
+  `internal/superpowers/specs/2026-10-02-ui-polish-audit.html`; one real read + one 7-day plan
+  allowed (~$0.55). Fixes land one step at a time on Pranav's approval.
