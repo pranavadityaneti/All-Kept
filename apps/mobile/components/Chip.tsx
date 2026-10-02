@@ -18,7 +18,9 @@ export function Chip({ label, selected = false, onPress, platform, boxed = false
     <View style={styles.content}>{platform && <PlatformLogo platform={platform} size={18} appearance={selected ? "dark" : p.blur}/>}{leading}<Text style={[styles.text, { color: selected ? p.accentInk : p.inkMuted }]} numberOfLines={1}>{label}</Text>{trailing}</View>
   );
   const style = [styles.chip, boxed && styles.boxed, { backgroundColor: selected ? p.accent : p.surfaceAlt, borderColor: selected ? p.accent : p.border }];
-  if (!onPress) return <View style={style}>{body}</View>;
+  // Not a button, but still said: one element with its label, so words given for a screen reader
+  // ("Suggested, not from your saves") aren't dropped, and a leading mark isn't read on its own.
+  if (!onPress) return <View accessible accessibilityLabel={accessibilityLabel ?? label} style={style}>{body}</View>;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [...style, pressed && styles.pressed]}>
       {body}
