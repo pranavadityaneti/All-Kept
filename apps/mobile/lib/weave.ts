@@ -40,9 +40,11 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   if (error) {
     const said = await serverSaid(error);
     const status = httpStatus(error);
-    // No status at all: the request never reached the function — no network, or the phone gave up waiting.
+    // No status at all: no answer came back. Seen on 2 Oct, that was the phone reusing a connection
+    // the server had already closed — the person's own connection was fine, so it isn't blamed; a
+    // second try goes out on a fresh one.
     const code = said?.code ?? (status === 402 ? "payment_required" : status === undefined ? "unreachable" : "internal");
-    const message = said?.error ?? (status === undefined ? "Couldn't reach Allkept. Check your connection and try again." : "Something went wrong.");
+    const message = said?.error ?? (status === undefined ? "Couldn't reach Allkept just now. Try again in a moment." : "Something went wrong.");
     throw new WeaveRefused(code, message);
   }
   if (!data) throw new WeaveRefused("internal", "The server did not answer.");

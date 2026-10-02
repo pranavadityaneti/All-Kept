@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
-import { crowdLine, planText, shiftMix, splitDays, stopHours, whenProblem, type PlanStop } from "../lib/weave";
+import { supabase } from "../lib/supabase";
+import { crowdLine, planText, shiftMix, splitDays, stopHours, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -21,6 +22,17 @@ describe("editing what the saves say", () => {
     expect(splitDays(7, profile.towns)).toEqual([{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }]);
     expect(splitDays(2, [{ name: "A", nights: 5 }, { name: "B", nights: 1 }, { name: "C", nights: 1 }]).reduce((a, n) => a + n.nights, 0)).toBe(3);
     expect(splitDays(3, [])).toEqual([]);
+  });
+});
+
+describe("when no answer comes back", () => {
+  it("says Allkept couldn't be reached just now, without blaming the person's connection", async () => {
+    // A request that got no response at all (the phone dropped a reused connection, or the network did): no status, no words from the server.
+    vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({ data: null, error: new Error("fetch failed: The network connection was lost.") } as never);
+    const refused = await weaveUnderstand(["Seoul"]).catch((e: unknown) => e);
+    expect(refused).toBeInstanceOf(WeaveRefused);
+    expect((refused as WeaveRefused).code).toBe("unreachable");
+    expect((refused as WeaveRefused).message).toBe("Couldn't reach Allkept just now. Try again in a moment.");
   });
 });
 
