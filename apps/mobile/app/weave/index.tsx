@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -10,12 +11,13 @@ import { Chip } from "../../components/Chip";
 import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
 import { InlineMessage } from "../../components/InlineMessage";
+import { JobCard } from "../../components/JobCard";
 import { TripList } from "../../components/TripList";
 import { track } from "../../lib/metrics";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
-import { foldPlaces, KIND_LABEL, percent, pickSummary, setNights, shiftMix, splitDays, tooManyPlaces, tripsKey, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
+import { foldPlaces, KIND_LABEL, percent, pickSummary, runningFor, setNights, shiftMix, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -43,11 +45,9 @@ export default function Weave() {
   const pictures = useSavePictures((trips.data ?? []).map((t) => t.pictureId));
   const [choosing, setChoosing] = useState(false);
   const running = (trips.data ?? []).some((t) => t.status === "reading" || t.status === "planning");
-  const [now, setNow] = useState(Date.now());
-  // A running trip shows how long it has run; the clock only ticks while one does.
-  useEffect(() => { if (!running) return; const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, [running]);
   const record = useWeave(weaveId);
   const stage = weaveStage(record.data, Date.now());
+  const [now, setNow] = useState(Date.now());
   // Nothing is ticked to begin with: saves in a town are what a person kept there, not a journey
   // they have decided on, and the app does not decide it for them. They say where they are going.
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -64,6 +64,11 @@ export default function Weave() {
   // Places with a single save wait under "More places"; opened by the person, and never hiding one they picked.
   const [showMore, setShowMore] = useState(false);
   const pickedInMore = folded.more.filter((t) => picked.has(t.name)).length;
+  // How many saves a read began with, when this screen began it; a trip reopened later doesn't know.
+  const [readingCount, setReadingCount] = useState<number | null>(null);
+  // A running job shows how long it has run; the clock only ticks while one does.
+  const ticking = running || stage.kind === "reading";
+  useEffect(() => { if (!ticking) return; setNow(Date.now()); const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, [ticking]);
   const toggle = (name: string) => setPicked((s) => { const next = new Set(s); if (next.has(name)) next.delete(name); else next.add(name); return next; });
 
   const base = stage.kind === "profiled" ? stage.profile : record.data?.profile ?? null;
@@ -74,23 +79,27 @@ export default function Weave() {
   const savesRead = stage.kind === "profiled" ? stage.saves : 0;
   useEffect(() => {
     if (stage.kind === "reading") watched.current = true;
-    if (stage.kind === "profiled" && watched.current) { watched.current = false; track(userId, "weave_read", { saves: savesRead, towns: base?.towns.length ?? 0 }); }
+    if (stage.kind === "profiled" && watched.current) {
+      watched.current = false;
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      track(userId, "weave_read", { saves: savesRead, towns: base?.towns.length ?? 0 });
+    }
   }, [stage.kind, savesRead, base, userId]);
 
   const refuse = (e: unknown, title: string, retry: () => void) => {
     if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
     setError({ title, message: e instanceof Error ? e.message : "Something went wrong.", retry });
   };
-  const read = async (names: string[]) => {
+  const read = async (names: string[], count: number | null) => {
     if (names.length === 0) return;
-    setBusy(true); setError(null);
+    setBusy(true); setError(null); setReadingCount(count);
     try {
       const started = await weaveUnderstand(names);
       watched.current = true;
       void queryClient.invalidateQueries({ queryKey: tripsKey });
       // From here the trip lives on its row: its id goes in the address, so leaving loses nothing.
       router.setParams({ weaveId: started.weaveId });
-    } catch (e) { refuse(e, "Couldn't start reading your saves", () => { void read(names); }); } finally { setBusy(false); }
+    } catch (e) { refuse(e, "Couldn't start reading your saves", () => { void read(names, count); }); } finally { setBusy(false); }
   };
   const make = async (days: number) => {
     if (!weaveId || !profile) return;
@@ -110,6 +119,8 @@ export default function Weave() {
     queryClient.setQueryData(profileKey(weaveId), profile);
     router.push({ pathname: "/weave/customise", params: { weaveId } });
   };
+  // The read carries on without the screen; Your trips shows it, and it opens from there.
+  const later = () => { setChoosing(false); void queryClient.invalidateQueries({ queryKey: tripsKey }); router.setParams({ weaveId: "" }); };
   const startOver = () => { setError(null); setPicked(new Set()); setChoosing(true); router.setParams({ weaveId: "" }); };
   // A trip opens where it is: the read and the profile on this screen, the plan on its own.
   const openTrip = (t: TripSummary) => {
@@ -125,7 +136,7 @@ export default function Weave() {
       <View style={styles.header}>
         {/* Back from picking places for a new trip steps back to Your trips, one stage, not off the screen. */}
         <IconButton name="back" label="Back" onPress={() => { if (choosing && !weaveId && (trips.data?.length ?? 0) > 0) setChoosing(false); else router.back(); }} />
-        <Text style={[type.heading, styles.headerTitle, { color: p.ink }]}>Plan a trip</Text>
+        <Text numberOfLines={1} style={[type.heading, styles.headerTitle, { color: p.ink }]}>{weaveId && record.data ? tripTitle(record.data.towns) : "Plan a trip"}</Text>
         <View style={styles.spacer} />
       </View>
       <ScrollView contentContainerStyle={styles.page}>
@@ -174,7 +185,24 @@ export default function Weave() {
         {weaveId && record.isError && (
           <InlineMessage title="Couldn't load this trip just now" actions={[{ label: "Try again", onPress: () => { void record.refetch(); } }]} />
         )}
-        {reading && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your {summary.saves > 0 ? `${summary.saves} ` : ""}saves — usually a minute or two.</Text></View>}
+        {reading && (() => {
+          const where = tripTitle(record.data?.towns ?? [...picked]);
+          const ran = stage.kind === "reading" ? now - stage.since : null;
+          return (
+            <JobCard
+              steps={[
+                { label: readingCount ? `Found ${readingCount} ${readingCount === 1 ? "save" : "saves"} in ${where}` : `Found your saves in ${where}`, state: "done" },
+                { label: "Reading what they add up to", state: "active", detail: ran === null ? "Starting…" : `${runningFor(ran)} · usually about a minute, sometimes up to five` },
+                { label: "Your trip profile", state: "todo" },
+              ]}
+              notes={[
+                ...(ran !== null && ran > 5 * 60_000 ? ["Taking longer than usual — it's still going."] : []),
+                "You can leave — it carries on, and it waits for you in Your trips.",
+              ]}
+              actions={weaveId ? [{ label: "Do this later", onPress: later }] : []}
+            />
+          );
+        })()}
         {weaveId && stage.kind === "missing" && (
           <InlineMessage tone="info" title="This trip isn't there any more" actions={[{ label: "Plan a new trip", onPress: startOver }]} />
         )}
@@ -183,7 +211,7 @@ export default function Weave() {
             title="Couldn't read your saves"
             body={stage.message}
             actions={record.data?.towns?.length
-              ? [{ label: "Try again", busy, onPress: () => { void read(record.data?.towns ?? []); } }]
+              ? [{ label: "Try again", busy, onPress: () => { void read(record.data?.towns ?? [], null); } }]
               : [{ label: "Plan a new trip", onPress: startOver }]}
           />
         )}
@@ -227,7 +255,7 @@ export default function Weave() {
             <Text style={[type.label, styles.summary, { color: picked.size > 0 ? p.ink : p.inkMuted }]}>{summary.line}</Text>
             {picked.size > 0 && <Text style={[type.label, { color: p.inkMuted }]}>usually about a minute to read</Text>}
           </View>
-          <Button label={summary.saves > 0 ? `Read ${summary.saves} ${summary.saves === 1 ? "save" : "saves"}` : "Read my saves"} busy={busy} disabled={picked.size === 0 || !!tooMany?.blocking} onPress={() => { void read([...picked]); }} />
+          <Button label={summary.saves > 0 ? `Read ${summary.saves} ${summary.saves === 1 ? "save" : "saves"}` : "Read my saves"} busy={busy} disabled={picked.size === 0 || !!tooMany?.blocking} onPress={() => { void read([...picked], summary.saves); }} />
         </ActionBar>
       )}
     </SafeAreaView>
