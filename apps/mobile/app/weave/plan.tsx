@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -10,11 +10,14 @@ import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
 import { InlineMessage } from "../../components/InlineMessage";
 import { JobCard } from "../../components/JobCard";
+import { StopCard } from "../../components/StopCard";
 import { track } from "../../lib/metrics";
+import { useReducedMotion } from "../../lib/motion";
+import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
-import { font, radius, space, type, usePalette } from "../../lib/theme";
+import { font, space, type, usePalette } from "../../lib/theme";
 import { googleDirectionsUrl, type TripStop } from "../../lib/trips";
-import { briefLine, crowdLine, markPlanAsked, planAskedAt, planText, runningFor, slotWord, stopHours, tripsKey, tripTitle, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop } from "../../lib/weave";
+import { briefLine, crowdLine, dayHeading, markPlanAsked, planAskedAt, planText, runningFor, slotWord, stopHours, tripsKey, tripTitle, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop, type WeavePlanned } from "../../lib/weave";
 import { describeRange } from "../../lib/when";
 
 const asTripStop = (s: PlanStop): TripStop => ({ id: s.id, title: s.title ?? s.name, url: s.url, lastSavedAt: "", place: { name: s.name, address: s.address, lat: s.lat, lng: s.lng, status: null, url: null, periods: null, utcOffsetMinutes: null, locality: s.town } });
@@ -64,7 +67,6 @@ export default function Plan() {
       setRetryError(e instanceof Error ? e.message : "Something went wrong.");
     } finally { setRetrying(false); }
   };
-  const byId = new Map((made?.stops ?? []).map((s) => [s.id, s]));
   // Named by its places, with its days — and its dates when it has them — under the name.
   const brief = made?.brief ?? record.data?.brief ?? null;
   const title = record.data ? tripTitle(record.data.towns ?? (brief ? [...new Set(brief.nights.map((n) => n.town))] : null)) : "Your plan";
@@ -85,8 +87,9 @@ export default function Plan() {
         </View>
         {made ? <IconButton name="share" label="Share the plan" onPress={() => { void share(); }} /> : <View style={styles.spacer} />}
       </View>
+      {made && weaveId ? <PlanView made={made} weaveId={weaveId} userId={userId} /> : (
       <ScrollView contentContainerStyle={styles.page}>
-        {!made ? (
+        {(
           record.isError ? (
             <InlineMessage title="Couldn't load this plan just now" actions={[{ label: "Try again", onPress: () => { void record.refetch(); } }]} />
           ) : stage.kind === "missing" ? (
@@ -119,63 +122,157 @@ export default function Plan() {
               actions={[{ label: "Do this later", onPress: () => router.back() }]}
             />
           )
-        ) : (
-          <>
-            <Text style={[type.body, { color: p.ink }]}>{made.plan.overview}</Text>
-            {made.plan.assumptions.length > 0 && <Text style={[type.label, { color: p.inkMuted }]}>Assumed: {made.plan.assumptions.join(" · ")}</Text>}
-            {made.plan.bookAhead.length > 0 && (
-              <Card>
-                <Text style={[type.heading, { color: p.ink }]}>Book ahead</Text>
-                {made.plan.bookAhead.map((b) => <Text key={b.id} style={[type.body, { color: p.ink }]}>{byId.get(b.id)?.name ?? b.id} <Text style={{ color: p.inkMuted }}>— {b.what}. {b.why}</Text></Text>)}
-              </Card>
-            )}
-            {made.plan.days.map((day, dayIndex) => {
-              const route = googleDirectionsUrl(day.stops.map((s) => byId.get(s.id)).filter((s): s is PlanStop => !!s && s.lat !== 0).map(asTripStop));
-              return (
-                <View key={day.day} style={styles.day}>
-                  <Text style={[type.heading, { color: p.ink }]}>Day {day.day}{day.date ? ` · ${day.date}` : ""} · {day.town}</Text>
-                  <Text style={[type.body, { color: p.inkMuted }]}>{day.theme}</Text>
-                  {day.stops.map((s, i) => {
-                    const stop = byId.get(s.id);
-                    if (!stop) return null;
-                    const crowd = crowdLine(stop);
-                    const hours = stopHours(stop, dayIndex, null, null, new Date());
-                    const open = () => { if (stop.source === "save") router.push({ pathname: "/item/[id]", params: { id: stop.id } }); };
-                    return (
-                      <Pressable key={s.id} accessibilityRole={stop.source === "save" ? "button" : "text"} onPress={open} style={({ pressed }) => [styles.stop, { backgroundColor: p.surface, borderColor: p.border }, pressed && stop.source === "save" && styles.pressed]}>
-                        <View style={styles.stopHead}>
-                          <Text style={[type.label, { color: p.accent }]}>{i + 1} · {slotWord(s.slot)}</Text>
-                          {stop.source === "suggested" && <Chip label="Suggested" boxed accessibilityLabel="Suggested, not from your saves" />}
-                        </View>
-                        <Text style={[type.body, styles.name, { color: p.ink }]}>{stop.name}</Text>
-                        {stop.address && <Text numberOfLines={2} style={[type.label, { color: p.inkMuted }]}>{stop.address}</Text>}
-                        {(crowd || hours) && <Text style={[type.label, { color: hours?.startsWith("Closed") ? p.bad : p.inkMuted }]}>{[crowd, hours].filter(Boolean).join(" · ")}</Text>}
-                        <Text style={[type.body, { color: p.ink }]}>{s.why}</Text>
-                        {s.tip && <Text style={[type.label, { color: p.inkMuted }]}>Tip: {s.tip}</Text>}
-                        {s.warning && <Text style={[type.label, { color: p.warn }]}>{s.warning}</Text>}
-                        {stop.source === "save" && <View style={styles.fromRow}><Icon name="pin" size={14} color={p.inkMuted} /><Text numberOfLines={1} style={[type.label, styles.grow, { color: p.inkMuted }]}>From your save{stop.title ? `: ${stop.title}` : ""}</Text><Icon name="chevron" size={16} color={p.inkMuted} /></View>}
-                      </Pressable>
-                    );
-                  })}
-                  {day.notes && <Text style={[type.label, { color: p.inkMuted }]}>{day.notes}</Text>}
-                  {route && <Button label="Start this day in Google Maps" variant="secondary" onPress={() => { track(userId, "trip_route", { day: day.day }); void Linking.openURL(route).catch(() => undefined); }} />}
-                </View>
-              );
-            })}
-            {(made.plan.leftOut.length > 0 || made.leftOut.length > 0) && (
-              <Card>
-                <Text style={[type.heading, { color: p.ink }]}>Also saved, didn't fit</Text>
-                {made.plan.leftOut.map((l) => <Text key={`p-${l.id}`} style={[type.label, { color: p.inkMuted }]}>{byId.get(l.id)?.name ?? l.id} — {l.reason}</Text>)}
-                {made.leftOut.slice(0, 40).map((l) => <Text key={`s-${l.id}`} style={[type.label, { color: p.inkMuted }]}>{l.title ?? "A save"} — {l.reason}</Text>)}
-              </Card>
-            )}
-            <Text style={[type.label, { color: p.inkMuted }]}>Made from the posts you saved; every stop is one of yours unless it says suggested. Hours and holidays are as the maps and calendars have them — check before you go.</Text>
-          </>
         )}
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
+
+/**
+ * The plan itself: the overview, what to book, what was assumed; day chips that stay at the top and
+ * jump to a day, lighting up as each day scrolls past; each day under its date and theme, its stops
+ * on a timeline with the saves' own pictures; then what didn't fit, and a way to change and remake.
+ */
+function PlanView({ made, weaveId, userId }: { made: WeavePlanned; weaveId: string; userId: string | null }) {
+  const p = usePalette();
+  const router = useRouter();
+  const reduced = useReducedMotion();
+  const now = new Date();
+  const byId = new Map(made.stops.map((s) => [s.id, s]));
+  const pictures = useSavePictures(made.stops.filter((s) => s.source === "save").map((s) => s.id));
+  const open = (id: string) => { if (byId.get(id)?.source !== "suggested") router.push({ pathname: "/item/[id]", params: { id } }); };
+  const scroller = useRef<ScrollView>(null);
+  const chips = useRef<ScrollView>(null);
+  const dayY = useRef<Record<number, number>>({});
+  const chipX = useRef<Record<number, number>>({});
+  const barHeight = useRef(0);
+  const [active, setActive] = useState(made.plan.days[0]?.day ?? 1);
+  const [showOverview, setShowOverview] = useState(false);
+  const [showAssumed, setShowAssumed] = useState(false);
+  const [showLeft, setShowLeft] = useState(false);
+  // The chip of the day being read stays in view as the days scroll past.
+  useEffect(() => { chips.current?.scrollTo({ x: Math.max(0, (chipX.current[active] ?? 0) - space.lg), animated: !reduced }); }, [active, reduced]);
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const y = e.nativeEvent.contentOffset.y + barHeight.current + space.sm;
+    let current = made.plan.days[0]?.day ?? 1;
+    for (const d of made.plan.days) if ((dayY.current[d.day] ?? Infinity) <= y) current = d.day;
+    if (current !== active) setActive(current);
+  };
+  const jump = (day: number) => { setActive(day); scroller.current?.scrollTo({ y: Math.max(0, (dayY.current[day] ?? 0) - barHeight.current), animated: !reduced }); };
+  const leftOut = [
+    ...made.plan.leftOut.map((l) => ({ id: l.id, name: byId.get(l.id)?.name ?? null, reason: l.reason, opens: byId.get(l.id)?.source === "save" })),
+    ...made.leftOut.slice(0, 40).map((l) => ({ id: l.id, name: l.title, reason: l.reason, opens: true })),
+  ].filter((l, i, all) => all.findIndex((x) => x.id === l.id) === i);
+  return (
+    <ScrollView ref={scroller} contentContainerStyle={styles.planPage} stickyHeaderIndices={[1]} onScroll={onScroll} scrollEventThrottle={48}>
+      <View style={styles.top}>
+        <Text style={[type.body, { color: p.ink }]} numberOfLines={showOverview ? undefined : 4}>{made.plan.overview}</Text>
+        {made.plan.overview.length > 200 && (
+          <Pressable accessibilityRole="button" hitSlop={10} onPress={() => setShowOverview((v) => !v)}>
+            <Text style={[type.label, { color: p.accent }]}>{showOverview ? "Less" : "More"}</Text>
+          </Pressable>
+        )}
+        {made.plan.bookAhead.length > 0 && (
+          <Card>
+            <Text style={[type.heading, { color: p.ink }]}>Book ahead ({made.plan.bookAhead.length})</Text>
+            {made.plan.bookAhead.map((b) => {
+              const stop = byId.get(b.id);
+              const opens = stop?.source === "save";
+              return (
+                <Pressable key={b.id} accessibilityRole={opens ? "button" : undefined} disabled={!opens} onPress={() => open(b.id)} style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}>
+                  <View style={styles.grow}>
+                    <Text style={[type.body, styles.name, { color: p.ink }]}>{stop?.name ?? "A stop"}</Text>
+                    <Text style={[type.label, { color: p.inkMuted }]}>{b.what} — {b.why}</Text>
+                  </View>
+                  {opens ? <Icon name="chevron" size={16} color={p.inkMuted} /> : null}
+                </Pressable>
+              );
+            })}
+          </Card>
+        )}
+        {made.plan.assumptions.length > 0 && (
+          <View style={styles.assumed}>
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: showAssumed }} onPress={() => setShowAssumed((v) => !v)} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}>
+              <Text style={[type.label, { color: p.inkMuted }]}>What the plan assumed ({made.plan.assumptions.length})</Text>
+              <Icon name="down" size={14} color={p.inkMuted} style={showAssumed ? styles.flip : undefined} />
+            </Pressable>
+            {showAssumed && made.plan.assumptions.map((a) => <Text key={a} style={[type.label, { color: p.inkMuted }]}>• {a}</Text>)}
+          </View>
+        )}
+      </View>
+      <View style={[styles.bar, { backgroundColor: p.bg, borderBottomColor: p.border }]} onLayout={(e) => { barHeight.current = e.nativeEvent.layout.height; }}>
+        <ScrollView ref={chips} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.barInner}>
+          {made.plan.days.map((d) => (
+            <View key={d.day} onLayout={(e) => { chipX.current[d.day] = e.nativeEvent.layout.x; }}>
+              <Chip label={`Day ${d.day} · ${d.town}`} selected={active === d.day} onPress={() => jump(d.day)} accessibilityLabel={`Go to ${dayHeading(d, now)}`} />
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+      {made.plan.days.map((day, dayIndex) => {
+        const route = googleDirectionsUrl(day.stops.map((s) => byId.get(s.id)).filter((s): s is PlanStop => !!s && s.lat !== 0).map(asTripStop));
+        return (
+          <View key={day.day} style={styles.day} onLayout={(e) => { dayY.current[day.day] = e.nativeEvent.layout.y; }}>
+            <Text accessibilityRole="header" style={[type.label, styles.overline, { color: p.inkMuted }]}>{dayHeading(day, now).toUpperCase()}</Text>
+            <Text style={[type.heading, { color: p.ink }]}>{day.theme}</Text>
+            {route && (
+              <Pressable accessibilityRole="link" hitSlop={8} onPress={() => { track(userId, "trip_route", { day: day.day }); void Linking.openURL(route).catch(() => undefined); }} style={({ pressed }) => [styles.mapLink, pressed && styles.pressed]}>
+                <Icon name="map" size={16} color={p.accent} />
+                <Text style={[type.label, styles.name, { color: p.accent }]}>Open the day in Google Maps</Text>
+              </Pressable>
+            )}
+            {day.stops.map((s) => {
+              const stop = byId.get(s.id);
+              if (!stop) return null;
+              const hours = stopHours(stop, dayIndex, null, null, now);
+              const facts = [crowdLine(stop), hours].filter(Boolean).join(" · ") || null;
+              return (
+                <View key={s.id} style={styles.slotRow}>
+                  <Text style={[type.label, styles.slot, { color: p.inkMuted }]}>{slotWord(s.slot).toUpperCase()}</Text>
+                  <View style={styles.grow}>
+                    <StopCard stop={stop} why={s.why} tip={s.tip} warning={s.warning} facts={facts} closed={!!hours?.startsWith("Closed")} picture={pictures[stop.id]}
+                      onOpen={stop.source === "save" ? () => open(stop.id) : undefined} />
+                  </View>
+                </View>
+              );
+            })}
+            {day.notes ? (
+              <View style={styles.dayNote}>
+                <Icon name="moon" size={16} color={p.inkMuted} />
+                <Text style={[type.label, styles.grow, { color: p.inkMuted }]}>{day.notes}</Text>
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+      <View style={styles.end}>
+        {leftOut.length > 0 && (
+          <Card>
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: showLeft }} onPress={() => setShowLeft((v) => !v)} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}>
+              <Text style={[type.heading, styles.grow, { color: p.ink }]}>Also saved, didn't fit ({leftOut.length})</Text>
+              <Icon name="down" size={18} color={p.inkMuted} style={showLeft ? styles.flip : undefined} />
+            </Pressable>
+            {showLeft && leftOut.map((l) => (
+              <Pressable key={l.id} accessibilityRole={l.opens ? "button" : undefined} disabled={!l.opens} onPress={() => open(l.id)} style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}>
+                <View style={styles.grow}>
+                  <Text numberOfLines={1} style={[type.body, { color: p.ink }]}>{l.name ?? "A save"}</Text>
+                  <Text style={[type.label, { color: p.inkMuted }]}>{l.reason}</Text>
+                </View>
+                {l.opens ? <Icon name="chevron" size={16} color={p.inkMuted} /> : null}
+              </Pressable>
+            ))}
+          </Card>
+        )}
+        <Text style={[type.label, { color: p.inkMuted }]}>Made from the posts you saved; every stop is one of yours unless it says suggested. Hours and holidays are as the maps and calendars have them — check before you go.</Text>
+        <Button label="Change and remake" variant="secondary" onPress={() => router.push({ pathname: "/weave", params: { weaveId } })} />
+      </View>
+    </ScrollView>
+  );
+}
+
+/** The timeline's rail, where each stop's time of day sits. */
+const RAIL = 82;
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
@@ -184,11 +281,23 @@ const styles = StyleSheet.create({
   centeredText: { textAlign: "center" },
   spacer: { width: 44 },
   page: { padding: space.lg, gap: space.md, paddingBottom: space.xxl },
-  day: { gap: space.sm, marginTop: space.md },
-  stop: { padding: space.md, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, gap: space.xs },
-  stopHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  planPage: { paddingBottom: space.xxl },
+  top: { paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md, gap: space.md },
+  assumed: { gap: space.xs },
+  disclosure: { flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 32 },
+  flip: { transform: [{ rotate: "180deg" }] },
+  bar: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: space.sm },
+  barInner: { paddingHorizontal: space.lg, gap: space.sm },
+  day: { paddingHorizontal: space.lg, paddingTop: space.xl, gap: space.sm },
+  overline: { ...font("700"), letterSpacing: 0.8 },
+  mapLink: { flexDirection: "row", alignItems: "center", gap: space.xs, minHeight: 32 },
+  slotRow: { flexDirection: "row", gap: space.sm },
+  // Wide enough for the longest slot word, "AFTERNOON", on one line; "LATE MORNING" breaks between its words.
+  slot: { width: RAIL, paddingTop: space.md, fontSize: 11, lineHeight: 15, ...font("700"), letterSpacing: 0.5 },
+  dayNote: { flexDirection: "row", alignItems: "flex-start", gap: space.sm, paddingLeft: RAIL + space.sm, paddingTop: space.xs },
+  listRow: { flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 44, paddingVertical: space.xs },
+  end: { paddingHorizontal: space.lg, paddingTop: space.xl, gap: space.md },
   name: { ...font("600") },
-  fromRow: { flexDirection: "row", alignItems: "center", gap: space.xs, marginTop: space.xs },
   grow: { flex: 1 },
-  pressed: { opacity: 0.85 },
+  pressed: { opacity: 0.7 },
 });

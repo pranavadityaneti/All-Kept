@@ -305,12 +305,17 @@ export function stopHours(stop: PlanStop, dayIndex: number, periods: OpeningPeri
   return periods ? hoursLine(periods, utcOffsetMinutes, now) : null;
 }
 
+/** A day's heading: "Day 1 · Tue 6 Oct · Seoul" — the date as people say it, never the raw ISO day. */
+export function dayHeading(day: { day: number; date: string | null; town: string }, now: Date): string {
+  return `Day ${day.day}${day.date ? ` · ${describeDay(day.date, now)}` : ""} · ${day.town}`;
+}
+
 /** The plan as text a person can send: the overview, then each day with its stops, then what to book. */
-export function planText(plan: WeavePlan, stops: PlanStop[], title: string): string {
+export function planText(plan: WeavePlan, stops: PlanStop[], title: string, now: Date = new Date()): string {
   const byId = new Map(stops.map((s) => [s.id, s]));
   const lines = [title, "", plan.overview];
   for (const day of plan.days) {
-    lines.push("", `Day ${day.day}${day.date ? ` · ${day.date}` : ""} · ${day.town} — ${day.theme}`);
+    lines.push("", `${dayHeading(day, now)} — ${day.theme}`);
     day.stops.forEach((s, i) => {
       const stop = byId.get(s.id);
       lines.push(`${i + 1}. ${slotWord(s.slot)}: ${stop?.name ?? s.id}${stop?.source === "suggested" ? " (suggested — not from your saves)" : ""}`);

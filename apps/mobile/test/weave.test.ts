@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { briefLine, crowdLine, defaultDays, foldPlaces, moveNight, pickSummary, mixWith, planText, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
+import { briefLine, crowdLine, dayHeading, defaultDays, foldPlaces, moveNight, pickSummary, mixWith, planText, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -170,16 +170,21 @@ describe("the plan as words", () => {
     expect(stopHours(stop({ id: "a", openByDay: ["unknown"] }), 0, null, null, new Date())).toContain("check before you go");
     expect(stopHours(stop({ id: "a" }), 0, null, null, new Date())).toBeNull();
   });
+  it("heads a day with its number, its date as people say it, and its town", () => {
+    const now = new Date(2026, 9, 2);
+    expect(dayHeading({ day: 1, date: "2026-10-06", town: "Seoul" }, now)).toBe("Day 1 · Tue 6 Oct · Seoul");
+    expect(dayHeading({ day: 3, date: null, town: "Busan" }, now)).toBe("Day 3 · Busan");
+  });
   it("writes the plan a person can send: the days, the stops with their reason, tip, warning and reel; the suggestions said as such; what to book", () => {
     const plan: WeavePlan = {
       overview: "Two days in Seoul.", assumptions: [],
       days: [{ day: 1, date: "2026-10-06", town: "Seoul", theme: "Seongsu", stops: [{ id: "a", slot: "morning", why: "You saved it twice.", cites: ["a"], tip: "The matcha", warning: null }, { id: "s:p1", slot: "lunch", why: "Near the first.", cites: [], tip: null, warning: "Suggested — not from your saves" }], notes: "Rest in the evening." }],
       bookAhead: [{ id: "a", what: "A table", why: "It fills by noon" }], leftOut: [],
     };
-    const text = planText(plan, [stop({ id: "a" }), stop({ id: "s:p1", source: "suggested", name: "A café", url: null })], "Seoul — 2 days");
+    const text = planText(plan, [stop({ id: "a" }), stop({ id: "s:p1", source: "suggested", name: "A café", url: null })], "Seoul — 2 days", new Date(2026, 9, 2));
     expect(text).toBe([
       "Seoul — 2 days", "", "Two days in Seoul.", "",
-      "Day 1 · 2026-10-06 · Seoul — Seongsu",
+      "Day 1 · Tue 6 Oct · Seoul — Seongsu",
       "1. Morning: Place a", "   1 Road", "   You saved it twice.", "   Tip: The matcha", "   From: https://www.instagram.com/reel/a/",
       "2. Lunch: A café (suggested — not from your saves)", "   1 Road", "   Near the first.", "   Suggested — not from your saves",
       "   Rest in the evening.", "", "Book ahead:", "- Place a: A table — It fills by noon", "", "Made with Allkept from the posts you saved.",
