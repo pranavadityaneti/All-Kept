@@ -96,7 +96,8 @@ export default function Plan() {
             <InlineMessage tone="info" title="This trip isn't there any more" actions={[{ label: "Plan a new trip", onPress: () => router.replace("/weave") }]} />
           ) : stage.kind === "failed" && stage.during === "plan" ? (
             <InlineMessage
-              title="Couldn't make the plan"
+              // The server's words say what went wrong ("Couldn't make the plan just now…"); the title only says where it stopped.
+              title="The plan didn't finish"
               body={retryError ?? stage.message}
               actions={[
                 { label: "Try again", busy: retrying, onPress: () => { void retry(); } },
