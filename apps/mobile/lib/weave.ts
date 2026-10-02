@@ -59,55 +59,72 @@ export function useWeaveTowns(enabled: boolean) {
   return useQuery({ queryKey: ["weave-towns"], queryFn: weaveTowns, enabled });
 }
 
-/** The weave's row as the app reads it: the stage it is at, what the server wrote for the app, what the person is told on failure, and when it last moved. */
-export interface WeaveRow { status: string; result: unknown; message: string | null; updatedAt: string }
+/**
+ * A trip's row as the app reads it (spec §11): the stage it is at, what was asked (the towns, the
+ * brief), what the server wrote for the app, what the person is told when it failed, and when it
+ * began and last moved. Every Plan a trip screen is drawn from this row, so a trip left mid-read or
+ * mid-plan picks up where it is — by its id, from anywhere.
+ */
+export interface WeaveRecord {
+  id: string; status: "reading" | "profiled" | "planning" | "planned" | "failed"; towns: string[] | null;
+  profile: WeaveProfile | null; brief: WeaveBrief | null; result: unknown; message: string | null; createdAt: string; updatedAt: string;
+}
 
-/** The app looks at its row this often while a stage runs. */
+/** The app looks at a running trip's row this often. */
 const LOOK_MS = 3000;
 /** A running job touches its row every 20 s; one silent for this long belongs to a worker that died — the same clock the server keeps. */
 export const STALE_MS = 90_000;
-/** The longest the app waits for each stage, past which it stops looking. */
-export const DEADLINE_MS = { profiled: 5 * 60_000, planned: 8 * 60_000 } as const;
-const TOO_LONG = "This is taking longer than it should. Try again in a moment.";
+const STALLED = "This stopped partway through. Nothing was planned; try again.";
 
-async function readRow(weaveId: string): Promise<WeaveRow | null> {
-  const { data, error } = await supabase.from("weaves").select("status,result,message,updated_at").eq("id", weaveId).maybeSingle();
+async function readRecord(weaveId: string): Promise<WeaveRecord | null> {
+  const { data, error } = await supabase.from("weaves").select("id,status,towns,profile,brief,result,message,created_at,updated_at").eq("id", weaveId).maybeSingle();
   if (error) throw new WeaveRefused("internal", error.message);
   if (!data) return null;
-  const r = data as { status: string; result: unknown; message: string | null; updated_at: string };
-  return { status: r.status, result: r.result, message: r.message, updatedAt: r.updated_at };
+  const r = data as { id: string; status: WeaveRecord["status"]; towns: string[] | null; profile: WeaveProfile | null; brief: WeaveBrief | null; result: unknown; message: string | null; created_at: string; updated_at: string };
+  return { id: r.id, status: r.status, towns: r.towns, profile: r.profile, brief: r.brief, result: r.result, message: r.message, createdAt: r.created_at, updatedAt: r.updated_at };
 }
 
-const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+/** A trip's row, looked at again every few seconds while its job runs and left alone once it has stopped. */
+export const weaveKey = (weaveId: string) => ["weave", weaveId] as const;
+export function useWeave(weaveId: string | null) {
+  return useQuery({
+    queryKey: weaveKey(weaveId ?? ""),
+    queryFn: () => readRecord(weaveId!),
+    enabled: !!weaveId,
+    // Looked at again only while the job runs: a row gone silent past the heartbeat is a stopped job, said as such, not watched for ever.
+    refetchInterval: (query) => { const r = query.state.data; return r && (r.status === "reading" || r.status === "planning") && Date.now() - Date.parse(r.updatedAt) <= STALE_MS ? LOOK_MS : false; },
+  });
+}
+
+/** Where a trip is, as a screen draws it. */
+export type WeaveStage =
+  | { kind: "loading" } | { kind: "missing" }
+  | { kind: "reading"; since: number }
+  | { kind: "profiled"; profile: WeaveProfile; saves: number }
+  | { kind: "planning" }
+  | { kind: "planned"; planned: WeavePlanned }
+  | { kind: "failed"; during: "read" | "plan"; message: string; stalled: boolean };
 
 /**
- * Waits for a stage of the weave by watching its row (spec §11): "profiled" after "Read my saves",
- * "planned" after "Make a plan". Hands back what the server wrote for the app, or refuses with the
- * server's own words when the stage failed, with "timeout" when the row has stopped moving or the
- * deadline has passed, and with "aborted" when the screen has gone. The reader, the clock and
- * the sleep are injectable for tests.
+ * A trip's row read as a stage: undefined while it loads, null when there is no such trip. A failure
+ * is the server's own words, at the read or the plan by whether a brief was given; a running job
+ * whose row has gone silent past the worker's heartbeat is a failure to try again, not a wait.
  */
-export async function waitForWeave<T>(
-  weaveId: string, want: "profiled" | "planned",
-  deps: { read?: (weaveId: string) => Promise<WeaveRow | null>; now?: () => number; sleep?: (ms: number) => Promise<void>; deadlineMs?: number; signal?: AbortSignal } = {},
-): Promise<T> {
-  const read = deps.read ?? readRow, now = deps.now ?? Date.now, sleep = deps.sleep ?? pause;
-  const deadline = now() + (deps.deadlineMs ?? DEADLINE_MS[want]);
-  for (;;) {
-    if (deps.signal?.aborted) throw new WeaveRefused("aborted", "Stopped waiting.");
-    const row = await read(weaveId);
-    if (!row) throw new WeaveRefused("not_found", "This plan isn't there any more. Make it again from \"Plan a trip\" on the map.");
-    if (row.status === want) return row.result as T;
-    if (row.status === "failed") throw new WeaveRefused("failed", row.message ?? "Something went wrong.");
-    if (now() - Date.parse(row.updatedAt) > STALE_MS || now() >= deadline) throw new WeaveRefused("timeout", TOO_LONG);
-    await sleep(LOOK_MS);
+export function weaveStage(record: WeaveRecord | null | undefined, now: number): WeaveStage {
+  if (record === undefined) return { kind: "loading" };
+  if (record === null) return { kind: "missing" };
+  const during = record.brief ? "plan" : "read";
+  const silent = now - Date.parse(record.updatedAt) > STALE_MS;
+  switch (record.status) {
+    case "reading": return silent ? { kind: "failed", during, message: STALLED, stalled: true } : { kind: "reading", since: Date.parse(record.createdAt) };
+    case "planning": return silent ? { kind: "failed", during, message: STALLED, stalled: true } : { kind: "planning" };
+    case "profiled": {
+      const found = record.result as Partial<WeaveUnderstood> | null;
+      return { kind: "profiled", profile: found?.profile ?? record.profile!, saves: found?.saves ?? 0 };
+    }
+    case "planned": return { kind: "planned", planned: record.result as WeavePlanned };
+    default: return { kind: "failed", during, message: record.message ?? "Something went wrong.", stalled: false };
   }
-}
-
-/** The plan for a weave: waited for on the row, then kept for the session. The plan screen opens on the id alone. */
-export const planKey = (weaveId: string) => ["weave-plan", weaveId] as const;
-export function usePlanned(weaveId: string) {
-  return useQuery({ queryKey: planKey(weaveId), queryFn: ({ signal }) => waitForWeave<WeavePlanned>(weaveId, "planned", { signal }), enabled: weaveId.length > 0, staleTime: Infinity, gcTime: 60 * 60_000, retry: false });
 }
 
 /** The last weave begun, kept on the phone for an hour so a plan begun and left is still reachable. */

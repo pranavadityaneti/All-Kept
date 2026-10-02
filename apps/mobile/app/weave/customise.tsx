@@ -11,7 +11,7 @@ import { WhenRow } from "../../components/WhenRow";
 import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { radius, space, type, usePalette } from "../../lib/theme";
-import { planKey, rememberWeave, setNights, splitDays, weavePlan, WeaveRefused, whenProblem, type WeaveBrief, type WeaveProfile } from "../../lib/weave";
+import { rememberWeave, setNights, splitDays, weaveKey, weavePlan, WeaveRefused, whenProblem, type WeaveBrief, type WeaveProfile } from "../../lib/weave";
 import { timeDate } from "../../lib/when";
 import { profileKey } from "./index";
 
@@ -63,7 +63,7 @@ export default function Customise() {
         bases: Object.entries(bases).filter(([, name]) => name.trim()).map(([town, name]) => ({ town, name: name.trim() })),
         group, pace, transport, budget, note: note.trim() || null,
       });
-      queryClient.removeQueries({ queryKey: planKey(weaveId) }); // a plan made before on this weave is not the one now being woven
+      void queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) }); // the row has moved on to planning; the plan screen reads it fresh
       rememberWeave(weaveId);
       track(userId, "weave_plan", { days, customised: true });
       router.replace({ pathname: "/weave/plan", params: { weaveId } });

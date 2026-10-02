@@ -1,5 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../../components/Button";
@@ -11,24 +12,50 @@ import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { font, radius, space, type, usePalette } from "../../lib/theme";
 import { googleDirectionsUrl, type TripStop } from "../../lib/trips";
-import { crowdLine, planText, slotWord, stopHours, usePlanned, type PlanStop } from "../../lib/weave";
+import { crowdLine, planText, slotWord, stopHours, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop } from "../../lib/weave";
 
 const asTripStop = (s: PlanStop): TripStop => ({ id: s.id, title: s.title ?? s.name, url: s.url, lastSavedAt: "", place: { name: s.name, address: s.address, lat: s.lat, lng: s.lng, status: null, url: null, periods: null, utcOffsetMinutes: null, locality: s.town } });
 
 /**
  * The plan: the overview, what to book, the days with their stops, what didn't fit — and the two
- * ways out of a day. Opened on the weave's id alone: it waits here while the plan is woven (the
- * row is watched, spec §11), so a plan begun and left is still reachable.
+ * ways out of a day. Opened on the trip's id alone and drawn from its row (spec §11): it waits here
+ * while the plan is woven, says the server's own words if it failed with the same brief one tap from
+ * trying again, and is reachable by the id for as long as the trip is there.
  */
 export default function Plan() {
   const p = usePalette();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const session = useSession();
   const userId = session.status === "ready" && !session.anonymous ? session.userId : null;
-  const { weaveId } = useLocalSearchParams<{ weaveId: string }>();
-  const planned = usePlanned(weaveId ?? "");
-  const made = planned.data ?? null;
-  useEffect(() => { if (made) track(userId, "weave_planned", { stops: made.stops.length, cost: made.cost }); }, [made, userId]);
+  const params = useLocalSearchParams<{ weaveId?: string }>();
+  const weaveId = typeof params.weaveId === "string" && params.weaveId ? params.weaveId : null;
+  const record = useWeave(weaveId);
+  // Without an id there is no trip to wait on: said at once, rather than a spinner that never ends.
+  const stage = weaveId ? weaveStage(record.data, Date.now()) : { kind: "missing" as const };
+  const made = stage.kind === "planned" ? stage.planned : null;
+  // A plan counted once, when it is seen to arrive here — not again each time it is reopened.
+  const watched = useRef(false);
+  useEffect(() => {
+    if (stage.kind === "planning") watched.current = true;
+    if (made && watched.current) { watched.current = false; track(userId, "weave_planned", { stops: made.stops.length, cost: made.cost }); }
+  }, [stage.kind, made, userId]);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  // The same trip, the same brief, woven again on the same row.
+  const retry = async () => {
+    const r = record.data;
+    if (!weaveId || !r?.profile || !r.brief) return;
+    setRetrying(true); setRetryError(null);
+    try {
+      await weavePlan(weaveId, r.profile, r.brief);
+      watched.current = true;
+      await queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
+    } catch (e) {
+      if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
+      setRetryError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally { setRetrying(false); }
+  };
   const byId = new Map((made?.stops ?? []).map((s) => [s.id, s]));
   const title = made ? `${[...new Set(made.brief.nights.map((n) => n.town))].join(" · ")} — ${made.brief.days} ${made.brief.days === 1 ? "day" : "days"}` : "Your plan";
   const share = async () => {
@@ -45,8 +72,20 @@ export default function Plan() {
       </View>
       <ScrollView contentContainerStyle={styles.page}>
         {!made ? (
-          planned.isError ? (
-            <Card><Icon name="help" size={18} color={p.bad} /><Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{planned.error.message}</Text><Button label="Back" variant="secondary" onPress={() => router.back()} /></Card>
+          record.isError ? (
+            <Card><Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>Couldn't load this plan just now.</Text><Button label="Try again" onPress={() => { void record.refetch(); }} /></Card>
+          ) : stage.kind === "missing" ? (
+            <Card><Text style={[type.body, { color: p.ink }]}>This trip isn't there any more.</Text><Button label="Plan a new trip" variant="secondary" onPress={() => router.replace("/weave")} /></Card>
+          ) : stage.kind === "failed" && stage.during === "plan" ? (
+            <Card>
+              <Icon name="help" size={18} color={p.bad} />
+              <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{retryError ?? stage.message}</Text>
+              <Button label="Try again" busy={retrying} onPress={() => { void retry(); }} />
+              <Button label="Back" variant="secondary" onPress={() => router.back()} />
+            </Card>
+          ) : stage.kind === "reading" || stage.kind === "profiled" || stage.kind === "failed" ? (
+            // A trip opened here before it has a plan: its own screen is where the next step is.
+            <Card><Text style={[type.body, { color: p.ink }]}>This trip has no plan yet.</Text><Button label="Go to the trip" variant="secondary" onPress={() => router.replace({ pathname: "/weave", params: { weaveId: weaveId! } })} /></Card>
           ) : (
             <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Weaving your plan — two to five minutes. You can leave; it carries on, and it's here when you come back.</Text></View>
           )

@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,7 +11,7 @@ import { IconButton } from "../../components/IconButton";
 import { track } from "../../lib/metrics";
 import { useSession } from "../../lib/session";
 import { radius, space, type, usePalette } from "../../lib/theme";
-import { KIND_LABEL, percent, planKey, rememberWeave, setNights, shiftMix, splitDays, useRecentWeave, useWeaveTowns, waitForWeave, weavePlan, weaveUnderstand, WeaveRefused, type WeaveProfile, type WeaveUnderstood } from "../../lib/weave";
+import { KIND_LABEL, percent, rememberWeave, setNights, shiftMix, splitDays, useRecentWeave, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type WeaveProfile } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -20,8 +20,9 @@ export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as con
  * Plan a trip: the towns the saves name, the profile the saves add up to — edited in the open —
  * and a plan of seven or twelve days, or Customise for the brief. Nothing is planned until the
  * person has seen what their saves say and moved what they want moved. Reading and planning are
- * jobs (spec §11): the server answers at once and the row is watched — the reading here, the
- * plan on its own screen, which is also where a plan begun earlier is picked up.
+ * jobs (spec §11): the server answers at once, and this screen is drawn from the trip's row from
+ * then on — its id is in the address the moment the read begins, so a trip left mid-read is picked
+ * up where it is, by its id, rather than lost with the screen.
  */
 export default function Weave() {
   const p = usePalette();
@@ -30,56 +31,68 @@ export default function Weave() {
   const session = useSession();
   const ready = session.status === "ready";
   const userId = ready && !session.anonymous ? session.userId : null;
-  const towns = useWeaveTowns(ready);
+  const params = useLocalSearchParams<{ weaveId?: string }>();
+  const weaveId = typeof params.weaveId === "string" && params.weaveId ? params.weaveId : null;
+  const towns = useWeaveTowns(ready && !weaveId);
   const recent = useRecentWeave();
+  const record = useWeave(weaveId);
+  const stage = weaveStage(record.data, Date.now());
   // Nothing is ticked to begin with: saves in a town are what a person kept there, not a journey
   // they have decided on, and the app does not decide it for them. They say where they are going.
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [stage, setStage] = useState<"towns" | "reading" | "profile" | "making">("towns");
-  const [weaveId, setWeaveId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<WeaveProfile | null>(null);
-  const [savesRead, setSavesRead] = useState(0);
+  // The profile as the person has moved it, kept with the trip it belongs to: the row's own until
+  // the first move, so another trip opened on this screen never shows this one's edits.
+  const [draft, setDraft] = useState<{ weaveId: string; profile: WeaveProfile } | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // The wait on the row stops when the screen goes.
-  const gone = useRef(new AbortController());
-  useEffect(() => { const c = gone.current; return () => c.abort(); }, []);
   const pickedSaves = towns.data?.towns.filter((t) => picked.has(t.name)).reduce((a, t) => a + t.saves, 0) ?? 0;
+
+  const base = stage.kind === "profiled" ? stage.profile : record.data?.profile ?? null;
+  const profile = draft && draft.weaveId === weaveId ? draft.profile : base;
+  const edit = (next: WeaveProfile) => { if (weaveId) setDraft({ weaveId, profile: next }); };
+  // A read counted once, when it is seen to finish here — not again each time the trip is reopened.
+  const watched = useRef(false);
+  const savesRead = stage.kind === "profiled" ? stage.saves : 0;
+  useEffect(() => {
+    if (stage.kind === "reading") watched.current = true;
+    if (stage.kind === "profiled" && watched.current) { watched.current = false; track(userId, "weave_read", { saves: savesRead, towns: base?.towns.length ?? 0 }); }
+  }, [stage.kind, savesRead, base, userId]);
 
   const refuse = (e: unknown) => {
     if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
-    if (e instanceof WeaveRefused && e.code === "aborted") return;
     setError(e instanceof Error ? e.message : "Something went wrong.");
   };
-  const read = async () => {
-    if (picked.size === 0) return;
-    setStage("reading"); setError(null);
+  const read = async (names: string[]) => {
+    if (names.length === 0) return;
+    setBusy(true); setError(null);
     try {
-      const started = await weaveUnderstand([...picked]);
-      const out = await waitForWeave<WeaveUnderstood>(started.weaveId, "profiled", { signal: gone.current.signal });
-      setWeaveId(started.weaveId); setProfile(out.profile); setSavesRead(out.saves);
-      queryClient.setQueryData(profileKey(started.weaveId), out.profile);
-      track(userId, "weave_read", { saves: out.saves, towns: picked.size });
-      setStage("profile");
-    } catch (e) { setStage("towns"); refuse(e); }
+      const started = await weaveUnderstand(names);
+      watched.current = true;
+      // From here the trip lives on its row: its id goes in the address, so leaving loses nothing.
+      router.setParams({ weaveId: started.weaveId });
+    } catch (e) { refuse(e); } finally { setBusy(false); }
   };
   const make = async (days: number) => {
     if (!weaveId || !profile) return;
-    setStage("making"); setError(null);
+    setBusy(true); setError(null);
     try {
-      // The server answers at once and weaves on; the plan screen waits on the row.
+      // The server answers at once and weaves on; the plan screen is drawn from the row.
       await weavePlan(weaveId, profile, { days, nights: splitDays(days, profile.towns) });
-      queryClient.removeQueries({ queryKey: planKey(weaveId) }); // a plan made before on this weave is not the one now being woven
+      void queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
       rememberWeave(weaveId);
       track(userId, "weave_plan", { days });
-      router.replace({ pathname: "/weave/plan", params: { weaveId } });
-    } catch (e) { setStage("profile"); refuse(e); }
+      // Pushed, not replaced: Back from the plan comes back here, to the profile as it was.
+      router.push({ pathname: "/weave/plan", params: { weaveId } });
+    } catch (e) { refuse(e); } finally { setBusy(false); }
   };
   const customise = () => {
     if (!weaveId || !profile) return;
     queryClient.setQueryData(profileKey(weaveId), profile);
     router.push({ pathname: "/weave/customise", params: { weaveId } });
   };
+  const startOver = () => { setError(null); setPicked(new Set()); router.setParams({ weaveId: "" }); };
 
+  const reading = busy && !weaveId ? true : stage.kind === "reading";
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
       <View style={styles.header}>
@@ -88,7 +101,7 @@ export default function Weave() {
         <View style={styles.spacer} />
       </View>
       <ScrollView contentContainerStyle={styles.page}>
-        {stage === "towns" && (
+        {!weaveId && !reading && (
           <>
             {recent.data ? (
               <Card>
@@ -107,22 +120,42 @@ export default function Weave() {
                 ))}
               </View>
             )}
-            <Button label="Read my saves" disabled={picked.size === 0} onPress={() => { void read(); }} />
+            <Button label="Read my saves" disabled={picked.size === 0} onPress={() => { void read([...picked]); }} />
             <Text style={[type.label, { color: p.inkMuted }]}>Allkept reads the posts you saved in these towns and says what they add up to. Nothing is planned until you've seen that.</Text>
           </>
         )}
-        {stage === "reading" && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your {pickedSaves} saves — usually a minute or two.</Text></View>}
-        {stage === "making" && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Starting your plan…</Text></View>}
-        {stage === "profile" && profile && (
+        {weaveId && stage.kind === "loading" && !record.isError && <View style={styles.centered}><ActivityIndicator color={p.accent} /></View>}
+        {weaveId && record.isError && (
+          <Card>
+            <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>Couldn't load this trip just now.</Text>
+            <Button label="Try again" onPress={() => { void record.refetch(); }} />
+          </Card>
+        )}
+        {reading && <View style={styles.centered}><ActivityIndicator color={p.accent} /><Text style={[type.body, { color: p.inkMuted }]}>Reading your {pickedSaves > 0 ? `${pickedSaves} ` : ""}saves — usually a minute or two.</Text></View>}
+        {weaveId && stage.kind === "missing" && (
+          <Card>
+            <Text style={[type.body, { color: p.ink }]}>This trip isn't there any more.</Text>
+            <Button label="Plan a new trip" variant="secondary" onPress={startOver} />
+          </Card>
+        )}
+        {weaveId && stage.kind === "failed" && stage.during === "read" && (
+          <Card>
+            <Text accessibilityRole="alert" style={[type.body, { color: p.bad }]}>{stage.message}</Text>
+            {record.data?.towns?.length
+              ? <Button label="Try again" busy={busy} onPress={() => { void read(record.data?.towns ?? []); }} />
+              : <Button label="Plan a new trip" variant="secondary" onPress={startOver} />}
+          </Card>
+        )}
+        {weaveId && profile && stage.kind !== "reading" && !(stage.kind === "failed" && stage.during === "read") && (
           <>
             <Card>
               <Text style={[type.heading, { color: p.ink }]}>What your saves say</Text>
-              <Text style={[type.label, { color: p.inkMuted }]}>{savesRead} saves read. Move what you'd like more or less of.</Text>
+              <Text style={[type.label, { color: p.inkMuted }]}>{stage.kind === "profiled" && stage.saves > 0 ? `${stage.saves} saves read. ` : ""}Move what you'd like more or less of.</Text>
               {profile.mix.map((m) => (
                 <View key={m.kind} style={styles.row}>
                   <Text style={[type.body, styles.grow, { color: p.ink }]}>{KIND_LABEL[m.kind]} <Text style={{ color: p.inkMuted }}>{percent(m.share)}</Text></Text>
-                  <IconButton name="minus" label={`Less ${KIND_LABEL[m.kind]}`} size={32} tone="plain" onPress={() => setProfile(shiftMix(profile, m.kind, "less"))} />
-                  <IconButton name="plus" label={`More ${KIND_LABEL[m.kind]}`} size={32} tone="plain" onPress={() => setProfile(shiftMix(profile, m.kind, "more"))} />
+                  <IconButton name="minus" label={`Less ${KIND_LABEL[m.kind]}`} size={32} tone="plain" onPress={() => edit(shiftMix(profile, m.kind, "less"))} />
+                  <IconButton name="plus" label={`More ${KIND_LABEL[m.kind]}`} size={32} tone="plain" onPress={() => edit(shiftMix(profile, m.kind, "more"))} />
                 </View>
               ))}
               {profile.style ? <Text style={[type.label, { color: p.inkMuted }]}>Style: {profile.style}</Text> : null}
@@ -133,15 +166,15 @@ export default function Weave() {
               {profile.towns.map((t) => (
                 <View key={t.name} style={styles.row}>
                   <Text style={[type.body, styles.grow, { color: p.ink }]}>{t.name} <Text style={{ color: p.inkMuted }}>{t.saves} saves · {t.nights} {t.nights === 1 ? "night" : "nights"}</Text></Text>
-                  <IconButton name="minus" label={`Fewer nights in ${t.name}`} size={32} tone="plain" onPress={() => setProfile({ ...profile, towns: setNights(profile.towns.map((x) => ({ town: x.name, nights: x.nights })), t.name, -1).map((n, i) => ({ ...profile.towns[i]!, nights: n.nights })) })} />
-                  <IconButton name="plus" label={`More nights in ${t.name}`} size={32} tone="plain" onPress={() => setProfile({ ...profile, towns: setNights(profile.towns.map((x) => ({ town: x.name, nights: x.nights })), t.name, 1).map((n, i) => ({ ...profile.towns[i]!, nights: n.nights })) })} />
+                  <IconButton name="minus" label={`Fewer nights in ${t.name}`} size={32} tone="plain" onPress={() => edit({ ...profile, towns: setNights(profile.towns.map((x) => ({ town: x.name, nights: x.nights })), t.name, -1).map((n, i) => ({ ...profile.towns[i]!, nights: n.nights })) })} />
+                  <IconButton name="plus" label={`More nights in ${t.name}`} size={32} tone="plain" onPress={() => edit({ ...profile, towns: setNights(profile.towns.map((x) => ({ town: x.name, nights: x.nights })), t.name, 1).map((n, i) => ({ ...profile.towns[i]!, nights: n.nights })) })} />
                 </View>
               ))}
               <Text style={[type.label, { color: p.inkMuted }]}>In proportion to what you saved. A 7- or 12-day plan splits its days the same way.</Text>
             </Card>
-            <Button label="Make a 7-day plan" onPress={() => { void make(7); }} />
-            <Button label="Make a 12-day plan" variant="secondary" onPress={() => { void make(12); }} />
-            <Button label="Customise…" variant="secondary" onPress={customise} />
+            <Button label="Make a 7-day plan" busy={busy} onPress={() => { void make(7); }} />
+            <Button label="Make a 12-day plan" variant="secondary" disabled={busy} onPress={() => { void make(12); }} />
+            <Button label="Customise…" variant="secondary" disabled={busy} onPress={customise} />
           </>
         )}
         {error && <View style={[styles.error, { backgroundColor: p.surface, borderColor: p.border }]}><Icon name="help" size={18} color={p.bad} /><Text accessibilityRole="alert" style={[type.body, styles.grow, { color: p.bad }]}>{error}</Text></View>}

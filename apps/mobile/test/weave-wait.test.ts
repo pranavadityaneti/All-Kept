@@ -1,53 +1,49 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@react-native-async-storage/async-storage", () => ({ default: { getItem: async () => null, setItem: async () => undefined } }));
 vi.mock("../lib/supabase", () => ({ supabase: {} }));
-import { recentWeave, waitForWeave, WeaveRefused, type WeaveRow } from "../lib/weave";
+import type { WeaveProfile } from "@allkept/contracts";
+import { recentWeave, weaveStage, type WeaveRecord } from "../lib/weave";
 
-const at = (secondsAgo: number, now = 1_000_000_000) => new Date(now - secondsAgo * 1000).toISOString();
-/** The row as the app would read it on each look: a script of what the server has written so far. */
-function reader(script: (WeaveRow | null)[]) {
-  let i = 0;
-  const looks: number[] = [];
-  return { looks, read: async () => { looks.push(i); return script[Math.min(i++, script.length - 1)] ?? null; } };
-}
-const clock = () => { let t = 1_000_000_000; return { now: () => t, sleep: async (ms: number) => { t += ms; } }; };
+const NOW = Date.parse("2026-10-02T10:00:00Z");
+const at = (secondsAgo: number) => new Date(NOW - secondsAgo * 1000).toISOString();
+const profile: WeaveProfile = { mix: [], towns: [{ name: "Seoul", country: "KR", saves: 17, nights: 3 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
+/** A trip's row as the app reads it, at the stage the test needs. */
+const row = (over: Partial<WeaveRecord>): WeaveRecord => ({
+  id: "w1", status: "reading", towns: ["Seoul"], profile: null, brief: null, result: null, message: null, createdAt: at(30), updatedAt: at(5), ...over,
+});
 
-describe("waitForWeave", () => {
-  it("looks at the row until the stage it waits for is done, and hands back what the server wrote", async () => {
-    const r = reader([{ status: "reading", result: null, message: null, updatedAt: at(0) }, { status: "reading", result: null, message: null, updatedAt: at(0) }, { status: "profiled", result: { profile: { mix: [] }, saves: 51 }, message: null, updatedAt: at(0) }]);
-    const c = clock();
-    const out = await waitForWeave<{ saves: number }>("w1", "profiled", { read: r.read, ...c });
-    expect(out.saves).toBe(51);
-    expect(r.looks.length).toBe(3);
+describe("where a trip is, read from its row", () => {
+  it("is loading before the row has come, and missing when there is no row", () => {
+    expect(weaveStage(undefined, NOW)).toEqual({ kind: "loading" });
+    expect(weaveStage(null, NOW)).toEqual({ kind: "missing" });
   });
-  it("a failed row is the server's own words, with the code failed", async () => {
-    const r = reader([{ status: "failed", result: null, message: "Couldn't read your saves just now. Try again in a moment.", updatedAt: at(0) }]);
-    await expect(waitForWeave("w1", "profiled", { read: r.read, ...clock() })).rejects.toMatchObject({ code: "failed", message: "Couldn't read your saves just now. Try again in a moment." });
+
+  it("is reading while the worker keeps the row moving, since the read began", () => {
+    expect(weaveStage(row({}), NOW)).toEqual({ kind: "reading", since: NOW - 30_000 });
   });
-  it("a row the worker abandoned — silent for a minute and a half, past its heartbeat — is not waited on", async () => {
-    const c = clock();
-    const r = reader([{ status: "planning", result: null, message: null, updatedAt: at(2 * 60, c.now()) }]);
-    await expect(waitForWeave("w1", "planned", { read: r.read, ...c })).rejects.toBeInstanceOf(WeaveRefused);
-    await expect(waitForWeave("w1", "planned", { read: r.read, ...c })).rejects.toMatchObject({ code: "timeout" });
+
+  it("hands over what the read found once the row is profiled", () => {
+    expect(weaveStage(row({ status: "profiled", profile, result: { profile, saves: 17 } }), NOW)).toEqual({ kind: "profiled", profile, saves: 17 });
   });
-  it("gives up at its own deadline even while the row still says it is working", async () => {
-    const c = clock();
-    const r = reader([{ status: "planning", result: null, message: null, updatedAt: at(0, c.now()) }]);
-    const started = c.now();
-    await expect(waitForWeave("w1", "planned", { read: r.read, now: c.now, sleep: async (ms) => { await c.sleep(ms); }, deadlineMs: 30_000 })).rejects.toMatchObject({ code: "timeout" });
-    expect(c.now() - started).toBeGreaterThanOrEqual(30_000);
-    expect(c.now() - started).toBeLessThan(40_000);
+
+  it("is planning while the plan is woven, and hands over the plan once it is", () => {
+    expect(weaveStage(row({ status: "planning", brief: { days: 3 } as never }), NOW)).toEqual({ kind: "planning" });
+    const planned = { plan: { days: [] }, stops: [], leftOut: [], brief: { days: 3 }, cost: 0.5 };
+    expect(weaveStage(row({ status: "planned", brief: { days: 3 } as never, result: planned }), NOW)).toEqual({ kind: "planned", planned });
   });
-  it("a row that is not there is a refusal, not a wait", async () => {
-    await expect(waitForWeave("w1", "profiled", { read: async () => null, ...clock() })).rejects.toMatchObject({ code: "not_found" });
+
+  it("a failed row is the server's own words, failed at the read or at the plan by whether a brief was given", () => {
+    expect(weaveStage(row({ status: "failed", message: "Couldn't read your saves just now. Try again in a moment." }), NOW))
+      .toEqual({ kind: "failed", during: "read", message: "Couldn't read your saves just now. Try again in a moment.", stalled: false });
+    expect(weaveStage(row({ status: "failed", brief: { days: 7 } as never, message: "That plan didn't hold together." }), NOW))
+      .toEqual({ kind: "failed", during: "plan", message: "That plan didn't hold together.", stalled: false });
+    expect(weaveStage(row({ status: "failed" }), NOW)).toMatchObject({ kind: "failed", message: "Something went wrong." });
   });
-  it("stops looking when the screen has gone", async () => {
-    const r = reader([{ status: "reading", result: null, message: null, updatedAt: at(0) }]);
-    const ctrl = new AbortController();
-    const c = clock();
-    const waiting = waitForWeave("w1", "profiled", { read: r.read, now: c.now, sleep: async (ms) => { ctrl.abort(); await c.sleep(ms); }, signal: ctrl.signal });
-    await expect(waiting).rejects.toMatchObject({ code: "aborted" });
-    expect(r.looks.length).toBe(1);
+
+  it("a job the worker abandoned — silent past a minute and a half, past its heartbeat — is a failure to try again, not a wait", () => {
+    expect(weaveStage(row({ updatedAt: at(2 * 60) }), NOW)).toEqual({ kind: "failed", during: "read", message: "This stopped partway through. Nothing was planned; try again.", stalled: true });
+    expect(weaveStage(row({ status: "planning", brief: { days: 7 } as never, updatedAt: at(2 * 60) }), NOW))
+      .toEqual({ kind: "failed", during: "plan", message: "This stopped partway through. Nothing was planned; try again.", stalled: true });
   });
 });
 
