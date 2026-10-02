@@ -152,8 +152,12 @@ export default function Weave() {
       track(userId, "weave_plan", { days });
       // Pushed, not replaced: Back from the plan comes back here, to the profile as it was.
       router.push({ pathname: "/weave/plan", params: { weaveId } });
-    } catch (e) { refuse(e, "Couldn't start the plan", () => { void make(); }); } finally { setBusy(false); }
+    } catch (e) { refuse(e, "Couldn't start the plan", () => { void latestMake.current(); }); } finally { setBusy(false); }
   };
+  // Try again makes the plan as the screen shows it then — not as it was when the attempt failed,
+  // if the person has changed the days or the options since.
+  const latestMake = useRef(make);
+  latestMake.current = make;
   // The read carries on without the screen; Your trips shows it, and it opens from there.
   const later = () => { setChoosing(false); void queryClient.invalidateQueries({ queryKey: tripsKey }); router.setParams({ weaveId: "" }); };
   const startOver = () => { setError(null); setPicked(new Set()); setChoosing(true); router.setParams({ weaveId: "" }); };
