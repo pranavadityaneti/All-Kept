@@ -44,12 +44,18 @@ export function tripsFrom(stops: TripStop[]): Trip[] {
 const MAX_STOPS = 10;
 const ll = (s: TripStop): string => `${s.place.lat},${s.place.lng}`;
 
+/** How a route is travelled, in Google Maps' own words. */
+export type TravelMode = "driving" | "walking" | "transit";
+
 /**
  * Every stop as one route in Google Maps: the first as the origin, the last as the destination,
- * the rest as waypoints in between. A universal link, so Google Maps opens when it is installed and
- * the browser otherwise. Apple Maps has no way to be handed more than one stop.
+ * the rest as waypoints in between, travelled the way asked (driving unless said otherwise — the
+ * map's own town routes). By transit it goes from the first stop to the last: Google Maps doesn't
+ * route public transport through stops in between, and would drop them without saying. A universal
+ * link, so Google Maps opens when it is installed and the browser otherwise. Apple Maps has no way
+ * to be handed more than one stop.
  */
-export function googleDirectionsUrl(stops: TripStop[]): string | null {
+export function googleDirectionsUrl(stops: TripStop[], mode: TravelMode = "driving"): string | null {
   const route = stops.slice(0, MAX_STOPS);
   if (route.length === 0) return null;
   const q = new URLSearchParams({ api: "1" });
@@ -57,9 +63,9 @@ export function googleDirectionsUrl(stops: TripStop[]): string | null {
   else {
     q.set("origin", ll(route[0]!));
     q.set("destination", ll(route[route.length - 1]!));
-    if (route.length > 2) q.set("waypoints", route.slice(1, -1).map(ll).join("|"));
+    if (route.length > 2 && mode !== "transit") q.set("waypoints", route.slice(1, -1).map(ll).join("|"));
   }
-  q.set("travelmode", "driving");
+  q.set("travelmode", mode);
   return `https://www.google.com/maps/dir/?${q.toString()}`;
 }
 

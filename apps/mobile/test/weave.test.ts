@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { briefLine, crowdLine, dayHeading, defaultDays, foldPlaces, moveNight, pickSummary, mixWith, planText, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
+import { briefLine, crowdLine, dayHeading, dayRoute, defaultDays, foldPlaces, moveNight, pickSummary, mixWith, planText, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -54,6 +54,16 @@ describe("how long, and the nights in each place", () => {
     expect(defaultDays(2)).toBe(7);
     expect(defaultDays(9)).toBe(9);
     expect(defaultDays(30)).toBe(21);
+  });
+});
+
+describe("a day's route in Google Maps", () => {
+  it("goes the way the trip says it gets around, and says so", () => {
+    expect(dayRoute("walk_cab", 4)).toEqual({ mode: "walking", label: "Open the day in Google Maps · walking" });
+    expect(dayRoute("car", 4)).toEqual({ mode: "driving", label: "Open the day in Google Maps · by car" });
+    expect(dayRoute("transit", 2)).toEqual({ mode: "transit", label: "Open the day in Google Maps · by transit" });
+    // Public transport can't be routed through the stops in between, so the label says what the link does.
+    expect(dayRoute("transit", 4)).toEqual({ mode: "transit", label: "First stop to last in Google Maps · by transit" });
   });
 });
 

@@ -17,7 +17,7 @@ import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
 import { googleDirectionsUrl, type TripStop } from "../../lib/trips";
-import { briefLine, crowdLine, dayHeading, markPlanAsked, planAskedAt, planText, runningFor, slotWord, stopHours, tripsKey, tripTitle, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop, type WeavePlanned } from "../../lib/weave";
+import { briefLine, crowdLine, dayHeading, dayRoute, markPlanAsked, planAskedAt, planText, runningFor, slotWord, stopHours, tripsKey, tripTitle, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop, type WeavePlanned } from "../../lib/weave";
 import { describeRange } from "../../lib/when";
 
 const asTripStop = (s: PlanStop): TripStop => ({ id: s.id, title: s.title ?? s.name, url: s.url, lastSavedAt: "", place: { name: s.name, address: s.address, lat: s.lat, lng: s.lng, status: null, url: null, periods: null, utcOffsetMinutes: null, locality: s.town } });
@@ -212,7 +212,10 @@ function PlanView({ made, weaveId, userId }: { made: WeavePlanned; weaveId: stri
         </ScrollView>
       </View>
       {made.plan.days.map((day, dayIndex) => {
-        const route = googleDirectionsUrl(day.stops.map((s) => byId.get(s.id)).filter((s): s is PlanStop => !!s && s.lat !== 0).map(asTripStop));
+        const placed = day.stops.map((s) => byId.get(s.id)).filter((s): s is PlanStop => !!s && s.lat !== 0);
+        // The way the trip said it gets around, and a label that says what the link will do.
+        const way = dayRoute(made.brief.transport, placed.length);
+        const route = googleDirectionsUrl(placed.map(asTripStop), way.mode);
         return (
           <View key={day.day} style={styles.day} onLayout={(e) => { dayY.current[day.day] = e.nativeEvent.layout.y; }}>
             <Text accessibilityRole="header" style={[type.label, styles.overline, { color: p.inkMuted }]}>{dayHeading(day, now).toUpperCase()}</Text>
@@ -220,7 +223,7 @@ function PlanView({ made, weaveId, userId }: { made: WeavePlanned; weaveId: stri
             {route && (
               <Pressable accessibilityRole="link" hitSlop={8} onPress={() => { track(userId, "trip_route", { day: day.day }); void Linking.openURL(route).catch(() => undefined); }} style={({ pressed }) => [styles.mapLink, pressed && styles.pressed]}>
                 <Icon name="map" size={16} color={p.accent} />
-                <Text style={[type.label, styles.name, { color: p.accent }]}>Open the day in Google Maps</Text>
+                <Text style={[type.label, styles.name, { color: p.accent }]}>{way.label}</Text>
               </Pressable>
             )}
             {day.stops.map((s) => {

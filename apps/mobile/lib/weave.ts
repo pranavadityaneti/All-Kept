@@ -5,6 +5,7 @@ import { hoursLine, type OpeningPeriod } from "./hours";
 import { serverSaid } from "./function-error";
 import { httpStatus } from "./paywall";
 import { supabase } from "./supabase";
+import type { TravelMode } from "./trips";
 import { dayValue, describeDay, describeRange, describeTime, timeValue } from "./when";
 
 export type { WeaveBrief, WeaveKind, WeavePlan, WeaveProfile };
@@ -122,6 +123,17 @@ export function useTrips(enabled: boolean) {
 
 const PACE_WORD: Record<WeaveBrief["pace"], string> = { relaxed: "Relaxed", full: "Full days" };
 const TRANSPORT_WORD: Record<WeaveBrief["transport"], string> = { walk_cab: "walking and cabs", car: "by car", transit: "by transit" };
+/**
+ * A day's route as the trip gets around — walking (the cabs are taken as they come), by car, or by
+ * transit — and a label that says so. By transit Google Maps goes from the first stop to the last,
+ * so with stops in between the label says that rather than promising all of them.
+ */
+export function dayRoute(transport: WeaveBrief["transport"], stops: number): { mode: TravelMode; label: string } {
+  if (transport === "car") return { mode: "driving", label: "Open the day in Google Maps · by car" };
+  if (transport === "transit") return { mode: "transit", label: stops > 2 ? "First stop to last in Google Maps · by transit" : "Open the day in Google Maps · by transit" };
+  return { mode: "walking", label: "Open the day in Google Maps · walking" };
+}
+
 /** A plan's choices in one line, for the card while it is woven: "Relaxed · walking and cabs · Tue 6 – Mon 12 Oct". */
 export function briefLine(brief: Pick<WeaveBrief, "days" | "startDate" | "pace" | "transport">, now: Date): string {
   return [PACE_WORD[brief.pace], TRANSPORT_WORD[brief.transport], brief.startDate ? describeRange(brief.startDate, brief.days, now) : null].filter(Boolean).join(" · ");

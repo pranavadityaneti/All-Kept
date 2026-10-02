@@ -34,6 +34,16 @@ describe("the ways out of a trip", () => {
     expect(googleDirectionsUrl([stops[0]!])).toBe("https://www.google.com/maps/dir/?api=1&destination=5.97%2C80.42&travelmode=driving");
     expect(googleDirectionsUrl([])).toBeNull();
   });
+  it("follows how the person gets around: walking with every stop, by car with every stop", () => {
+    const three = [...stops, stop({ id: "c", locality: "Weligama", place: { ...stops[0]!.place, name: "Third", lat: 5.95, lng: 80.41 } })];
+    expect(googleDirectionsUrl(three, "walking")).toBe("https://www.google.com/maps/dir/?api=1&origin=5.97%2C80.42&destination=5.95%2C80.41&waypoints=5.96%2C80.4&travelmode=walking");
+    expect(googleDirectionsUrl(three, "driving")).toBe(googleDirectionsUrl(three));
+  });
+  it("by transit, goes from the first stop to the last: Google Maps doesn't route public transport through stops in between", () => {
+    const three = [...stops, stop({ id: "c", locality: "Weligama", place: { ...stops[0]!.place, name: "Third", lat: 5.95, lng: 80.41 } })];
+    expect(googleDirectionsUrl(three, "transit")).toBe("https://www.google.com/maps/dir/?api=1&origin=5.97%2C80.42&destination=5.95%2C80.41&travelmode=transit");
+    expect(googleDirectionsUrl([stops[0]!], "transit")).toBe("https://www.google.com/maps/dir/?api=1&destination=5.97%2C80.42&travelmode=transit");
+  });
   it("writes the itinerary a person can send: the town, each place with its address and hours, and the save it came from", () => {
     const text = itineraryText("Weligama", stops, new Date("2026-09-15T09:00:00Z"));
     expect(text).toBe([
