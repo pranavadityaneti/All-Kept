@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { briefLine, crowdLine, defaultDays, foldPlaces, moveNight, pickSummary, planText, shiftMix, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
+import { briefLine, crowdLine, defaultDays, foldPlaces, moveNight, pickSummary, mixWith, planText, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -11,12 +11,22 @@ const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
 });
 
 describe("editing what the saves say", () => {
-  it("moves a kind's share by half and folds the rest back to one", () => {
-    const more = shiftMix(profile, "food", "more");
-    expect(more.mix.map((m) => m.share)).toEqual([0.6, 0.4]);
-    const less = shiftMix(profile, "food", "less");
-    expect(less.mix[0]!.share).toBeCloseTo(0.401, 2);
-    expect(less.mix.reduce((a, m) => a + m.share, 0)).toBeCloseTo(1, 2);
+  it("sets each kind to less, as saved or more of the mix as read, and folds the rest back to one", () => {
+    expect(mixWith(profile.mix, { food: 1 }).map((m) => m.share)).toEqual([0.6, 0.4]);
+    const less = mixWith(profile.mix, { food: -1 });
+    expect(less[0]!.share).toBeCloseTo(0.401, 2);
+    expect(less.reduce((a, m) => a + m.share, 0)).toBeCloseTo(1, 2);
+    expect(mixWith(profile.mix, {}).map((m) => m.share)).toEqual([0.5, 0.5]);
+  });
+  it("never compounds: the same choices give the same mix however often they are made", () => {
+    const once = mixWith(profile.mix, { food: 1 });
+    expect(mixWith(profile.mix, { food: 1 })).toEqual(once);
+    // Back to "as saved" is exactly the mix as read.
+    expect(mixWith(profile.mix, { food: 0 }).map((m) => m.share)).toEqual([0.5, 0.5]);
+  });
+  it("keeps a sliver of a kind turned down, so the server still has it", () => {
+    const tiny = [{ kind: "food" as const, share: 0.99, evidence: [] }, { kind: "nature" as const, share: 0.01, evidence: [] }];
+    expect(mixWith(tiny, { nature: -1 })[1]!.share).toBeGreaterThan(0.01);
   });
   it("splits the days among the towns in proportion, whole, at least one each, summing to the days", () => {
     expect(splitDays(7, profile.towns)).toEqual([{ town: "Seoul", nights: 5 }, { town: "Busan", nights: 2 }]);

@@ -2,8 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, LayoutAnimation, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 import { ActionBar } from "../../components/ActionBar";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -12,12 +13,15 @@ import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
 import { InlineMessage } from "../../components/InlineMessage";
 import { JobCard } from "../../components/JobCard";
+import { MixBar } from "../../components/MixBar";
+import { SegmentedControl } from "../../components/SegmentedControl";
 import { TripList } from "../../components/TripList";
 import { track } from "../../lib/metrics";
+import { useReducedMotion } from "../../lib/motion";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
-import { DAY_CHOICES, defaultDays, foldPlaces, KIND_LABEL, markPlanAsked, MAX_PLAN_DAYS, moveNight, percent, pickSummary, runningFor, shiftMix, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type TripSummary, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
+import { DAY_CHOICES, defaultDays, foldPlaces, KIND_LABEL, markPlanAsked, MAX_PLAN_DAYS, mixWith, moveNight, percent, pickSummary, runningFor, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type MixLevel, type TripSummary, type WeaveKind, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
 
 /** The profile a weave was read into, kept for Customise to start from. */
 export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
@@ -51,9 +55,9 @@ export default function Weave() {
   // Nothing is ticked to begin with: saves in a town are what a person kept there, not a journey
   // they have decided on, and the app does not decide it for them. They say where they are going.
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  // The profile as the person has moved it, kept with the trip it belongs to: the row's own until
-  // the first move, so another trip opened on this screen never shows this one's edits.
-  const [draft, setDraft] = useState<{ weaveId: string; profile: WeaveProfile } | null>(null);
+  // Less, as saved or more of each kind, kept with the trip it belongs to, so another trip opened
+  // on this screen never shows this one's choices.
+  const [levels, setLevels] = useState<{ weaveId: string; levels: Partial<Record<WeaveKind, MixLevel>> } | null>(null);
   const [busy, setBusy] = useState(false);
   // What failed, in its own words, with the one thing that most likely fixes it: the same step again.
   const [error, setError] = useState<{ title: string; message: string; retry: () => void } | null>(null);
@@ -72,8 +76,17 @@ export default function Weave() {
   const toggle = (name: string) => setPicked((s) => { const next = new Set(s); if (next.has(name)) next.delete(name); else next.add(name); return next; });
 
   const base = stage.kind === "profiled" ? stage.profile : record.data?.profile ?? null;
-  const profile = draft && draft.weaveId === weaveId ? draft.profile : base;
-  const edit = (next: WeaveProfile) => { if (weaveId) setDraft({ weaveId, profile: next }); };
+  const ownLevels = levels && levels.weaveId === weaveId ? levels.levels : {};
+  // The profile the plan is sent: the mix as read, with the person's choices applied — never compounding.
+  const profile: WeaveProfile | null = base ? { ...base, mix: mixWith(base.mix, ownLevels) } : null;
+  const reduceMotion = useReducedMotion();
+  const setLevel = (kind: WeaveKind, level: MixLevel) => {
+    if (!weaveId) return;
+    if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setLevels({ weaveId, levels: { ...ownLevels, [kind]: level } });
+  };
+  const resetMix = () => { if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setLevels(null); };
+  const mustPictures = useSavePictures((base?.must ?? []).slice(0, 3).map((m) => m.id));
   // How long, and the nights in each place: what the plan is sent, exactly as shown. A trip made
   // before starts from what it was made with; a new one at a week, split as the saves are.
   const [shape, setShape] = useState<{ weaveId: string; days: number; nights: { town: string; nights: number }[] } | null>(null);
@@ -250,16 +263,42 @@ export default function Weave() {
           <>
             <Card>
               <Text style={[type.heading, { color: p.ink }]}>What your saves say</Text>
-              <Text style={[type.label, { color: p.inkMuted }]}>{stage.kind === "profiled" && stage.saves > 0 ? `${stage.saves} saves read. ` : ""}Move what you'd like more or less of.</Text>
+              {stage.kind === "profiled" && stage.saves > 0 ? <Text style={[type.label, { color: p.inkMuted }]}>{stage.saves} saves read</Text> : null}
+              {profile.style ? <Text style={[type.body, { color: p.ink }]}>“{profile.style}”</Text> : null}
+              {profile.must.length > 0 && (
+                <View style={styles.mustRow}>
+                  <View style={styles.thumbs}>
+                    {profile.must.slice(0, 3).map((m) => (
+                      <View key={m.id} style={[styles.thumb, { backgroundColor: p.accentSoft, borderColor: p.surface }]}>
+                        {mustPictures[m.id] ? <Image source={{ uri: mustPictures[m.id] }} style={StyleSheet.absoluteFill} contentFit="cover" transition={120} accessibilityIgnoresInvertColors /> : null}
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={[type.label, styles.grow, { color: p.ink }]}>{profile.must.length} {profile.must.length === 1 ? "save you clearly mean — it's in" : "you clearly mean — they're in"}</Text>
+                </View>
+              )}
+            </Card>
+            <Card>
+              <View style={styles.cardHead}>
+                <Text style={[type.heading, { color: p.ink }]}>The mix</Text>
+                {Object.values(ownLevels).some((l) => l) && (
+                  <Pressable accessibilityRole="button" accessibilityLabel="Reset the mix to as saved" hitSlop={12} onPress={resetMix}>
+                    <Text style={[type.label, { color: p.accent }]}>Reset</Text>
+                  </Pressable>
+                )}
+              </View>
+              <MixBar mix={profile.mix} />
               {profile.mix.map((m) => (
-                <View key={m.kind} style={styles.row}>
+                <View key={m.kind} style={styles.mixRow}>
                   <Text style={[type.body, styles.grow, { color: p.ink }]}>{KIND_LABEL[m.kind]} <Text style={{ color: p.inkMuted }}>{percent(m.share)}</Text></Text>
-                  <IconButton name="minus" label={`Less ${KIND_LABEL[m.kind]}`} size={32} tone="plain" onPress={() => edit(shiftMix(profile, m.kind, "less"))} />
-                  <IconButton name="plus" label={`More ${KIND_LABEL[m.kind]}`} size={32} tone="plain" onPress={() => edit(shiftMix(profile, m.kind, "more"))} />
+                  <SegmentedControl
+                    label={`${KIND_LABEL[m.kind]} in the plan`}
+                    options={[{ value: -1 as MixLevel, label: "Less" }, { value: 0 as MixLevel, label: "As saved" }, { value: 1 as MixLevel, label: "More" }]}
+                    value={ownLevels[m.kind] ?? 0}
+                    onChange={(v) => setLevel(m.kind, v)}
+                  />
                 </View>
               ))}
-              {profile.style ? <Text style={[type.label, { color: p.inkMuted }]}>Style: {profile.style}</Text> : null}
-              {profile.must.length > 0 && <Text style={[type.label, { color: p.inkMuted }]}>{profile.must.length} {profile.must.length === 1 ? "save you clearly mean" : "saves you clearly mean"} — they'll be in.</Text>}
             </Card>
             <Card>
               <Text style={[type.heading, { color: p.ink }]}>How long</Text>
@@ -340,6 +379,11 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", gap: space.sm },
   summary: { ...font("600") },
   centeredText: { textAlign: "center" },
+  cardHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" },
+  mixRow: { flexDirection: "row", alignItems: "center", gap: space.sm, minHeight: 44 },
+  mustRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  thumbs: { flexDirection: "row", paddingRight: 8 },
+  thumb: { width: 32, height: 32, borderRadius: 8, overflow: "hidden", borderWidth: 2, marginRight: -8 },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   centered: { alignItems: "center", gap: space.md, paddingVertical: space.xxl },
   row: { flexDirection: "row", alignItems: "center", gap: space.xs },

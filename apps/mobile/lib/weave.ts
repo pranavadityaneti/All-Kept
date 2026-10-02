@@ -225,11 +225,18 @@ export function weaveStage(record: WeaveRecord | null | undefined, now: number):
   }
 }
 
-/** More or less of a kind: its share moved by half, the rest folded back to one, nothing below a sliver. */
-export function shiftMix(profile: WeaveProfile, kind: WeaveKind, direction: "more" | "less"): WeaveProfile {
-  const mix = profile.mix.map((m) => ({ ...m, share: m.kind === kind ? Math.max(0.02, m.share * (direction === "more" ? 1.5 : 0.67)) : m.share }));
+/** Less, as saved, or more of a kind: what the person chose for each, against the mix as it was read. */
+export type MixLevel = -1 | 0 | 1;
+const MIX_FACTOR: Record<MixLevel, number> = { [-1]: 0.67, 0: 1, 1: 1.5 };
+/**
+ * The mix with the person's choices applied to the mix as read — each kind's share times its
+ * factor, nothing below a sliver (the server needs every kind it was given), the whole folded back
+ * to one. Never compounding: the same choices always give the same mix.
+ */
+export function mixWith(base: WeaveProfile["mix"], levels: Partial<Record<WeaveKind, MixLevel>>): WeaveProfile["mix"] {
+  const mix = base.map((m) => ({ ...m, share: Math.max(0.02, m.share * MIX_FACTOR[levels[m.kind] ?? 0]) }));
   const total = mix.reduce((a, m) => a + m.share, 0);
-  return { ...profile, mix: mix.map((m) => ({ ...m, share: Math.round((m.share / total) * 1000) / 1000 })) };
+  return mix.map((m) => ({ ...m, share: Math.round((m.share / total) * 1000) / 1000 }));
 }
 
 /**
