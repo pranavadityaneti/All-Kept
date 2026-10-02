@@ -12,7 +12,8 @@ import { radius, space, type, usePalette } from "../lib/theme";
  */
 export function InterestPills({ interests, now, onPress }: { interests: Interest[]; now: Date; onPress: (interest: Interest) => void }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rail} contentContainerStyle={styles.railInner}>
+    // On Home, under the paste box: a pill tapped while the keyboard is up opens on that tap, not the second.
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.rail} contentContainerStyle={styles.railInner}>
       {interests.map((interest) => (
         <InterestPill key={interest.name} interest={interest} fresh={isNewInterest(interest, now)} onPress={() => onPress(interest)} />
       ))}

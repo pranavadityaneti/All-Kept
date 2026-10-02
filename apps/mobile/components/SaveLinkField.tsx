@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, LayoutAnimation, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Keyboard, LayoutAnimation, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { LIMITS, type SaveLinkResponse } from "@allkept/contracts";
 import { saveLink } from "@allkept/normalize";
@@ -131,7 +131,8 @@ export function SaveLinkField() {
         />
         {busy
           ? <View style={styles.spinner}><ActivityIndicator color={p.accent} /></View>
-          : <IconButton name="check" label="Save this link" tone={text.trim() ? "accent" : "surface"} disabled={!text.trim()} onPress={() => { void save(); }} />}
+          // The keyboard goes as the save starts, as it does on Done, so the outcome isn't left behind it.
+          : <IconButton name="check" label="Save this link" tone={text.trim() ? "accent" : "surface"} disabled={!text.trim()} onPress={() => { Keyboard.dismiss(); void save(); }} />}
       </View>
       {isLink && (
         <TextInput
@@ -140,9 +141,8 @@ export function SaveLinkField() {
           onChangeText={setNote}
           editable={!busy}
           multiline
-          // Done saves, as it does in the link field. A tap on the tick while the keyboard is up only
-          // closes the keyboard first (the screen's scroll view keeps that first tap), so without this
-          // the only way to save a note was two taps. A long note still wraps; it just can't add a line.
+          // Done saves, as it does in the link field, so a note can be finished from the keyboard. A long
+          // note still wraps; it just can't add a line.
           returnKeyType="done"
           submitBehavior="blurAndSubmit"
           onSubmitEditing={(e) => { void save({ note: e.nativeEvent.text }); }}

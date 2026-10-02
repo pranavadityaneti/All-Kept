@@ -104,6 +104,9 @@ export default function Home() {
 
       <ScrollView
         contentContainerStyle={styles.page}
+        // A tap while the keyboard is up does what it was aimed at. At the default, the first tap only
+        // closed the keyboard, so the paste box's tick, a card or a pill each took two.
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={pulled} onRefresh={onRefresh} tintColor={p.inkMuted} />}
       >
 
@@ -143,7 +146,8 @@ export default function Home() {
               <Text style={[type.body, { color: p.inkMuted }]}>Nothing saved yet. In Instagram, tap the paper plane under a reel and send it to @allkeptapp.</Text>
             </Card>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rail} contentContainerStyle={styles.railInner}>
+            // A scroll view inside the page decides for itself whether to keep that first tap, so the rail says so too.
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.rail} contentContainerStyle={styles.railInner}>
               {items.slice(0, 8).map((item) => (
                 <View key={item.id} style={styles.railCard}>
                   <ItemCard item={item} thumbnail={item.thumbnailPath ? thumbnails[item.thumbnailPath] : undefined} onPress={() => { setCollection(items.map((i) => i.id)); router.push({ pathname: "/item/[id]", params: { id: item.id } }); }} />
