@@ -1840,3 +1840,22 @@ categories.
 - **Open:** Pranav's OK for the three shared-code steps (Maps travel mode in `lib/trips.ts`; the
   map's Plan a trip entry; Chip's label); push + OTA on his Yes; the four test saves; the app-wide
   audit steps; queue 63, 65, 67.
+- **Pranav's yes to all four (2 Oct, late):**
+  - `f22a746`: migration `20261002120000_settings_switches_writable.sql` grants update on
+    notify_enabled, notify_sorted, notify_attention and ai_sorting_enabled. These were never granted
+    after the 9 Sep column narrowing, so the four Settings switches flipped back silently; the
+    other 31 columns the app writes were checked and are fine. **Not applied: Pranav runs db push.**
+  - `d4e6f12`: day routes follow Getting around (walking / by car / by transit, transit first-to-last).
+  - `7dd1774`: the map's Plan a trip as an action chip, plus the filters note.
+  - `cbd2c7e`: a non-tappable Chip keeps its spoken label.
+  - `487adef`: the audit report and the notification strategy committed into internal/.
+- **Shipped:** OTA to preview. iOS group `a5a7c880-8454-4efa-bcc2-2aaed16b626e` on build 34's
+  runtime (resolved first, app tree clean); Android `64a5cb85-5796-461e-bd9e-08ed0fc3c41d`. It
+  carries the whole redesign and the three pieces. The push is Pranav's.
+- **Open:**
+  - Pranav: `npx supabase db push`, then the push.
+  - Phone check of the redesign.
+  - Settings should say when a switch didn't save; it still reverts silently on any failure (not
+    built; needs his OK).
+  - Route waypoints repeat a place saved more than once (audit step 8's other half).
+  - The notification decisions.
