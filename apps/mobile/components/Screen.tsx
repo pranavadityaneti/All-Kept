@@ -9,7 +9,8 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
   const inner = <View style={styles.inner}>{children}</View>;
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]} edges={["top", "left", "right"]}>
-      {scroll ? <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">{inner}</ScrollView> : inner}
+      {/* iPhone: room for the keyboard, and the box being typed in lifted above it (the playlist link sits under a card of steps). */}
+      {scroll ? <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>{inner}</ScrollView> : inner}
     </SafeAreaView>
   );
 }
