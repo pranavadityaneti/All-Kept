@@ -15,16 +15,14 @@ import { InlineMessage } from "../../components/InlineMessage";
 import { JobCard } from "../../components/JobCard";
 import { MixBar } from "../../components/MixBar";
 import { SegmentedControl } from "../../components/SegmentedControl";
+import { startingChoices, TripOptions, type TripChoices } from "../../components/TripOptions";
 import { TripList } from "../../components/TripList";
 import { track } from "../../lib/metrics";
 import { useReducedMotion } from "../../lib/motion";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
-import { DAY_CHOICES, defaultDays, foldPlaces, KIND_LABEL, markPlanAsked, MAX_PLAN_DAYS, mixWith, moveNight, percent, pickSummary, runningFor, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, type MixLevel, type TripSummary, type WeaveKind, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
-
-/** The profile a weave was read into, kept for Customise to start from. */
-export const profileKey = (weaveId: string) => ["weave-profile", weaveId] as const;
+import { DAY_CHOICES, defaultDays, foldPlaces, KIND_LABEL, markPlanAsked, MAX_PLAN_DAYS, mixWith, moveNight, percent, pickSummary, runningFor, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, whenProblem, type MixLevel, type TripSummary, type WeaveKind, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
 
 /**
  * Plan a trip: the towns the saves name, the profile the saves add up to — edited in the open —
@@ -41,7 +39,7 @@ export default function Weave() {
   const session = useSession();
   const ready = session.status === "ready";
   const userId = ready && !session.anonymous ? session.userId : null;
-  const params = useLocalSearchParams<{ weaveId?: string }>();
+  const params = useLocalSearchParams<{ weaveId?: string; options?: string }>();
   const weaveId = typeof params.weaveId === "string" && params.weaveId ? params.weaveId : null;
   const towns = useWeaveTowns(ready && !weaveId);
   // Your trips: every trip asked for, so none is lost; a new one is planned from here.
@@ -103,6 +101,13 @@ export default function Weave() {
     const d = Math.max(minDays, Math.min(MAX_PLAN_DAYS, next));
     setShape({ weaveId, days: d, nights: splitDays(d, nights.map((n) => ({ name: n.town, nights: n.nights }))) });
   };
+  // More options: the rest of what the person can tell the plan, kept with the trip, started from
+  // what it was made with before. Opened in place (the old Customise screen sends people here).
+  const [choices, setChoices] = useState<{ weaveId: string; value: TripChoices } | null>(null);
+  const [showOptions, setShowOptions] = useState(params.options === "1");
+  const shown = choices && choices.weaveId === weaveId ? choices.value : startingChoices(madeWith, base?.group ?? null);
+  const choose = (patch: Partial<TripChoices>) => { if (weaveId) setChoices({ weaveId, value: { ...shown, ...patch } }); };
+  const dateProblem = whenProblem({ days, startDate: shown.startDate, arrival: shown.arrival, departure: shown.departure }, new Date());
   const move = (town: string, delta: 1 | -1) => { const next = moveNight(nights, town, delta); if (next && weaveId) setShape({ weaveId, days, nights: next }); };
   // A read counted once, when it is seen to finish here — not again each time the trip is reopened.
   const watched = useRef(false);
@@ -136,7 +141,11 @@ export default function Weave() {
     setBusy(true); setError(null);
     try {
       // The server answers at once and weaves on; the plan screen is drawn from the row.
-      await weavePlan(weaveId, profile, { days, nights });
+      await weavePlan(weaveId, profile, {
+        days, nights, startDate: shown.startDate, arrival: shown.arrival, departure: shown.departure,
+        bases: Object.entries(shown.bases).filter(([town, name]) => name.trim() && nights.some((n) => n.town === town)).map(([town, name]) => ({ town, name: name.trim() })),
+        group: shown.group, pace: shown.pace, transport: shown.transport, budget: shown.budget, note: shown.note.trim() || null,
+      });
       markPlanAsked(weaveId);
       void queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
       void queryClient.invalidateQueries({ queryKey: tripsKey });
@@ -144,11 +153,6 @@ export default function Weave() {
       // Pushed, not replaced: Back from the plan comes back here, to the profile as it was.
       router.push({ pathname: "/weave/plan", params: { weaveId } });
     } catch (e) { refuse(e, "Couldn't start the plan", () => { void make(); }); } finally { setBusy(false); }
-  };
-  const customise = () => {
-    if (!weaveId || !profile) return;
-    queryClient.setQueryData(profileKey(weaveId), profile);
-    router.push({ pathname: "/weave/customise", params: { weaveId } });
   };
   // The read carries on without the screen; Your trips shows it, and it opens from there.
   const later = () => { setChoosing(false); void queryClient.invalidateQueries({ queryKey: tripsKey }); router.setParams({ weaveId: "" }); };
@@ -172,7 +176,8 @@ export default function Weave() {
         <Text numberOfLines={1} style={[type.heading, styles.headerTitle, { color: p.ink }]}>{weaveId && record.data ? tripTitle(record.data.towns) : "Plan a trip"}</Text>
         <View style={styles.spacer} />
       </View>
-      <ScrollView contentContainerStyle={styles.page}>
+      {/* iPhone: room for the keyboard, and the box being typed in lifted above it — More options' boxes sit low. */}
+      <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {!weaveId && trips.isPending && !trips.isError && !choosing && <View style={styles.centered}><ActivityIndicator color={p.accent} /></View>}
         {hub && (
           <>
@@ -324,7 +329,16 @@ export default function Weave() {
               ))}
               <Text style={[type.label, { color: p.inkMuted }]}>The nights always add up to the {days} {days === 1 ? "day" : "days"} — exactly what the plan uses.</Text>
             </Card>
-            <Button label="Customise…" variant="secondary" disabled={busy} onPress={customise} />
+            <Card>
+              <Pressable accessibilityRole="button" accessibilityState={{ expanded: showOptions }} onPress={() => setShowOptions((v) => !v)} style={({ pressed }) => [styles.moreRow, pressed && styles.pressed]}>
+                <View style={styles.grow}>
+                  <Text style={[type.heading, { color: p.ink }]}>More options</Text>
+                  {!showOptions && <Text style={[type.label, { color: p.inkMuted }]}>Dates, who's going, pace, getting around, budget</Text>}
+                </View>
+                <Icon name="down" size={18} color={p.inkMuted} style={showOptions ? styles.flip : undefined} />
+              </Pressable>
+              {showOptions && <TripOptions value={shown} onChange={choose} towns={nights.map((n) => n.town)} problem={dateProblem} disabled={busy} />}
+            </Card>
           </>
         )}
         {error && <InlineMessage title={error.title} body={error.message} actions={[{ label: "Try again", busy, onPress: () => { const again = error.retry; setError(null); again(); } }]} />}
@@ -332,7 +346,7 @@ export default function Weave() {
       {hub && <ActionBar><Button label="Plan a new trip" onPress={() => setChoosing(true)} /></ActionBar>}
       {shaping && (
         <ActionBar>
-          <Button label={stage.kind === "planned" ? `Remake as a ${days}-day plan` : `Make my ${days}-day plan`} busy={busy} onPress={() => { void make(); }} />
+          <Button label={stage.kind === "planned" ? `Remake as a ${days}-day plan` : `Make my ${days}-day plan`} busy={busy} disabled={dateProblem !== null} onPress={() => { void make(); }} />
           <Text style={[type.label, styles.centeredText, { color: p.inkMuted }]}>{stage.kind === "planned" ? "Replaces the plan this trip has. " : ""}Takes 2–5 minutes. You can leave.</Text>
         </ActionBar>
       )}

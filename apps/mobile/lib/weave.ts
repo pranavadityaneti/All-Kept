@@ -258,11 +258,6 @@ export const defaultDays = (places: number): number => Math.min(MAX_PLAN_DAYS, M
 /** The lengths offered at a tap; anything else is set with the stepper. */
 export const DAY_CHOICES = [5, 7, 10, 12] as const;
 
-/** A town's nights moved by one, never below one. */
-export function setNights(nights: { town: string; nights: number }[], town: string, delta: number): { town: string; nights: number }[] {
-  return nights.map((n) => (n.town === town ? { ...n, nights: Math.max(1, n.nights + delta) } : n));
-}
-
 /**
  * What would make the dates unusable, said plainly; null when they can be planned. Said rather than
  * dropped: a value the plan quietly ignores is a plan the person thinks used it.
