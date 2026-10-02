@@ -381,3 +381,17 @@ again — which also explains why my later taps to restore the interests switch 
   keyboard, so a phone check is still owed for anything native. The debugger evaluates code in
   the app signed into Pranav's real account: inspect and emit events only, never call app
   functions that write.
+
+## 2026-10-02 — a test tap started a real, paid plan
+- What happened: testing "More options" on the simulator (which is signed into Pranav's real
+  account), the request was meant to be intercepted so nothing was sent. The session had just
+  restarted, the scratch folder had been wiped with the debugger script in it, so the intercept
+  failed to install — and the tap on "Make my 7-day plan" had been sent in the same batch, before
+  the intercept's result was seen. A real 7-day plan (full pace, transit) started on his
+  "Seoul & Tokyo" trip at 15:46 UTC. About $0.50 of model spend (the one earlier plan cost $0.52),
+  not asked for. Nothing else changed.
+- What worked before (and is now the rule): install the intercept, read back that it says
+  installed, and only then — in a separate step — tap anything that spends or writes.
+- Remember: never batch a paid or writing tap with the safety step it depends on. After any
+  restart, re-create scratch helpers before relying on them; the scratch folder does not survive.
+  A tap the app could act on for real gets the same care as a deploy.
