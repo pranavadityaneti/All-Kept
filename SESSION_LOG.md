@@ -1860,3 +1860,37 @@ categories.
   - Route waypoints repeat a place saved more than once (audit step 8's other half).
   - The notification decisions.
 - **Applied and pushed (2 Oct):** Pranav ran the migration — `20261002120000` is in the history and the four columns are updatable (checked by value) — and pushed `70bcb1e..fcc0754`.
+
+## 2026-10-04 — items 63 and 67 built: a dropped request is sent again safely; a long plan outlives its worker
+
+- **Asked:** "Get start these executions" — the automatic retry (63), the long-plan time-out (67)
+  and the notification strategy by its recommendations; then the App Store publishing journey.
+- **Built, one change per commit:**
+  - `8d571ba` (app, 63) one more try for a request that got no answer at all, only where a repeat
+    can't do anything twice: reads, row sets and deletes, the read-only RPCs, signed URLs, search,
+    and save-link and weave when they carry a request id.
+  - `8682606` (server, 67) the weave's model runs as an OpenAI background job (background: true,
+    store: false). The job is kept on the row (`job`) and looked at every 5 s. Near the end of a
+    worker's life (counted from the worker's start, not the request) it is handed to a fresh worker
+    (`resume`, internal secret); an ending worker refuses a hand-on with 503. A minute's cron
+    (`resume_weave_jobs_every_minute`, only when one exists) hands on any job whose row has been
+    silent 60 s. Jobs stop at 15 minutes. Every write that ends or moves a job is a compare-and-set
+    on the job id, and a plan starts only on the row as read. A failed look (database, or OpenAI
+    429/5xx) is looked at again. Claude's in-the-asking call gets the worker's time left. weave's
+    gateway JWT check is off: the handler checks the JWT itself. Migration
+    `20261004120000_weave_jobs.sql`.
+  - `4f16f79` (server, 63) request ids: a repeated understand is answered by the weave its id
+    started (unique index on user_id + request_id), a repeated plan by its state. Migration
+    `20261004120100_weave_request_ids.sql`.
+  - `359150a` (app, 67) the stale clock 90 s → 150 s, the server's.
+  - `a1b33e9` (app, 63) the read, Make plan and Try again carry an id, kept until the ask goes through.
+- **Checked:**
+  - Functions suite: 364 pass.
+  - The handler's new guards were each removed in turn, and a test failed every time (7 mutations).
+  - App: 384 tests pass; tsc clean.
+  - OpenAI's background-mode docs confirm store:false works, the queued/in_progress statuses, and
+    that cancel is idempotent. Data is kept "roughly 10 minutes"; it is unclear whether that counts
+    from start or finish.
+- **Not live yet:** Pranav runs `npx supabase db push` (both migrations); weave deployed from a clean
+  worktree on his Yes, since this tree holds the other session's files in weave's bundle; then the
+  OTA on his Yes; then his push.
