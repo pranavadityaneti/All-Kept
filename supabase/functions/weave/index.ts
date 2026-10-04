@@ -1,16 +1,21 @@
-// POST { action: "towns" | "understand" | "plan", … }: an itinerary woven from the caller's saves. The user's own JWT.
+// POST { action: "towns" | "understand" | "plan", … }: an itinerary woven from the caller's saves, with the
+// user's own JWT — checked here (userIdFromRequest), not at the gateway, so the server's own
+// "resume" (a worker handing a job on, and the minute's check) can reach it with the internal secret.
 import { adminClient, env, userIdFromRequest } from "../_shared/supabase.ts";
 import { apiError } from "../_shared/http.ts";
 import type { WeaveKind } from "../_shared/contracts.ts";
 import { providersFromEnv } from "../_shared/place-providers.ts";
 import { holidaysBetween, typicalWeather } from "../_shared/weave/context.ts";
-import { CLAUDE_PLAN_MODEL, CLAUDE_UNDERSTAND_MODEL, OPENAI_MODEL, PLAN_OPTIONS, UNDERSTAND_OPTIONS, weaveModel, weaveModelOpenAI } from "../_shared/weave/model.ts";
+import { CLAUDE_PLAN_MODEL, CLAUDE_UNDERSTAND_MODEL, jobFromCall, OPENAI_MODEL, PLAN_OPTIONS, UNDERSTAND_OPTIONS, weaveJobOpenAI, weaveModel } from "../_shared/weave/model.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
 import type { OpeningPeriod } from "../_shared/weave/skeleton.ts";
-import { handleWeave, type Suggestion, type WeaveRecord, type WeaveSaveRow } from "./handler.ts";
+import { handleWeave, ORPHAN_MS, type JobState, type Suggestion, type WeaveRecord, type WeaveSaveRow } from "./handler.ts";
 
 /** The runtime's hook for work that outlives the answer: the worker stays up for it (400 s on the Pro plan). */
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+
+/** When this worker began: its life is counted from here, however many requests it has answered since. */
+const BORN = Date.now();
 
 /** What to ask Google for when the saves leave a gap of a kind in a town. */
 const SUGGESTION_QUERY: Record<WeaveKind, string | null> = {
@@ -28,9 +33,9 @@ Deno.serve(async (req) => {
   const understandModel = Deno.env.get("WEAVE_UNDERSTAND_MODEL")?.trim() || OPENAI_MODEL;
   const planModel = Deno.env.get("WEAVE_PLAN_MODEL")?.trim() || OPENAI_MODEL;
   const models = openaiKey
-    ? { understand: weaveModelOpenAI(openaiKey, understandModel, UNDERSTAND_OPTIONS, fetchSafe), plan: weaveModelOpenAI(openaiKey, planModel, PLAN_OPTIONS, fetchSafe), names: { understand: understandModel, plan: planModel } }
+    ? { understand: weaveJobOpenAI(openaiKey, understandModel, UNDERSTAND_OPTIONS, fetchSafe), plan: weaveJobOpenAI(openaiKey, planModel, PLAN_OPTIONS, fetchSafe), names: { understand: understandModel, plan: planModel } }
     : anthropicKey
-    ? { understand: weaveModel(anthropicKey, CLAUDE_UNDERSTAND_MODEL, UNDERSTAND_OPTIONS), plan: weaveModel(anthropicKey, CLAUDE_PLAN_MODEL, PLAN_OPTIONS), names: { understand: CLAUDE_UNDERSTAND_MODEL, plan: CLAUDE_PLAN_MODEL } }
+    ? { understand: jobFromCall(weaveModel(anthropicKey, CLAUDE_UNDERSTAND_MODEL, UNDERSTAND_OPTIONS)), plan: jobFromCall(weaveModel(anthropicKey, CLAUDE_PLAN_MODEL, PLAN_OPTIONS)), names: { understand: CLAUDE_UNDERSTAND_MODEL, plan: CLAUDE_PLAN_MODEL } }
     : null;
   if (!models) return apiError("unavailable", "The itinerary is not configured on this server.");
   const providers = providersFromEnv((n) => Deno.env.get(n), fetchSafe);
@@ -38,6 +43,10 @@ Deno.serve(async (req) => {
   try {
     return await handleWeave(req, {
       userId: userIdFromRequest,
+      internal(r) {
+        const secret = r.headers.get("x-internal-secret") ?? "";
+        return secret.length > 0 && secret === env("INTERNAL_SECRET");
+      },
       async entitled(userId) {
         const { data, error } = await db.rpc("entitled", { p_user_id: userId });
         if (error) throw error;
@@ -97,20 +106,67 @@ Deno.serve(async (req) => {
         const { error } = await db.from("weaves").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
         if (error) throw error;
       },
-      async get(userId, id) {
-        const { data, error } = await db.from("weaves").select("id,towns,profile,brief,skeleton,plan,status,version,updated_at").eq("id", id).eq("user_id", userId).maybeSingle();
+      async settle(id, patch, expect) {
+        // One statement: Postgres re-reads the row under its lock, so of two writers expecting the same row, one wins.
+        let q = db.from("weaves").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
+        q = expect.jobId === null ? q.is("job", null) : q.eq("job->>id", expect.jobId);
+        if (expect.updatedAt !== undefined) q = q.eq("updated_at", expect.updatedAt);
+        const { data, error } = await q.select("id");
         if (error) throw error;
-        if (!data) return null;
-        const { updated_at, ...rest } = data as Omit<WeaveRecord, "updatedAt"> & { updated_at: string };
-        return { ...rest, updatedAt: updated_at };
+        return (data ?? []).length > 0;
       },
+      get: (userId, id) => readWeave(db, id, userId),
+      load: (id) => readWeave(db, id, null),
+      async orphans() {
+        const { data, error } = await db.from("weaves").select("id").not("job", "is", null).in("status", ["reading", "planning"])
+          .lt("updated_at", new Date(Date.now() - ORPHAN_MS).toISOString()).limit(10);
+        if (error) throw error;
+        return (data ?? []).map((r) => String(r.id));
+      },
+      async resume(weaveId) {
+        // A worker that is itself ending says so (503); the next ask may reach a fresh one. Three tries fit in a hand-on's time.
+        let last = "";
+        for (let attempt = 0; attempt < 3; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 1_000));
+          try {
+            const res = await fetch(`${env("SUPABASE_URL")}/functions/v1/weave`, {
+              method: "POST",
+              headers: { "content-type": "application/json", "x-internal-secret": env("INTERNAL_SECRET"), "x-region": "ap-southeast-1" },
+              body: JSON.stringify({ action: "resume", weaveId }),
+              signal: AbortSignal.timeout(10_000),
+            });
+            await res.body?.cancel().catch(() => undefined);
+            if (res.ok) return;
+            last = `resume answered ${res.status}`;
+          } catch (e) { last = String(e).slice(0, 200); }
+        }
+        throw new Error(last);
+      },
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
       log,
       // The reading and the arranging go on after the 202; without the hook (tests, an older runtime) they run in the request.
       defer: (work) => { if (typeof EdgeRuntime !== "undefined" && EdgeRuntime) EdgeRuntime.waitUntil(work); else void work; },
       now: () => Date.now(),
+      bornAt: BORN,
     });
   } catch (e) {
     console.error("weave failed", e);
     return apiError("internal", "the itinerary could not be made");
   }
 });
+
+/** A weave's row as the handler reads it — the caller's own, or any for the server's own work. */
+async function readWeave(db: ReturnType<typeof adminClient>, id: string, userId: string | null): Promise<WeaveRecord | null> {
+  let q = db.from("weaves").select("id,user_id,towns,profile,brief,skeleton,plan,status,version,updated_at,job").eq("id", id);
+  if (userId) q = q.eq("user_id", userId);
+  const { data, error } = await q.maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const r = data as Record<string, unknown>;
+  return {
+    id: String(r["id"]), userId: String(r["user_id"]), towns: (r["towns"] as string[] | null) ?? null, profile: (r["profile"] as WeaveRecord["profile"]) ?? null,
+    brief: (r["brief"] as WeaveRecord["brief"]) ?? null, skeleton: (r["skeleton"] as WeaveRecord["skeleton"]) ?? null, plan: (r["plan"] as WeaveRecord["plan"]) ?? null,
+    status: String(r["status"]), version: Number(r["version"] ?? 1), updatedAt: String(r["updated_at"]),
+    job: (r["job"] as JobState | null) ?? null,
+  };
+}

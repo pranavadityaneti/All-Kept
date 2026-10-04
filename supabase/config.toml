@@ -451,7 +451,9 @@ entrypoint = "./functions/resolve-place/index.ts"
 
 [functions.weave]
 enabled = true
-verify_jwt = true
+# The handler verifies the bearer with auth.getUser; its own "resume" (a worker handing a job on,
+# the minute's check) carries the internal secret instead of a session.
+verify_jwt = false
 entrypoint = "./functions/weave/index.ts"
 
 [functions.reddit-thumbnail]
