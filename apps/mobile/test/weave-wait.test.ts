@@ -39,9 +39,14 @@ describe("where a trip is, read from its row", () => {
     expect(weaveStage(row({ status: "failed" }), NOW)).toMatchObject({ kind: "failed", message: "Something went wrong." });
   });
 
-  it("a job the worker abandoned — silent past a minute and a half, past its heartbeat — is a failure to try again, not a wait", () => {
-    expect(weaveStage(row({ updatedAt: at(2 * 60) }), NOW)).toEqual({ kind: "failed", during: "read", message: "This stopped partway through. Nothing was planned; try again.", stalled: true });
-    expect(weaveStage(row({ status: "planning", brief: { days: 7 } as never, updatedAt: at(2 * 60) }), NOW))
+  it("a row silent for two minutes is still a wait: the server's minute check hands a job whose worker died to a fresh one by then", () => {
+    expect(weaveStage(row({ updatedAt: at(2 * 60) }), NOW)).toEqual({ kind: "reading", since: NOW - 30_000 });
+    expect(weaveStage(row({ status: "planning", brief: { days: 7 } as never, updatedAt: at(2 * 60) }), NOW)).toEqual({ kind: "planning" });
+  });
+
+  it("a job nobody picked up — silent past two and a half minutes, past the heartbeat and the minute check — is a failure to try again, not a wait", () => {
+    expect(weaveStage(row({ updatedAt: at(3 * 60) }), NOW)).toEqual({ kind: "failed", during: "read", message: "This stopped partway through. Nothing was planned; try again.", stalled: true });
+    expect(weaveStage(row({ status: "planning", brief: { days: 7 } as never, updatedAt: at(3 * 60) }), NOW))
       .toEqual({ kind: "failed", during: "plan", message: "This stopped partway through. Nothing was planned; try again.", stalled: true });
   });
 });

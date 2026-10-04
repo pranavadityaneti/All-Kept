@@ -72,8 +72,12 @@ export interface WeaveRecord {
 
 /** The app looks at a running trip's row this often. */
 const LOOK_MS = 3000;
-/** A running job touches its row every 20 s; one silent for this long belongs to a worker that died — the same clock the server keeps. */
-export const STALE_MS = 90_000;
+/**
+ * A running job touches its row every 20 s, and the server's minute check hands a job whose row has
+ * been silent for a minute to a fresh worker within another; one silent for this long was not picked
+ * up even so — the same clock the server keeps.
+ */
+export const STALE_MS = 150_000;
 const STALLED = "This stopped partway through. Nothing was planned; try again.";
 
 async function readRecord(weaveId: string): Promise<WeaveRecord | null> {
