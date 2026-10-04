@@ -1906,3 +1906,15 @@ categories.
     `8f175b69…`; Android `b3c6c44e-4161-46c5-a67d-5952d781501f` on `beb27480…`. Resolved first;
     the app tree was clean.
   - Pushed by Pranav: `fcc0754..23b3bf7`.
+- **Notifications, Phase 0 (strategy adopted as recommended):**
+  - `9c2f414` step 0.2: notifications are off until a yes. Migration `20261004130000`: the
+    default is now false, and accounts with no live device are switched off (2 of the 3, counted
+    read-only first). The app's assumed default is off too.
+  - `94cfce3` step 0.4: while the person has said yes, the phone is recorded again at every launch
+    and return (`refreshPush`/`usePushRefresh`, never asking the OS). This moved out of Settings.
+  - Not applied: Pranav runs db push for `20261004130000`. The OTA goes after it, since 0.4 depends
+    on the data fix.
+  - Waiting on Pranav: Reminders (0.3 sign-out/deletion cancel scheduled reminders; 0.5 their own
+    Android channel), rule 7. The 0.9 wording draft is shown in chat; the policy has two copies,
+    `docs/privacy.html` and the website branch's `apps/website/content/privacy.html`.
+  - Blocked on the other session's Gemini work: 0.6–0.8, 1.4.
