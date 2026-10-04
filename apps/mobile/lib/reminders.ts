@@ -1,4 +1,6 @@
 import * as Notifications from "expo-notifications";
+import { useEffect, useRef } from "react";
+import type { SessionState } from "./auth-state";
 import { supabase } from "./supabase";
 
 /**
@@ -85,6 +87,32 @@ async function scheduledReminders(): Promise<Pending[]> {
     const data = n.content.data as { itemId?: unknown; at?: unknown } | null;
     return typeof data?.itemId === "string" && typeof data?.at === "number" ? [{ id: data.itemId, at: data.at }] : [];
   });
+}
+
+/**
+ * Everything this phone holds for an account that has left it — the reminders still to come and
+ * the notifications already in the list — is forgotten: a pending reminder would show a save's
+ * title to whoever holds the phone next. Signing back in schedules that account's reminders again
+ * from the server (syncReminders).
+ */
+export async function forgetLocalNotifications(): Promise<void> {
+  await Notifications.cancelAllScheduledNotificationsAsync().catch(() => undefined);
+  await Notifications.dismissAllNotificationsAsync().catch(() => undefined);
+}
+
+/**
+ * Forgets them the moment the phone stops being signed in to the account it was: signed out, the
+ * account deleted (which signs out), a session that ended, or another account signed in. A launch,
+ * or a moment the session can't be read, is not a change of account.
+ */
+export function useForgetOnSignOut(session: SessionState): void {
+  const owner = session.status === "ready" ? session.userId : session.status === "signed_out" ? null : undefined;
+  const last = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (owner === undefined) return;
+    if (typeof last.current === "string" && owner !== last.current) void forgetLocalNotifications();
+    last.current = owner;
+  }, [owner]);
 }
 
 /** Brings the phone's schedule in line with the server's list of what is still to come. Never throws: a reminder is not worth a crash. */

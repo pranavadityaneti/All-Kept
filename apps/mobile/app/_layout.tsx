@@ -11,7 +11,7 @@ import { backfillInstagramPictures, pictureDeps } from "../lib/instagram-picture
 import { backfillDeps, backfillRedditThumbnails } from "../lib/reddit-thumbnail";
 import { backfillUnresolvedLinks, resolveDeps } from "../lib/resolve-backfill";
 import { reportLanguage } from "../lib/language";
-import { syncReminders } from "../lib/reminders";
+import { syncReminders, useForgetOnSignOut } from "../lib/reminders";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, type PropsWithChildren } from "react";
 import { AppState, StyleSheet, Text, View } from "react-native";
@@ -83,6 +83,8 @@ function Shell() {
     else router.push("/subscribe");
   }, [router, unlocked]);
   useNotificationRoute(openSave);
+  // A phone that stops being signed in to an account forgets that account's reminders and notifications.
+  useForgetOnSignOut(session);
   // While the person has said yes, this phone is recorded again at every launch and return, so a
   // changed token is mended without Settings being opened. It never asks: that stays in Settings.
   const preferences = usePreferences(unlocked ? userId : null);
