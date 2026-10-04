@@ -3,7 +3,7 @@ import type { WeaveProfile } from "../_shared/contracts.ts";
 import type { Skeleton } from "../_shared/weave/plan.ts";
 import type { ModelResult } from "../_shared/classify.ts";
 import { jobFromCall, type WeaveJob } from "../_shared/weave/model.ts";
-import { handleWeave, JOB_MAX_MS, kindOf, readBrief, WORKER_LIFE_MS, WRITE_MARGIN_MS, type JobState, type WeaveDeps, type WeaveRecord, type WeaveSaveRow } from "../weave/handler.ts";
+import { DuplicateRequest, handleWeave, JOB_MAX_MS, kindOf, readBrief, WORKER_LIFE_MS, WRITE_MARGIN_MS, type JobState, type WeaveDeps, type WeaveRecord, type WeaveSaveRow } from "../weave/handler.ts";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const WEAVE = "22222222-2222-4222-8222-222222222222";
@@ -48,8 +48,8 @@ type Fakes = WeaveDeps & {
 function deps(over: Partial<WeaveDeps> & { start?: Partial<WeaveRecord> } = {}, shared?: WeaveRecord): Fakes {
   const created: Record<string, unknown>[] = [], updates: Record<string, unknown>[] = [], refused: Record<string, unknown>[] = [], suggested: string[] = [], askedPlan: string[] = [], deferred: Promise<void>[] = [];
   const resumed: string[] = [], cancelled: string[] = [];
-  const row: WeaveRecord = shared ?? { id: WEAVE, userId: USER, towns: null, profile, brief: null, skeleton: null, plan: null, status: "profiled", version: 1, updatedAt: new Date().toISOString(), job: null, ...over.start };
-  const fields: Record<string, keyof WeaveRecord> = { status: "status", brief: "brief", profile: "profile", skeleton: "skeleton", plan: "plan", job: "job" };
+  const row: WeaveRecord = shared ?? { id: WEAVE, userId: USER, towns: null, profile, brief: null, skeleton: null, plan: null, status: "profiled", version: 1, updatedAt: new Date().toISOString(), job: null, planRequestId: null, ...over.start };
+  const fields: Record<string, keyof WeaveRecord> = { status: "status", brief: "brief", profile: "profile", skeleton: "skeleton", plan: "plan", job: "job", plan_request_id: "planRequestId" };
   // A moment later than the last write, as the database's clock would be.
   let stamp = Date.now();
   const land = (patch: Record<string, unknown>) => {
@@ -78,6 +78,7 @@ function deps(over: Partial<WeaveDeps> & { start?: Partial<WeaveRecord> } = {}, 
     },
     get: async () => ({ ...row }),
     load: async () => ({ ...row }),
+    byRequest: async () => null,
     orphans: async () => [],
     resume: async (id) => { resumed.push(id); },
     log: () => {},
@@ -331,7 +332,7 @@ Deno.test("two workers on one job: the first to write wins and the other stops â
 });
 
 Deno.test("an answer that arrives after the person asked again is not kept, and a crash then fails nothing of theirs", async () => {
-  const row: WeaveRecord = { id: WEAVE, userId: USER, towns: null, profile, brief: null, skeleton: null, plan: null, status: "reading", version: 1, updatedAt: new Date().toISOString(),
+  const row: WeaveRecord = { id: WEAVE, userId: USER, towns: null, profile, brief: null, skeleton: null, plan: null, status: "reading", version: 1, updatedAt: new Date().toISOString(), planRequestId: null,
     job: { stage: "understand", id: "job-1", attempt: 0, startedAt: Date.now(), usage: [], cost: 0, understand: { saveIds: ["a"], towns: [{ name: "Seoul", saves: 1 }] } } };
   const theirs = { ...row.job!, id: "job-2" };
   // While this worker looks, the row moves on to a job of the person's new ask.
@@ -366,6 +367,37 @@ Deno.test("a model that answers in the asking is given only the time the worker 
   const expected = WORKER_LIFE_MS - 300_000 - WRITE_MARGIN_MS;
   assert(given !== undefined && given <= expected && given > expected - 2_000, `the call was given ${given}`);
   assertEquals(d.row.status, "planned");
+});
+
+Deno.test("understand: the same ask twice is answered with the weave it started â€” one read, not two", async () => {
+  const again = deps({ byRequest: async () => ({ id: WEAVE, status: "reading" }) });
+  const res = await handleWeave(post({ action: "understand", towns: ["Seoul"], requestId: "r-1234567890" }), again);
+  assertEquals([res.status, (await res.json() as { weaveId: string }).weaveId, again.created.length], [202, WEAVE, 0]);
+  // Two at once: the second's insert is refused by the unique index and finds the first.
+  let looked = 0;
+  const race = deps({ create: async () => { throw new DuplicateRequest("dup"); }, byRequest: async () => (looked++ === 0 ? null : { id: WEAVE, status: "reading" }) });
+  const raced = await handleWeave(post({ action: "understand", towns: ["Seoul"], requestId: "r-1234567890" }), race);
+  assertEquals([raced.status, race.deferred.length], [202, 0]);
+  // Kept with the weave, so a repeat can find it.
+  const fresh = deps();
+  await handleWeave(post({ action: "understand", towns: ["Seoul"], requestId: "r-1234567890" }), fresh);
+  assertEquals(fresh.created[0]!["request_id"], "r-1234567890");
+});
+
+Deno.test("plan: the same ask again is answered with what it started, never woven twice; a different ask on a busy row is refused", async () => {
+  const same = deps({ start: { status: "planning", updatedAt: new Date().toISOString(), planRequestId: "p-1234567890" } });
+  const res = await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2 }, requestId: "p-1234567890" }), same);
+  assertEquals([res.status, same.updates.length], [202, 0]);
+  // Even once it has finished: the repeat is told how it ended, not a second plan.
+  const ended = deps({ start: { status: "planned", planRequestId: "p-1234567890" } });
+  const again = await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2 }, requestId: "p-1234567890" }), ended);
+  assertEquals([again.status, (await again.json() as { status: string }).status, ended.updates.length], [202, "planned", 0]);
+  const other = deps({ start: { status: "planning", updatedAt: new Date().toISOString(), planRequestId: "p-1234567890" } });
+  assertEquals((await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2 }, requestId: "p-0987654321" }), other)).status, 409);
+  // A new ask is kept with its id.
+  const fresh = deps();
+  await handleWeave(post({ action: "plan", weaveId: WEAVE, brief: { days: 2, nights: [{ town: "Seoul", nights: 2 }] }, requestId: "p-1234567890" }), fresh);
+  assertEquals(fresh.updates[0]!["plan_request_id"], "p-1234567890");
 });
 
 Deno.test("a crash stops the model job it left running", async () => {

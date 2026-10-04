@@ -9,7 +9,7 @@ import { holidaysBetween, typicalWeather } from "../_shared/weave/context.ts";
 import { CLAUDE_PLAN_MODEL, CLAUDE_UNDERSTAND_MODEL, jobFromCall, OPENAI_MODEL, PLAN_OPTIONS, UNDERSTAND_OPTIONS, weaveJobOpenAI, weaveModel } from "../_shared/weave/model.ts";
 import { safeFetch } from "../_shared/safe-address.ts";
 import type { OpeningPeriod } from "../_shared/weave/skeleton.ts";
-import { handleWeave, ORPHAN_MS, type JobState, type Suggestion, type WeaveRecord, type WeaveSaveRow } from "./handler.ts";
+import { DuplicateRequest, handleWeave, ORPHAN_MS, type JobState, type Suggestion, type WeaveRecord, type WeaveSaveRow } from "./handler.ts";
 
 /** The runtime's hook for work that outlives the answer: the worker stays up for it (400 s on the Pro plan). */
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
@@ -99,6 +99,8 @@ Deno.serve(async (req) => {
       weather: (towns, from, to) => typicalWeather(towns, from, to, fetchSafe),
       async create(userId, row) {
         const { data, error } = await db.from("weaves").insert({ user_id: userId, ...row }).select("id").single();
+        // The same request id twice at once: the unique index refuses the second.
+        if (error?.code === "23505") throw new DuplicateRequest("this request already started a weave");
         if (error) throw error;
         return String(data.id);
       },
@@ -117,6 +119,11 @@ Deno.serve(async (req) => {
       },
       get: (userId, id) => readWeave(db, id, userId),
       load: (id) => readWeave(db, id, null),
+      async byRequest(userId, requestId) {
+        const { data, error } = await db.from("weaves").select("id,status").eq("user_id", userId).eq("request_id", requestId).maybeSingle();
+        if (error) throw error;
+        return data ? { id: String(data.id), status: String(data.status) } : null;
+      },
       async orphans() {
         const { data, error } = await db.from("weaves").select("id").not("job", "is", null).in("status", ["reading", "planning"])
           .lt("updated_at", new Date(Date.now() - ORPHAN_MS).toISOString()).limit(10);
@@ -157,7 +164,7 @@ Deno.serve(async (req) => {
 
 /** A weave's row as the handler reads it — the caller's own, or any for the server's own work. */
 async function readWeave(db: ReturnType<typeof adminClient>, id: string, userId: string | null): Promise<WeaveRecord | null> {
-  let q = db.from("weaves").select("id,user_id,towns,profile,brief,skeleton,plan,status,version,updated_at,job").eq("id", id);
+  let q = db.from("weaves").select("id,user_id,towns,profile,brief,skeleton,plan,status,version,updated_at,job,plan_request_id").eq("id", id);
   if (userId) q = q.eq("user_id", userId);
   const { data, error } = await q.maybeSingle();
   if (error) throw error;
@@ -167,6 +174,6 @@ async function readWeave(db: ReturnType<typeof adminClient>, id: string, userId:
     id: String(r["id"]), userId: String(r["user_id"]), towns: (r["towns"] as string[] | null) ?? null, profile: (r["profile"] as WeaveRecord["profile"]) ?? null,
     brief: (r["brief"] as WeaveRecord["brief"]) ?? null, skeleton: (r["skeleton"] as WeaveRecord["skeleton"]) ?? null, plan: (r["plan"] as WeaveRecord["plan"]) ?? null,
     status: String(r["status"]), version: Number(r["version"] ?? 1), updatedAt: String(r["updated_at"]),
-    job: (r["job"] as JobState | null) ?? null,
+    job: (r["job"] as JobState | null) ?? null, planRequestId: (r["plan_request_id"] as string | null) ?? null,
   };
 }

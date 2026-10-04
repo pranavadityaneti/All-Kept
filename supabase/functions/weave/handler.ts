@@ -18,7 +18,9 @@
 // fresh worker ("resume", with the server's own secret). The minute's check hands on any job no
 // worker is looking at — one whose worker died. Two workers may come to look at one job (a hand-on
 // and the minute's check crossing); every write that ends or moves a job is made only if the row
-// still holds that job, so the first to write wins and the other stops.
+// still holds that job, so the first to write wins and the other stops. A request a phone may send
+// twice carries an id (`requestId`), and the same id is answered with what it started, never
+// started again.
 // Pure; the caller's id, the saves, the models, the lookups, the store, the clock and the deferral
 // are injected.
 // See internal/superpowers/specs/2026-09-16-weave-itinerary-design.md.
@@ -46,6 +48,8 @@ export interface WeaveRecord {
   skeleton: Skeleton | null; plan: WeavePlan | null; status: string; version: number; updatedAt: string;
   /** The model job in progress, if any. */
   job: JobState | null;
+  /** The request id the current plan was asked with, so a repeat of it is told what it started. */
+  planRequestId: string | null;
 }
 
 /** What a weave's row keeps of its model job, so whichever worker looks at it next can finish it. */
@@ -62,6 +66,9 @@ export interface JobState {
   understand?: { saveIds: string[]; towns: { name: string; saves: number }[] };
   plan?: { mustIds: string[]; stops: Record<string, { title: string | null; url: string | null }>; leftOut: { id: string; reason: string; title: string | null }[]; language: string };
 }
+
+/** Thrown by `create` when the request id already started a weave: the caller answers with that one. */
+export class DuplicateRequest extends Error {}
 
 /** A place found for a gap, not from the saves. */
 export interface Suggestion { placeId: string; name: string; place: PlaceFacts }
@@ -91,6 +98,8 @@ export interface WeaveDeps {
   get(userId: string, id: string): Promise<WeaveRecord | null>;
   /** Any weave, for the server's own work on it. */
   load(id: string): Promise<WeaveRecord | null>;
+  /** The weave a request id already started, if any. */
+  byRequest(userId: string, requestId: string): Promise<{ id: string; status: string } | null>;
   /** Weaves whose job no worker is looking at: silent for ORPHAN_MS. */
   orphans(): Promise<string[]>;
   /** Hands a weave's job to a fresh worker. */
@@ -145,6 +154,11 @@ export const SAID = {
 } as const;
 
 const isStr = (v: unknown): v is string => typeof v === "string";
+/** An ask's id, when it carries one the way the app makes them. */
+const requestIdOf = (body: Record<string, unknown> | null): string | null => {
+  const v = body?.["requestId"];
+  return isStr(v) && /^[A-Za-z0-9_-]{8,100}$/.test(v) ? v : null;
+};
 const strings = (v: unknown, max = 80): string[] => (Array.isArray(v) ? [...new Set(v.filter(isStr).map((s) => s.trim()).filter((s) => s.length > 0 && s.length <= max))] : []);
 
 /** The kind a save is for: the mix's own evidence first, then the category and the tags. */
@@ -247,10 +261,22 @@ export async function handleWeave(req: Request, deps: WeaveDeps): Promise<Respon
 
   if (action === "understand") {
     if (!(await deps.entitled(userId))) return apiError("payment_required", "An itinerary needs a subscription.");
+    // The same ask again — a phone repeating a request that got no answer: what it started is the answer.
+    const requestId = requestIdOf(body);
+    const seen = requestId ? await deps.byRequest(userId, requestId) : null;
+    if (seen) return json({ weaveId: seen.id, status: seen.status }, 202);
     const towns = strings(body?.["towns"]);
     const saves = await deps.saves(userId, towns.length > 0 ? towns : null);
     if (saves.length === 0) return apiError("bad_request", "No saves name a place there yet.");
-    const weaveId = await deps.create(userId, { towns: towns.length > 0 ? towns : null, status: "reading" });
+    let weaveId: string;
+    try {
+      weaveId = await deps.create(userId, { towns: towns.length > 0 ? towns : null, status: "reading", ...(requestId ? { request_id: requestId } : {}) });
+    } catch (e) {
+      // The same ask arriving twice at once: the second finds the first.
+      const first = e instanceof DuplicateRequest && requestId ? await deps.byRequest(userId, requestId) : null;
+      if (first) return json({ weaveId: first.id, status: first.status }, 202);
+      throw e;
+    }
     deps.defer(guarded(deps, weaveId, (run) => startUnderstand(deps, weaveId, saves, run)));
     return json({ weaveId, status: "reading" }, 202);
   }
@@ -261,6 +287,9 @@ export async function handleWeave(req: Request, deps: WeaveDeps): Promise<Respon
     if (!UUID.test(weaveId)) return apiError("bad_request", "weaveId is required");
     const record = await deps.get(userId, weaveId);
     if (!record?.profile) return apiError("not_found", "no such weave");
+    // The same ask again — a phone repeating a request that got no answer: the plan it started is the answer.
+    const requestId = requestIdOf(body);
+    if (requestId && record.planRequestId === requestId) return json({ weaveId, status: record.status }, 202);
     // One weaving at a time; a row no worker has touched for STALE_MS is taken over.
     if (record.status === "planning" && deps.now() - Date.parse(record.updatedAt) < STALE_MS) return apiError("conflict", SAID.busy);
     const allSaves = await deps.saves(userId, record.towns);
@@ -277,7 +306,7 @@ export async function handleWeave(req: Request, deps: WeaveDeps): Promise<Respon
     const selection = selectStops(saves, profile, brief);
     if (selection.chosen.length === 0) return apiError("bad_request", "Nothing to plan with in those towns yet.");
     // Only if the row is as it was read: two asks at once start one plan, and the other is told it is busy.
-    const taken = await deps.settle(weaveId, { status: "planning", brief, profile, error: null, message: null, result: null, job: null }, { jobId: record.job?.id ?? null, updatedAt: record.updatedAt });
+    const taken = await deps.settle(weaveId, { status: "planning", brief, profile, error: null, message: null, result: null, job: null, plan_request_id: requestId }, { jobId: record.job?.id ?? null, updatedAt: record.updatedAt });
     if (!taken) return apiError("conflict", SAID.busy);
     // A job left behind on a row taken over is stopped, not left to be paid for unread.
     if (record.job?.id) await jobOf(deps, record.job).cancel(record.job.id).catch(() => undefined);
