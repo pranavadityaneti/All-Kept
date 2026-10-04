@@ -2003,3 +2003,25 @@ categories.
     - "No location of any kind" sits among things the app doesn't touch, but the app does use
       location, on the phone only: NearYou and the map. Nothing is sent to our server.
     - The delete page says 24 hours, but deletion is immediate (auth.admin.deleteUser).
+- **Store artwork (4–5 Oct):**
+  - Agent's second pass done: subtitle; 18+; keywords; manual release; US + India, iPhone only;
+    Play Data safety draft (+ Maps SDK crash logs/diagnostics/IDs, per Google's own guidance);
+    short description; Play countries. Play can't drop tablets before an AAB is uploaded.
+  - Policy pages fixed and live (`3ce42b8` here, `52ea175` website; Pranav pushed), checked on
+    www.allkept.app: doubled words, the location line (used on the phone only), sign-in by Apple
+    or Google, the delete page (real button; immediate). Play icon 512 and feature graphic draft
+    `a09c1e0`.
+  - Reviewers' Google test account (Pranav signed in himself on the iPhone 17 Pro Max simulator;
+    the password is never typed or stored by me). It was seeded through the app's save-link via
+    CDP, with a Pro-Max-only helper that refuses any other device or user.
+  - **Wikipedia lead images are mostly CC BY / BY-SA** (credit required). The first screenshot
+    set was replaced with public-domain art and NASA images (licences checked on Commons) before
+    anything was uploaded.
+  - Unsplash pages give "preview unavailable" from the server: 7 picture-less cards now sit in
+    the test account.
+  - `18fdf47`: six captioned frames, App Store 6.5" and Play 9:16.
+  - iOS production build 35 (1.0.0, production channel) done; Pranav submitted it to App Store
+    Connect (Apple processing). ITSAppUsesNonExemptEncryption=false already set.
+  - Waiting on Pranav: the Android build; OK for the agent to attach build 35 and upload the
+    artwork; his clicks (price Free, contact, reviewer login, Content Rights, EU trader, publish
+    privacy, IARC); the final submits.
