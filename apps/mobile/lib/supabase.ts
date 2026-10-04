@@ -1,5 +1,6 @@
 import "react-native-url-polyfill/auto";
 import { createClient } from "@supabase/supabase-js";
+import { retryingFetch } from "./retry-fetch";
 import { chunkedSecureStore } from "./storage";
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
@@ -24,8 +25,13 @@ export const configError: string | null =
  */
 const SESSION_KEY = "sb-yurbmcqoqyehbpoqplcr-auth-token";
 
-/** One client for the app. The session lives in the device keychain, split into chunks (see storage.ts). */
+/**
+ * One client for the app. The session lives in the device keychain, split into chunks (see storage.ts).
+ * Every request goes through retryingFetch: one that got no answer at all is sent once more, when
+ * that can't do anything twice. The global fetch is looked up per call, so a later polyfill is used.
+ */
 export const supabase = createClient(url || "https://unconfigured.invalid", anonKey || "unconfigured", {
+  global: { fetch: retryingFetch((input, init) => fetch(input, init)) },
   auth: {
     storage: chunkedSecureStore,
     storageKey: SESSION_KEY,
