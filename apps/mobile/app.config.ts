@@ -24,7 +24,7 @@ const config: ExpoConfig = {
   name: "Allkept",
   slug: "all-kept", // matches the EAS project and the GitHub repository; not visible in the app
   scheme: "allkept",
-  version: "0.1.0",
+  version: "1.0.0",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
   icon: "./assets/icon.png",
