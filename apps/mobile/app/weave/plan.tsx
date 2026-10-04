@@ -17,7 +17,7 @@ import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
 import { googleDirectionsUrl, type TripStop } from "../../lib/trips";
-import { briefLine, crowdLine, dayHeading, dayRoute, markPlanAsked, planAskedAt, planText, runningFor, slotWord, stopHours, tripsKey, tripTitle, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop, type WeavePlanned } from "../../lib/weave";
+import { askId, briefLine, crowdLine, dayHeading, dayRoute, markPlanAsked, planAskedAt, planText, runningFor, slotWord, stopHours, tripsKey, tripTitle, useWeave, weaveKey, weavePlan, weaveStage, WeaveRefused, type PlanStop, type WeavePlanned } from "../../lib/weave";
 import { describeRange } from "../../lib/when";
 
 const asTripStop = (s: PlanStop): TripStop => ({ id: s.id, title: s.title ?? s.name, url: s.url, lastSavedAt: "", place: { name: s.name, address: s.address, lat: s.lat, lng: s.lng, status: null, url: null, periods: null, utcOffsetMinutes: null, locality: s.town } });
@@ -51,13 +51,16 @@ export default function Plan() {
   useEffect(() => { if (stage.kind !== "planning") return; setNow(Date.now()); const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, [stage.kind]);
   const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
+  // One id per ask until it goes through: tried again after no answer, a plan the lost request did start is the answer, not a second.
+  const retryAttempt = useRef<{ key: string; id: string } | null>(null);
   // The same trip, the same brief, woven again on the same row.
   const retry = async () => {
     const r = record.data;
     if (!weaveId || !r?.profile || !r.brief) return;
     setRetrying(true); setRetryError(null);
     try {
-      await weavePlan(weaveId, r.profile, r.brief);
+      await weavePlan(weaveId, r.profile, r.brief, askId(retryAttempt, JSON.stringify([weaveId, r.profile, r.brief])));
+      retryAttempt.current = null;
       markPlanAsked(weaveId);
       watched.current = true;
       void queryClient.invalidateQueries({ queryKey: tripsKey });

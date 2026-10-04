@@ -51,9 +51,20 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
   return data;
 }
 
+/**
+ * The id an ask goes with. A phone that got no answer can't know whether the server heard it, so the
+ * same ask tried again before it went through goes with the same id, and the server answers a
+ * repeated id with what the first started; a different ask, or the same one after it went through
+ * (the caller clears `attempt`), gets a new one.
+ */
+export function askId(attempt: { current: { key: string; id: string } | null }, key: string): string {
+  if (attempt.current?.key !== key) attempt.current = { key, id: `${Date.now()}-${Math.random().toString(36).slice(2)}` };
+  return attempt.current.id;
+}
+
 export const weaveTowns = () => call<WeaveTowns>({ action: "towns" });
-export const weaveUnderstand = (towns: string[]) => call<WeaveStarted>({ action: "understand", towns });
-export const weavePlan = (weaveId: string, profile: WeaveProfile, brief: Partial<WeaveBrief>) => call<WeaveStarted>({ action: "plan", weaveId, profile, brief });
+export const weaveUnderstand = (towns: string[], requestId: string) => call<WeaveStarted>({ action: "understand", towns, requestId });
+export const weavePlan = (weaveId: string, profile: WeaveProfile, brief: Partial<WeaveBrief>, requestId: string) => call<WeaveStarted>({ action: "plan", weaveId, profile, brief, requestId });
 
 export function useWeaveTowns(enabled: boolean) {
   return useQuery({ queryKey: ["weave-towns"], queryFn: weaveTowns, enabled });

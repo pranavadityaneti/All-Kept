@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 import type { WeavePlan, WeaveProfile } from "@allkept/contracts";
 import { supabase } from "../lib/supabase";
-import { briefLine, crowdLine, dayHeading, dayRoute, defaultDays, foldPlaces, moveNight, pickSummary, mixWith, planText, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
+import { askId, briefLine, crowdLine, dayHeading, dayRoute, defaultDays, foldPlaces, moveNight, pickSummary, mixWith, planText, splitDays, stopHours, tooManyPlaces, tripStatus, tripTitle, weavePlan, weaveUnderstand, whenProblem, WeaveRefused, type PlanStop, type TripSummary } from "../lib/weave";
 
 const profile: WeaveProfile = { mix: [{ kind: "food", share: 0.5, evidence: [] }, { kind: "cityscape", share: 0.5, evidence: [] }], towns: [{ name: "Seoul", country: "KR", saves: 30, nights: 3 }, { name: "Busan", country: "KR", saves: 5, nights: 1 }], must: [], style: "", group: null, budgetWords: null, unsure: [] };
 const stop = (over: Partial<PlanStop> & { id: string }): PlanStop => ({
@@ -141,10 +141,33 @@ describe("when no answer comes back", () => {
   it("says Allkept couldn't be reached just now, without blaming the person's connection", async () => {
     // A request that got no response at all (the phone dropped a reused connection, or the network did): no status, no words from the server.
     vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({ data: null, error: new Error("fetch failed: The network connection was lost.") } as never);
-    const refused = await weaveUnderstand(["Seoul"]).catch((e: unknown) => e);
+    const refused = await weaveUnderstand(["Seoul"], "r-1234567890").catch((e: unknown) => e);
     expect(refused).toBeInstanceOf(WeaveRefused);
     expect((refused as WeaveRefused).code).toBe("unreachable");
     expect((refused as WeaveRefused).message).toBe("Couldn't reach Allkept just now. Try again in a moment.");
+  });
+});
+
+describe("an ask's id, so a repeat is answered with what the first started", () => {
+  it("the same ask tried again before it went through keeps its id; a different ask, or the same one after it went through, gets a new one", () => {
+    const attempt: { current: { key: string; id: string } | null } = { current: null };
+    const first = askId(attempt, "Seoul");
+    expect(first).toMatch(/^[A-Za-z0-9_-]{8,100}$/);
+    expect(askId(attempt, "Seoul")).toBe(first);
+    const other = askId(attempt, "Busan");
+    expect(other).not.toBe(first);
+    attempt.current = null;
+    expect(askId(attempt, "Busan")).not.toBe(other);
+  });
+
+  it("goes to the server with the read and with the plan", async () => {
+    const invoke = vi.mocked(supabase.functions.invoke);
+    invoke.mockResolvedValue({ data: { weaveId: "w", status: "reading" }, error: null } as never);
+    await weaveUnderstand(["Seoul"], "r-1234567890");
+    expect(invoke).toHaveBeenLastCalledWith("weave", { body: { action: "understand", towns: ["Seoul"], requestId: "r-1234567890" } });
+    await weavePlan("w", { mix: [] } as never, { days: 3 }, "p-1234567890");
+    expect(invoke).toHaveBeenLastCalledWith("weave", { body: { action: "plan", weaveId: "w", profile: { mix: [] }, brief: { days: 3 }, requestId: "p-1234567890" } });
+    invoke.mockReset();
   });
 });
 

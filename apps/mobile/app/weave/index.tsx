@@ -22,7 +22,7 @@ import { useReducedMotion } from "../../lib/motion";
 import { useSavePictures } from "../../lib/save-pictures";
 import { useSession } from "../../lib/session";
 import { font, space, type, usePalette } from "../../lib/theme";
-import { DAY_CHOICES, defaultDays, foldPlaces, KIND_LABEL, markPlanAsked, MAX_PLAN_DAYS, mixWith, moveNight, percent, pickSummary, runningFor, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, whenProblem, type MixLevel, type TripSummary, type WeaveKind, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
+import { askId, DAY_CHOICES, defaultDays, foldPlaces, KIND_LABEL, markPlanAsked, MAX_PLAN_DAYS, mixWith, moveNight, percent, pickSummary, runningFor, splitDays, tooManyPlaces, tripsKey, tripTitle, useTrips, useWeave, useWeaveTowns, weaveKey, weavePlan, weaveStage, weaveUnderstand, WeaveRefused, whenProblem, type MixLevel, type TripSummary, type WeaveKind, type WeaveProfile, type WeaveTowns } from "../../lib/weave";
 
 /**
  * Plan a trip: the towns the saves name, the profile the saves add up to — edited in the open —
@@ -125,11 +125,15 @@ export default function Weave() {
     if (e instanceof WeaveRefused && e.code === "payment_required") { router.push("/subscribe"); return; }
     setError({ title, message: e instanceof Error ? e.message : "Something went wrong.", retry });
   };
+  // One id per ask until it goes through: tried again after no answer, a read the lost request did start is the answer, not a second read.
+  const readAttempt = useRef<{ key: string; id: string } | null>(null);
+  const makeAttempt = useRef<{ key: string; id: string } | null>(null);
   const read = async (names: string[], count: number | null) => {
     if (names.length === 0) return;
     setBusy(true); setError(null); setReadingCount(count);
     try {
-      const started = await weaveUnderstand(names);
+      const started = await weaveUnderstand(names, askId(readAttempt, JSON.stringify([...names].sort())));
+      readAttempt.current = null;
       watched.current = true;
       void queryClient.invalidateQueries({ queryKey: tripsKey });
       // From here the trip lives on its row: its id goes in the address, so leaving loses nothing.
@@ -141,11 +145,13 @@ export default function Weave() {
     setBusy(true); setError(null);
     try {
       // The server answers at once and weaves on; the plan screen is drawn from the row.
-      await weavePlan(weaveId, profile, {
+      const brief = {
         days, nights, startDate: shown.startDate, arrival: shown.arrival, departure: shown.departure,
         bases: Object.entries(shown.bases).filter(([town, name]) => name.trim() && nights.some((n) => n.town === town)).map(([town, name]) => ({ town, name: name.trim() })),
         group: shown.group, pace: shown.pace, transport: shown.transport, budget: shown.budget, note: shown.note.trim() || null,
-      });
+      };
+      await weavePlan(weaveId, profile, brief, askId(makeAttempt, JSON.stringify([weaveId, profile, brief])));
+      makeAttempt.current = null;
       markPlanAsked(weaveId);
       void queryClient.invalidateQueries({ queryKey: weaveKey(weaveId) });
       void queryClient.invalidateQueries({ queryKey: tripsKey });
