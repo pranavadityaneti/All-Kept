@@ -54,10 +54,9 @@ export default function Settings() {
   /**
    * On only when notifications can actually arrive.
    *
-   * The stored column defaults to true, so reading it alone drew the switch already on before the
-   * OS had ever been asked — which left nothing to turn on, and tapping it only turned it off. The
-   * column means "wants them"; a notification needs that *and* the OS's permission *and* a device
-   * registered against the account, so the switch shows all three or it is lying.
+   * The column means "wants them" (off until the person says yes); a notification needs that *and*
+   * the OS's permission *and* a device registered against the account, so the switch shows all
+   * three or it is lying.
    */
   const wants = prefs.data?.notifyEnabled ?? false;
   const notifications = wants && osPermission === "granted";

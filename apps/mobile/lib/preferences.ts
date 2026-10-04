@@ -16,9 +16,13 @@ export interface Preferences {
   interestsEnabled: boolean | null;
 }
 
-/** What the database says today, so a phone that has never written one still reads correctly. */
+/**
+ * What the database says today, so a phone that has never written one still reads correctly.
+ * Notifications are off until the person says yes: a phone that allowed them for something else (a
+ * reminder) has not said yes to these.
+ */
 export const DEFAULT_PREFERENCES: Preferences = {
-  notifyEnabled: true,
+  notifyEnabled: false,
   notifySorted: true,
   notifyAttention: true,
   aiSortingEnabled: true,
