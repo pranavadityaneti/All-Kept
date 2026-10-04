@@ -413,10 +413,10 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — Pranav's request for quick actions; "Park Part 1 for later, and execute part 2".
 
-### 63. A request iOS drops on a stale connection is reported as "Couldn't reach Allkept"
+### 63. A request iOS drops on a stale connection is reported as "Couldn't reach Allkept" — DONE 4 Oct 2026
 - **What + why:** Found 2 Oct while checking the UI audit's PT-01 ("Read my saves" failed within 17 s and said "Check your connection" while the phone was online). The request never reached the server: no `weave` call in the function logs at 03:53:45 UTC and no weave row. The same app session logged `track: item_open refused — fetch failed: The network connection was lost`, which is iOS's NSURLErrorNetworkConnectionLost: a pooled keep-alive connection the server had already closed. iOS repeats such a request by itself only when it is safe to repeat (GET), never a POST. So any one-shot POST (starting a weave, saving a link, an RPC, an event) can fail this way, and the person is told to check a connection that is fine. How often this happens on real phones is unknown; it was seen twice in one simulator session.
 - **Scope:** one retry, in one place: a `fetch` wrapper given to `createClient` in `apps/mobile/lib/supabase.ts` that repeats a request once, straight away, when it failed with that transport error before any response, and only for requests safe to repeat. GETs are safe, and so is save-link (it carries `requestId`). Starting a weave (understand/plan) first needs the same kind of request id, so a repeat cannot start and charge for a second read. Each RPC and insert the app makes needs checking. Tests for the wrapper. The wording stays honest: if the retry also fails, "Couldn't reach Allkept" is true.
-- **Status:** in progress — built 4 Oct on Pranav's "Get start these executions": `8d571ba` (the one retry, app), `4f16f79` (weave request ids, server; migration `20261004120100`), `a1b33e9` (the trip screens send them). Live once Pranav runs db push, weave is deployed (clean worktree) and the OTA goes out.
+- **Status:** done — built 4 Oct on Pranav's "Get start these executions": `8d571ba` (the one retry, app), `4f16f79` (weave request ids, server; migration `20261004120100`), `a1b33e9` (the trip screens send them). Live 4 Oct: migration applied and checked, weave v5 deployed, OTA `f62c78cc` (iOS) / `b3c6c44e` (Android).
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — the UI audit's Weave read failure, traced through the function logs and the Metro log.
 
@@ -441,9 +441,9 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — audit fix AW-07.
 
-### 67. A 7-day plan can outrun the plan call's time limit
+### 67. A 7-day plan can outrun the plan call's time limit — DONE 4 Oct 2026
 - **What + why:** Seen 2 Oct (an accidental real run on Pranav's "Seoul & Tokyo" trip, 7 days, full pace, transit): the plan model call (gpt-6-astra) was cut off at its 240 s limit — `AbortError: The signal has been aborted`, row failed about 245 s after it began, "Couldn't make the plan just now. Try again in a moment.", no usage recorded. With the worker's 400 s life there was no room for a second try, so a full week at full pace may simply not fit. Whether the provider billed the aborted call is unknown (our row says $0).
 - **Scope:** `supabase/functions/weave` (`PLAN_OPTIONS` timeout, `WORKER_LIFE_MS`, the attempt loop in `arrange`) and `_shared/weave/model.ts`. Options to weigh: stream the answer so a slow plan isn't cut off; a longer worker if the runtime allows; a smaller prompt or a plan woven a few days at a time. Measure first: how long the 28 Sep plan took, and how often plans fail this way. Function deploy only — no app build. Note the bundle rule: never deploy a function whose bundle includes the other session's uncommitted Gemini files.
-- **Status:** in progress — built 4 Oct: `8682606` (the model as an OpenAI background job, kept on the row and handed from worker to worker; a minute's cron for jobs whose worker died; migration `20261004120000`) and `359150a` (the app's wait, 150 s). Streaming was not needed: the job runs at OpenAI, not in the worker. Live after the same db push, deploy and OTA as 63.
+- **Status:** done — built 4 Oct: `8682606` (the model as an OpenAI background job, kept on the row and handed from worker to worker; a minute's cron for jobs whose worker died; migration `20261004120000`) and `359150a` (the app's wait, 150 s). Streaming was not needed: the job runs at OpenAI, not in the worker. Live 4 Oct with 63. Not yet seen: a real long plan running end to end on the new path.
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — the redesign session's accidental real plan (ERRORS, same day).

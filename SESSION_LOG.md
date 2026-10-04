@@ -1894,3 +1894,15 @@ categories.
 - **Not live yet:** Pranav runs `npx supabase db push` (both migrations); weave deployed from a clean
   worktree on his Yes, since this tree holds the other session's files in weave's bundle; then the
   OTA on his Yes; then his push.
+- **Live (4 Oct, Pranav's Yes):**
+  - Pranav ran db push. Checked by value: both versions are in the history; `job`, `request_id`
+    and `plan_request_id` exist; `weaves_job_idx` is there, and `weaves_request_idx` is unique.
+    The cron `resume_weave_jobs_every_minute` is active and its first run succeeded; the vault
+    secret is present (name checked only).
+  - weave deployed from a clean worktree at `23b3bf7` (`--use-api --workdir`; Docker was off). It
+    is version 5, ACTIVE, verify_jwt false. Probes: no sign-in → 401 "Sign in first." (the
+    handler's own words, so the gateway check is off); resume without the secret → 403.
+  - OTA to preview: iOS `f62c78cc-2d6b-4bee-8e09-cab762b07e87` on build 34's runtime
+    `8f175b69…`; Android `b3c6c44e-4161-46c5-a67d-5952d781501f` on `beb27480…`. Resolved first;
+    the app tree was clean.
+  - Pushed by Pranav: `fcc0754..23b3bf7`.
