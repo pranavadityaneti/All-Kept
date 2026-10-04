@@ -1918,3 +1918,34 @@ categories.
     Android channel), rule 7. The 0.9 wording draft is shown in chat; the policy has two copies,
     `docs/privacy.html` and the website branch's `apps/website/content/privacy.html`.
   - Blocked on the other session's Gemini work: 0.6–0.8, 1.4.
+- **Notifications, continued (4 Oct):**
+  - Pranav ran db push for `20261004130000`. Checked by value: the default is false; 3 accounts,
+    1 on, and that one has a live device.
+  - OTA to preview for 0.2 + 0.4: iOS `edced5e0-18bd-447b-a8a4-e1b9e64a9012`, Android
+    `dd9851a0-961e-4a3e-8752-3100447df98c`.
+  - Pranav said Yes to Reminders and to the 0.9 wording.
+    - `cd0510a` 0.3: one root watcher (`useForgetOnSignOut`). When the signed-in account leaves
+      (sign-out, deletion, a session that ended, a switch), every scheduled local notification is
+      cancelled and delivered ones are cleared. A launch, an error flap, or the same account back
+      is not a change.
+    - `b086b1e` 0.5: a "reminders" Android channel ("Reminders you set", HIGH, PRIVATE), and
+      reminders scheduled earlier are moved onto it. Two test files that load reminders.ts now mock
+      react-native (test-only).
+    - `ae17a17` 0.9 on this branch (docs/privacy.html §9 and What we store; last updated 4 Oct).
+      The website branch has the same words in `86683ca` in `.worktrees/website`, not pushed:
+      Pranav's push publishes the live page. The worksheet's review-note line on notifications is
+      still to change: it waits until the store agent has finished reading the worksheet.
+  - 0.3 + 0.5 are not yet in an OTA.
+- **Store submission (Pranav, 4 Oct: "Assign an agent and have it take over chrome … submit the
+  app on AppStore connect and play console"):**
+  - An Opus agent is driving Pranav's Chrome (Claude in Chrome) from the worksheet. It fills and
+    saves drafts and stops before every final submit, password, personal-data field, agreement,
+    pricing change and build choice.
+  - Found before it started:
+    - Build 34 is a testflight-profile build on the **preview** channel, so not for the store; the
+      store needs production-profile builds (channel production), which are Pranav's to run.
+    - Production EAS env has the Supabase URL/key (the right project) and the Maps key, but **no
+      EXPO_PUBLIC_REVENUECAT_IOS/ANDROID**.
+    - RevenueCat has no App Store app ("sandbox until then", 16 Sep), so the paywall shows no
+      prices. That is a review blocker unless billing is set up or 1.0 launches free.
+    - No support page exists (Apple refuses the testers page).
