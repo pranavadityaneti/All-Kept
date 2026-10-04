@@ -22,7 +22,8 @@ import { SessionProvider, useSession } from "../lib/session";
 import { configError } from "../lib/supabase";
 import { FONT, MANROPE, space, type, usePalette } from "../lib/theme";
 import { useOtaUpdates } from "../lib/updates";
-import { useNotificationRoute } from "../lib/push";
+import { useNotificationRoute, usePushRefresh } from "../lib/push";
+import { usePreferences } from "../lib/preferences";
 import { useProfile } from "../lib/profile";
 import { profileComplete } from "../lib/profile-fields";
 import { authDestination } from "../lib/auth-state";
@@ -82,6 +83,10 @@ function Shell() {
     else router.push("/subscribe");
   }, [router, unlocked]);
   useNotificationRoute(openSave);
+  // While the person has said yes, this phone is recorded again at every launch and return, so a
+  // changed token is mended without Settings being opened. It never asks: that stays in Settings.
+  const preferences = usePreferences(unlocked ? userId : null);
+  usePushRefresh(unlocked ? userId : null, preferences.data?.notifyEnabled === true);
   // The share extension's credential and its offline queue: minted once, delivered on every foreground.
   const queryClient = useQueryClient();
   useEffect(() => {

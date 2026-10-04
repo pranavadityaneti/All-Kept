@@ -62,13 +62,8 @@ export default function Settings() {
   const notifications = wants && osPermission === "granted";
   const blocked = wants && osPermission === "denied";
 
-  // A token is not forever: it changes on reinstall, on restore to a new phone, and Expo may rotate
-  // it. Re-registering whenever the app opens with notifications on keeps the row current and
-  // repairs an account whose device silently stopped being reachable.
-  useEffect(() => {
-    if (!userId || !wants || osPermission !== "granted") return;
-    void registerForPush(userId);
-  }, [userId, wants, osPermission]);
+  // A token is not forever (reinstall, a new phone, Expo rotating it): the app records this device
+  // again at every launch while notifications are on (usePushRefresh, in the root layout).
 
   const setNotifications = async (on: boolean) => {
     if (!userId) return;

@@ -7,7 +7,7 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
-import { Linking, Platform } from "react-native";
+import { AppState, Linking, Platform } from "react-native";
 import { supabase } from "./supabase";
 
 /**
@@ -82,6 +82,31 @@ export async function registerForPush(_userId: string): Promise<PushOutcome> {
   } catch (e) {
     return { ok: false, reason: "failed", detail: e instanceof Error ? e.message : String(e) };
   }
+}
+
+/**
+ * Records this device again without asking — only when the OS already allows notifications. A
+ * token changes on reinstall, on restore to a new phone, and when Expo rotates it; recorded only
+ * from Settings, it went stale for anyone who never opened Settings again.
+ */
+export async function refreshPush(userId: string): Promise<PushOutcome> {
+  if (!Device.isDevice) return { ok: false, reason: "simulator" };
+  if ((await pushPermission()) !== "granted") return { ok: false, reason: "denied" };
+  return registerForPush(userId);
+}
+
+/**
+ * While the person has said yes (`wants`), this device is recorded again when the app opens and
+ * each time it comes back to the front. It never asks the OS: the one prompt stays in Settings.
+ */
+export function usePushRefresh(userId: string | null, wants: boolean): void {
+  useEffect(() => {
+    if (!userId || !wants) return;
+    const refresh = () => { void refreshPush(userId); };
+    refresh();
+    const sub = AppState.addEventListener("change", (state) => { if (state === "active") refresh(); });
+    return () => sub.remove();
+  }, [userId, wants]);
 }
 
 /**
