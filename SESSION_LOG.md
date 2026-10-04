@@ -1949,3 +1949,22 @@ categories.
     - RevenueCat has no App Store app ("sandbox until then", 16 Sep), so the paywall shows no
       prices. That is a review blocker unless billing is set up or 1.0 launches free.
     - No support page exists (Apple refuses the testers page).
+- **Pranav's store decisions (4 Oct):** launch 1.0 free; production builds at 1.0.0 ("Go ahead");
+  a support page; submit now, without waiting for Meta; Yes to the Reminders update.
+  - Reminders OTA to preview: iOS `90e46168-af0f-484b-a204-cf4770be3cb9`, Android
+    `bc61cb48-809d-47a5-b23a-c32d55472fc3`.
+  - `91e4c55` (server): migration `20261004140000_launch_free.sql`. `paywall_on()` is false;
+    entitled() admits everyone while it is (the rule is kept underneath), and my_entitlement()
+    gains a `paywall` column. Not applied: Pranav runs db push.
+  - `21c6224` (app): when paywall is false, standing() is free_region, so there is no counter,
+    card, notice, Settings row or Subscribe.
+  - `357e1a9`: version 1.0.0. It is part of the fingerprint, so the new runtimes are iOS
+    `6b8a496f…` and Android `3f08951e…`. Build 34 (0.1.0, preview) gets no more OTAs from this
+    tree.
+  - The support page already existed and is live, as are privacy (with today's wording, so
+    Pranav pushed the website branch, `86683ca`), terms and delete, all at www.allkept.app (200).
+    No new page was written. The URLs went to the store agent.
+  - Instagram connect screen checked: no endless spinner (code, countdown, new code on expiry,
+    polls every 5 s). Left as is; the review notes steer reviewers to paste-a-link.
+  - The store agent was given the decisions (free, 1.0.0, submit now, the corrected notification
+    sentence for the review notes, no build to select yet) and the URLs.
