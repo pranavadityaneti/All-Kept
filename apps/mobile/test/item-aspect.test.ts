@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("../lib/supabase", () => ({ supabase: {} }));
 vi.mock("expo-notifications", () => ({}));
+vi.mock("react-native", () => ({ Platform: { OS: "ios" } }));
 vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({}), useMutation: () => ({}), useQueryClient: () => ({}) }));
 import { readAspect } from "../lib/item";
 

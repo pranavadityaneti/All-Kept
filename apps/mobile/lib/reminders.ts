@@ -1,5 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
+import { Platform } from "react-native";
 import type { SessionState } from "./auth-state";
 import { supabase } from "./supabase";
 
@@ -69,23 +70,41 @@ export async function reminderPermission(): Promise<"granted" | "denied"> {
   return (await Notifications.requestPermissionsAsync()).granted ? "granted" : "denied";
 }
 
+/**
+ * Android files each notification under a channel; a reminder had none, so it went to the fallback
+ * ("Miscellaneous"), which shows its title on a locked screen. Its own channel: a reminder the
+ * person set pops up, and stays private. The id is permanent; once made, the person owns its
+ * settings. iPhone has no channels.
+ */
+const REMINDER_CHANNEL = "reminders";
+async function ensureReminderChannel(): Promise<void> {
+  if (Platform.OS !== "android") return;
+  await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
+    name: "Reminders you set",
+    importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
+  });
+}
+
 export async function scheduleReminder(id: string, at: number, title: string): Promise<void> {
+  await ensureReminderChannel();
   await Notifications.scheduleNotificationAsync({
     identifier: identifier(id),
     content: { title: "Allkept reminder", body: title, data: { itemId: id, at } },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at) },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(at), channelId: REMINDER_CHANNEL },
   });
 }
 
 export const cancelReminder = (id: string): Promise<void> => Notifications.cancelScheduledNotificationAsync(identifier(id));
 
-/** The reminders the phone has scheduled, read back from what was written into each one. */
-async function scheduledReminders(): Promise<Pending[]> {
+/** The reminders the phone has scheduled, read back from what was written into each one — with the channel it sits on (Android). */
+async function scheduledReminders(): Promise<(Pending & { channel: string | null })[]> {
   const all = await Notifications.getAllScheduledNotificationsAsync();
   return all.flatMap((n) => {
     if (!n.identifier.startsWith("reminder:")) return [];
     const data = n.content.data as { itemId?: unknown; at?: unknown } | null;
-    return typeof data?.itemId === "string" && typeof data?.at === "number" ? [{ id: data.itemId, at: data.at }] : [];
+    const channel = (n.trigger as { channelId?: unknown } | null)?.channelId;
+    return typeof data?.itemId === "string" && typeof data?.at === "number" ? [{ id: data.itemId, at: data.at, channel: typeof channel === "string" ? channel : null }] : [];
   });
 }
 
@@ -118,10 +137,17 @@ export function useForgetOnSignOut(session: SessionState): void {
 /** Brings the phone's schedule in line with the server's list of what is still to come. Never throws: a reminder is not worth a crash. */
 export async function syncReminders(): Promise<void> {
   try {
+    // The channel is made here — at launch and each return — so it is there before any reminder needs it.
+    await ensureReminderChannel().catch(() => undefined);
     const { data, error } = await supabase.from("items").select("id,remind_at,title,text").gt("remind_at", new Date().toISOString());
     if (error || !data) return;
     const server = (data as { id: string; remind_at: string; title: string | null; text: string | null }[]).map((r) => ({ id: r.id, at: Date.parse(r.remind_at), title: r.title?.trim() || r.text?.split("\n").find((l) => l.trim())?.trim() || "A save you wanted back" }));
-    const { schedule, cancel } = reconcileReminders(server, await scheduledReminders());
+    const phone = await scheduledReminders();
+    // Android: a reminder scheduled before reminders had their own channel is moved onto it —
+    // cancelled here, and scheduled again below if it is still to come.
+    const moved = Platform.OS === "android" ? phone.filter((p) => p.channel !== REMINDER_CHANNEL) : [];
+    for (const p of moved) await cancelReminder(p.id).catch(() => undefined);
+    const { schedule, cancel } = reconcileReminders(server, phone.filter((p) => !moved.includes(p)));
     for (const id of cancel) await cancelReminder(id).catch(() => undefined);
     for (const s of schedule) await scheduleReminder(s.id, s.at, server.find((r) => r.id === s.id)?.title ?? "A save you wanted back").catch(() => undefined);
   } catch {

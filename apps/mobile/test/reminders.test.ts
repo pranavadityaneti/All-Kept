@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("expo-notifications", () => ({}));
+vi.mock("react-native", () => ({ Platform: { OS: "ios" } }));
 vi.mock("../lib/supabase", () => ({ supabase: {} }));
 import { describeReminder, presetTimes, reconcileReminders } from "../lib/reminders";
 
