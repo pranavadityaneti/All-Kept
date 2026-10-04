@@ -1968,3 +1968,38 @@ categories.
     polls every 5 s). Left as is; the review notes steer reviewers to paste-a-link.
   - The store agent was given the decisions (free, 1.0.0, submit now, the corrected notification
     sentence for the review notes, no build to select yet) and the URLs.
+- **Store agent's report (4 Oct, ~55 min):** nothing submitted, no build selected; one tab left open
+  on the App Store 1.0.0 page.
+  - **App Store Connect:**
+    - App Privacy: 7 data types, all linked and none for tracking; privacy URL set. It is not
+      published, which is Pranav's click.
+    - Version 1.0 renamed to 1.0.0 and filled: promo text, description, support/marketing URLs,
+      copyright (MECA), review notes.
+    - Age rating questionnaire saved, which gives 16+; the terms say 18, so override to 18+ (his
+      call).
+    - Price → Free was refused by the permission system as a transaction, so Pranav clicks it.
+    - The review-notes sentence swap is blocked until the contact block (personal data) is
+      filled.
+    - Empty: subtitle, keywords, content rights, the EU trader declaration, screenshots (6.5"/6.9"
+      needed; the repo has 1206×2622), the reviewer account, and the build.
+    - Free Apps agreement active; Paid not accepted.
+    - Builds: only 0.1.0 (5–34).
+  - **Play Console** (Ideaye org, app 4974071127887984498):
+    - Saved: privacy policy, ads No, advertising ID No, government/financial/health none, store
+      settings (Productivity, hi@allkept.app, www), and the full description.
+    - Data safety is a draft: 6 types; delete URL /delete.
+    - Blocked or not done:
+      - Sign in details needs a reviewer account; Target audience is locked behind it.
+      - Content rating needs the IARC terms accepted (Pranav).
+      - Store listing assets: short description, 512 icon, 1024×500 feature graphic, 9:16 phone
+        screenshots, and 7"/10" tablet screenshots, which are required since Production targets
+        tablets.
+    - No AAB on any track; no countries; free; payments profile not accessible (not the owner).
+  - Three legal names: Apple holder Pranav (individual), Play Ideaye Media Pvt Ltd, policies and
+    copyright MECA Engineering Solutions (OPC) Pvt Ltd.
+  - Checked by me afterwards:
+    - Its "repo privacy page is behind" was stale: this branch says 4 Oct.
+    - Real: "18 years years old" (privacy, terms), "the laws of the laws of India" (terms).
+    - "No location of any kind" sits among things the app doesn't touch, but the app does use
+      location, on the phone only: NearYou and the map. Nothing is sent to our server.
+    - The delete page says 24 hours, but deletion is immediate (auth.admin.deleteUser).
