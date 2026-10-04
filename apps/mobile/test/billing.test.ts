@@ -9,6 +9,12 @@ const row = (over: Partial<EntitlementRow> = {}): EntitlementRow => ({
 });
 
 describe("where a person stands", () => {
+  it("is free for everyone while the paywall is off (1.0 launches free): no counter, no paywall, whatever the store or the count", () => {
+    expect(standing(row({ paywall: false, saves_used: 3 }), now)).toEqual({ kind: "free_region" });
+    expect(standing(row({ paywall: false, saves_used: 400 }), now)).toEqual({ kind: "free_region" });
+    // A server from before the switch says nothing about it: the rule stands as it was.
+    expect(standing(row({ saves_used: 20 }), now)).toEqual({ kind: "ramp", used: 20, of: 25, left: 5 });
+  });
   it("is free-region when the store is in India, whatever else is true", () => {
     expect(standing(row({ storefront: "IN", saves_used: 400, status: "expired" }), now)).toEqual({ kind: "free_region" });
   });

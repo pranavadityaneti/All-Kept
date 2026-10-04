@@ -55,10 +55,12 @@ export interface EntitlementRow {
   product_id: string | null;
   /** Saving without a subscription until this day, given by hand: a tester, App Review, goodwill. Null for nearly everyone. */
   complimentary_until: string | null;
+  /** False while nothing is sold (1.0 launches free): everyone may save. Absent from a server before the switch. */
+  paywall?: boolean;
 }
 
 export type Standing =
-  /** A free region — or a phone that has not yet said where it buys from, which the server does not gate. */
+  /** Free here: a free region, a phone that has not yet said where it buys from (the server does not gate it), or anywhere while the paywall is off. */
   | { kind: "free_region" }
   | { kind: "subscribed"; renews: boolean; until: string | null; product: string | null }
   | { kind: "billing_issue"; until: string | null; product: string | null }
@@ -70,7 +72,7 @@ export type Standing =
 
 /** The server's row, as a screen shows it. */
 export function standing(row: EntitlementRow, now: Date): Standing {
-  if (row.storefront === null || row.storefront === "IN") return { kind: "free_region" };
+  if (row.paywall === false || row.storefront === null || row.storefront === "IN") return { kind: "free_region" };
   const running = !!row.current_period_end && new Date(row.current_period_end) > now;
   if (row.status === "active" && running) return { kind: "subscribed", renews: row.will_renew !== false, until: row.current_period_end, product: row.product_id };
   if (row.status === "billing_issue" && running) return { kind: "billing_issue", until: row.current_period_end, product: row.product_id };
