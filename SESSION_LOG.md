@@ -2097,3 +2097,8 @@ categories.
   - Next, after approval: item 58, the store badges on the website. The URLs are fixed:
     apps.apple.com/app/id6809901300 and play.google.com/store/apps/details?id=app.allkept.mobile.
   - Not pushed: `80b59a2`, plus the log files.
+- Moved the stray untracked repo-root file `APPLE_MAPS_PRIVATE_KEY=` to `~/.secrets/allkept/`
+  (folder 700, file 600) at Pranav's request. It was empty: 0 bytes, made 15 Sep 16:02, most
+  likely by a mistyped command. No key was in it, so nothing was exposed.
+- Pranav: "move it to the trash". I checked it was still empty, then Finder moved it to the Trash
+  (so Put Back works). The empty folder `~/.secrets/allkept/` is kept.
