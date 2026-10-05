@@ -447,3 +447,24 @@ Each item records: what + why · scope · status · date added · originated fro
 - **Status:** done — built 4 Oct: `8682606` (the model as an OpenAI background job, kept on the row and handed from worker to worker; a minute's cron for jobs whose worker died; migration `20261004120000`) and `359150a` (the app's wait, 150 s). Streaming was not needed: the job runs at OpenAI, not in the worker. Live 4 Oct with 63. Not yet seen: a real long plan running end to end on the new path.
 - **Date added:** 2026-10-02
 - **Originated from:** 2 Oct 2026 — the redesign session's accidental real plan (ERRORS, same day).
+
+### 68. Bring the store worksheet in line with what was submitted
+- **What + why:** `internal/store-submission.html` no longer matches what went to the stores on 5 Oct. Apple's review notes now say "On Home, tap the 'Paste a link to save' field … tap the check mark" (the app has no + button), and notifications are asked for only when switched on in Settings. Also missing: the final screenshot set (`docs/marketing/store/final/`), Play's "Don't label" AI-asset answer, the release notes, managed publishing off, and availability in the US and India only. The worksheet is the reference for the next submission, so stale lines will be copied forward.
+- **Scope:** `internal/store-submission.html` only (private; never committed to docs/).
+- **Status:** queued
+- **Date added:** 2026-10-05
+- **Originated from:** 5 Oct 2026 — store submission session
+
+### 69. Store descriptions promise Instagram DMs before Meta approves them
+- **What + why:** Both store descriptions say "Send any reel or post to @allkeptapp in an Instagram message". Until Meta's App Review (item 8) passes, that works only for Meta testers, so a real user who tries it gets nothing. If Meta hasn't approved by the time the app is live: on Play, edit the description (it can change any time); on the App Store the description is tied to the version, so the change rides with the next update. The release notes already leave it out.
+- **Scope:** store listing text only; no code.
+- **Status:** queued — watch alongside item 8
+- **Date added:** 2026-10-05
+- **Originated from:** 5 Oct 2026 — release notes review
+
+### 70. Android tablets get the phone layout
+- **What + why:** iOS ships iPhone-only (`supportsTablet: false`), but Play offers the app on tablets by default, so tablet users get the phone layout stretched across a big screen. The 7-inch and 10-inch store screenshots show a phone frame for the same reason. Decide whether to exclude tablets in Play's device catalogue (possible now that an AAB is uploaded) or make the layout work on tablets.
+- **Scope:** Play Console device catalogue (no code), or a tablet layout pass in the app.
+- **Status:** queued — Pranav's call
+- **Date added:** 2026-10-05
+- **Originated from:** 5 Oct 2026 — Play store listing upload

@@ -2025,3 +2025,75 @@ categories.
   - Waiting on Pranav: the Android build; OK for the agent to attach build 35 and upload the
     artwork; his clicks (price Free, contact, reviewer login, Content Rights, EU trader, publish
     privacy, IARC); the final submits.
+- **App Store Connect read-only check (5 Oct, ~01:00 IST)** — Pranav thought iOS was done; it is not:
+  - Version 1.0.0 is still "Prepare for Submission" (Add for Review not pressed).
+  - Missing: screenshots (0 of 10, 6.5" slot), build (35 is processed, "Ready to Submit", not
+    attached), reviewer user name + password, all four contact fields.
+  - Done: price $0.00 in 175 regions; availability US + India only (the 11 Sep decision, so the
+    EU DSA "Set Up" box is not needed); category Productivity; content rights; age rating 18+;
+    App Privacy published (7 types, privacy URL); keywords, support/marketing URLs, copyright
+    (MECA); manual release; App Accessibility labels optional.
+  - Review notes are wrong in one step: "Tap the + button … tap Save" — the app has no + button;
+    Home has the "Paste a link to save" field with a check-mark button (SaveLinkField.tsx).
+    The notifications sentence there is already the new one.
+  - Screenshots lock once the version is submitted (a change later needs a new version), so
+    the iOS submit waits for the design agent's final set; Play graphics can be swapped any time.
+  - Design agent (started 19:01 UTC): 6.9" App Store draft of six frames rendered, reworking the
+    share and details frames; 6.5", Play phone and tablet, feature graphic, contact sheet still to come.
+  - Pranav said yes: build 35 attached and notes step 2 corrected in my Chrome tab, but Apple
+    refuses Save while the four contact fields are empty — both changes sit unsaved in that tab.
+    Pranav fills contact + reviewer login there and presses Save; I verify by reload afterwards.
+  - Design agent done (40 min): `docs/marketing/store/final/` — six frames each for App Store
+    6.9" and 6.5", Play phone and Play tablet, plus a feature graphic, a contact sheet and a README
+    (untracked, not uploaded). I checked all 26 images: exact sizes, RGB with no alpha, ICC
+    profile embedded; the README has nothing sensitive in it. Claims checked against the code:
+    "Save from any app" is true on both platforms (iOS share extension; Android share target
+    `modules/share-save`); search is one `search-library` call (hybrid), so "in seconds" holds.
+    Open: a NASA insignia is visible in the James Webb and Artemis video thumbnails (frames 1, 3, 6).
+    The build script is only in the scratchpad (`final/build.py`) and is lost at session end.
+  - Pranav filled the contact block and saved; after a reload Apple shows build 35, the fixed
+    notes and the contact details. Still empty: the reviewer user name and password.
+  - I uploaded the 6.5" set (6 of 10, in order; it stays after a reload). Apple uses 6.5" for
+    every iPhone size.
+  - `80b59a2`: `docs/marketing/store/final/` plus `marketing/store-art/` (build script made
+    portable: paths from the repo, scratch files in the temp folder, Playwright via
+    PLAYWRIGHT_PATH). A rebuild from the repo copy matches all 26 files to within rendering noise
+    (at most 7/255, on 3 pixels). Not pushed.
+  - Pranav chose to keep the NASA thumbnails. The Play uploads wait for his word that his Play
+    tab has nothing unsaved.
+  - Play listing (my tab), saved as a draft and checked after a reload: icon 1/1 (Pranav's),
+    the final feature graphic 1/1, and phone, 7" and 10" each 6/8 in order. One 10" selection
+    click didn't register (frame 2 missed), so I took frame 3 back out of the slot (it stays
+    in the asset library) and re-added 2–6 in order.
+  - The Review step needs the new **AI asset declaration** (label or not) before its Save, which
+    queues the listing in Publishing overview (nothing is sent) — Pranav's call. Dashboard: 10 of 11
+    setup tasks done (only the store listing left); the release steps unlock after it.
+  - Pranav: "Don't label" (AI declaration). Review-step Save done: the setup list is complete,
+    and the Production steps are unlocked (countries ✓; Create a new release is next). Publishing
+    overview: nothing sent; managed publishing is OFF (approval would publish at once — his call).
+  - The .aab must be uploaded by Pranav: the Chrome file tool takes under 10 MB per upload, and
+    Google wants an app's first release uploaded by hand anyway. Advertising ID: app.config has no
+    `blockedPermissions` for AD_ID — Play will flag it on upload if a library merges it in.
+  - **Graphics lost from the Play listing.** A fresh read in my tab shows only the icon; the
+    feature graphic and all screenshot slots are empty. My saves had stored them (checked after a
+    reload, and the dashboard counted the listing done), so a later save replaced them: almost
+    certainly Pranav's old tab, which still held the pre-upload page (his screenshot shows that
+    tab with "Upload at least 1 asset"). Cause: two tabs editing one listing, last save wins.
+    Fix: his tab closed first, then I re-add from the asset library (all 19 files are still
+    there) and save again, with one editor only.
+  - Restored after Pranav closed his tab: all 19 files re-added from the library in order, saved
+    as a draft, Review step "Don't label", Save. After a reload Play shows the listing "Ready to
+    send for review", with icon 1/1, feature graphic 1/1, phone, 7" and 10" each 6/8 in order.
+    Lesson in ERRORS.md (one editor per console page).
+- **Both stores submitted (5 Oct, ~02:00 IST).**
+  - Apple: Allkept 1.0.0 is "Waiting for Review", with manual release, so Pranav presses release
+    after approval.
+  - Google: "Changes in review". Pranav uploaded the .aab, saved the release and sent it.
+    Managed publishing is OFF, so the app goes live as soon as Google approves.
+  - Release notes: I drafted five options (all under 500 characters) and left Instagram DMs out
+    (Meta approval pending).
+  - New queue items: 68 (store worksheet), 69 (Instagram claim in the descriptions), 70 (Android
+    tablets).
+  - Next, after approval: item 58, the store badges on the website. The URLs are fixed:
+    apps.apple.com/app/id6809901300 and play.google.com/store/apps/details?id=app.allkept.mobile.
+  - Not pushed: `80b59a2`, plus the log files.

@@ -395,3 +395,17 @@ again — which also explains why my later taps to restore the interests switch 
 - Remember: never batch a paid or writing tap with the safety step it depends on. After any
   restart, re-create scratch helpers before relying on them; the scratch folder does not survive.
   A tap the app could act on for real gets the same care as a deploy.
+
+## 2026-10-05 — Play listing graphics wiped by an older tab
+- What happened: I uploaded the feature graphic and 18 screenshots to the Play store listing in my
+  own Chrome tab, saved, and checked them after a reload. Pranav's own tab had the same listing
+  open from before the uploads. A later save there wrote its old, empty slots back over mine:
+  Play keeps whichever save is last, and gives no conflict warning. One 10-inch slot also lost
+  frame 2 when a library click did not register, and the next "Add" added frame 3 in its place.
+- What worked: closing every other tab on the listing first, then re-adding everything from
+  Play's asset library (the files survive there), finding each file by name in the library
+  search, and checking its tick before each "Add". Save as draft between slots, then a reload to
+  confirm all counts and the order.
+- Remember: before editing a Play Console page (or any console form), make sure no other tab has
+  it open: ask first, and only edit once Pranav says it is closed. After saving, tell him to reload
+  any copy he has. Confirm every library selection on screen before pressing Add.
